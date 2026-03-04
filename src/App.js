@@ -116,11 +116,11 @@ export default function App() {
     try {
       // IMPORTANTE: Para rodar no Vercel/Github, cole sua chave aqui dentro das aspas:
       // const apiKey = "AIzaSyBI6Zdozh8Uf9jOEhIOPK9I4ZxaSrU2qEY";
-      const apiKey = "AIzaSyBI6Zdozh8Uf9jOEhIOPK9I4ZxaSrU2qEY"; 
+      const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
       
       const systemPrompt = `Você é um assistente virtual focado em ajudar corretores de imóveis da equipe 'Destemidos', que vendem imóveis da Direcional e Riva. Seja sempre encorajador, claro e objetivo. Ajude com dúvidas sobre MCMV, atendimento ao cliente, termos técnicos do mercado imobiliário e scripts de vendas.`;
 
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`, {
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -591,3 +591,4 @@ export default function App() {
     </div>
   );
 }
+

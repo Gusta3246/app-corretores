@@ -71,28 +71,31 @@ import React, { useState, useEffect, useRef } from 'react';
     ];
 // === IMAGENS DE EQUIPE (Muda Diariamente) ===
 const imagensEquipeDiarias = [
-    "https://i.postimg.cc/XZx4NDz2/Copia-de-Image5.jpg",
-    "https://i.postimg.cc/CzjyLQZm/Copia-de-IMG-0779-(1).jpg",
-    "https://i.postimg.cc/LYnK94fj/Copia-de-IMG-1017.jpg",
-    "https://i.postimg.cc/r0mcDN6t/Copia-de-IMG-1504.jpg",
-    "https://i.postimg.cc/t1DpRmc1/Copia-de-IMG-1515.jpg",
-    "https://i.postimg.cc/5H9WrS2G/Copia-de-IMG-2336.jpg",
-    "https://i.postimg.cc/Y4ttHwby/Copia-de-IMG-2830.jpg",
-    "https://i.postimg.cc/t199jH21/Copia-de-IMG-3048.jpg",
-    "https://i.postimg.cc/JyRRLWPD/Copia-de-IMG-3049.jpg",
-    "https://i.postimg.cc/Xrfnmvcf/Copia-de-IMG-3054.jpg",
-    "https://i.postimg.cc/HrwTRL48/Copia-de-IMG-3117.jpg",
-    "https://i.postimg.cc/9DdcKfth/Copia-de-IMG-5622-(1).jpg",
-    "https://i.postimg.cc/5YRJLQ1p/Copia-de-IMG-9369.jpg",
-    "https://i.postimg.cc/sQqFvF9L/Copia-de-IMG-9585.jpg",
-    "https://i.postimg.cc/cgryx1Yw/Copia-de-IMG-9643.jpg",
-    "https://i.postimg.cc/1nfhmR6X/Copia-de-IMG-9690.jpg",
-    "https://i.postimg.cc/JtsMmx54/Copia-de-IMG-9919.avif"
+    "https://i.postimg.cc/pTMTZwYt/Copia-de-Image5.jpg",
+    "https://i.postimg.cc/tCc9D09Q/Copia-de-IMG-0779-(1).jpg",
+    "https://i.postimg.cc/fLvwvJRq/Copia-de-IMG-1017.jpg",
+    "https://i.postimg.cc/sXP20TwK/Copia-de-IMG-1504.jpg",
+    "https://i.postimg.cc/KzhzN6r5/Copia-de-IMG-1515.jpg",
+    "https://i.postimg.cc/hGT4fCWS/Copia-de-IMG-2336.jpg",
+    "https://i.postimg.cc/bvtr1yb8/Copia-de-IMG-2830.jpg",
+    "https://i.postimg.cc/1zqXDmFK/Copia-de-IMG-3048.jpg",
+    "https://i.postimg.cc/YSW0QrF3/Copia-de-IMG-3049.jpg",
+    "https://i.postimg.cc/mgqhczP5/Copia-de-IMG-3054.jpg",
+    "https://i.postimg.cc/4xMnK7YP/Copia-de-IMG-3117.jpg",
+    "https://i.postimg.cc/2SJ3qb1V/Copia-de-IMG-5622-(1).jpg",
+    "https://i.postimg.cc/tJXg0Fc0/Copia-de-IMG-9369.jpg",
+    "https://i.postimg.cc/QCxjYhBj/Copia-de-IMG-9585.jpg",
+    "https://i.postimg.cc/Kz5Z5R8q/Copia-de-IMG-9643.jpg",
+    "https://i.postimg.cc/ydTVTk8m/Copia-de-IMG-9690.jpg",
+    "https://i.postimg.cc/fWKLcg3X/Copia-de-IMG-9919.avif"
 ];
 
 // Cálculos para manter a mesma imagem e frase durante todo o dia
 const today = new Date();
 const dayIndex = Math.floor((today.getTime() - today.getTimezoneOffset() * 60000) / (1000 * 60 * 60 * 24));
+
+// Exemplo de como usar o dayIndex para pegar a imagem do dia:
+// const imagemDoDia = imagensEquipeDiarias[dayIndex % imagensEquipeDiarias.length];
 
     export default function App() {
     const [searchTerm, setSearchTerm] = useState('');
@@ -744,4 +747,5 @@ const dayIndex = Math.floor((today.getTime() - today.getTimezoneOffset() * 60000
         </div>
     );
     }
+
 

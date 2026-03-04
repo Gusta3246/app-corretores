@@ -108,7 +108,6 @@ export default function App() {
   const handleSendChatMessage = async () => {
     if (!chatInput.trim()) return;
 
-    // Guarda a mensagem do usuário e limpa o input
     const newUserMsg = { text: chatInput, isUser: true };
     setChatMessages((prev) => [...prev, newUserMsg]);
     const currentInput = chatInput;
@@ -116,7 +115,6 @@ export default function App() {
     setIsChatLoading(true);
 
     try {
-      // 🚀 TRUQUE MÁGICO: Tenta ler a chave de todas as formas possíveis no Vercel
       const apiKey = 
         (typeof process !== 'undefined' && process.env && process.env.REACT_APP_GEMINI_API_KEY) || 
         (typeof process !== 'undefined' && process.env && process.env.VITE_GEMINI_API_KEY) || 
@@ -124,42 +122,27 @@ export default function App() {
         (import.meta && import.meta.env && import.meta.env.REACT_APP_GEMINI_API_KEY);
 
       if (!apiKey) {
-        throw new Error("Chave da API não encontrada. Verifique se adicionou REACT_APP_GEMINI_API_KEY no Vercel.");
+        throw new Error("Chave da API não encontrada.");
       }
 
       const systemPrompt = "Você é um assistente virtual focado em ajudar corretores de imóveis da equipe 'Destemidos', que vendem imóveis da Direcional e Riva. Seja amigável e profissional.";
 
-      // 🚀 MODELO CORRETO: gemini-1.5-flash
       const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          contents: [
-            { role: "user", parts: [{ text: `${systemPrompt}\n\nPergunta do corretor: ${currentInput}` }] }
-          ]
+          contents: [{ role: "user", parts: [{ text: `${systemPrompt}\n\nPergunta: ${currentInput}` }] }]
         })
       });
 
-      if (!response.ok) {
-         const errorData = await response.json().catch(() => ({}));
-         console.error("Erro detalhado da API:", errorData);
-         throw new Error(`Ocorreu um erro na API do Google (Código ${response.status}). Veja o console (F12) para detalhes.`);
-      }
+      if (!response.ok) throw new Error(`Erro na API (${response.status})`);
 
       const data = await response.json();
-      const aiText = data.candidates?.[0]?.content?.parts?.[0]?.text || "Desculpe, não consegui formular uma resposta.";
-
+      const aiText = data.candidates?.[0]?.content?.parts?.[0]?.text || "Sem resposta.";
       setChatMessages((prev) => [...prev, { text: aiText, isUser: false }]);
 
     } catch (error) {
-      console.error("Erro no chat:", error);
-      setChatMessages((prev) => [...prev, { 
-        text: `⚠️ ${error.message}`, 
-        isUser: false, 
-        isError: true 
-      }]);
+      setChatMessages((prev) => [...prev, { text: `⚠️ ${error.message}`, isUser: false, isError: true }]);
     } finally {
       setIsChatLoading(false);
     }
@@ -650,6 +633,7 @@ export default function App() {
     </div>
   );
 }
+
 
 
 

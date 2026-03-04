@@ -265,7 +265,7 @@ export default function App() {
     setAiMessage('');
     setCopySuccess(false);
 
-    const apiKey = process.env.REACT_APP_GEMINI_API_KEY;
+    const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
     const prompt = `Você é um corretor de imóveis de alta performance da 'Equipe Águia' em Manaus, vendendo imóveis das construtoras Direcional e Riva. 
     Sua missão é escrever uma mensagem de WhatsApp altamente persuasiva, amigável e focada em conversão para enviar a um cliente.
     
@@ -1034,3 +1034,4 @@ export default function App() {
   );
 
 }
+

@@ -72,7 +72,6 @@ import React, { useState, useEffect, useRef } from 'react';
 // === IMAGENS DE EQUIPE (Muda Diariamente) ===
 const imagensEquipeDiarias = [
     "https://i.postimg.cc/tCc9D09Q/Copia-de-IMG-0779-(1).jpg",
-    "https://i.postimg.cc/pTMTZwYt/Copia-de-Image5.jpg",
     "https://i.postimg.cc/fLvwvJRq/Copia-de-IMG-1017.jpg",
     "https://i.postimg.cc/sXP20TwK/Copia-de-IMG-1504.jpg",
     "https://i.postimg.cc/KzhzN6r5/Copia-de-IMG-1515.jpg",
@@ -744,6 +743,7 @@ const dayIndex = Math.floor((today.getTime() - today.getTimezoneOffset() * 60000
         </div>
     );
     }
+
 
 
 

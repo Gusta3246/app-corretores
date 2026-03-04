@@ -81,14 +81,26 @@ import React, { useState, useEffect, useRef } from 'react';
     const [pitches, setPitches] = useState({});
 
     // === LÓGICA DE API DA IA (GEMINI) COM RETRY AUTOMÁTICO ===
-    const fetchWithRetry = async (url, options, maxRetries = 5) => {
+    const fetchWithRetry = async (url, options, maxRetries = 3) => {
         let delay = 1000;
         for (let i = 0; i < maxRetries; i++) {
             try {
                 const response = await fetch(url, options);
                 if (response.ok) return response;
+                
+                // Se a resposta NÃO for ok (ex: 403 Forbidden, 400 Bad Request)
+                const errorData = await response.json().catch(() => ({}));
+                const errorMessage = errorData.error?.message || `Erro do Google: ${response.status}`;
+                
+                // Se for erro de permissão ou chave, não tentamos de novo, paramos logo e mostramos o erro!
+                if (response.status >= 400 && response.status < 500) {
+                    throw new Error(errorMessage);
+                }
             } catch (error) {
-                if (i === maxRetries - 1) throw error;
+                // Se o erro já for a mensagem do Google, passamos para a frente
+                if (error.message.includes("API key") || i === maxRetries - 1) {
+                    throw error;
+                }
             }
             await new Promise(resolve => setTimeout(resolve, delay));
             delay *= 2;
@@ -106,6 +118,14 @@ import React, { useState, useEffect, useRef } from 'react';
         setIsChatLoading(true);
 
         const apiKey = process.env.REACT_APP_GEMINI_API_KEY;
+        
+        // Verificação imediata se a chave está a chegar do Vercel
+        if (!apiKey || apiKey === 'undefined') {
+            setChatMessages(prev => [...prev, { role: 'bot', content: "❌ ERRO DO VERCEL: A chave 'REACT_APP_GEMINI_API_KEY' está vazia. Verifique as Environment Variables." }]);
+            setIsChatLoading(false);
+            return;
+        }
+
         const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
 
         const systemPrompt = `Você é um assistente virtual especialista em vendas de imóveis da Direcional e Riva, exclusivo para corretores.
@@ -131,7 +151,9 @@ import React, { useState, useEffect, useRef } from 'react';
             const botResponse = data.candidates?.[0]?.content?.parts?.[0]?.text || "Desculpe, não consegui obter uma resposta.";
             setChatMessages(prev => [...prev, { role: 'bot', content: botResponse }]);
         } catch (error) {
-            setChatMessages(prev => [...prev, { role: 'bot', content: "⚠️ Erro de conexão com a IA. Tente novamente." }]);
+            console.error("Erro na API:", error);
+            // Agora a IA vai mostrar o ERRO REAL DO GOOGLE!
+            setChatMessages(prev => [...prev, { role: 'bot', content: `⚠️ ERRO: ${error.message}` }]);
         } finally {
             setIsChatLoading(false);
         }
@@ -141,6 +163,13 @@ import React, { useState, useEffect, useRef } from 'react';
     const generatePitch = async (revista) => {
         setGeneratingPitchId(revista.id);
         const apiKey = process.env.REACT_APP_GEMINI_API_KEY;
+        
+        if (!apiKey || apiKey === 'undefined') {
+            setPitches(prev => ({ ...prev, [revista.id]: "❌ Erro: Chave da API ausente." }));
+            setGeneratingPitchId(null);
+            return;
+        }
+
         const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
 
         const prompt = `Atue como um especialista em marketing imobiliário. Crie um argumento de venda rápido para o corretor usar com o cliente sobre o imóvel "${revista.title}".
@@ -159,7 +188,9 @@ import React, { useState, useEffect, useRef } from 'react';
             const text = data.candidates?.[0]?.content?.parts?.[0]?.text || "Erro ao gerar.";
             setPitches(prev => ({ ...prev, [revista.id]: text }));
         } catch (error) {
-            setPitches(prev => ({ ...prev, [revista.id]: "Falha na geração. Tente novamente." }));
+            console.error("Erro ao gerar pitch:", error);
+            // Mostrar o erro REAL do Google
+            setPitches(prev => ({ ...prev, [revista.id]: `⚠️ Falha: ${error.message}` }));
         } finally {
             setGeneratingPitchId(null);
         }
@@ -682,5 +713,3 @@ import React, { useState, useEffect, useRef } from 'react';
         </div>
     );
     }
-
-

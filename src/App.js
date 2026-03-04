@@ -1,24 +1,24 @@
 import React, { useState, useEffect, useRef } from 'react';
     import { Search, Building, ExternalLink, MapPin, BookOpen, Maximize, Bed, LayoutGrid, Rocket, Quote, Sparkles, ChevronDown, ChevronUp, FileText, TableProperties, BookMarked, HelpCircle, Calculator, Bot, X, Send, Wand2 } from 'lucide-react';
 
-    // === DADOS DAS REVISTAS ===
+    // === DADOS DAS REVISTAS E BASE DE CONHECIMENTO DO CHATBOT ===
     const revistasData = [
-    { id: 1, title: "Brisas do Horizonte", brand: "Direcional", region: "Coroado - Zona Leste", size: "43m² a 45m²", bedrooms: "2 quartos", flooring: "Todo o apê", cover: "https://www.direcional.com.br/wp-content/uploads/2025/06/Perspectiva-Guarita-BrisasdoHorizonte.jpg.webp", link: "https://drive.google.com/file/d/18IXtAt9PLVjIsk2PkXIHXnVCaduVkGu2/view?usp=drive_link" },
-    { id: 2, title: "Parque Ville Orquídea", brand: "Direcional", region: "Lago Azul - Zona Norte", size: "41m²", bedrooms: "2 quartos", flooring: "Todo o apê", cover: "https://www.direcional.com.br/wp-content/uploads/2024/05/Perspectiva_PARQUEVILLEORQUIDEA_GUARITA.jpg.webp", link: "https://drive.google.com/file/d/1F_BeT2jceDM8u4kCbSXN8kp2rk7boQTG/view?usp=drive_link" },
-    { id: 3, title: "Village Torres", brand: "Direcional", region: "Lago Azul - Zona Norte", size: "36m²", bedrooms: "2 quartos", flooring: "Cozinha, banheiro e lavatório", cover: "https://www.direcional.com.br/wp-content/uploads/2024/09/Perspectiva-Guarita-VillageTorres.jpg.webp", link: "https://drive.google.com/file/d/1blVconA5fjODxvXB7s8KT6dSlX8KpLLv/view?usp=drive_link" },
-    { id: 4, title: "Conquista Jardim Botânico", brand: "Direcional", region: "Nova Cidade - Zona Norte", size: "40m²", bedrooms: "2 quartos", flooring: "Cozinha, banheiro e lavatório", cover: "https://www.direcional.com.br/wp-content/uploads/2024/03/Conquista-Jardim-Botanico-Guarita.jpg.webp", link: "https://drive.google.com/file/d/1TYzIq8RuGORXfxQpH8CGZejTjF_GlUz0/view?usp=drive_link" },
-    { id: 5, title: "Viva Vida Coral", brand: "Direcional", region: "Colônia Terra Nova - Zona Norte", size: "41m² a 51m²", bedrooms: "2 quartos", flooring: "Cozinha, banheiro e lavatório", cover: "https://www.direcional.com.br/wp-content/uploads/2025/05/Perspectiva-Guarita-VivaVidaCoral.jpg.webp", link: "https://drive.google.com/file/d/1lYo3otquzwdnD0r5f6JobBbW-6KmGOF4/view?usp=drive_link" },
-    { id: 6, title: "Conquista Jardim Norte", brand: "Direcional", region: "Santa Etelvina - Zona Norte", size: "36m²", bedrooms: "2 quartos", flooring: "Cozinha, banheiro e lavatório", cover: "https://www.direcional.com.br/wp-content/uploads/2024/12/Perspectiva-Guarita-ConquistaJardimNorte.jpg.webp", link: "https://drive.google.com/file/d/1_Hyb72NWl1HjEiabKLL9m5ZMutHExesY/view?usp=drive_link" },
-    { id: 7, title: "Viva Vida Rio Amazonas", brand: "Direcional", region: "Tarumã - Zona Oeste", size: "36m²", bedrooms: "2 quartos", flooring: "Cozinha, banheiro e lavatório", cover: "https://www.direcional.com.br/wp-content/uploads/2023/07/Guarita-Viva-Vida-Rio-Amazonas-Direcional.jpg.webp", link: "https://drive.google.com/" },
-    { id: 8, title: "Bosque das Torres", brand: "Direcional", region: "Lago Azul - Zona Norte", size: "36m²", bedrooms: "2 quartos", flooring: "Cozinha, banheiro e lavatório", cover: "https://www.direcional.com.br/wp-content/uploads/2025/10/portaria-bosque-das-torres.jpg.webp", link: "https://drive.google.com/file/d/1lPnNQuxlPkKOcW2JqOB7KEWsaQVpZzcU/view?usp=drive_link" },
-    { id: 9, title: "Parque Ville Lírio Azul", brand: "Direcional", region: "Lago Azul - Zona Norte", size: "41m²", bedrooms: "2 quartos", flooring: "Cozinha, banheiro e lavatório", cover: "https://www.direcional.com.br/wp-content/uploads/2025/11/fachada-noturna-parque-ville-lirio-azul.jpg.webp", link: "https://drive.google.com/file/d/1fc7AXap6nhkpTlxONsm46WJCKxIWIhwe/view?usp=drive_link" },
-    { id: 10, title: "Amazon Boulevard Classic", brand: "Riva", region: "Bairro da Paz - Zona Centro-Oeste", size: "36m² a 48m²", bedrooms: "2 quartos", flooring: "Todo o apê", cover: "https://www.rivaincorporadora.com.br/wp-content/uploads/2023/11/fachada-noturna_amazon-boulevard-classic.jpg.webp", link: "https://drive.google.com/file/d/1ZX37T2S8FlHnSiO-yeAjlFyqq_5-dVzx/view?usp=drive_link" },
-    { id: 11, title: "Amazon Boulevard Prime", brand: "Riva", region: "Novo Israel - Zona Norte", size: "51m² a 70m²", bedrooms: "2 e 3 quartos", flooring: "Todo o apê", cover: "https://www.rivaincorporadora.com.br/wp-content/uploads/2025/06/guarita-Amazon-prime-boulevard-riva.jpg.webp", link: "https://drive.google.com/file/d/1aIuBlwLYGStUm7DNE3gCbfu3Ty2JmkGM/view?usp=drive_link" },
-    { id: 12, title: "Città Oasis Azzure", brand: "Riva", region: "Flores - Zona Centro-Sul", size: "48m² a 49m²", bedrooms: "2 e 3 quartos", flooring: "Todo o apê", cover: "https://www.rivaincorporadora.com.br/wp-content/uploads/2025/08/citta-azzure_GUARITA.jpg.webp", link: "https://drive.google.com/" },
-    { id: 13, title: "Zenith Condomínio Clube", brand: "Riva", region: "São Francisco - Zona Sul", size: "48m² a 49m²", bedrooms: "2 e 3 quartos", flooring: "Todo o apê", cover: "https://www.rivaincorporadora.com.br/wp-content/uploads/2024/08/Perspectiva-Guarita-ZenithCondominioClube.webp", link: "https://drive.google.com/file/d/1wv_v56T2ACEHtPZF-iRBvEWY2VVdUXxu/view?usp=drive_link" },
-    { id: 14, title: "Conquista Topázio", brand: "Direcional", region: "Colônia Terra Nova - Zona Norte", size: "41m² a 51m²", bedrooms: "1 e 2 quartos", flooring: "Todo o apê", cover: "https://www.direcional.com.br/wp-content/uploads/2023/04/Guarita-Conquista-Topazio-Direcional.jpg.webp", link: "https://drive.google.com/file/d/1SMIfr9HbfLd06UaDLKbMUxxtuh4cPPEM/view?usp=drive_link" },
-    { id: 16, title: "Conquista Rio Negro", brand: "Direcional", region: "Zona Oeste", size: "41m²", bedrooms: "2 quartos", flooring: "Todo o apê", cover: "https://www.direcional.com.br/wp-content/uploads/2022/11/Guarita-Conquista-Rio-Negro-Direcional.jpg.webp", link: "https://drive.google.com/file/d/1pHLQwUSn6BDMfLo7fFGonyyWlgtXwNmy/view?usp=drive_link" },
-    { id: 17, title: "Viva Vida Rio Tapajós", brand: "Direcional", region: "Tarumã - Zona Oeste", size: "36m²", bedrooms: "2 quartos", flooring: "Cozinha, banheiro e lavatório", cover: "https://www.direcional.com.br/wp-content/uploads/2025/02/Perspectiva-Guarita-VivaVidaRioTapajos.jpg.webp", link: "https://drive.google.com/file/d/1k3TOypf5bm_zXPfc-ulb7vY9e7MKxmlk/view?usp=drive_link" }
+    { id: 1, title: "Brisas do Horizonte", brand: "Direcional", region: "Coroado - Zona Leste", size: "43m² a 45m²", bedrooms: "2 quartos", flooring: "Todo o apê", cover: "https://www.direcional.com.br/wp-content/uploads/2025/06/Perspectiva-Guarita-BrisasdoHorizonte.jpg.webp", link: "https://drive.google.com/file/d/18IXtAt9PLVjIsk2PkXIHXnVCaduVkGu2/view?usp=drive_link", aliases: ["brisas", "brisas do horizonte", "horizonte"], pois: ["UFAM (Universidade Federal do Amazonas)", "INPA (Instituto Nacional de Pesquisas da Amazônia)", "Hospital Adventista de Manaus", "Sesi Clube", "Centro de Convenções Studio 5", "Distrito Industrial"] },
+    { id: 2, title: "Parque Ville Orquídea", brand: "Direcional", region: "Lago Azul - Zona Norte", size: "41m²", bedrooms: "2 quartos", flooring: "Todo o apê", cover: "https://www.direcional.com.br/wp-content/uploads/2024/05/Perspectiva_PARQUEVILLEORQUIDEA_GUARITA.jpg.webp", link: "https://drive.google.com/file/d/1F_BeT2jceDM8u4kCbSXN8kp2rk7boQTG/view?usp=drive_link", aliases: ["orquidea", "orquídea", "parque ville", "parque ville orquidea"], pois: ["Hospital Delphina Aziz", "Barreira da AM-010", "Supermercado DB Nova Cidade", "Sumaúma Park Shopping (principal da região)", "Supermercado Atack"] },
+    { id: 3, title: "Village Torres", brand: "Direcional", region: "Lago Azul - Zona Norte", size: "36m²", bedrooms: "2 quartos", flooring: "Cozinha, banheiro e lavatório", cover: "https://www.direcional.com.br/wp-content/uploads/2024/09/Perspectiva-Guarita-VillageTorres.jpg.webp", link: "https://drive.google.com/file/d/1blVconA5fjODxvXB7s8KT6dSlX8KpLLv/view?usp=drive_link", aliases: ["village", "village torres", "torres"], pois: ["Supermercado Nova Era", "Shopping Via Norte", "Sumaúma Park Shopping", "Atacadão"] },
+    { id: 4, title: "Conquista Jardim Botânico", brand: "Direcional", region: "Nova Cidade - Zona Norte", size: "40m²", bedrooms: "2 quartos", flooring: "Cozinha, banheiro e lavatório", cover: "https://www.direcional.com.br/wp-content/uploads/2024/03/Conquista-Jardim-Botanico-Guarita.jpg.webp", link: "https://drive.google.com/file/d/1TYzIq8RuGORXfxQpH8CGZejTjF_GlUz0/view?usp=drive_link", aliases: ["botanico", "botânico", "jardim botanico", "conquista jardim"], pois: ["MUSA (Museu da Amazônia / Jardim Botânico)", "Shopping Via Norte", "Supermercado DB Nova Cidade", "SPA Galiléia"] },
+    { id: 5, title: "Viva Vida Coral", brand: "Direcional", region: "Colônia Terra Nova - Zona Norte", size: "41m² a 51m²", bedrooms: "2 quartos", flooring: "Cozinha, banheiro e lavatório", cover: "https://www.direcional.com.br/wp-content/uploads/2025/05/Perspectiva-Guarita-VivaVidaCoral.jpg.webp", link: "https://drive.google.com/file/d/1lYo3otquzwdnD0r5f6JobBbW-6KmGOF4/view?usp=drive_link", aliases: ["coral", "viva vida coral", "viva vida"], pois: ["Shopping Via Norte", "Loja Havan", "Atacadão", "Hospital Delphina Aziz", "Posto Atem (famoso na entrada do bairro)"] },
+    { id: 6, title: "Conquista Jardim Norte", brand: "Direcional", region: "Santa Etelvina - Zona Norte", size: "36m²", bedrooms: "2 quartos", flooring: "Cozinha, banheiro e lavatório", cover: "https://www.direcional.com.br/wp-content/uploads/2024/12/Perspectiva-Guarita-ConquistaJardimNorte.jpg.webp", link: "https://drive.google.com/file/d/1_Hyb72NWl1HjEiabKLL9m5ZMutHExesY/view?usp=drive_link", aliases: ["jardim norte", "santa etelvina", "conquista norte"], pois: ["Hospital Delphina Aziz", "Atacadão (Torquato Tapajós)", "Shopping Via Norte", "Centro de Treinamento do Manaus FC"] },
+    { id: 7, title: "Viva Vida Rio Amazonas", brand: "Direcional", region: "Tarumã - Zona Oeste", size: "36m²", bedrooms: "2 quartos", flooring: "Cozinha, banheiro e lavatório", cover: "https://www.direcional.com.br/wp-content/uploads/2023/07/Guarita-Viva-Vida-Rio-Amazonas-Direcional.jpg.webp", link: "https://drive.google.com/", aliases: ["amazonas", "rio amazonas", "viva vida rio amazonas"], pois: ["Aeroporto Internacional Eduardo Gomes", "Orla da Ponta Negra", "Sivam (Sistema de Vigilância da Amazônia)", "Sipam", "Supermercado Veneza"] },
+    { id: 8, title: "Bosque das Torres", brand: "Direcional", region: "Lago Azul - Zona Norte", size: "36m²", bedrooms: "2 quartos", flooring: "Cozinha, banheiro e lavatório", cover: "https://www.direcional.com.br/wp-content/uploads/2025/10/portaria-bosque-das-torres.jpg.webp", link: "https://drive.google.com/file/d/1lPnNQuxlPkKOcW2JqOB7KEWsaQVpZzcU/view?usp=drive_link", aliases: ["bosque", "bosque das torres"], pois: ["Supermercado Nova Era (Torres)", "Sumaúma Park Shopping", "Parque do Mindu", "Faculdade Estácio (polo próximo)"] },
+    { id: 9, title: "Parque Ville Lírio Azul", brand: "Direcional", region: "Lago Azul - Zona Norte", size: "41m²", bedrooms: "2 quartos", flooring: "Cozinha, banheiro e lavatório", cover: "https://www.direcional.com.br/wp-content/uploads/2025/11/fachada-noturna-parque-ville-lirio-azul.jpg.webp", link: "https://drive.google.com/file/d/1fc7AXap6nhkpTlxONsm46WJCKxIWIhwe/view?usp=drive_link", aliases: ["lirio", "lírio", "lirio azul", "parque ville lirio"], pois: ["Hospital Delphina Aziz", "Barreira de Fiscalização Rodoviária", "Supermercado DB Nova Cidade", "Posto Equador (referência local)"] },
+    { id: 10, title: "Amazon Boulevard Classic", brand: "Riva", region: "Bairro da Paz - Zona Centro-Oeste", size: "44m² a 69,78m²", bedrooms: "2 quartos", flooring: "Todo o apê", cover: "https://www.rivaincorporadora.com.br/wp-content/uploads/2023/11/fachada-noturna_amazon-boulevard-classic.jpg.webp", link: "https://drive.google.com/file/d/1ZX37T2S8FlHnSiO-yeAjlFyqq_5-dVzx/view?usp=drive_link", aliases: ["classic", "amazon boulevard", "boulevard", "boulevard classic"], pois: ["Arena da Amazônia", "Amazonas Shopping", "Carrefour Hipermercado", "UNIP (Universidade Paulista)", "Terminal Rodoviário de Manaus", "Hospital Tropical (Fundação de Medicina Tropical)"] },
+    { id: 11, title: "Amazon Boulevard Prime", brand: "Riva", region: "Bairro da Paz - Zona Centro-Oeste", size: "51m² a 90,39m²", bedrooms: "2 e 3 quartos", flooring: "Todo o apê", cover: "https://www.rivaincorporadora.com.br/wp-content/uploads/2025/06/guarita-Amazon-prime-boulevard-riva.jpg.webp", link: "https://drive.google.com/file/d/1aIuBlwLYGStUm7DNE3gCbfu3Ty2JmkGM/view?usp=drive_link", aliases: ["prime", "amazon prime", "boulevard prime"], pois: ["Clube Municipal (ao lado)", "Arena da Amazônia", "Vila Olímpica", "Hospital de Sangue (Hemoam)", "acesso rápido ao Shopping Millennium"] },
+    { id: 12, title: "Città Oasis Azzure", brand: "Riva", region: "Flores - Zona Centro-Sul", size: "48m² a 75m²", bedrooms: "2 e 3 quartos", flooring: "Todo o apê", cover: "https://www.rivaincorporadora.com.br/wp-content/uploads/2025/08/citta-azzure_GUARITA.jpg.webp", link: "https://drive.google.com/file/d/1Y-fT6UbQ-OopqVaV0POgHRIdlayMXMOB/view?usp=sharing", aliases: ["citta", "città", "azzure", "oasis", "oasis azzure"], pois: ["Universidade Nilton Lins", "Sollarium Mall", "Supermercado Atack (Laranjeiras)", "Praça de Alimentação do Parque das Laranjeiras", "Singular Educacional"] },
+    { id: 13, title: "Zenith Condomínio Clube", brand: "Riva", region: "São Francisco - Zona Sul", size: "48m² a 49m²", bedrooms: "2 e 3 quartos", flooring: "Todo o apê", cover: "https://www.rivaincorporadora.com.br/wp-content/uploads/2024/08/Perspectiva-Guarita-ZenithCondominioClube.webp", link: "https://drive.google.com/file/d/1wv_v56T2ACEHtPZF-iRBvEWY2VVdUXxu/view?usp=drive_link", aliases: ["zenith", "zenith condominio"], pois: ["Manauara Shopping", "Fórum Ministro Henoch Reis", "Tribunal de Justiça (TJ-AM)", "Hospital Check Up", "Colégio Martha Falcão", "Faculdade Martha Falcão", "Faculdade Estácio"] },
+    { id: 14, title: "Conquista Topázio", brand: "Direcional", region: "Colônia Terra Nova - Zona Norte", size: "41m² a 51m²", bedrooms: "1 e 2 quartos", flooring: "Todo o apê", cover: "https://www.direcional.com.br/wp-content/uploads/2023/04/Guarita-Conquista-Topazio-Direcional.jpg.webp", link: "https://drive.google.com/file/d/1SMIfr9HbfLd06UaDLKbMUxxtuh4cPPEM/view?usp=drive_link", aliases: ["topazio", "topázio", "conquista topazio"], pois: ["Shopping Via Norte", "Atacadão", "Loja Havan", "SPA da Colônia Terra Nova"] },
+    { id: 16, title: "Conquista Rio Negro", brand: "Direcional", region: "Ponta Negra - Zona Oeste", size: "41m²", bedrooms: "2 quartos", flooring: "Todo o apê", cover: "https://www.direcional.com.br/wp-content/uploads/2022/11/Guarita-Conquista-Rio-Negro-Direcional.jpg.webp", link: "https://drive.google.com/file/d/1pHLQwUSn6BDMfLo7fFGonyyWlgtXwNmy/view?usp=drive_link", aliases: ["negro", "rio negro", "conquista rio negro"], pois: ["Ponte Rio Negro", "Orla da Ponta Negra", "Shopping Ponta Negra", "Sede do Governo do Amazonas", "Comando Militar da Amazônia (CMA)"] },
+    { id: 17, title: "Viva Vida Rio Tapajós", brand: "Direcional", region: "Tarumã - Zona Oeste", size: "36m²", bedrooms: "2 quartos", flooring: "Cozinha, banheiro e lavatório", cover: "https://www.direcional.com.br/wp-content/uploads/2025/02/Perspectiva-Guarita-VivaVidaRioTapajos.jpg.webp", link: "https://drive.google.com/file/d/1k3TOypf5bm_zXPfc-ulb7vY9e7MKxmlk/view?usp=drive_link", aliases: ["tapajos", "tapajós", "rio tapajos", "viva vida rio tapajos"], pois: ["Aeroporto Internacional de Manaus", "Tarumã (área de balneários famosos)", "Sivam", "proximidade com a entrada da Ponta Negra"] }
     ];
 
     // === DADOS DE UTILITÁRIOS ===
@@ -59,57 +59,109 @@ import React, { useState, useEffect, useRef } from 'react';
     "https://images.unsplash.com/photo-1521737852567-6949f3f9f2b5?q=80&w=1147&auto=format&fit=crop"
     ];
 
+    // Cálculos para manter a mesma imagem e frase durante todo o dia
+    const today = new Date();
+    const dayIndex = Math.floor((today.getTime() - today.getTimezoneOffset() * 60000) / (1000 * 60 * 60 * 24));
+
     export default function App() {
     const [searchTerm, setSearchTerm] = useState('');
     const [activeBrand, setActiveBrand] = useState('Direcional'); // Tabs: Direcional, Riva, Utilitarios, Guia
-    const [fraseDoDia, setFraseDoDia] = useState(frasesMotivacionais[0]);
-    const [imagemDoDia, setImagemDoDia] = useState(imagensEquipeDiarias[0]);
+    const [fraseDoDia] = useState(frasesMotivacionais[dayIndex % frasesMotivacionais.length]);
+    const [imagemDoDia] = useState(imagensEquipeDiarias[dayIndex % imagensEquipeDiarias.length]);
     
-    // Estados para a aba Guia
+    // Estados para a aba Guia e Modal de POIs
     const [openGuiaIndex, setOpenGuiaIndex] = useState(null);
+    const [selectedPois, setSelectedPois] = useState(null);
 
-    // === ESTADOS DA IA (GEMINI) ===
+    // === ESTADOS DA IA OFFLINE ===
     const [isChatOpen, setIsChatOpen] = useState(false);
     const [chatMessages, setChatMessages] = useState([
-        { role: 'bot', content: 'Olá! Sou a IA de apoio aos Destemidos. Como o posso ajudar hoje com detalhes de imóveis ou regras?' }
+        { role: 'bot', content: 'Olá, Destemido! Sou a IA de apoio ao Corretor. Posso ajudar com detalhes dos imóveis da Direcional e Riva, pontos de referência ou links de revistas. Como posso ajudar seu cliente hoje?' }
     ]);
     const [chatInput, setChatInput] = useState("");
     const [isChatLoading, setIsChatLoading] = useState(false);
     const messagesEndRef = useRef(null);
 
-    const [generatingPitchId, setGeneratingPitchId] = useState(null);
-    const [pitches, setPitches] = useState({});
-
-    // === LÓGICA DE API DA IA (GEMINI) COM RETRY AUTOMÁTICO ===
-    const fetchWithRetry = async (url, options, maxRetries = 3) => {
-        let delay = 1000;
-        for (let i = 0; i < maxRetries; i++) {
-            try {
-                const response = await fetch(url, options);
-                if (response.ok) return response;
-                
-                // Se a resposta NÃO for ok (ex: 403 Forbidden, 400 Bad Request)
-                const errorData = await response.json().catch(() => ({}));
-                const errorMessage = errorData.error?.message || `Erro do Google: ${response.status}`;
-                
-                // Se for erro de permissão ou chave, não tentamos de novo, paramos logo e mostramos o erro!
-                if (response.status >= 400 && response.status < 500) {
-                    throw new Error(errorMessage);
-                }
-            } catch (error) {
-                // Se o erro já for a mensagem do Google, passamos para a frente
-                if (error.message.includes("API key") || i === maxRetries - 1) {
-                    throw error;
-                }
-            }
-            await new Promise(resolve => setTimeout(resolve, delay));
-            delay *= 2;
-        }
-        throw new Error("Falha após várias tentativas de comunicação com a API.");
+    // === LÓGICA DE PROCESSAMENTO DE LINGUAGEM NATURAL (OFFLINE) ===
+    const normalizeString = (str) => {
+        return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
     };
 
-    // Função 1: Enviar mensagem no Chat
-    const handleSendChatMessage = async () => {
+    const processChatMessage = (inputMsg) => {
+        const input = normalizeString(inputMsg);
+        let matchedProperties = [];
+
+        // 1. Detectar propriedades específicas por apelidos/chaves
+        revistasData.forEach(prop => {
+            if (prop.aliases.some(alias => input.includes(normalizeString(alias)))) {
+                if (!matchedProperties.some(p => p.id === prop.id)) {
+                    matchedProperties.push(prop);
+                }
+            }
+        });
+
+        // 2. Se não encontrou nome específico, procurar por região
+        if (matchedProperties.length === 0) {
+            const regions = ["zona leste", "zona norte", "zona oeste", "zona sul", "centro-sul", "centro-oeste", "taruma", "flores", "coroado"];
+            let detectedRegion = regions.find(r => input.includes(r));
+            
+            if (detectedRegion) {
+                // Mapear termos normalizados para a região real cadastrada
+                matchedProperties = revistasData.filter(p => normalizeString(p.region).includes(detectedRegion));
+            }
+        }
+
+        // 3. Identificar se o corretor quer a revista/link
+        const wantsMagazine = ["revista", "pdf", "link", "material", "apresentacao", "enviar", "mande", "mandar", "baixe", "baixar"].some(w => input.includes(w));
+        const wantsPois = ["referencia", "referência", "perto", "proximo", "próximo", "localizacao", "localização", "onde fica"].some(w => input.includes(w));
+
+        // 4. Formular a Resposta
+        let botResponse = "";
+
+        if (matchedProperties.length > 0) {
+            if (matchedProperties.length === 1) {
+                const p = matchedProperties[0];
+                
+                if (wantsPois) {
+                    botResponse = `O **${p.title}** fica super bem localizado na região de ${p.region}.\n\n📍 **Principais Pontos de Referência:**\n`;
+                    p.pois.forEach(poi => botResponse += `• ${poi}\n`);
+                    botResponse += `\nQuer que eu te mande a revista dele para mostrar pro cliente?`;
+                } else {
+                    botResponse = `Entendi! Você está falando do **${p.title}** (${p.brand}).\n\n📍 **Onde Fica:** ${p.region}\n📏 **Planta:** ${p.size} com ${p.bedrooms}\n🏢 **Referências próximas:** ${p.pois.slice(0, 3).join(', ')}.\n\n`;
+                    
+                    if (wantsMagazine || input.includes("revista")) {
+                        botResponse += `Aqui está a revista em PDF que você pediu: [Acessar Material do ${p.title}](${p.link})`;
+                    } else {
+                        botResponse += `Se o cliente se interessar, posso te enviar o link da revista PDF ou detalhar os pontos de referência. É só pedir!`;
+                    }
+                }
+            } else {
+                botResponse = `Legal! Encontrei ${matchedProperties.length} opções que combinam com o que o seu cliente procura:\n\n`;
+                matchedProperties.forEach(p => {
+                    botResponse += `🔹 **${p.title}** (${p.region}) - ${p.size} (${p.brand})\n`;
+                    if(wantsMagazine) botResponse += `  🔗 [Baixar Revista PDF](${p.link})\n`;
+                });
+                
+                if (!wantsMagazine) botResponse += `\nQuer que eu envie o PDF de algum desses para você mandar pro cliente?`;
+            }
+        } else {
+            // Fallbacks e perguntas genéricas
+            if (input.includes("ola") || input.includes("bom dia") || input.includes("boa tarde") || input.includes("boa noite")) {
+                botResponse = "Olá, bora vender muito! 🚀 O que o seu cliente está procurando hoje? Pode me dar dicas como 'apê na zona leste' ou o nome de um empreendimento como 'Brisas' ou 'Zenith'.";
+            } else if (input.includes("financiamento") || input.includes("renda") || input.includes("mcmv") || input.includes("codigo")) {
+                botResponse = "Para dúvidas sobre faixas de renda e códigos do Minha Casa Minha Vida, dá uma olhadinha na nossa aba **GUIA** ali no menu principal! Lá tem os códigos certinhos (ex: Faixa 1 é 3280).";
+            } else if (input.includes("amml") || input.includes("amazonas meu lar")) {
+                botResponse = "Para o Amazonas Meu Lar, você pode encontrar os modelos de declarações e documentos necessários na aba **UTILITÁRIOS**. Temos a Declaração de Tempo de Residência e Estado Civil lá.";
+            } else {
+                botResponse = "Poxa, não consegui identificar um empreendimento específico ou região nessa mensagem. 😅 \n\nVocê pode se expressar como: 'Meu cliente quer um apartamento na zona norte' ou 'Me manda a revista do Lírio Azul'. Pode tentar de novo?";
+            }
+        }
+
+        return botResponse;
+    };
+
+    // Função 1: Enviar mensagem no Chat (Offline)
+    const handleSendChatMessage = () => {
         if (!chatInput.trim() || isChatLoading) return;
 
         const userMessage = chatInput;
@@ -117,113 +169,37 @@ import React, { useState, useEffect, useRef } from 'react';
         setChatMessages(prev => [...prev, { role: 'user', content: userMessage }]);
         setIsChatLoading(true);
 
-        const apiKey = process.env.REACT_APP_GEMINI_API_KEY;
-        
-        // Verificação imediata se a chave está a chegar do Vercel
-        if (!apiKey || apiKey === 'undefined') {
-            setChatMessages(prev => [...prev, { role: 'bot', content: "❌ ERRO DO VERCEL: A chave 'REACT_APP_GEMINI_API_KEY' está vazia. Verifique as Environment Variables." }]);
+        // Simulando um tempo de digitação natural da IA (500ms a 1500ms)
+        setTimeout(() => {
+            const responseText = processChatMessage(userMessage);
+            setChatMessages(prev => [...prev, { role: 'bot', content: responseText }]);
             setIsChatLoading(false);
-            return;
-        }
-
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
-
-        const systemPrompt = `Você é um assistente virtual especialista em vendas de imóveis da Direcional e Riva, exclusivo para corretores.
-        Responda em português. Use estes dados do catálogo para responder: ${JSON.stringify(revistasData)}.
-        Seja prestativo, dê respostas curtas e focadas nas dúvidas do corretor.`;
-
-        const formattedContents = chatMessages.slice(1).map(msg => ({
-            role: msg.role === 'user' ? 'user' : 'model',
-            parts: [{ text: msg.content }]
-        }));
-        formattedContents.push({ role: 'user', parts: [{ text: userMessage }] });
-
-        try {
-            const response = await fetchWithRetry(url, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    contents: formattedContents,
-                    systemInstruction: { parts: [{ text: systemPrompt }] }
-                })
-            });
-            const data = await response.json();
-            const botResponse = data.candidates?.[0]?.content?.parts?.[0]?.text || "Desculpe, não consegui obter uma resposta.";
-            setChatMessages(prev => [...prev, { role: 'bot', content: botResponse }]);
-        } catch (error) {
-            console.error("Erro na API:", error);
-            // Agora a IA vai mostrar o ERRO REAL DO GOOGLE!
-            setChatMessages(prev => [...prev, { role: 'bot', content: `⚠️ ERRO: ${error.message}` }]);
-        } finally {
-            setIsChatLoading(false);
-        }
+        }, 800 + Math.random() * 700);
     };
 
-    // Função 2: Gerar Argumento de Venda (Pitch)
-    const generatePitch = async (revista) => {
-        setGeneratingPitchId(revista.id);
-        const apiKey = process.env.REACT_APP_GEMINI_API_KEY;
-        
-        if (!apiKey || apiKey === 'undefined') {
-            setPitches(prev => ({ ...prev, [revista.id]: "❌ Erro: Chave da API ausente." }));
-            setGeneratingPitchId(null);
-            return;
+    // Função Auxiliar para renderizar Links de Markdown [Texto](url) nas mensagens do chat
+    const renderChatMessage = (text) => {
+        const parts = text.split(/\[([^\]]+)\]\(([^)]+)\)/g);
+        if (parts.length === 1) return <span className="whitespace-pre-wrap">{text}</span>;
+
+        const result = [];
+        for (let i = 0; i < parts.length; i += 3) {
+            if (parts[i]) result.push(<span key={`text-${i}`} className="whitespace-pre-wrap">{parts[i]}</span>);
+            if (i + 1 < parts.length) {
+                result.push(
+                    <a key={`link-${i}`} href={parts[i+2]} target="_blank" rel="noopener noreferrer" className="font-bold underline text-blue-600 hover:text-blue-800 transition-colors inline-flex items-center gap-1">
+                        {parts[i+1]} <ExternalLink size={14} className="inline" />
+                    </a>
+                );
+            }
         }
-
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
-
-        const prompt = `Atue como um especialista em marketing imobiliário. Crie um argumento de venda rápido para o corretor usar com o cliente sobre o imóvel "${revista.title}".
-        Região: ${revista.region}. Tamanho: ${revista.size}.
-        Forneça exatamente 3 pontos de destaque (bullet points) usando emojis. Seja super conciso e persuasivo. Não inclua textos introdutórios ou conclusões, apenas os 3 tópicos.`;
-
-        try {
-            const response = await fetchWithRetry(url, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    contents: [{ role: 'user', parts: [{ text: prompt }] }]
-                })
-            });
-            const data = await response.json();
-            const text = data.candidates?.[0]?.content?.parts?.[0]?.text || "Erro ao gerar.";
-            setPitches(prev => ({ ...prev, [revista.id]: text }));
-        } catch (error) {
-            console.error("Erro ao gerar pitch:", error);
-            // Mostrar o erro REAL do Google
-            setPitches(prev => ({ ...prev, [revista.id]: `⚠️ Falha: ${error.message}` }));
-        } finally {
-            setGeneratingPitchId(null);
-        }
+        return result;
     };
 
     // Auto-scroll para o Chat
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }, [chatMessages, isChatOpen]);
-
-
-    useEffect(() => {
-        // Inicializa com uma imagem e frase aleatórias
-        const randomIndex = Math.floor(Math.random() * imagensEquipeDiarias.length);
-        setImagemDoDia(imagensEquipeDiarias[randomIndex]);
-        setFraseDoDia(frasesMotivacionais[randomIndex % frasesMotivacionais.length]);
-
-        // Configura o intervalo para trocar de foto e frase a cada 6 segundos
-        const interval = setInterval(() => {
-        setImagemDoDia(prev => {
-            const currIdx = imagensEquipeDiarias.indexOf(prev);
-            const nextIdx = (currIdx + 1) % imagensEquipeDiarias.length;
-            return imagensEquipeDiarias[nextIdx];
-        });
-        setFraseDoDia(prev => {
-            const currIdx = frasesMotivacionais.indexOf(prev);
-            const nextIdx = (currIdx + 1) % frasesMotivacionais.length;
-            return frasesMotivacionais[nextIdx];
-        });
-        }, 6000);
-
-        return () => clearInterval(interval);
-    }, []);
 
     const filteredRevistas = revistasData.filter(revista => {
         const matchesSearch = revista.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
@@ -442,24 +418,6 @@ import React, { useState, useEffect, useRef } from 'react';
                             </div>
                         </div>
 
-                        {/* --- INTEGRAÇÃO IA: GERADOR DE PITCH --- */}
-                        <div className="mb-6 bg-slate-50/80 p-3 rounded-xl border border-slate-100">
-                            <button 
-                                onClick={() => generatePitch(revista)} 
-                                disabled={generatingPitchId === revista.id}
-                                className="w-full text-sm font-bold text-blue-600 flex items-center justify-center gap-2 hover:text-blue-700 transition-colors disabled:opacity-50"
-                            >
-                                <Wand2 size={16} className={generatingPitchId === revista.id ? 'animate-spin' : ''} />
-                                {generatingPitchId === revista.id ? 'A gerar magia...' : '✨ Gerar Pitch de Venda'}
-                            </button>
-                            
-                            {pitches[revista.id] && (
-                                <div className="mt-3 text-sm text-slate-700 whitespace-pre-wrap leading-relaxed border-t border-slate-200 pt-3">
-                                    {pitches[revista.id]}
-                                </div>
-                            )}
-                        </div>
-
                         <div className="mt-auto flex flex-col gap-2">
                             <a 
                             href={revista.link} 
@@ -472,6 +430,14 @@ import React, { useState, useEffect, useRef } from 'react';
                             Acessar Revista (PDF)
                             <ExternalLink size={18} />
                             </a>
+                            
+                            <button
+                                onClick={() => setSelectedPois(revista)}
+                                className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg font-semibold transition-colors duration-200 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm border border-slate-200"
+                            >
+                                <MapPin size={16} className="text-rose-500" />
+                                Ver Pontos de Referência
+                            </button>
                         </div>
                         </div>
                     </div>
@@ -633,6 +599,40 @@ import React, { useState, useEffect, useRef } from 'react';
 
         </main>
 
+        {/* --- MODAL PONTOS DE REFERÊNCIA --- */}
+        {selectedPois && (
+            <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setSelectedPois(null)}>
+                <div className="bg-white rounded-2xl w-full max-w-md overflow-hidden shadow-2xl transform transition-all" onClick={e => e.stopPropagation()}>
+                    <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+                        <h3 className="font-bold text-slate-800 flex items-center gap-2">
+                            <MapPin className="text-rose-500" size={20} />
+                            Pontos de Referência
+                        </h3>
+                        <button onClick={() => setSelectedPois(null)} className="text-slate-400 hover:text-slate-600 transition-colors p-1 rounded-full hover:bg-slate-200">
+                            <X size={20} />
+                        </button>
+                    </div>
+                    <div className="p-6">
+                        <h4 className="font-bold text-lg mb-4 text-slate-800 border-b border-slate-100 pb-2">{selectedPois.title}</h4>
+                        <ul className="space-y-3">
+                            {selectedPois.pois.map((poi, idx) => (
+                                <li key={idx} className="flex items-start gap-3 text-slate-600 text-sm leading-relaxed">
+                                    <div className="w-2 h-2 rounded-full bg-rose-500 mt-1.5 shrink-0 shadow-sm"></div>
+                                    <span className="font-medium">{poi}</span>
+                                </li>
+                            ))}
+                        </ul>
+                        <button 
+                            onClick={() => setSelectedPois(null)}
+                            className="w-full mt-6 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-lg transition-colors text-sm"
+                        >
+                            Fechar
+                        </button>
+                    </div>
+                </div>
+            </div>
+        )}
+
         {/* --- INTEGRAÇÃO IA: CHATBOT DO CORRETOR --- */}
         <button
             onClick={() => setIsChatOpen(true)}
@@ -672,7 +672,7 @@ import React, { useState, useEffect, useRef } from 'react';
                             ? 'bg-blue-600 text-white rounded-tr-sm' 
                             : 'bg-white border border-slate-200 text-slate-700 rounded-tl-sm'
                         }`}>
-                            {msg.content}
+                            {msg.role === 'bot' ? renderChatMessage(msg.content) : msg.content}
                         </div>
                     </div>
                 ))}
@@ -713,5 +713,3 @@ import React, { useState, useEffect, useRef } from 'react';
         </div>
     );
     }
-
-

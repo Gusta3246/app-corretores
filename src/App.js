@@ -35,7 +35,7 @@ import React, { useState, useEffect, useRef } from 'react';
     { title: "AMML - DECLA. ESTADO CIVIL", link: "https://drive.google.com/file/d/1f5aC4XStNfCKuu6NK2_EetP2DHpbF_0p/view?usp=sharing" }
     ];
 
-    // === FRASES MOTIVACIONAIS DIÁRIAS ===
+   // === FRASES MOTIVACIONAIS DIÁRIAS ===
     const frasesMotivacionais = [
     { texto: "O sucesso é a soma de pequenos esforços repetidos dia após dia.", autor: "Robert Collier" },
     { texto: "Não vendemos apenas imóveis, nós entregamos as chaves para novos sonhos e recomeços.", autor: "Equipe Destemidos" },
@@ -46,22 +46,53 @@ import React, { useState, useEffect, useRef } from 'react';
     { texto: "O 'não' você já tem. O 'sim' está na próxima ligação, na próxima visita, no próximo cliente.", autor: "Sabedoria de Vendas" },
     { texto: "Vender é construir uma ponte de confiança entre a necessidade do cliente e a solução que você oferece.", autor: "Equipe Destemidos" },
     { texto: "A sorte acompanha quem trabalha duro. Que hoje seja um dia de muitos fechamentos!", autor: "Motivação Destemidos" },
-    { texto: "Corretor de sucesso é aquele que escuta mais do que fala e resolve mais do que promete.", autor: "Anônimo" }
+    { texto: "Corretor de sucesso é aquele que escuta mais do que fala e resolve mais do que promete.", autor: "Anônimo" },
+    { texto: "Cada 'não' recebido é um degrau a mais na escada que leva ao seu próximo 'sim'.", autor: "Sabedoria de Vendas" },
+    { texto: "Não se trata apenas de vender uma casa, mas de apresentar o palco onde a vida do cliente vai acontecer.", autor: "Equipe Destemidos" },
+    { texto: "O melhor corretor não é aquele que mais fala, mas aquele que faz as melhores perguntas.", autor: "Jeffrey Gitomer" },
+    { texto: "A excelência em vendas não é um ato isolado, é um hábito construído a cada novo atendimento.", autor: "Aristóteles (Adaptado)" },
+    { texto: "Transformar dúvidas em certezas é a verdadeira arte de quem vende com propósito.", autor: "Motivação Destemidos" },
+    { texto: "As pessoas compram confiança antes de comprarem tijolos e cimento.", autor: "Anônimo" },
+    { texto: "A sua energia de hoje determina a sua comissão de amanhã. Vá com tudo!", autor: "Motivação Destemidos" },
+    { texto: "Nenhum obstáculo é grande demais quando a vontade de bater a meta é inabalável.", autor: "Equipe Destemidos" },
+    { texto: "Foque em ajudar o seu cliente a realizar um sonho, e a venda será a consequência natural.", autor: "Sabedoria de Vendas" },
+    { texto: "Grandes resultados exigem grandes dedicações. Dê o seu melhor em cada visita de hoje.", autor: "Motivação Destemidos" },
+    { texto: "Para ser um corretor de sucesso, apaixone-se por resolver o problema do seu cliente.", autor: "Equipe Destemidos" },
+    { texto: "A motivação nos faz começar o mês, mas é a disciplina nos atendimentos que nos faz fechar contratos.", autor: "Jim Rohn (Adaptado)" },
+    { texto: "Todo campeão de vendas começou apenas com a coragem de pegar o telefone e tentar.", autor: "Anônimo" },
+    { texto: "Mostre o valor antes de falar o preço, e veja a mágica da negociação acontecer.", autor: "Sabedoria de Vendas" },
+    { texto: "O seu entusiasmo é contagiante. Vista o seu melhor sorriso e vá fechar negócios!", autor: "Motivação Destemidos" },
+    { texto: "Não existe cliente impossível, existe cliente que ainda não compreendeu o valor da sua oferta.", autor: "Equipe Destemidos" },
+    { texto: "Acredite no projeto que você está apresentando e o cliente acreditará em você.", autor: "Sabedoria de Vendas" },
+    { texto: "Comemore cada pequeno avanço. Uma assinatura de contrato sempre começa com um bom 'bom dia'.", autor: "Motivação Destemidos" },
+    { texto: "A diferença entre o corretor mediano e o de excelência está na atenção aos detalhes e ao cliente.", autor: "Equipe Destemidos" },
+    { texto: "Nosso trabalho é transformar alicerces e plantas arquitetônicas em lares inesquecíveis.", autor: "Anônimo" },
+    { texto: "Faça de cada atendimento uma obra-prima. O seu sucesso é a sua principal assinatura.", autor: "Motivação Destemidos" }
     ];
+// === IMAGENS DE EQUIPE (Muda Diariamente) ===
+const imagensEquipeDiarias = [
+    "https://i.postimg.cc/XZx4NDz2/Copia-de-Image5.jpg",
+    "https://i.postimg.cc/CzjyLQZm/Copia-de-IMG-0779-(1).jpg",
+    "https://i.postimg.cc/LYnK94fj/Copia-de-IMG-1017.jpg",
+    "https://i.postimg.cc/r0mcDN6t/Copia-de-IMG-1504.jpg",
+    "https://i.postimg.cc/t1DpRmc1/Copia-de-IMG-1515.jpg",
+    "https://i.postimg.cc/5H9WrS2G/Copia-de-IMG-2336.jpg",
+    "https://i.postimg.cc/Y4ttHwby/Copia-de-IMG-2830.jpg",
+    "https://i.postimg.cc/t199jH21/Copia-de-IMG-3048.jpg",
+    "https://i.postimg.cc/JyRRLWPD/Copia-de-IMG-3049.jpg",
+    "https://i.postimg.cc/Xrfnmvcf/Copia-de-IMG-3054.jpg",
+    "https://i.postimg.cc/HrwTRL48/Copia-de-IMG-3117.jpg",
+    "https://i.postimg.cc/9DdcKfth/Copia-de-IMG-5622-(1).jpg",
+    "https://i.postimg.cc/5YRJLQ1p/Copia-de-IMG-9369.jpg",
+    "https://i.postimg.cc/sQqFvF9L/Copia-de-IMG-9585.jpg",
+    "https://i.postimg.cc/cgryx1Yw/Copia-de-IMG-9643.jpg",
+    "https://i.postimg.cc/1nfhmR6X/Copia-de-IMG-9690.jpg",
+    "https://i.postimg.cc/JtsMmx54/Copia-de-IMG-9919.avif"
+];
 
-    // === IMAGENS DE EQUIPE (Muda Diariamente) ===
-    const imagensEquipeDiarias = [
-    "https://classic.exame.com/wp-content/uploads/2025/06/Riva6.jpg",
-    "https://images.unsplash.com/photo-1542744173-8e7e53415bb0?q=80&w=1170&auto=format&fit=crop",
-    "https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?q=80&w=1170&auto=format&fit=crop",
-    "https://images.unsplash.com/photo-1568992687947-868a62a9f521?q=80&w=1332&auto=format&fit=crop",
-    "https://images.unsplash.com/photo-1557804506-669a67965ba0?q=80&w=1074&auto=format&fit=crop",
-    "https://images.unsplash.com/photo-1521737852567-6949f3f9f2b5?q=80&w=1147&auto=format&fit=crop"
-    ];
-
-    // Cálculos para manter a mesma imagem e frase durante todo o dia
-    const today = new Date();
-    const dayIndex = Math.floor((today.getTime() - today.getTimezoneOffset() * 60000) / (1000 * 60 * 60 * 24));
+// Cálculos para manter a mesma imagem e frase durante todo o dia
+const today = new Date();
+const dayIndex = Math.floor((today.getTime() - today.getTimezoneOffset() * 60000) / (1000 * 60 * 60 * 24));
 
     export default function App() {
     const [searchTerm, setSearchTerm] = useState('');
@@ -228,7 +259,7 @@ import React, { useState, useEffect, useRef } from 'react';
                 
                 <div>
                     <h1 className="text-2xl font-black text-slate-800 tracking-tight uppercase">Destemidos</h1>
-                    <p className="text-sm font-semibold text-slate-500 tracking-wide uppercase">suporte para o corretor</p>
+                    <p className="text-sm font-semibold text-slate-300 tracking-wide uppercase">A sorte favorece os ousados</p>
                 </div>
                 </div>
 
@@ -713,3 +744,4 @@ import React, { useState, useEffect, useRef } from 'react';
         </div>
     );
     }
+

@@ -126,7 +126,7 @@ import React, { useState, useEffect, useRef } from 'react';
             return;
         }
 
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${apiKey}`;
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${apiKey}`;
 
         const systemPrompt = `Você é um assistente virtual especialista em vendas de imóveis da Direcional e Riva, exclusivo para corretores.
         Responda em português. Use estes dados do catálogo para responder: ${JSON.stringify(revistasData)}.
@@ -170,7 +170,7 @@ import React, { useState, useEffect, useRef } from 'react';
             return;
         }
 
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${apiKey}`;
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${apiKey}`;
 
         const prompt = `Atue como um especialista em marketing imobiliário. Crie um argumento de venda rápido para o corretor usar com o cliente sobre o imóvel "${revista.title}".
         Região: ${revista.region}. Tamanho: ${revista.size}.
@@ -713,4 +713,5 @@ import React, { useState, useEffect, useRef } from 'react';
         </div>
     );
     }
+
 

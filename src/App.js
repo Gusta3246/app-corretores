@@ -105,7 +105,7 @@ import React, { useState, useEffect, useRef } from 'react';
         setChatMessages(prev => [...prev, { role: 'user', content: userMessage }]);
         setIsChatLoading(true);
 
-        const apiKey = import.meta.env.REACT_APP_GEMINI_API_KEY;
+        const apiKey = process.env.REACT_APP_GEMINI_API_KEY;
         const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
 
         const systemPrompt = `Você é um assistente virtual especialista em vendas de imóveis da Direcional e Riva, exclusivo para corretores.
@@ -140,7 +140,7 @@ import React, { useState, useEffect, useRef } from 'react';
     // Função 2: Gerar Argumento de Venda (Pitch)
     const generatePitch = async (revista) => {
         setGeneratingPitchId(revista.id);
-        const apiKey = import.meta.env.REACT_APP_GEMINI_API_KEY;
+        const apiKey = process.env.REACT_APP_GEMINI_API_KEY;
         const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
 
         const prompt = `Atue como um especialista em marketing imobiliário. Crie um argumento de venda rápido para o corretor usar com o cliente sobre o imóvel "${revista.title}".
@@ -682,3 +682,4 @@ import React, { useState, useEffect, useRef } from 'react';
         </div>
     );
     }
+

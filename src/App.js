@@ -258,7 +258,7 @@ const dayIndex = Math.floor((today.getTime() - today.getTimezoneOffset() * 60000
                 
                 <div>
                     <h1 className="text-2xl font-black text-slate-800 tracking-tight uppercase">Destemidos</h1>
-                    <p className="text-sm font-semibold text-slate-400 tracking-wide uppercase">A sorte favorece os ousados</p>
+                    <p className="text-sm font-semibold text-slate-300 tracking-wide uppercase">A sorte favorece os ousados</p>
                 </div>
                 </div>
 
@@ -743,6 +743,7 @@ const dayIndex = Math.floor((today.getTime() - today.getTimezoneOffset() * 60000
         </div>
     );
     }
+
 
 
 

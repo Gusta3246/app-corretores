@@ -71,8 +71,8 @@ import React, { useState, useEffect, useRef } from 'react';
     ];
 // === IMAGENS DE EQUIPE (Muda Diariamente) ===
 const imagensEquipeDiarias = [
-    "https://i.postimg.cc/pTMTZwYt/Copia-de-Image5.jpg",
     "https://i.postimg.cc/tCc9D09Q/Copia-de-IMG-0779-(1).jpg",
+    "https://i.postimg.cc/pTMTZwYt/Copia-de-Image5.jpg",
     "https://i.postimg.cc/fLvwvJRq/Copia-de-IMG-1017.jpg",
     "https://i.postimg.cc/sXP20TwK/Copia-de-IMG-1504.jpg",
     "https://i.postimg.cc/KzhzN6r5/Copia-de-IMG-1515.jpg",
@@ -259,7 +259,7 @@ const dayIndex = Math.floor((today.getTime() - today.getTimezoneOffset() * 60000
                 
                 <div>
                     <h1 className="text-2xl font-black text-slate-800 tracking-tight uppercase">Destemidos</h1>
-                    <p className="text-sm font-semibold text-slate-300 tracking-wide uppercase">A sorte favorece os ousados</p>
+                    <p className="text-sm font-semibold text-slate-400 tracking-wide uppercase">A sorte favorece os ousados</p>
                 </div>
                 </div>
 
@@ -744,6 +744,7 @@ const dayIndex = Math.floor((today.getTime() - today.getTimezoneOffset() * 60000
         </div>
     );
     }
+
 
 
 

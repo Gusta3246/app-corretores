@@ -105,8 +105,74 @@ export default function App() {
   // ==========================================
   // FUNÇÃO DE ENVIO PARA O GEMINI (CHATBOT)
   // ==========================================
+  const toggleGuia = (index) => {
+    setOpenGuiaIndex(openGuiaIndex === index ? null : index);
+  };
+
+  // ==========================================
+  // FUNÇÃO DE ENVIO PARA O GEMINI (CHATBOT)
+  // ==========================================
   const handleSendChatMessage = async () => {
     if (!chatInput.trim()) return;
+
+    // Guarda a mensagem do usuário e limpa o input
+    const newUserMsg = { text: chatInput, isUser: true };
+    setChatMessages((prev) => [...prev, newUserMsg]);
+    const currentInput = chatInput;
+    setChatInput('');
+    setIsChatLoading(true);
+
+    try {
+      // 🚀 TRUQUE MÁGICO: Tenta ler a chave de todas as formas possíveis no Vercel
+      const apiKey = 
+        (typeof process !== 'undefined' && process.env && process.env.REACT_APP_GEMINI_API_KEY) || 
+        (typeof process !== 'undefined' && process.env && process.env.VITE_GEMINI_API_KEY) || 
+        (import.meta && import.meta.env && import.meta.env.VITE_GEMINI_API_KEY) || 
+        (import.meta && import.meta.env && import.meta.env.REACT_APP_GEMINI_API_KEY);
+
+      if (!apiKey) {
+        throw new Error("Chave da API não encontrada. Verifique se adicionou REACT_APP_GEMINI_API_KEY no Vercel.");
+      }
+
+      const systemPrompt = "Você é um assistente virtual focado em ajudar corretores de imóveis da equipe 'Destemidos', que vendem imóveis da Direcional e Riva. Seja amigável e profissional.";
+
+      // 🚀 MODELO CORRETO: gemini-1.5-flash
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          contents: [
+            { role: "user", parts: [{ text: `${systemPrompt}\n\nPergunta do corretor: ${currentInput}` }] }
+          ]
+        })
+      });
+
+      if (!response.ok) {
+         const errorData = await response.json().catch(() => ({}));
+         console.error("Erro detalhado da API:", errorData);
+         throw new Error(`Ocorreu um erro na API do Google (Código ${response.status}). Veja o console (F12) para detalhes.`);
+      }
+
+      const data = await response.json();
+      const aiText = data.candidates?.[0]?.content?.parts?.[0]?.text || "Desculpe, não consegui formular uma resposta.";
+
+      setChatMessages((prev) => [...prev, { text: aiText, isUser: false }]);
+
+    } catch (error) {
+      console.error("Erro no chat:", error);
+      setChatMessages((prev) => [...prev, { 
+        text: `⚠️ ${error.message}`, 
+        isUser: false, 
+        isError: true 
+      }]);
+    } finally {
+      setIsChatLoading(false);
+    }
+  };
+
+  return (
 
     const userMessage = chatInput;
     setChatMessages(prev => [...prev, { role: 'user', text: userMessage }]);
@@ -182,7 +248,7 @@ export default function App() {
         <div className="mb-8 relative rounded-2xl overflow-hidden shadow-lg group">
           <img 
             src={imagemDoDia} 
-            onError={(e) => { e.target.src = 'https://images.unsplash.com/photo-1511632765486-a01980e01a18?auto=format&fit=crop&q=80&w=1200' }}
+            onError={(e) => { e.target.src = '' }}
             alt="Equipe Destemidos" 
             className="w-full h-64 sm:h-80 object-cover object-center group-hover:scale-105 transition-transform duration-1000 bg-slate-200"
           />
@@ -591,4 +657,5 @@ export default function App() {
     </div>
   );
 }
+
 

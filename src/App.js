@@ -83,10 +83,7 @@ const imagensEquipeDiarias = [
     "https://i.postimg.cc/mgqhczP5/Copia-de-IMG-3054.jpg",
     "https://i.postimg.cc/4xMnK7YP/Copia-de-IMG-3117.jpg",
     "https://i.postimg.cc/2SJ3qb1V/Copia-de-IMG-5622-(1).jpg",
-    "https://i.postimg.cc/tJXg0Fc0/Copia-de-IMG-9369.jpg",
     "https://i.postimg.cc/QCxjYhBj/Copia-de-IMG-9585.jpg",
-    "https://i.postimg.cc/Kz5Z5R8q/Copia-de-IMG-9643.jpg",
-    "https://i.postimg.cc/ydTVTk8m/Copia-de-IMG-9690.jpg",
     "https://i.postimg.cc/fWKLcg3X/Copia-de-IMG-9919.avif"
 ];
 
@@ -747,5 +744,6 @@ const dayIndex = Math.floor((today.getTime() - today.getTimezoneOffset() * 60000
         </div>
     );
     }
+
 
 

@@ -96,7 +96,7 @@ export default function App() {
                           revista.region.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesBrand = revista.brand === activeBrand;
     return matchesSearch && matchesBrand;
-});
+  });
 
   const toggleGuia = (index) => {
     setOpenGuiaIndex(openGuiaIndex === index ? null : index);
@@ -107,48 +107,6 @@ export default function App() {
   // ==========================================
   const handleSendChatMessage = async () => {
     if (!chatInput.trim()) return;
-
-    const newUserMsg = { text: chatInput, isUser: true };
-    setChatMessages((prev) => [...prev, newUserMsg]);
-    const currentInput = chatInput;
-    setChatInput('');
-    setIsChatLoading(true);
-
-    try {
-      const apiKey = 
-        (typeof process !== 'undefined' && process.env && process.env.REACT_APP_GEMINI_API_KEY) || 
-        (typeof process !== 'undefined' && process.env && process.env.VITE_GEMINI_API_KEY) || 
-        (import.meta && import.meta.env && import.meta.env.VITE_GEMINI_API_KEY) || 
-        (import.meta && import.meta.env && import.meta.env.REACT_APP_GEMINI_API_KEY);
-
-      if (!apiKey) {
-        throw new Error("Chave da API não encontrada.");
-      }
-
-      const systemPrompt = "Você é um assistente virtual focado em ajudar corretores de imóveis da equipe 'Destemidos', que vendem imóveis da Direcional e Riva. Seja amigável e profissional.";
-
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ role: "user", parts: [{ text: `${systemPrompt}\n\nPergunta: ${currentInput}` }] }]
-        })
-      });
-
-      if (!response.ok) throw new Error(`Erro na API (${response.status})`);
-
-      const data = await response.json();
-      const aiText = data.candidates?.[0]?.content?.parts?.[0]?.text || "Sem resposta.";
-      setChatMessages((prev) => [...prev, { text: aiText, isUser: false }]);
-
-    } catch (error) {
-      setChatMessages((prev) => [...prev, { text: `⚠️ ${error.message}`, isUser: false, isError: true }]);
-    } finally {
-      setIsChatLoading(false);
-    }
-  };
-
-  return (
 
     const userMessage = chatInput;
     setChatMessages(prev => [...prev, { role: 'user', text: userMessage }]);
@@ -633,7 +591,5 @@ export default function App() {
     </div>
   );
 }
-
-
 
 

@@ -11,7 +11,7 @@ const revistasData = [
     size: "43m² a 45m²",
     bedrooms: "2 quartos",
     flooring: "Todo o apê",
-    cover: "https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&q=80&w=400", 
+    cover: "https://www.direcional.com.br/wp-content/uploads/2025/06/Perspectiva-Guarita-BrisasdoHorizonte.jpg.webp", 
     link: "https://drive.google.com/file/d/18IXtAt9PLVjIsk2PkXIHXnVCaduVkGu2/view?usp=drive_link" 
   },
   {
@@ -22,7 +22,7 @@ const revistasData = [
     size: "41m²",
     bedrooms: "2 quartos",
     flooring: "Todo o apê",
-    cover: "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&q=80&w=400", 
+    cover: "https://www.direcional.com.br/wp-content/uploads/2024/05/Perspectiva_PARQUEVILLEORQUIDEA_GUARITA.jpg.webp", 
     link: "https://drive.google.com/file/d/1F_BeT2jceDM8u4kCbSXN8kp2rk7boQTG/view?usp=drive_link" 
   },
   {
@@ -33,7 +33,7 @@ const revistasData = [
     size: "36m²",
     bedrooms: "2 quartos",
     flooring: "Cozinha, banheiro e lavatório",
-    cover: "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&q=80&w=400", 
+    cover: "https://www.direcional.com.br/wp-content/uploads/2024/09/Perspectiva-Guarita-VillageTorres.jpg.webp", 
     link: "https://drive.google.com/file/d/1blVconA5fjODxvXB7s8KT6dSlX8KpLLv/view?usp=drive_link" 
   },
   {
@@ -44,7 +44,7 @@ const revistasData = [
     size: "40m²",
     bedrooms: "2 quartos",
     flooring: "Cozinha, banheiro e lavatório",
-    cover: "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&q=80&w=400", 
+    cover: "https://www.direcional.com.br/wp-content/uploads/2024/03/Conquista-Jardim-Botanico-Guarita.jpg.webp", 
     link: "https://drive.google.com/file/d/1TYzIq8RuGORXfxQpH8CGZejTjF_GlUz0/view?usp=drive_link" 
   },
   {
@@ -55,7 +55,7 @@ const revistasData = [
     size: "41m² a 51m²",
     bedrooms: "2 quartos",
     flooring: "Cozinha, banheiro e lavatório",
-    cover: "https://images.unsplash.com/photo-1460317442991-0ec209397118?auto=format&fit=crop&q=80&w=400",
+    cover: "https://www.direcional.com.br/wp-content/uploads/2025/05/Perspectiva-Guarita-VivaVidaCoral.jpg.webp",
     link: "https://drive.google.com/file/d/1lYo3otquzwdnD0r5f6JobBbW-6KmGOF4/view?usp=drive_link" 
   },
   {
@@ -66,7 +66,7 @@ const revistasData = [
     size: "36m²",
     bedrooms: "2 quartos",
     flooring: "Cozinha, banheiro e lavatório",
-    cover: "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&q=80&w=400",
+    cover: "https://www.direcional.com.br/wp-content/uploads/2024/12/Perspectiva-Guarita-ConquistaJardimNorte.jpg.webp",
     link: "https://drive.google.com/file/d/1_Hyb72NWl1HjEiabKLL9m5ZMutHExesY/view?usp=drive_link" 
   },
   {
@@ -77,7 +77,7 @@ const revistasData = [
     size: "36m²",
     bedrooms: "2 quartos",
     flooring: "Cozinha, banheiro e lavatório",
-    cover: "https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&q=80&w=400",
+    cover: "https://www.direcional.com.br/wp-content/uploads/2023/07/Guarita-Viva-Vida-Rio-Amazonas-Direcional.jpg.webp",
     link: "https://drive.google.com/" 
   },
   {
@@ -99,7 +99,7 @@ const revistasData = [
     size: "41m²",
     bedrooms: "2 quartos",
     flooring: "Cozinha, banheiro e lavatório",
-    cover: "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&q=80&w=400",
+    cover: "https://www.direcional.com.br/wp-content/uploads/2025/11/fachada-noturna-parque-ville-lirio-azul.jpg.webp",
     link: "https://drive.google.com/file/d/1fc7AXap6nhkpTlxONsm46WJCKxIWIhwe/view?usp=drive_link" 
   },
   {
@@ -110,7 +110,7 @@ const revistasData = [
     size: "36m² a 48m²",
     bedrooms: "2 quartos",
     flooring: "Todo o apê",
-    cover: "https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&q=80&w=400",
+    cover: "https://www.rivaincorporadora.com.br/wp-content/uploads/2023/11/fachada-noturna_amazon-boulevard-classic.jpg.webp",
     link: "https://drive.google.com/file/d/1ZX37T2S8FlHnSiO-yeAjlFyqq_5-dVzx/view?usp=drive_link" 
   },
   {
@@ -121,7 +121,7 @@ const revistasData = [
     size: "51m² a 70m²",
     bedrooms: "2 e 3 quartos",
     flooring: "Todo o apê",
-    cover: "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&q=80&w=400",
+    cover: "https://www.rivaincorporadora.com.br/wp-content/uploads/2025/06/guarita-Amazon-prime-boulevard-riva.jpg.webp",
     link: "https://drive.google.com/file/d/1aIuBlwLYGStUm7DNE3gCbfu3Ty2JmkGM/view?usp=drive_link" 
   },
   {
@@ -132,7 +132,7 @@ const revistasData = [
     size: "48m² a 49m²",
     bedrooms: "2 e 3 quartos",
     flooring: "Todo o apê",
-    cover: "https://drive.google.com/uc?export=view&id=1ofMBN2ITgF_BzMtvXp3j4FKex2SHFe_R",
+    cover: "https://www.rivaincorporadora.com.br/wp-content/uploads/2025/08/citta-azzure_GUARITA.jpg.webp",
     link: "https://drive.google.com/" 
   },
   {
@@ -143,7 +143,7 @@ const revistasData = [
     size: "48m² a 49m²",
     bedrooms: "2 e 3 quartos",
     flooring: "Todo o apê",
-    cover: "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&q=80&w=400",
+    cover: "https://www.rivaincorporadora.com.br/wp-content/uploads/2024/08/Perspectiva-Guarita-ZenithCondominioClube.webp",
     link: "https://drive.google.com/file/d/1wv_v56T2ACEHtPZF-iRBvEWY2VVdUXxu/view?usp=drive_link" 
   },
   {
@@ -154,7 +154,7 @@ const revistasData = [
     size: "41m² a 51m²",
     bedrooms: "1 e 2 quartos",
     flooring: "Todo o apê",
-    cover: "https://images.unsplash.com/photo-1460317442991-0ec209397118?auto=format&fit=crop&q=80&w=400",
+    cover: "https://www.direcional.com.br/wp-content/uploads/2023/04/Guarita-Conquista-Topazio-Direcional.jpg.webp",
     link: "https://drive.google.com/file/d/1SMIfr9HbfLd06UaDLKbMUxxtuh4cPPEM/view?usp=drive_link"
   },
   {
@@ -165,7 +165,7 @@ const revistasData = [
     size: "36m²",
     bedrooms: "2 quartos",
     flooring: "Cozinha, banheiro e lavatório",
-    cover: "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&q=80&w=400",
+    cover: "https://www.direcional.com.br/wp-content/uploads/2022/11/Guarita-Conquista-Rio-Negro-Direcional.jpg.webp",
     link: "https://drive.google.com/file/d/1pHLQwUSn6BDMfLo7fFGonyyWlgtXwNmy/view?usp=drive_link"
   },
   {
@@ -176,7 +176,7 @@ const revistasData = [
     size: "40m²",
     bedrooms: "2 quartos",
     flooring: "Cozinha, banheiro e lavatório",
-    cover: "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&q=80&w=400",
+    cover: "https://www.direcional.com.br/wp-content/uploads/2025/02/Perspectiva-Guarita-VivaVidaRioTapajos.jpg.webp",
     link: "https://drive.google.com/file/d/1k3TOypf5bm_zXPfc-ulb7vY9e7MKxmlk/view?usp=drive_link"
   }
 ];
@@ -210,7 +210,7 @@ export default function App() {
 
   // Novos Estados para a Capa de Inspiração
   const [heroImage, setHeroImage] = useState(() => {
-    return localStorage.getItem('aguiaHubHero') || "https://drive.google.com/uc?export=view&id=1HquUICaxy9RcexJM1TLp8FkZQXegsn-I";
+    return localStorage.getItem('aguiaHubHero') || "https://drive.google.com/file/d/1HquUICaxy9RcexJM1TLp8FkZQXegsn-I/view?usp=sharing";
   });
   const [isHeroModalOpen, setIsHeroModalOpen] = useState(false);
   const [newHeroUrl, setNewHeroUrl] = useState('');
@@ -620,3 +620,4 @@ export default function App() {
     </div>
   );
 }
+

@@ -96,15 +96,8 @@ export default function App() {
                           revista.region.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesBrand = revista.brand === activeBrand;
     return matchesSearch && matchesBrand;
-  });
+});
 
-  const toggleGuia = (index) => {
-    setOpenGuiaIndex(openGuiaIndex === index ? null : index);
-  };
-
-  // ==========================================
-  // FUNÇÃO DE ENVIO PARA O GEMINI (CHATBOT)
-  // ==========================================
   const toggleGuia = (index) => {
     setOpenGuiaIndex(openGuiaIndex === index ? null : index);
   };
@@ -657,5 +650,6 @@ export default function App() {
     </div>
   );
 }
+
 
 

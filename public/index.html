@@ -21,31 +21,29 @@
         html, body {
             margin: 0;
             padding: 0;
-            background-color: #ffffff; /* Cor de fundo que preencherá a área da barra inferior */
-            height: 100%;
+            background-color: #ffffff;
+            /* Remove o scroll elástico do topo que causa o glitch visual */
+            overscroll-behavior-y: none;
+        }
+
+        /* BARRA DE SEGURANÇA DO NOTCH */
+        body::before {
+            content: "";
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: env(safe-area-inset-top);
+            background-color: #ffffff; /* Cor de fundo idêntica ao seu cabeçalho */
+            z-index: 9999;
         }
 
         #root {
-            /* 1. Resolve o Notch: Empurra o conteúdo para baixo no topo */
+            /* Empurra o conteúdo fixamente abaixo da barra que criamos acima */
             padding-top: env(safe-area-inset-top);
-            
-            /* 2. Resolve a Barra Inferior: Garante que o conteúdo chegue até o final, 
-               mas com um respiro para a barrinha do iOS não cobrir botões importantes */
+            /* Mantém a barra inferior limpa e preenchida */
             padding-bottom: env(safe-area-inset-bottom);
-            
             min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-        }
-
-        /* Isso impede que o topo "vaze" cores estranhas ao puxar para baixo */
-        @media screen and (display-mode: standalone) {
-            header, .seu-topo-fixo {
-                position: sticky;
-                top: 0;
-                z-index: 50;
-                background-color: #ffffff;
-            }
         }
     </style>
 </head>

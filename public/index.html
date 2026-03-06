@@ -135,35 +135,31 @@
 
         const isStandalone = () => window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
 
-        // --- FUNÇÕES DE FEEDBACK (SOM E VIBRAÇÃO) ---
+        // --- FUNÇÕES DE FEEDBACK (Som e Vibração) ---
         function playConfirmSound() {
-            try {
-                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-                
-                const playNote = (freq, start, duration) => {
-                    const osc = audioCtx.createOscillator();
-                    const gain = audioCtx.createGain();
-                    osc.type = 'sine';
-                    osc.frequency.setValueAtTime(freq, start);
-                    gain.gain.setValueAtTime(0, start);
-                    gain.gain.linearRampToValueAtTime(0.1, start + 0.01);
-                    gain.gain.exponentialRampToValueAtTime(0.01, start + duration);
-                    osc.connect(gain);
-                    gain.connect(audioCtx.destination);
-                    osc.start(start);
-                    osc.stop(start + duration);
-                };
+            const context = new (window.AudioContext || window.webkitAudioContext)();
+            const osc = context.createOscillator();
+            const gain = context.createGain();
 
-                // Bip duplo estilo Apple Pay (Frequências harmônicas suaves)
-                playNote(880, audioCtx.currentTime, 0.1); 
-                playNote(1046, audioCtx.currentTime + 0.1, 0.15);
-            } catch (e) { console.log('AudioContext não suportado'); }
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(900, context.currentTime); // Tom inicial suave
+            osc.frequency.exponentialRampToValueAtTime(1100, context.currentTime + 0.1); // Leve subida estilo Apple
+
+            gain.gain.setValueAtTime(0, context.currentTime);
+            gain.gain.linearRampToValueAtTime(0.2, context.currentTime + 0.02); // Fade in rápido
+            gain.gain.exponentialRampToValueAtTime(0.01, context.currentTime + 0.3); // Fade out longo
+
+            osc.connect(gain);
+            gain.connect(context.destination);
+
+            osc.start();
+            osc.stop(context.currentTime + 0.3);
         }
 
-        function triggerVibration() {
+        function triggerHaptic() {
             if ('vibrate' in navigator) {
-                // Vibração leve e dupla (40ms vibra, 40ms pausa, 40ms vibra)
-                navigator.vibrate([40, 40, 40]);
+                // Vibração dupla e leve: 40ms vibra, 50ms pausa, 40ms vibra
+                navigator.vibrate([40, 50, 40]);
             }
         }
         // --------------------------------------------
@@ -203,9 +199,9 @@
         }
 
         btnInstalar.onclick = async () => {
-            // DISPARA O SOM E VIBRAÇÃO
+            // EXECUTAR FEEDBACK
             playConfirmSound();
-            triggerVibration();
+            triggerHaptic();
 
             if (deferredPrompt) {
                 deferredPrompt.prompt();

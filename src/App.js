@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Search, Building, ExternalLink, MapPin, BookOpen, Maximize, Bed, LayoutGrid, Rocket, Quote, Sparkles, ChevronDown, ChevronUp, FileText, TableProperties, BookMarked, HelpCircle, Calculator, Bot, X, Send, Wand2, Paperclip, File as FileIcon, Trash2, FolderPlus, GripVertical, Plus, MessageCircle, Moon, Sun, AlertTriangle, Book } from 'lucide-react';
-
+import dadosFinanciamento from './bot/dadosFinanciamento.json';
 // === DADOS DAS REVISTAS E BASE DE CONHECIMENTO DO CHATBOT ===
 const revistasData = [
     { id: 1, title: "Brisas do Horizonte", brand: "Direcional", region: "Coroado - Zona Leste", size: "43m² a 45m²", bedrooms: "2 quartos", flooring: "Todo o apê", cover: "https://www.direcional.com.br/wp-content/uploads/2025/06/Perspectiva-Guarita-BrisasdoHorizonte.jpg.webp", link: "https://drive.google.com/file/d/18IXtAt9PLVjIsk2PkXIHXnVCaduVkGu2/view?usp=drive_link", aliases: ["brisas", "brisas do horizonte", "horizonte"], pois: ["UFAM (Universidade Federal do Amazonas)", "INPA (Instituto Nacional de Pesquisas da Amazônia)", "Hospital Adventista de Manaus", "Sesi Clube", "Centro de Convenções Studio 5", "Distrito Industrial"] },
@@ -92,6 +92,33 @@ const today = new Date();
 const dayIndex = Math.floor((today.getTime() - today.getTimezoneOffset() * 60000) / (1000 * 60 * 60 * 24));
 
 export default function App() {
+    // --- LÓGICA DO ROBÔ DE VENDAS ---
+  const obterRespostaDoBot = (mensagem) => {
+    const texto = mensagem.toLowerCase();
+
+    // Resposta para DOCUMENTOS (Baseado nas fotos que você enviou)
+    if (texto.includes("documento") || texto.includes("papel") || texto.includes("precisa")) {
+      if (texto.includes("autonomo")) {
+        return "Para Autônomos, os documentos são: RG/CPF, Estado Civil, Residência, Carteira Digital, 6 últimos extratos bancários e Imposto de Renda.";
+      }
+      if (texto.includes("servidor")) {
+        return "Para Servidor Público: RG/CPF, Certidão de Nascimento/Casamento, Residência atualizado, 3 últimos contracheques e Imposto de Renda (se houver).";
+      }
+      return "Para CLT (Carteira Assinada): RG/CPF, Estado Civil, Residência, Carteira Digital, 3 últimos contracheques e Imposto de Renda.";
+    }
+
+    // Resposta para TABELAS
+    if (texto.includes("investidor")) {
+      return "Na Tabela Investidor, o ato é facilitado e o saldo é parcelado sem juros ou correção durante a obra!";
+    }
+    
+    if (texto.includes("financiamento") || texto.includes("direto")) {
+      return "Temos a opção de Financiamento Direto com a construtora em até 120 meses após a obra!";
+    }
+
+    // Resposta padrão caso ele não entenda
+    return "Ainda estou aprendendo sobre esse detalhe. Posso te ajudar com documentos para análise ou informações das tabelas?";
+  };
     const [searchTerm, setSearchTerm] = useState('');
     const [activeBrand, setActiveBrand] = useState('Direcional');
     const [fraseDoDia] = useState(frasesMotivacionais[dayIndex % frasesMotivacionais.length]);
@@ -171,72 +198,93 @@ export default function App() {
     };
 
     const processChatMessage = (inputMsg) => {
-        const input = normalizeString(inputMsg);
-        let matchedProperties = [];
+    const input = normalizeString(inputMsg);
+    let matchedProperties = [];
 
-        revistasData.forEach(prop => {
-            if (prop.aliases.some(alias => input.includes(normalizeString(alias)))) {
-                if (!matchedProperties.some(p => p.id === prop.id)) {
-                    matchedProperties.push(prop);
-                }
-            }
-        });
+    // --- NOVA LÓGICA: CONSULTA AO ARQUIVO JSON (DADOS DE FINANCIAMENTO) ---
+    const docs = dadosFinanciamento.documentos;
+    
+    // Busca por Documentação (Baseado nas fotos da Direcional)
+    if (input.includes("documento") || input.includes("precisa") || input.includes("papel")) {
+      if (input.includes("autonomo")) {
+        return `Para **Autônomos**, os documentos são: ${docs.autonomo.join(", ")}. \n\n⚠️ **Importante:** Solteiros devem apresentar Certidão de Nascimento. Se tiver filhos, envie a Certidão do dependente.`;
+      }
+      if (input.includes("servidor")) {
+        return `Para **Servidor Público**, você precisa de: ${docs.servidor.join(", ")}. \n\n📍 Não esqueça os 3 últimos contracheques atualizados!`;
+      }
+      return `Para **CLT (Carteira Assinada)**, separe: ${docs.clt.join(", ")}. \n\n💡 Dica: A Carteira de Trabalho pode ser a Digital (PDF).`;
+    }
 
-        if (matchedProperties.length === 0) {
-            const regions = ["zona leste", "zona norte", "zona oeste", "zona sul", "centro-sul", "centro-oeste", "taruma", "flores", "coroado"];
-            let detectedRegion = regions.find(r => input.includes(r));
-            if (detectedRegion) {
-                matchedProperties = revistasData.filter(p => normalizeString(p.region).includes(detectedRegion));
+    // Busca por Tabelas de Financiamento
+    if (input.includes("investidor")) {
+      return "Na **Tabela Investidor**, o ato é facilitado e o saldo é parcelado em até 28x sem juros ou correção durante a obra! 🚀";
+    }
+    if (input.includes("financiamento direto") || (input.includes("direto") && input.includes("construtora"))) {
+      return "Temos a opção de **Financiamento Direto** com a construtora em até 120 meses após a entrega das chaves! Quer que eu verifique as taxas para você?";
+    }
+    // --- FIM DA NOVA LÓGICA ---
+
+    // Lógica original de busca de empreendimentos (mantida)
+    revistasData.forEach(prop => {
+        if (prop.aliases.some(alias => input.includes(normalizeString(alias)))) {
+            if (!matchedProperties.some(p => p.id === prop.id)) {
+                matchedProperties.push(prop);
             }
         }
+    });
 
-        const wantsMagazine = ["revista", "pdf", "link", "material", "apresentacao", "enviar", "mande", "mandar", "baixe", "baixar"].some(w => input.includes(w));
-        const wantsPois = ["referencia", "referência", "perto", "proximo", "próximo", "localizacao", "localização", "onde fica"].some(w => input.includes(w));
-
-        let botResponse = "";
-
-        if (input.includes("criar pasta") || input.includes("pasta do cliente") || input.includes("subir pasta")) {
-            setIsCreatingFolder(true);
-            return "Com certeza! Modo **Criar Pasta do Cliente** ativado! 📂✨\n\nÉ só clicar no botão de anexo ou arrastar os documentos pra cá. Vou te ajudar a organizar tudo na ordem certinha para o seu PDF sair perfeito!";
+    if (matchedProperties.length === 0) {
+        const regions = ["zona leste", "zona norte", "zona oeste", "zona sul", "centro-sul", "centro-oeste", "taruma", "flores", "coroado"];
+        let detectedRegion = regions.find(r => input.includes(r));
+        if (detectedRegion) {
+            matchedProperties = revistasData.filter(p => normalizeString(p.region).includes(detectedRegion));
         }
+    }
 
-        if (matchedProperties.length > 0) {
-            if (matchedProperties.length === 1) {
-                const p = matchedProperties[0];
-                if (wantsPois) {
-                    botResponse = `O **${p.title}** fica super bem localizado na região de ${p.region}.\n\n📍 **Principais Pontos de Referência:**\n`;
-                    p.pois.forEach(poi => botResponse += `• ${poi}\n`);
-                    botResponse += `\nQuer que eu te mande a revista dele para você mostrar pro cliente?`;
-                } else {
-                    botResponse = `Com certeza! Falando do **${p.title}** (${p.brand}):\n\n📍 **Onde Fica:** ${p.region}\n📏 **Planta:** ${p.size} com ${p.bedrooms}\n🏢 **Referências próximas:** ${p.pois.slice(0, 3).join(', ')}.\n\n`;
-                    if (wantsMagazine || input.includes("revista")) {
-                        botResponse += `Aqui está o material que você pediu: [Acessar Revista do ${p.title}](${p.link})`;
-                    } else {
-                        botResponse += `Se o seu cliente quiser ver mais, posso te enviar o PDF da revista. É só me pedir! 😉`;
-                    }
-                }
+    const wantsMagazine = ["revista", "pdf", "link", "material", "apresentacao", "enviar", "mande", "mandar", "baixe", "baixar"].some(w => input.includes(w));
+    const wantsPois = ["referencia", "referência", "perto", "proximo", "próximo", "localizacao", "localização", "onde fica"].some(w => input.includes(w));
+
+    let botResponse = "";
+
+    if (input.includes("criar pasta") || input.includes("pasta do cliente") || input.includes("subir pasta")) {
+        setIsCreatingFolder(true);
+        return "Com certeza! Modo **Criar Pasta do Cliente** ativado! 📂✨\n\nÉ só clicar no botão de anexo ou arrastar os documentos pra cá. Vou te ajudar a organizar tudo na ordem certinha para o seu PDF sair perfeito!";
+    }
+
+    if (matchedProperties.length > 0) {
+        if (matchedProperties.length === 1) {
+            const p = matchedProperties[0];
+            if (wantsPois) {
+                botResponse = `O **${p.title}** fica super bem localizado na região de ${p.region}.\n\n📍 **Principais Pontos de Referência:**\n`;
+                p.pois.forEach(poi => botResponse += `• ${poi}\n`);
+                botResponse += `\nQuer que eu te mande a revista dele para você mostrar pro cliente?`;
             } else {
-                botResponse = `Boa! Encontrei essas opções ótimas para o que você procura:\n\n`;
-                matchedProperties.forEach(p => {
-                    botResponse += `🔹 **${p.title}** (${p.region}) - ${p.size} (${p.brand})\n`;
-                    if (wantsMagazine) botResponse += `  🔗 [Baixar Revista PDF](${p.link})\n`;
-                });
-                if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF agora?`;
+                botResponse = `Com certeza! Falando do **${p.title}** (${p.brand}):\n\n📍 **Onde Fica:** ${p.region}\n📏 **Planta:** ${p.size} com ${p.bedrooms}\n🏢 **Referências próximas:** ${p.pois.slice(0, 3).join(', ')}.\n\n`;
+                if (wantsMagazine || input.includes("revista")) {
+                    botResponse += `Aqui está o material que você pediu: [Acessar Revista do ${p.title}](${p.link})`;
+                } else {
+                    botResponse += `Se o seu cliente quiser ver mais, posso te enviar o PDF da revista. É só me pedir! 😉`;
+                }
             }
         } else {
-            if (input.includes("ola") || input.includes("bom dia") || input.includes("boa tarde") || input.includes("boa noite")) {
-                botResponse = "Olá, Destemido! Bora bater essa meta? 🚀 Como posso te ajudar agora? Posso buscar empreendimentos por bairro, nome ou te ajudar a criar aquela pasta do cliente rapidinho.";
-            } else if (input.includes("financiamento") || input.includes("renda") || input.includes("mcmv") || input.includes("codigo")) {
-                botResponse = "Entendi! Sobre códigos do MCMV ou SBPE, você encontra tudo detalhado na aba **GUIA** ali em cima. (Dica rápida: Faixa 1 e 2 é o código 3280). Quer saber mais alguma coisa?";
-            } else if (input.includes("amml") || input.includes("amazonas meu lar")) {
-                botResponse = "Para o **Amazonas Meu Lar**, temos todos os modelos de declarações que você precisa na aba **UTILITÁRIOS**. É só baixar e usar!";
-            } else {
-                botResponse = "Hmm, não consegui entender exatamente o que você precisa. 😅\n\nPode tentar algo como: 'Me mostra o Brisas', 'Qual apê tem na zona norte?' ou 'Vamos criar uma pasta'.";
-            }
+            botResponse = `Boa! Encontrei essas opções ótimas para o que você procura:\n\n`;
+            matchedProperties.forEach(p => {
+                botResponse += `🔹 **${p.title}** (${p.region}) - ${p.size} (${p.brand})\n`;
+                if (wantsMagazine) botResponse += `  🔗 [Baixar Revista PDF](${p.link})\n`;
+            });
+            if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF agora?`;
         }
-        return botResponse;
-    };
-
+    } else {
+        if (input.includes("ola") || input.includes("bom dia") || input.includes("boa tarde") || input.includes("boa noite")) {
+            botResponse = "Olá, Destemido! Bora bater essa meta? 🚀 Como posso te ajudar agora? Posso buscar empreendimentos por bairro, nome ou te ajudar a criar aquela pasta do cliente rapidinho.";
+        } else if (input.includes("amml") || input.includes("amazonas meu lar")) {
+            botResponse = "Para o **Amazonas Meu Lar**, temos todos os modelos de declarações que você precisa na aba **UTILITÁRIOS**. É só baixar e usar!";
+        } else {
+            botResponse = "Hmm, não consegui entender exatamente o que você precisa. 😅\n\nPode tentar algo como: 'Documentos para autônomo', 'Regras do investidor' ou 'Me mostra o Brisas'.";
+        }
+    }
+    return botResponse;
+  };
     const handleSendChatMessage = () => {
         if (!chatInput.trim() || isChatLoading) return;
         const userMessage = chatInput;
@@ -873,3 +921,4 @@ export default function App() {
         </div>
     );
 }
+

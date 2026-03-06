@@ -267,12 +267,12 @@ export default function App() {
                 }
             }
         } else {
-            setChatInput('');
-        setChatMessages(prev => [...prev, { role: 'user', content: userMessage }]);
-        setIsChatLoading(true);
-        setTimeout(() => {
-            const responseText = buscarRespostaDoRobo(userMessage);
-            setChatMessages(prev => [...prev, { role: 'bot', content: responseText }]);
+            botResponse = `Boa! Encontrei essas opções ótimas para o que você procura:\n\n`;
+matchedProperties.forEach(p => {
+    botResponse += ` 🔹 **${p.title}** (${p.region}) - ${p.size} (${p.brand})\n`;
+    if (wantsMagazine) botResponse += ` 🔗 [Baixar Revista PDF](${p.link})\n`;
+});
+if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF agora?`;
         }
     } else {
         if (input.includes("ola") || input.includes("bom dia") || input.includes("boa tarde") || input.includes("boa noite")) {
@@ -292,7 +292,7 @@ export default function App() {
         setChatMessages(prev => [...prev, { role: 'user', content: userMessage }]);
         setIsChatLoading(true);
         setTimeout(() => {
-            const responseText = processChatMessage(userMessage);
+            const responseText = buscarRespostaDoRobo(userMessage);
             setChatMessages(prev => [...prev, { role: 'bot', content: responseText }]);
             setIsChatLoading(false);
         }, 800 + Math.random() * 700);
@@ -921,5 +921,6 @@ export default function App() {
         </div>
     );
 }
+
 
 

@@ -8,6 +8,8 @@
     <link rel="icon" type="image/png" href="https://i.postimg.cc/XpWRf9pj/logo.png" />
     <link rel="apple-touch-icon" href="https://i.postimg.cc/XpWRf9pj/logo.png" />
     
+    <link rel="manifest" href="/manifest.json" />
+
     <link rel="apple-touch-startup-image" media="screen and (device-width: 440px) and (device-height: 956px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)" href="/splash_screens/iPhone_17_Pro_Max__iPhone_16_Pro_Max_landscape.png">
     <link rel="apple-touch-startup-image" media="screen and (device-width: 402px) and (device-height: 874px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)" href="/splash_screens/iPhone_17_Pro__iPhone_17__iPhone_16_Pro_landscape.png">
     <link rel="apple-touch-startup-image" media="screen and (device-width: 430px) and (device-height: 932px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)" href="/splash_screens/iPhone_16_Plus__iPhone_15_Pro_Max__iPhone_15_Plus__iPhone_14_Pro_Max_landscape.png">
@@ -50,27 +52,28 @@
     <link rel="apple-touch-startup-image" media="screen and (device-width: 820px) and (device-height: 1180px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" href="/splash_screens/10.9__iPad_Air_portrait.png">
     <link rel="apple-touch-startup-image" media="screen and (device-width: 834px) and (device-height: 1112px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" href="/splash_screens/10.5__iPad_Air_portrait.png">
     <link rel="apple-touch-startup-image" media="screen and (device-width: 810px) and (device-height: 1080px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" href="/splash_screens/10.2__iPad_portrait.png">
-    <link rel="apple-touch-startup-image" media="screen and (device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" href="/splash_screens/9.7__iPad_Pro__7.9__iPad_mini__9.7__iPad_Air__9.7__iPad_landscape.png">
+    <link rel="apple-touch-startup-image" media="screen and (device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" href="/splash_screens/9.7__iPad_Pro__7.9__iPad_mini__9.7__iPad_Air__9.7__iPad_portrait.png">
     <link rel="apple-touch-startup-image" media="screen and (device-width: 744px) and (device-height: 1133px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" href="/splash_screens/8.3__iPad_Mini_portrait.png">
 
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="Destemidos">
     
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="theme-color" content="#ffffff" />
+
     <script src="https://cdn.tailwindcss.com"></script>
 
     <style>
         :root {
             --topo-seguro: calc(env(safe-area-inset-top) + 12px);
         }
-
         html, body {
             margin: 0;
             padding: 0;
             background-color: #ffffff;
             overscroll-behavior-y: none;
         }
-
         body::before {
             content: "";
             position: fixed;
@@ -81,42 +84,42 @@
             background-color: #ffffff; 
             z-index: 9999;
         }
-
         #root {
             padding-top: var(--topo-seguro);
             padding-bottom: env(safe-area-inset-bottom);
             min-height: 100vh;
         }
-
-        /* Design do Modal */
         #install-popup {
             transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        #install-overlay {
+            transition: opacity 0.4s ease;
         }
     </style>
 </head>
 <body>
     <div id="root"></div>
 
-    <div id="install-overlay" class="fixed inset-0 bg-black/40 backdrop-blur-sm z-[10000] hidden opacity-0 transition-opacity duration-400"></div>
+    <div id="install-overlay" class="fixed inset-0 bg-black/40 backdrop-blur-sm z-[10000] hidden opacity-0"></div>
 
     <div id="install-popup" class="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[88%] max-w-sm bg-white p-8 rounded-[2.5rem] shadow-[0_25px_50px_-12px_rgba(0,0,0,0.4)] z-[10001] hidden flex-col items-center text-center transform scale-90 opacity-0">
         
         <div class="mb-6">
-            <img src="https://i.postimg.cc/XpWRf9pj/logo.png" class="w-20 h-20 object-contain mx-auto" alt="Logo">
+            <img src="https://i.postimg.cc/XpWRf9pj/logo.png" class="w-20 h-20 object-contain mx-auto" alt="Destemidos">
         </div>
 
         <div class="mb-8">
-            <h4 class="text-2xl font-black text-gray-900 leading-tight">Instalar Destemidos</h4>
-            <p id="install-text" class="text-[15px] text-gray-500 mt-3 leading-relaxed">
+            <h4 class="text-2xl font-black text-gray-900 leading-tight tracking-tight">Instalar Destemidos</h4>
+            <p id="install-text" class="text-[15px] text-gray-500 mt-3 leading-relaxed px-1">
                 Adicione à tela inicial para ter acesso rápido e uma experiência fluida em tela cheia.
             </p>
         </div>
 
         <div class="w-full flex flex-col gap-3">
-            <button id="install-button" class="w-full bg-black text-white font-bold py-4 rounded-2xl active:scale-95 shadow-lg transition-transform">
+            <button id="install-button" class="w-full bg-black text-white font-bold py-4 rounded-2xl text-base transition-transform active:scale-95 shadow-lg">
                 Instalar agora
             </button>
-            <button id="close-popup" class="w-full py-2 text-gray-400 font-semibold text-sm">
+            <button id="close-popup" class="w-full py-2 text-gray-400 font-semibold text-sm hover:text-gray-600 transition-colors">
                 Agora não
             </button>
         </div>
@@ -128,6 +131,7 @@
         const btnInstalar = document.getElementById('install-button');
         const btnFechar = document.getElementById('close-popup');
         const txtInstalar = document.getElementById('install-text');
+        let deferredPrompt;
 
         const isStandalone = () => window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
 
@@ -152,7 +156,14 @@
             }, 500);
         }
 
-        // Detectar iOS Safari para mostrar instruções
+        // Pop-up no Android e Desktop
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            showPopup();
+        });
+
+        // Pop-up no iOS (Safari)
         const isIos = /iphone|ipad|ipod/.test(window.navigator.userAgent.toLowerCase());
         if (isIos && !isStandalone()) {
             txtInstalar.innerHTML = "Toque no ícone de <b>compartilhar</b> <span class='text-xl'>⎋</span> e depois em <b>'Adicionar à Tela de Início'</b>.";
@@ -160,11 +171,22 @@
             setTimeout(showPopup, 3000); 
         }
 
-        btnInstalar.onclick = hidePopup;
+        btnInstalar.onclick = async () => {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                const { outcome } = await deferredPrompt.userChoice;
+                if (outcome === 'accepted') hidePopup();
+                deferredPrompt = null;
+            } else {
+                hidePopup();
+            }
+        };
+
         btnFechar.onclick = () => {
             localStorage.setItem('pwa_hide_prompt', 'true');
             hidePopup();
         };
+
         overlay.onclick = hidePopup;
     </script>
 </body>

@@ -90,33 +90,51 @@
             min-height: 100vh;
         }
 
-        /* Estilo para animação do Pop-up */
+        /* Estilo para animação do Modal */
         #install-popup {
             transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        #install-overlay {
+            transition: opacity 0.3s ease;
         }
     </style>
 </head>
 <body>
     <div id="root"></div>
 
-    <div id="install-popup" class="fixed bottom-6 left-4 right-4 md:left-auto md:right-6 md:w-80 bg-white dark:bg-zinc-900 p-4 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.2)] border border-gray-100 dark:border-zinc-800 z-[10000] hidden flex-col gap-3 transform translate-y-32">
-        <div class="flex items-start gap-3">
-            <img src="https://i.postimg.cc/XpWRf9pj/logo.png" class="w-12 h-12 rounded-xl shadow-md" alt="Logo">
-            <div class="flex-1">
-                <h4 class="font-bold text-gray-900 dark:text-white text-sm">Destemidos App</h4>
-                <p id="install-text" class="text-xs text-gray-500 dark:text-zinc-400 leading-snug mt-1">
-                    Instale para ter acesso rápido e experiência em tela cheia.
-                </p>
+    <div id="install-overlay" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] hidden opacity-0"></div>
+
+    <div id="install-popup" class="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[90%] max-w-md bg-white dark:bg-zinc-900 p-8 rounded-[2.5rem] shadow-[0_32px_64px_-12px_rgba(0,0,0,0.5)] border border-gray-100 dark:border-zinc-800 z-[10000] hidden flex-col items-center text-center gap-6 transform scale-90 opacity-0">
+        
+        <div class="relative">
+            <img src="https://i.postimg.cc/XpWRf9pj/logo.png" class="w-24 h-24 rounded-3xl shadow-2xl" alt="Logo">
+            <div class="absolute -bottom-2 -right-2 bg-black dark:bg-white text-white dark:text-black p-2 rounded-full shadow-lg">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 4v16m8-8H4" />
+                </svg>
             </div>
-            <button id="close-popup" class="text-gray-400 hover:text-gray-600 dark:hover:text-white transition-colors text-lg p-1">✕</button>
         </div>
-        <button id="install-button" class="w-full bg-black dark:bg-white text-white dark:text-black font-bold py-3 rounded-xl text-sm transition-all active:scale-95 shadow-lg">
-            Instalar agora
-        </button>
+
+        <div>
+            <h4 class="text-2xl font-black text-gray-900 dark:text-white tracking-tight">Instalar Destemidos</h4>
+            <p id="install-text" class="text-base text-gray-500 dark:text-zinc-400 mt-3 leading-relaxed">
+                Adicione à tela inicial para ter acesso rápido e uma experiência fluida em tela cheia.
+            </p>
+        </div>
+
+        <div class="w-full flex flex-col gap-3">
+            <button id="install-button" class="w-full bg-black dark:bg-white text-white dark:text-black font-bold py-4 rounded-2xl text-lg transition-transform active:scale-95 shadow-xl">
+                Instalar agora
+            </button>
+            <button id="close-popup" class="w-full py-2 text-gray-400 dark:text-zinc-500 font-semibold hover:text-gray-600 dark:hover:text-zinc-300 transition-colors">
+                Agora não
+            </button>
+        </div>
     </div>
 
     <script>
         const popup = document.getElementById('install-popup');
+        const overlay = document.getElementById('install-overlay');
         const btnInstalar = document.getElementById('install-button');
         const btnFechar = document.getElementById('close-popup');
         const txtInstalar = document.getElementById('install-text');
@@ -132,23 +150,36 @@
             const dismissedAt = localStorage.getItem('pwa_dismissed_at');
             if (!dismissedAt) return false;
             const hours = (Date.now() - parseInt(dismissedAt)) / (1000 * 60 * 60);
-            return hours < 48; // Não mostra de novo por 48h se ele fechou no X
+            return hours < 48;
         };
 
-        // Função para mostrar o popup com animação
+        // Função para mostrar o popup centralizado
         function showPopup() {
             if (isStandalone() || wasDismissed()) return;
+            
+            overlay.classList.remove('hidden');
             popup.classList.remove('hidden');
-            setTimeout(() => popup.classList.remove('translate-y-32'), 100);
+            
+            setTimeout(() => {
+                overlay.classList.add('opacity-100');
+                popup.classList.add('opacity-100', 'scale-100');
+                popup.classList.remove('scale-90');
+            }, 50);
         }
 
         // Função para esconder o popup
         function hidePopup() {
-            popup.classList.add('translate-y-32');
-            setTimeout(() => popup.classList.add('hidden'), 400);
+            overlay.classList.remove('opacity-100');
+            popup.classList.remove('opacity-100', 'scale-100');
+            popup.classList.add('scale-90', 'opacity-0');
+            
+            setTimeout(() => {
+                overlay.classList.add('hidden');
+                popup.classList.add('hidden');
+            }, 400);
         }
 
-        // LÓGICA ANDROID / WINDOWS (Nativo)
+        // LÓGICA ANDROID / WINDOWS
         window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault();
             deferredPrompt = e;
@@ -158,30 +189,36 @@
         // LÓGICA IPHONE (Manual)
         const isIos = /iphone|ipad|ipod/.test(window.navigator.userAgent.toLowerCase());
         if (isIos && !isStandalone()) {
-            txtInstalar.innerHTML = "Toque no ícone de <b>compartilhar</b> <span class='text-lg'>⎋</span> e depois em <b>'Adicionar à Tela de Início'</b>.";
+            txtInstalar.innerHTML = "Toque no ícone de <b>compartilhar</b> <span class='text-xl'>⎋</span> e depois em <b>'Adicionar à Tela de Início'</b>.";
             btnInstalar.innerText = "Entendi";
-            setTimeout(showPopup, 3000); // Mostra após 3 segundos no iPhone
+            setTimeout(showPopup, 3000); 
         }
 
         // Clique no botão principal
         btnInstalar.addEventListener('click', async () => {
             if (deferredPrompt) {
-                // Dispara instalação no Android/PC
                 deferredPrompt.prompt();
                 const { outcome } = await deferredPrompt.userChoice;
                 if (outcome === 'accepted') hidePopup();
                 deferredPrompt = null;
             } else {
-                // No iOS apenas fechamos, pois ele já leu a instrução
                 hidePopup();
             }
         });
 
-        // Clique no botão Fechar (X)
+        // Fechar botões e overlay
         btnFechar.onclick = () => {
             localStorage.setItem('pwa_dismissed_at', Date.now().toString());
             hidePopup();
         };
+        overlay.onclick = hidePopup;
+
+        // REGISTRO DO SERVICE WORKER (Necessário para Android/PC reconhecerem o App)
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js').catch(err => console.log('SW error:', err));
+            });
+        }
     </script>
 </body>
 </html>

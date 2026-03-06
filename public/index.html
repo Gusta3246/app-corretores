@@ -12,32 +12,36 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="Destemidos">
     
-    <meta name="mobile-web-app-capable" content="yes" />
-    
-    <meta name="theme-color" content="#ffffff" id="theme-meta" />
+    <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+    <meta name="theme-color" content="#0f172a" media="(prefers-color-scheme: dark)">
 
     <script src="https://cdn.tailwindcss.com"></script>
 
     <style>
         :root {
+            /* Notch + respiro que você gostou */
             --topo-seguro: calc(env(safe-area-inset-top) + 12px);
-            --bg-app: #ffffff; /* Cor padrão (clara) */
+            --bg-barra: #ffffff;
         }
 
-        /* Quando o seu app React adicionar a classe 'dark' ao HTML ou Body */
-        .dark, [data-theme='dark'] {
-            --bg-app: #000000; /* Cor do modo noturno */
+        /* Detecta Modo Escuro do Sistema ou Classe .dark do Tailwind */
+        @media (prefers-color-scheme: dark) {
+            :root { --bg-barra: #0f172a; } /* Cor azul escura do seu print */
+        }
+
+        /* Se o seu JS adiciona a classe .dark no html, isso reforça a cor */
+        html.dark :root {
+            --bg-barra: #0f172a;
         }
 
         html, body {
             margin: 0;
             padding: 0;
-            background-color: var(--bg-app);
+            background-color: var(--bg-barra);
             overscroll-behavior-y: none;
-            transition: background-color 0.3s ease;
         }
 
-        /* A barra de proteção agora segue a variável de cor */
+        /* A "capa" do topo que protege o notch */
         body::before {
             content: "";
             position: fixed;
@@ -45,16 +49,16 @@
             left: 0;
             width: 100%;
             height: var(--topo-seguro);
-            background-color: var(--bg-app); 
+            background-color: var(--bg-barra);
             z-index: 9999;
-            transition: background-color 0.3s ease;
+            pointer-events: none;
         }
 
         #root {
             padding-top: var(--topo-seguro);
             padding-bottom: env(safe-area-inset-bottom);
             min-height: 100vh;
-            background-color: var(--bg-app);
+            background-color: var(--bg-barra);
         }
     </style>
 </head>

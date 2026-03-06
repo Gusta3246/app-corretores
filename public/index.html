@@ -7,9 +7,11 @@
 
     <link rel="icon" type="image/png" href="https://i.postimg.cc/XpWRf9pj/logo.png" />
     <link rel="apple-touch-icon" href="https://i.postimg.cc/XpWRf9pj/logo.png" />
+    
+    <link rel="manifest" href="manifest.json" />
 
-    <link rel="apple-touch-startup-image" href="https://i.postimg.cc/XpWRf9pj/logo.png" />
-
+    <link rel="apple-touch-startup-image" href="apple-splash-2048-2732.png" media="...">
+    <link rel="apple-touch-startup-image" href="apple-splash-1668-2388.png" media="...">
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="Destemidos">
@@ -20,7 +22,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
 
     <style>
-        /* Definimos uma variável para o tamanho do notch + um extra de 12px */
+        /* Mantendo o ajuste do Notch que já tínhamos feito */
         :root {
             --topo-seguro: calc(env(safe-area-inset-top) + 12px);
         }
@@ -32,7 +34,7 @@
             overscroll-behavior-y: none;
         }
 
-        /* A "capa" do topo agora é um pouco maior que o notch */
+        /* A "capa" fixa para o conteúdo não vazar para trás do notch */
         body::before {
             content: "";
             position: fixed;
@@ -45,7 +47,6 @@
         }
 
         #root {
-            /* Empurra o conteúdo para baixo usando a mesma medida */
             padding-top: var(--topo-seguro);
             padding-bottom: env(safe-area-inset-bottom);
             min-height: 100vh;

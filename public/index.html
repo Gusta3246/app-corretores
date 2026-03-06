@@ -9,27 +9,31 @@
     <link rel="apple-touch-icon" href="https://i.postimg.cc/XpWRf9pj/logo.png" />
 
     <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="Destemidos">
     
     <meta name="mobile-web-app-capable" content="yes" />
-    <meta name="theme-color" content="#000000" />
+    <meta name="theme-color" content="#ffffff" />
 
     <script src="https://cdn.tailwindcss.com"></script>
 
     <style>
-        /* Resolve o problema do Notch sem alterar seu HTML/React */
-        #root {
-            padding-top: env(safe-area-inset-top);
-            padding-bottom: env(safe-area-inset-bottom);
-            padding-left: env(safe-area-inset-left);
-            padding-right: env(safe-area-inset-right);
-            min-height: 100vh;
+        :root {
+            --sat: env(safe-area-inset-top);
         }
-        
-        body {
+
+        html, body {
             margin: 0;
-            background-color: #ffffff; /* Ajuste para a cor de fundo do seu app */
+            padding: 0;
+            /* Impede que o scroll "pule" ou mostre fundo cinza */
+            background-color: #ffffff; 
+            height: 100%;
+        }
+
+        #root {
+            /* Adiciona o espaço do notch de forma fixa no topo */
+            margin-top: var(--sat);
+            min-height: calc(100vh - var(--sat));
         }
     </style>
 </head>

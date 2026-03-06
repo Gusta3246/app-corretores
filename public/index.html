@@ -133,6 +133,30 @@
         const txtInstalar = document.getElementById('install-text');
         let deferredPrompt;
 
+        // Função para gerar o som de sucesso (sem arquivo externo)
+        function playSuccessSound() {
+            try {
+                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                const oscillator = audioCtx.createOscillator();
+                const gainNode = audioCtx.createGain();
+
+                oscillator.type = 'sine';
+                oscillator.frequency.setValueAtTime(880, audioCtx.currentTime); 
+                oscillator.frequency.exponentialRampToValueAtTime(1200, audioCtx.currentTime + 0.1);
+
+                gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.2);
+
+                oscillator.connect(gainNode);
+                gainNode.connect(audioCtx.destination);
+
+                oscillator.start();
+                oscillator.stop(audioCtx.currentTime + 0.2);
+            } catch (e) {
+                console.log("AudioContext não suportado");
+            }
+        }
+
         const isStandalone = () => window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
 
         function showPopup() {
@@ -156,14 +180,12 @@
             }, 500);
         }
 
-        // Pop-up no Android e Desktop
         window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault();
             deferredPrompt = e;
             showPopup();
         });
 
-        // Pop-up no iOS (Safari)
         const isIos = /iphone|ipad|ipod/.test(window.navigator.userAgent.toLowerCase());
         if (isIos && !isStandalone()) {
             txtInstalar.innerHTML = "Toque no ícone de <b>compartilhar</b> <span class='text-xl'>⎋</span> e depois em <b>'Adicionar à Tela de Início'</b>.";
@@ -172,6 +194,14 @@
         }
 
         btnInstalar.onclick = async () => {
+            // FEEDBACK TATIL
+            if ('vibrate' in navigator) {
+                navigator.vibrate(60); 
+            }
+
+            // FEEDBACK SONORO
+            playSuccessSound();
+
             if (deferredPrompt) {
                 deferredPrompt.prompt();
                 const { outcome } = await deferredPrompt.userChoice;

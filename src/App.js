@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Search, Building, ExternalLink, MapPin, BookOpen, Maximize, Bed, LayoutGrid, Rocket, Quote, Sparkles, ChevronDown, ChevronUp, FileText, TableProperties, BookMarked, HelpCircle, Calculator, Bot, X, Send, Wand2, Paperclip, File as FileIcon, Trash2, FolderPlus, GripVertical, Plus, MessageCircle, Moon, Sun, AlertTriangle, Book } from 'lucide-react';
-import dadosFinanciamento from './bot/dadosFinanciamento.json';
+import { buscarRespostaDoRobo } from './bot/dadosFinanciamento.js';
 // === DADOS DAS REVISTAS E BASE DE CONHECIMENTO DO CHATBOT ===
 const revistasData = [
     { id: 1, title: "Brisas do Horizonte", brand: "Direcional", region: "Coroado - Zona Leste", size: "43m² a 45m²", bedrooms: "2 quartos", flooring: "Todo o apê", cover: "https://www.direcional.com.br/wp-content/uploads/2025/06/Perspectiva-Guarita-BrisasdoHorizonte.jpg.webp", link: "https://drive.google.com/file/d/18IXtAt9PLVjIsk2PkXIHXnVCaduVkGu2/view?usp=drive_link", aliases: ["brisas", "brisas do horizonte", "horizonte"], pois: ["UFAM (Universidade Federal do Amazonas)", "INPA (Instituto Nacional de Pesquisas da Amazônia)", "Hospital Adventista de Manaus", "Sesi Clube", "Centro de Convenções Studio 5", "Distrito Industrial"] },
@@ -267,12 +267,12 @@ export default function App() {
                 }
             }
         } else {
-            botResponse = `Boa! Encontrei essas opções ótimas para o que você procura:\n\n`;
-            matchedProperties.forEach(p => {
-                botResponse += `🔹 **${p.title}** (${p.region}) - ${p.size} (${p.brand})\n`;
-                if (wantsMagazine) botResponse += `  🔗 [Baixar Revista PDF](${p.link})\n`;
-            });
-            if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF agora?`;
+            setChatInput('');
+        setChatMessages(prev => [...prev, { role: 'user', content: userMessage }]);
+        setIsChatLoading(true);
+        setTimeout(() => {
+            const responseText = buscarRespostaDoRobo(userMessage);
+            setChatMessages(prev => [...prev, { role: 'bot', content: responseText }]);
         }
     } else {
         if (input.includes("ola") || input.includes("bom dia") || input.includes("boa tarde") || input.includes("boa noite")) {
@@ -921,4 +921,5 @@ export default function App() {
         </div>
     );
 }
+
 

@@ -2,19 +2,29 @@
 <html lang="pt-br">
 <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <title>Destemidos</title>
 
     <link rel="icon" type="image/png" href="https://i.postimg.cc/XpWRf9pj/logo.png" />
-
     <link rel="apple-touch-icon" href="https://i.postimg.cc/XpWRf9pj/logo.png" />
 
-    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="Destemidos">
     
+    <meta name="mobile-web-app-capable" content="yes" />
     <meta name="theme-color" content="#000000" />
 
     <script src="https://cdn.tailwindcss.com"></script>
+
+    <style>
+        /* Opcional: Garante que o fundo do corpo preencha a tela toda sem espaços brancos no topo */
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #000000; /* Combine com sua theme-color */
+        }
+    </style>
 </head>
 <body>
     <div id="root"></div>

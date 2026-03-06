@@ -133,31 +133,40 @@
         const txtInstalar = document.getElementById('install-text');
         let deferredPrompt;
 
-        // Função para gerar o som de sucesso (sem arquivo externo)
-        function playSuccessSound() {
+        const isStandalone = () => window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+
+        // --- FUNÇÕES DE FEEDBACK (SOM E VIBRAÇÃO) ---
+        function playConfirmSound() {
             try {
                 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-                const oscillator = audioCtx.createOscillator();
-                const gainNode = audioCtx.createGain();
+                
+                const playNote = (freq, start, duration) => {
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(freq, start);
+                    gain.gain.setValueAtTime(0, start);
+                    gain.gain.linearRampToValueAtTime(0.1, start + 0.01);
+                    gain.gain.exponentialRampToValueAtTime(0.01, start + duration);
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.start(start);
+                    osc.stop(start + duration);
+                };
 
-                oscillator.type = 'sine';
-                oscillator.frequency.setValueAtTime(880, audioCtx.currentTime); 
-                oscillator.frequency.exponentialRampToValueAtTime(1200, audioCtx.currentTime + 0.1);
-
-                gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
-                gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.2);
-
-                oscillator.connect(gainNode);
-                gainNode.connect(audioCtx.destination);
-
-                oscillator.start();
-                oscillator.stop(audioCtx.currentTime + 0.2);
-            } catch (e) {
-                console.log("AudioContext não suportado");
-            }
+                // Bip duplo estilo Apple Pay (Frequências harmônicas suaves)
+                playNote(880, audioCtx.currentTime, 0.1); 
+                playNote(1046, audioCtx.currentTime + 0.1, 0.15);
+            } catch (e) { console.log('AudioContext não suportado'); }
         }
 
-        const isStandalone = () => window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+        function triggerVibration() {
+            if ('vibrate' in navigator) {
+                // Vibração leve e dupla (40ms vibra, 40ms pausa, 40ms vibra)
+                navigator.vibrate([40, 40, 40]);
+            }
+        }
+        // --------------------------------------------
 
         function showPopup() {
             if (isStandalone() || localStorage.getItem('pwa_hide_prompt')) return;
@@ -194,13 +203,9 @@
         }
 
         btnInstalar.onclick = async () => {
-            // FEEDBACK TATIL
-            if ('vibrate' in navigator) {
-                navigator.vibrate(60); 
-            }
-
-            // FEEDBACK SONORO
-            playSuccessSound();
+            // DISPARA O SOM E VIBRAÇÃO
+            playConfirmSound();
+            triggerVibration();
 
             if (deferredPrompt) {
                 deferredPrompt.prompt();

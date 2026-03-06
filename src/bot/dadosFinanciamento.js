@@ -172,3 +172,74 @@ export function buscarRespostaDoRobo(mensagemDoUsuario) {
   // 4. Retorna a resposta ou pede mais detalhes de forma amigável
   return respostaEncontrada || "Não tenho certeza se entendi direito. 😅 Você pode me perguntar sobre os condomínios (ex: Zenith, Village, Brisas), sobre as regras de financiamento da Caixa, ou fazer simulações (ex: 'cliente tem renda de 3000').";
 }
+
+// =========================================================================
+// FUNÇÃO COM GEMINI (IA REAL) + FALLBACK OFFLINE
+// =========================================================================
+
+const GEMINI_API_KEY = process.env.REACT_APP_GEMINI_KEY;
+
+const GROQ_API_KEY = process.env.REACT_APP_GROQ_KEY;
+
+const CONTEXTO_DESTEMIDOS = `Você é a IA da equipe de corretores Destemidos de Manaus. Especialista nos empreendimentos Direcional e Riva em Manaus e no MCMV.
+
+REGRAS — SIGA SEMPRE:
+- Responda como mensagem de WhatsApp: curto, direto, amigável.
+- Máximo 3 frases. Se listar, máximo 3 itens.
+- Nunca escreva textos longos ou parágrafos explicativos.
+- Use 1 emoji por mensagem no máximo.
+- Se precisar de mais detalhes, faça UMA pergunta de volta.
+- Nunca use títulos, subtítulos ou markdown complexo.
+
+Conhecimento:
+- Direcional: Brisas do Horizonte (Coroado), Parque Ville Orquídea (Lago Azul), Village Torres (Lago Azul), Conquista Jardim Botânico (Nova Cidade), Viva Vida Coral (Colônia Terra Nova), Conquista Jardim Norte (Santa Etelvina), Viva Vida Rio Amazonas (Tarumã), Bosque das Torres (Lago Azul), Parque Ville Lírio Azul (Lago Azul), Conquista Topázio (Colônia Terra Nova), Conquista Rio Negro (Ponta Negra), Viva Vida Rio Tapajós (Tarumã).
+- Riva: Amazon Boulevard Classic e Prime (Bairro da Paz), Città Oasis Azzure (Flores), Zenith Condomínio Clube (São Francisco).
+- MCMV 2026: Faixa 1 até R$2.850, Faixa 2 até R$4.700 (subsídio até R$55mil), Faixa 3 até R$8.600, Faixa 4 até R$12.000.
+- Parcela máxima: 30% da renda bruta familiar.
+- Docs CLT: RG/CPF, Estado Civil, Residência, Carteira de Trabalho, 3 contracheques, IR.
+- Docs Autônomo: RG/CPF, Estado Civil, Residência, Carteira Digital, 6 extratos, IR.
+- Docs Servidor: RG/CPF, Certidão Nascimento/Casamento, Residência, 3 contracheques, IR.`;
+
+export async function buscarRespostaGemini(mensagemDoUsuario, historicoMensagens = []) {
+  if (!GROQ_API_KEY) {
+    return buscarRespostaDoRobo(mensagemDoUsuario);
+  }
+
+  try {
+    const messages = [
+      { role: 'system', content: CONTEXTO_DESTEMIDOS },
+      ...historicoMensagens.map(msg => ({
+        role: msg.role === 'user' ? 'user' : 'assistant',
+        content: msg.content
+      })),
+      { role: 'user', content: mensagemDoUsuario }
+    ];
+
+    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${GROQ_API_KEY}`
+      },
+      body: JSON.stringify({
+        model: 'llama-3.1-8b-instant',
+        messages,
+        max_tokens: 150,
+        temperature: 0.7
+      })
+    });
+
+    if (!response.ok) throw new Error(`Erro na API Groq: ${response.status}`);
+
+    const data = await response.json();
+    const texto = data.choices?.[0]?.message?.content;
+
+    if (!texto) throw new Error('Resposta vazia');
+
+    return texto;
+
+  } catch (error) {
+    console.warn('Groq indisponível, usando robô offline:', error.message);
+    return buscarRespostaDoRobo(mensagemDoUsuario);
+  }
+}

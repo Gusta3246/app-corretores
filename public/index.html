@@ -133,39 +133,40 @@
         const txtInstalar = document.getElementById('install-text');
         let deferredPrompt;
 
-        // --- FUNÇÕES DE FEEDBACK PREMIUM ---
-        function playSuaveSound() {
+        const isStandalone = () => window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+
+        // --- FUNÇÕES DE SENSORIAL (SOM E VIBRAÇÃO) ---
+        function playSuccessSensorial() {
+            // 1. Vibração Leve e Dupla (Estilo Apple Pay)
+            if ('vibrate' in navigator) {
+                navigator.vibrate([40, 40, 40]); // Vibra, pausa, vibra
+            }
+
+            // 2. Som Suave "Hello" (Frequências harmônicas)
             try {
                 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-                const oscillator = audioCtx.createOscillator();
-                const gainNode = audioCtx.createGain();
+                
+                const playNote = (freq, startTime, duration, volume) => {
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.type = 'sine'; // Onda senoidal (suave)
+                    osc.frequency.setValueAtTime(freq, startTime);
+                    gain.gain.setValueAtTime(0, startTime);
+                    gain.gain.linearRampToValueAtTime(volume, startTime + 0.02);
+                    gain.gain.exponentialRampToValueAtTime(0.01, startTime + duration);
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.start(startTime);
+                    osc.stop(startTime + duration);
+                };
 
-                oscillator.type = 'sine'; // Onda senoidal = som arredondado/suave
-                // Frequência de 523.25Hz (Dó central) para ser agradável e não agudo
-                oscillator.frequency.setValueAtTime(523.25, audioCtx.currentTime);
-                oscillator.frequency.exponentialRampToValueAtTime(659.25, audioCtx.currentTime + 0.15);
-
-                gainNode.gain.setValueAtTime(0, audioCtx.currentTime);
-                gainNode.gain.linearRampToValueAtTime(0.2, audioCtx.currentTime + 0.05);
-                gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
-
-                oscillator.connect(gainNode);
-                gainNode.connect(audioCtx.destination);
-
-                oscillator.start();
-                oscillator.stop(audioCtx.currentTime + 0.3);
-            } catch (e) { console.log("Áudio não suportado"); }
-        }
-
-        function triggerVibration() {
-            if ('vibrate' in navigator) {
-                // Vibração dupla leve: (vibra 40ms, pausa 50ms, vibra 40ms)
-                navigator.vibrate([40, 50, 40]);
+                const now = audioCtx.currentTime;
+                playNote(523.25, now, 0.15, 0.1);      // Nota Dó (C5) - Suave
+                playNote(659.25, now + 0.08, 0.2, 0.08); // Nota Mi (E5) - Um pouco mais alta, criando o "Hello"
+            } catch (e) {
+                console.log("AudioContext não suportado");
             }
         }
-        // ------------------------------------
-
-        const isStandalone = () => window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
 
         function showPopup() {
             if (isStandalone() || localStorage.getItem('pwa_hide_prompt')) return;
@@ -202,9 +203,8 @@
         }
 
         btnInstalar.onclick = async () => {
-            // Executa o som e a vibração ao clicar
-            playSuaveSound();
-            triggerVibration();
+            // Dispara o efeito sensorial
+            playSuccessSensorial();
 
             if (deferredPrompt) {
                 deferredPrompt.prompt();

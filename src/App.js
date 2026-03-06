@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Search, Building, ExternalLink, MapPin, BookOpen, Maximize, Bed, LayoutGrid, Rocket, Quote, Sparkles, ChevronDown, ChevronUp, FileText, TableProperties, BookMarked, HelpCircle, Calculator, Bot, X, Send, Wand2, Paperclip, File as FileIcon, Trash2, FolderPlus, GripVertical, Plus, MessageCircle, Moon, Sun, AlertTriangle, Book } from 'lucide-react';
-import { buscarRespostaDoRobo } from './bot/dadosFinanciamento.js';
+import { buscarRespostaDoRobo, buscarRespostaGemini } from './bot/dadosFinanciamento.js';
 // === DADOS DAS REVISTAS E BASE DE CONHECIMENTO DO CHATBOT ===
 const revistasData = [
     { id: 1, title: "Brisas do Horizonte", brand: "Direcional", region: "Coroado - Zona Leste", size: "43m² a 45m²", bedrooms: "2 quartos", flooring: "Todo o apê", cover: "https://www.direcional.com.br/wp-content/uploads/2025/06/Perspectiva-Guarita-BrisasdoHorizonte.jpg.webp", link: "https://drive.google.com/file/d/18IXtAt9PLVjIsk2PkXIHXnVCaduVkGu2/view?usp=drive_link", aliases: ["brisas", "brisas do horizonte", "horizonte"], pois: ["UFAM (Universidade Federal do Amazonas)", "INPA (Instituto Nacional de Pesquisas da Amazônia)", "Hospital Adventista de Manaus", "Sesi Clube", "Centro de Convenções Studio 5", "Distrito Industrial"] },
@@ -123,7 +123,7 @@ export default function App() {
     const [activeBrand, setActiveBrand] = useState('Direcional');
     const [fraseDoDia] = useState(frasesMotivacionais[dayIndex % frasesMotivacionais.length]);
     const [imagemDoDia] = useState(imagensEquipeDiarias[dayIndex % imagensEquipeDiarias.length]);
-    const [modoNoturno, setModoNoturno] = useState(false);
+    const [modoNoturno, setModoNoturno] = useState(() => localStorage.getItem('modoNoturno') === 'true');
 
     // Estados para a aba Guia e Modal de POIs
     const [openGuiaIndex, setOpenGuiaIndex] = useState(null);
@@ -182,6 +182,8 @@ export default function App() {
     const [pendingDocs, setPendingDocs] = useState([]);
     const [pdfFileName, setPdfFileName] = useState("Pasta_do_Cliente");
     const [draggedItemIndex, setDraggedItemIndex] = useState(null);
+    const touchDragIndex = useRef(null);
+    const touchTargetIndex = useRef(null);
 
     useEffect(() => {
         if (!document.getElementById('pdf-lib-script')) {
@@ -285,17 +287,31 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
     }
     return botResponse;
   };
-    const handleSendChatMessage = () => {
+    const handleSendChatMessage = async () => {
         if (!chatInput.trim() || isChatLoading) return;
         const userMessage = chatInput;
         setChatInput('');
-        setChatMessages(prev => [...prev, { role: 'user', content: userMessage }]);
+        const novasMensagens = [...chatMessages, { role: 'user', content: userMessage }];
+        setChatMessages(novasMensagens);
         setIsChatLoading(true);
-        setTimeout(() => {
+
+        // Verifica se é comando de pasta (mantém offline)
+        if (userMessage.toLowerCase().includes('criar pasta') || userMessage.toLowerCase().includes('pasta do cliente') || userMessage.toLowerCase().includes('subir pasta')) {
+            setIsCreatingFolder(true);
+            setChatMessages(prev => [...prev, { role: 'bot', content: "Com certeza! Modo **Criar Pasta do Cliente** ativado! 📂✨\n\nÉ só clicar no botão de anexo ou arrastar os documentos pra cá. Vou te ajudar a organizar tudo na ordem certinha para o seu PDF sair perfeito!" }]);
+            setIsChatLoading(false);
+            return;
+        }
+
+        try {
+            const historico = novasMensagens.slice(-10); // últimas 10 mensagens como contexto
+            const responseText = await buscarRespostaGemini(userMessage, historico.slice(0, -1));
+            setChatMessages(prev => [...prev, { role: 'bot', content: responseText }]);
+        } catch (e) {
             const responseText = buscarRespostaDoRobo(userMessage);
             setChatMessages(prev => [...prev, { role: 'bot', content: responseText }]);
-            setIsChatLoading(false);
-        }, 800 + Math.random() * 700);
+        }
+        setIsChatLoading(false);
     };
 
     const handleFileUpload = (e) => {
@@ -339,6 +355,40 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
         newDocs.splice(draggedItemIndex, 1);
         newDocs.splice(dropIndex, 0, draggedItem);
         setPendingDocs(newDocs);
+        setDraggedItemIndex(null);
+    };
+
+    // === SUPORTE A TOUCH (CELULAR/TABLET) ===
+    const handleTouchStart = (e, index) => {
+        touchDragIndex.current = index;
+        setDraggedItemIndex(index);
+    };
+
+    const handleTouchMove = (e) => {
+        e.preventDefault();
+        const touch = e.touches[0];
+        const element = document.elementFromPoint(touch.clientX, touch.clientY);
+        if (element) {
+            const card = element.closest('[data-doc-index]');
+            if (card) {
+                const idx = parseInt(card.getAttribute('data-doc-index'));
+                touchTargetIndex.current = idx;
+            }
+        }
+    };
+
+    const handleTouchEnd = () => {
+        const from = touchDragIndex.current;
+        const to = touchTargetIndex.current;
+        if (from !== null && to !== null && from !== to) {
+            const newDocs = [...pendingDocs];
+            const draggedItem = newDocs[from];
+            newDocs.splice(from, 1);
+            newDocs.splice(to, 0, draggedItem);
+            setPendingDocs(newDocs);
+        }
+        touchDragIndex.current = null;
+        touchTargetIndex.current = null;
         setDraggedItemIndex(null);
     };
 
@@ -462,7 +512,7 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
                                     />
                                 </div>
                                 <button 
-                                    onClick={() => setModoNoturno(!modoNoturno)} 
+                                    onClick={() => { const novo = !modoNoturno; setModoNoturno(novo); localStorage.setItem('modoNoturno', novo); }} 
                                     className={`p-2.5 rounded-xl border transition-all duration-300 hover:scale-105 ${
                                         modoNoturno 
                                         ? 'bg-slate-800 border-slate-700 text-amber-400 hover:bg-slate-700 shadow-lg shadow-black/20' 
@@ -778,7 +828,12 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
             </div>
 
             {/* CHATBOT CONTAINER */}
-            <div className={`fixed bottom-6 right-6 rounded-3xl shadow-2xl flex flex-col z-50 transition-all duration-500 overflow-hidden origin-bottom-right ${isChatOpen ? 'scale-100 opacity-100' : 'scale-0 opacity-0 pointer-events-none'} ${isCreatingFolder ? 'w-[95vw] sm:w-[90vw] md:w-[85vw] h-[90vh]' : 'w-[350px] sm:w-[420px] h-[600px] max-h-[85vh]'} ${modoNoturno ? 'bg-slate-800' : 'bg-white'}`}>
+            <div className={`fixed z-50 transition-all duration-500 overflow-hidden flex flex-col shadow-2xl
+                ${isChatOpen ? 'scale-100 opacity-100' : 'scale-0 opacity-0 pointer-events-none'}
+                ${isCreatingFolder
+                    ? 'inset-0 rounded-none md:inset-3 md:rounded-3xl'
+                    : 'bottom-6 right-6 rounded-3xl w-[350px] sm:w-[420px] h-[600px] max-h-[85vh] origin-bottom-right'}
+                ${modoNoturno ? 'bg-slate-800' : 'bg-white'}`}>
                 <div className="bg-gradient-to-r from-indigo-900 to-blue-800 p-5 flex items-center justify-between shrink-0 shadow-lg">
                     <div className="flex items-center gap-3">
                         <div className="bg-white/10 p-2.5 rounded-2xl backdrop-blur-md border border-white/20">
@@ -825,21 +880,38 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
 
                 {isCreatingFolder && (
                     <div className={`p-4 sm:p-6 flex-1 overflow-y-auto custom-scrollbar flex flex-col gap-6 relative transition-colors ${modoNoturno ? 'bg-slate-900' : 'bg-slate-50'}`}>
-                        <div className={`p-5 rounded-2xl shadow-sm border flex flex-col gap-3 relative overflow-hidden transition-colors ${modoNoturno ? 'bg-slate-800 border-slate-700 text-white' : 'bg-white border-slate-100 text-slate-800'}`}>
-                            <button onClick={() => setIsCreatingFolder(false)} className={`absolute top-4 right-4 text-[10px] font-black uppercase tracking-wider px-3 py-1.5 rounded-lg border transition-all ${modoNoturno ? 'bg-slate-700 border-slate-600 text-slate-300 hover:bg-slate-600' : 'bg-slate-100 border-transparent text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 hover:border-indigo-100'}`}>
-                                Voltar ao Chat
-                            </button>
-                            <h3 className="font-black text-xl flex items-center gap-3">
+                        <div className={`p-5 rounded-2xl shadow-sm border flex flex-row items-center gap-4 relative overflow-hidden transition-colors ${modoNoturno ? 'bg-slate-800 border-slate-700 text-white' : 'bg-white border-slate-100 text-slate-800'}`}>
+                            <h3 className="font-black text-xl flex items-center gap-3 shrink-0">
                                 <FolderPlus className="text-indigo-600" size={24} />
                                 Criar Pasta do Cliente
                             </h3>
+                            <div className={`flex-1 p-2.5 rounded-xl border text-[10px] leading-relaxed flex flex-wrap gap-x-3 gap-y-1 items-center ${modoNoturno ? 'bg-slate-700 border-slate-600 text-slate-300' : 'bg-indigo-50 border-indigo-100 text-indigo-800'}`}>
+                                <span className="font-black uppercase tracking-wider">📋 Ordem:</span>
+                                <span><span className={`font-black ${modoNoturno ? 'text-white' : 'text-indigo-900'}`}>1º Pessoais</span><span className={`ml-1 ${modoNoturno ? 'text-slate-400' : 'text-indigo-500'}`}>(RG, CPF, Certidão, Residência)</span></span>
+                                <span><span className={`font-black ${modoNoturno ? 'text-white' : 'text-indigo-900'}`}>2º Financeiros</span><span className={`ml-1 ${modoNoturno ? 'text-slate-400' : 'text-indigo-500'}`}>(Contracheque, IR, Extrato)</span></span>
+                                <span className={`font-bold ${modoNoturno ? 'text-slate-500' : 'text-indigo-400'}`}>💡 Segure e arraste para reordenar</span>
+                            </div>
+                            <button onClick={() => setIsCreatingFolder(false)} className={`shrink-0 text-[10px] font-black uppercase tracking-wider px-3 py-1.5 rounded-lg border transition-all ${modoNoturno ? 'bg-slate-700 border-slate-600 text-slate-300 hover:bg-slate-600' : 'bg-slate-100 border-transparent text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 hover:border-indigo-100'}`}>
+                                Voltar ao Chat
+                            </button>
                         </div>
                         
                         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-5">
                             {pendingDocs.map((doc, index) => (
-                                <div key={doc.id} draggable onDragStart={(e) => handleDragStart(e, index)} onDragEnd={handleDragEnd} onDragOver={handleDragOver} onDrop={(e) => handleDrop(e, index)} className={`relative group border-2 border-dashed ${draggedItemIndex === index ? 'border-indigo-400 scale-95 opacity-50' : (modoNoturno ? 'border-transparent bg-slate-800 hover:border-indigo-500' : 'border-transparent bg-white hover:border-indigo-300')} rounded-2xl overflow-hidden shadow-sm hover:shadow-lg transition-all aspect-[3/4] flex flex-col cursor-move`}>
+                                <div
+                                    key={doc.id}
+                                    data-doc-index={index}
+                                    draggable
+                                    onDragStart={(e) => handleDragStart(e, index)}
+                                    onDragEnd={handleDragEnd}
+                                    onDragOver={handleDragOver}
+                                    onDrop={(e) => handleDrop(e, index)}
+                                    onTouchStart={(e) => handleTouchStart(e, index)}
+                                    onTouchMove={handleTouchMove}
+                                    onTouchEnd={handleTouchEnd}
+                                    className={`relative group border-2 border-dashed ${draggedItemIndex === index ? 'border-indigo-400 scale-95 opacity-50' : (modoNoturno ? 'border-transparent bg-slate-800 hover:border-indigo-500' : 'border-transparent bg-white hover:border-indigo-300')} rounded-2xl overflow-hidden shadow-sm hover:shadow-lg transition-all aspect-[3/4] flex flex-col cursor-move`}>
                                     <div className="absolute top-2 left-2 bg-indigo-900/80 text-white text-[10px] font-black w-6 h-6 flex items-center justify-center rounded-lg z-10 backdrop-blur-sm">{index + 1}</div>
-                                    <button onClick={(e) => { e.stopPropagation(); removeDoc(doc.id); }} className="absolute top-2 right-2 bg-red-500 text-white p-2 rounded-xl opacity-0 group-hover:opacity-100 transition-all z-10 hover:bg-red-600 shadow-lg"><Trash2 size={14} /></button>
+                                    <button onClick={(e) => { e.stopPropagation(); removeDoc(doc.id); }} className="absolute top-2 right-2 bg-red-500 text-white p-2 rounded-xl opacity-0 group-hover:opacity-100 active:opacity-100 transition-all z-10 hover:bg-red-600 shadow-lg"><Trash2 size={14} /></button>
                                     <div className={`flex-1 flex items-center justify-center overflow-hidden ${modoNoturno ? 'bg-slate-950' : 'bg-slate-100'}`}>
                                         {doc.previewUrl ? <img src={doc.previewUrl} alt="preview" className="w-full h-full object-cover" /> : <div className="flex flex-col items-center gap-2 text-slate-400"><FileIcon size={40} className="text-red-400" /><span className="text-[10px] font-black uppercase tracking-widest">PDF</span></div>}
                                     </div>
@@ -921,6 +993,3 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
         </div>
     );
 }
-
-
-

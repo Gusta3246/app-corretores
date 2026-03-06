@@ -12,36 +12,25 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="Destemidos">
     
-    <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
-    <meta name="theme-color" content="#0f172a" media="(prefers-color-scheme: dark)">
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="theme-color" content="#ffffff" />
 
     <script src="https://cdn.tailwindcss.com"></script>
 
     <style>
+        /* Definimos uma variável para o tamanho do notch + um extra de 12px */
         :root {
-            /* Notch + respiro que você gostou */
             --topo-seguro: calc(env(safe-area-inset-top) + 12px);
-            --bg-barra: #ffffff;
-        }
-
-        /* Detecta Modo Escuro do Sistema ou Classe .dark do Tailwind */
-        @media (prefers-color-scheme: dark) {
-            :root { --bg-barra: #0f172a; } /* Cor azul escura do seu print */
-        }
-
-        /* Se o seu JS adiciona a classe .dark no html, isso reforça a cor */
-        html.dark :root {
-            --bg-barra: #0f172a;
         }
 
         html, body {
             margin: 0;
             padding: 0;
-            background-color: var(--bg-barra);
+            background-color: #ffffff;
             overscroll-behavior-y: none;
         }
 
-        /* A "capa" do topo que protege o notch */
+        /* A "capa" do topo agora é um pouco maior que o notch */
         body::before {
             content: "";
             position: fixed;
@@ -49,16 +38,15 @@
             left: 0;
             width: 100%;
             height: var(--topo-seguro);
-            background-color: var(--bg-barra);
+            background-color: #ffffff; 
             z-index: 9999;
-            pointer-events: none;
         }
 
         #root {
+            /* Empurra o conteúdo para baixo usando a mesma medida */
             padding-top: var(--topo-seguro);
             padding-bottom: env(safe-area-inset-bottom);
             min-height: 100vh;
-            background-color: var(--bg-barra);
         }
     </style>
 </head>

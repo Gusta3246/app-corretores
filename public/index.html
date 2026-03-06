@@ -18,11 +18,18 @@
     <script src="https://cdn.tailwindcss.com"></script>
 
     <style>
-        /* Opcional: Garante que o fundo do corpo preencha a tela toda sem espaços brancos no topo */
+        /* Resolve o problema do Notch sem alterar seu HTML/React */
+        #root {
+            padding-top: env(safe-area-inset-top);
+            padding-bottom: env(safe-area-inset-bottom);
+            padding-left: env(safe-area-inset-left);
+            padding-right: env(safe-area-inset-right);
+            min-height: 100vh;
+        }
+        
         body {
             margin: 0;
-            padding: 0;
-            background-color: #000000; /* Combine com sua theme-color */
+            background-color: #ffffff; /* Ajuste para a cor de fundo do seu app */
         }
     </style>
 </head>

@@ -52,7 +52,7 @@
     <link rel="apple-touch-startup-image" media="screen and (device-width: 820px) and (device-height: 1180px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" href="/splash_screens/10.9__iPad_Air_portrait.png">
     <link rel="apple-touch-startup-image" media="screen and (device-width: 834px) and (device-height: 1112px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" href="/splash_screens/10.5__iPad_Air_portrait.png">
     <link rel="apple-touch-startup-image" media="screen and (device-width: 810px) and (device-height: 1080px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" href="/splash_screens/10.2__iPad_portrait.png">
-    <link rel="apple-touch-startup-image" media="screen and (device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" href="/splash_screens/9.7__iPad_Pro__7.9__iPad_mini__9.7__iPad_Air__9.7__iPad_portrait.png">
+    <link rel="apple-touch-startup-image" media="screen and (device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" href="/splash_screens/9.7__iPad_Pro__7.9__iPad_mini__9.7__iPad_Air__9.7__iPad_landscape.png">
     <link rel="apple-touch-startup-image" media="screen and (device-width: 744px) and (device-height: 1133px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" href="/splash_screens/8.3__iPad_Mini_portrait.png">
 
     <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -68,14 +68,12 @@
         :root {
             --topo-seguro: calc(env(safe-area-inset-top) + 12px);
         }
-
         html, body {
             margin: 0;
             padding: 0;
             background-color: #ffffff;
             overscroll-behavior-y: none;
         }
-
         body::before {
             content: "";
             position: fixed;
@@ -86,15 +84,104 @@
             background-color: #ffffff; 
             z-index: 9999;
         }
-
         #root {
             padding-top: var(--topo-seguro);
             padding-bottom: env(safe-area-inset-bottom);
             min-height: 100vh;
         }
+
+        /* Estilo para animação do Pop-up */
+        #install-popup {
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
     </style>
 </head>
 <body>
     <div id="root"></div>
+
+    <div id="install-popup" class="fixed bottom-6 left-4 right-4 md:left-auto md:right-6 md:w-80 bg-white dark:bg-zinc-900 p-4 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.2)] border border-gray-100 dark:border-zinc-800 z-[10000] hidden flex-col gap-3 transform translate-y-32">
+        <div class="flex items-start gap-3">
+            <img src="https://i.postimg.cc/XpWRf9pj/logo.png" class="w-12 h-12 rounded-xl shadow-md" alt="Logo">
+            <div class="flex-1">
+                <h4 class="font-bold text-gray-900 dark:text-white text-sm">Destemidos App</h4>
+                <p id="install-text" class="text-xs text-gray-500 dark:text-zinc-400 leading-snug mt-1">
+                    Instale para ter acesso rápido e experiência em tela cheia.
+                </p>
+            </div>
+            <button id="close-popup" class="text-gray-400 hover:text-gray-600 dark:hover:text-white transition-colors text-lg p-1">✕</button>
+        </div>
+        <button id="install-button" class="w-full bg-black dark:bg-white text-white dark:text-black font-bold py-3 rounded-xl text-sm transition-all active:scale-95 shadow-lg">
+            Instalar agora
+        </button>
+    </div>
+
+    <script>
+        const popup = document.getElementById('install-popup');
+        const btnInstalar = document.getElementById('install-button');
+        const btnFechar = document.getElementById('close-popup');
+        const txtInstalar = document.getElementById('install-text');
+        let deferredPrompt;
+
+        // 1. Verifica se já está no modo APP (Standalone)
+        const isStandalone = () => {
+            return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+        };
+
+        // 2. Verifica se o usuário fechou o popup nas últimas 48 horas
+        const wasDismissed = () => {
+            const dismissedAt = localStorage.getItem('pwa_dismissed_at');
+            if (!dismissedAt) return false;
+            const hours = (Date.now() - parseInt(dismissedAt)) / (1000 * 60 * 60);
+            return hours < 48; // Não mostra de novo por 48h se ele fechou no X
+        };
+
+        // Função para mostrar o popup com animação
+        function showPopup() {
+            if (isStandalone() || wasDismissed()) return;
+            popup.classList.remove('hidden');
+            setTimeout(() => popup.classList.remove('translate-y-32'), 100);
+        }
+
+        // Função para esconder o popup
+        function hidePopup() {
+            popup.classList.add('translate-y-32');
+            setTimeout(() => popup.classList.add('hidden'), 400);
+        }
+
+        // LÓGICA ANDROID / WINDOWS (Nativo)
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            showPopup();
+        });
+
+        // LÓGICA IPHONE (Manual)
+        const isIos = /iphone|ipad|ipod/.test(window.navigator.userAgent.toLowerCase());
+        if (isIos && !isStandalone()) {
+            txtInstalar.innerHTML = "Toque no ícone de <b>compartilhar</b> <span class='text-lg'>⎋</span> e depois em <b>'Adicionar à Tela de Início'</b>.";
+            btnInstalar.innerText = "Entendi";
+            setTimeout(showPopup, 3000); // Mostra após 3 segundos no iPhone
+        }
+
+        // Clique no botão principal
+        btnInstalar.addEventListener('click', async () => {
+            if (deferredPrompt) {
+                // Dispara instalação no Android/PC
+                deferredPrompt.prompt();
+                const { outcome } = await deferredPrompt.userChoice;
+                if (outcome === 'accepted') hidePopup();
+                deferredPrompt = null;
+            } else {
+                // No iOS apenas fechamos, pois ele já leu a instrução
+                hidePopup();
+            }
+        });
+
+        // Clique no botão Fechar (X)
+        btnFechar.onclick = () => {
+            localStorage.setItem('pwa_dismissed_at', Date.now().toString());
+            hidePopup();
+        };
+    </script>
 </body>
 </html>

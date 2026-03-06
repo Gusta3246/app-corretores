@@ -13,24 +13,31 @@
     <meta name="apple-mobile-web-app-title" content="Destemidos">
     
     <meta name="mobile-web-app-capable" content="yes" />
-    <meta name="theme-color" content="#ffffff" />
+    
+    <meta name="theme-color" content="#ffffff" id="theme-meta" />
 
     <script src="https://cdn.tailwindcss.com"></script>
 
     <style>
-        /* Definimos uma variável para o tamanho do notch + um extra de 12px */
         :root {
             --topo-seguro: calc(env(safe-area-inset-top) + 12px);
+            --bg-app: #ffffff; /* Cor padrão (clara) */
+        }
+
+        /* Quando o seu app React adicionar a classe 'dark' ao HTML ou Body */
+        .dark, [data-theme='dark'] {
+            --bg-app: #000000; /* Cor do modo noturno */
         }
 
         html, body {
             margin: 0;
             padding: 0;
-            background-color: #ffffff;
+            background-color: var(--bg-app);
             overscroll-behavior-y: none;
+            transition: background-color 0.3s ease;
         }
 
-        /* A "capa" do topo agora é um pouco maior que o notch */
+        /* A barra de proteção agora segue a variável de cor */
         body::before {
             content: "";
             position: fixed;
@@ -38,15 +45,16 @@
             left: 0;
             width: 100%;
             height: var(--topo-seguro);
-            background-color: #ffffff; 
+            background-color: var(--bg-app); 
             z-index: 9999;
+            transition: background-color 0.3s ease;
         }
 
         #root {
-            /* Empurra o conteúdo para baixo usando a mesma medida */
             padding-top: var(--topo-seguro);
             padding-bottom: env(safe-area-inset-bottom);
             min-height: 100vh;
+            background-color: var(--bg-app);
         }
     </style>
 </head>

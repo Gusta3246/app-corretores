@@ -2,42 +2,50 @@
 <html lang="pt-br">
 <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <title>Destemidos</title>
 
     <link rel="icon" type="image/png" href="https://i.postimg.cc/XpWRf9pj/logo.png" />
     <link rel="apple-touch-icon" href="https://i.postimg.cc/XpWRf9pj/logo.png" />
 
     <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="Destemidos">
     
     <meta name="mobile-web-app-capable" content="yes" />
-    <meta name="theme-color" content="#000000" />
+    <meta name="theme-color" content="#ffffff" />
 
     <script src="https://cdn.tailwindcss.com"></script>
 
     <style>
-        /* Bloqueia o scroll do corpo para evitar que a tela toda suba */
         html, body {
             margin: 0;
             padding: 0;
-            width: 100%;
+            background-color: #ffffff; /* Cor de fundo que preencherá a área da barra inferior */
             height: 100%;
-            overflow: hidden; 
-            background-color: #000000;
         }
 
-        /* O #root vira o container de scroll, respeitando o notch */
         #root {
-            position: fixed;
-            top: env(safe-area-inset-top); /* Empurra exatamente o tamanho do notch */
-            left: 0;
-            right: 0;
-            bottom: env(safe-area-inset-bottom);
-            overflow-y: auto; /* Permite o scroll apenas aqui dentro */
-            background-color: #ffffff; /* Cor de fundo do seu site */
-            -webkit-overflow-scrolling: touch; /* Scroll suave no iOS */
+            /* 1. Resolve o Notch: Empurra o conteúdo para baixo no topo */
+            padding-top: env(safe-area-inset-top);
+            
+            /* 2. Resolve a Barra Inferior: Garante que o conteúdo chegue até o final, 
+               mas com um respiro para a barrinha do iOS não cobrir botões importantes */
+            padding-bottom: env(safe-area-inset-bottom);
+            
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Isso impede que o topo "vaze" cores estranhas ao puxar para baixo */
+        @media screen and (display-mode: standalone) {
+            header, .seu-topo-fixo {
+                position: sticky;
+                top: 0;
+                z-index: 50;
+                background-color: #ffffff;
+            }
         }
     </style>
 </head>

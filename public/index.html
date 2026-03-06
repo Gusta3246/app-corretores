@@ -60,13 +60,18 @@
     <meta name="apple-mobile-web-app-title" content="Destemidos">
     
     <meta name="mobile-web-app-capable" content="yes" />
-    <meta name="theme-color" content="#ffffff" />
+    <meta name="theme-color" content="#ffffff" id="theme-color-meta" />
 
     <script src="https://cdn.tailwindcss.com"></script>
 
     <style>
         :root {
-            --topo-seguro: calc(env(safe-area-inset-top) + 12px);
+            --topo-seguro: 0px;
+            --notch-bg: #ffffff;
+        }
+        /* Somente iOS standalone: ativa safe area */
+        html.ios-standalone {
+            --topo-seguro: env(safe-area-inset-top);
         }
         html, body {
             margin: 0;
@@ -74,15 +79,17 @@
             background-color: #ffffff;
             overscroll-behavior-y: none;
         }
-        body::before {
+        /* Barra do notch: SOMENTE iOS standalone */
+        html.ios-standalone body::before {
             content: "";
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: var(--topo-seguro);
-            background-color: #ffffff; 
+            background-color: var(--notch-bg);
             z-index: 9999;
+            transition: background-color 0.5s ease;
         }
         #root {
             padding-top: var(--topo-seguro);
@@ -195,7 +202,24 @@
             showPopup();
         });
 
+        // === DETECÇÃO iOS + CONTROLE DA BARRA DO NOTCH ===
         const isIos = /iphone|ipad|ipod/.test(window.navigator.userAgent.toLowerCase());
+
+        // Ativa classe ios-standalone SOMENTE no iOS em modo PWA
+        if (isIos && isStandalone()) {
+            document.documentElement.classList.add('ios-standalone');
+        }
+
+        // Função global chamada pelo React quando o usuário muda o tema
+        window.setNotchTheme = function(dark) {
+            const bg = dark ? '#0F172A' : '#ffffff';
+            const themeColor = dark ? '#0F172A' : '#ffffff';
+            document.documentElement.style.setProperty('--notch-bg', bg);
+            document.documentElement.style.setProperty('--topo-seguro', 'env(safe-area-inset-top)');
+            const meta = document.getElementById('theme-color-meta');
+            if (meta) meta.setAttribute('content', themeColor);
+        };
+
         if (isIos && !isStandalone()) {
             txtInstalar.innerHTML = "Toque no ícone de <b>compartilhar</b> <span class='text-xl'>⎋</span> e depois em <b>'Adicionar à Tela de Início'</b>.";
             btnInstalar.innerText = "Entendi";

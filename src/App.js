@@ -1203,7 +1203,7 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
                     </div>
                     <div className="px-3 pb-3">
                         <div className="relative flex items-center">
-                            <input type="file" ref={fileInputRef} onChange={handleFileUpload} multiple accept="image/png, image/jpeg, image/jpg, application/pdf" className="hidden" />
+                            <input type="file" ref={fileInputRef} onChange={handleFileUpload} multiple accept="image/*,application/pdf" className="hidden" />
                             <input 
                                 ref={chatInputRef}
                                 type="text" 

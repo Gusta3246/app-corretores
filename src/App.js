@@ -92,6 +92,11 @@ const today = new Date();
 const dayIndex = Math.floor((today.getTime() - today.getTimezoneOffset() * 60000) / (1000 * 60 * 60 * 24));
 
 export default function App() {
+    const haptic = (style = 'light') => {
+        if (!navigator.vibrate) return;
+        const p = { light: 10, medium: 25, heavy: 40, success: [10, 50, 10] };
+        navigator.vibrate(p[style] || 10);
+    };
     // --- LÓGICA DO ROBÔ DE VENDAS ---
   const obterRespostaDoBot = (mensagem) => {
     const texto = mensagem.toLowerCase();
@@ -131,12 +136,21 @@ export default function App() {
 
     // === ESTADOS DA IA OFFLINE ===
     const [isChatOpen, setIsChatOpen] = useState(false);
-    const [chatMessages, setChatMessages] = useState([
-        { role: 'bot', content: 'Olá, Destemido! Sou a sua IA de apoio. Posso te ajudar com detalhes dos imóveis, pontos de referência ou criar a sua pasta de documentos rapidinho. Como posso facilitar sua venda hoje? ✨' }
-    ]);
+    const [chatMessages, setChatMessages] = useState(() => {
+        try {
+            const s = localStorage.getItem('dst_chat');
+            if (s) { const p = JSON.parse(s); if (Array.isArray(p) && p.length > 0) return p; }
+        } catch {}
+        return [{ role: 'bot', content: 'Olá, Destemido! Sou a sua IA de apoio. Posso te ajudar com detalhes dos imóveis, pontos de referência ou criar a sua pasta de documentos rapidinho. Como posso facilitar sua venda hoje? ✨' }];
+    });
     const [chatInput, setChatInput] = useState("");
     const [isChatLoading, setIsChatLoading] = useState(false);
     const messagesEndRef = useRef(null);
+    const chatInputRef = useRef(null);
+    const [showOnboarding, setShowOnboarding] = useState(() => !localStorage.getItem('dst_onboarded'));
+    const [onboardingStep, setOnboardingStep] = useState(0);
+    const [activeZone, setActiveZone] = useState(null);
+    const [clientName, setClientName] = useState(() => localStorage.getItem('dst_client') || '');
 
     // ESTADO PARA AS FRASES AMIGÁVEIS DO ROBÔ E CONTROLE DE SCROLL
     const [robotPhraseIndex, setRobotPhraseIndex] = useState(0);
@@ -175,10 +189,27 @@ export default function App() {
         };
     }, []);
 
+    useEffect(() => {
+        try { localStorage.setItem('dst_chat', JSON.stringify(chatMessages.slice(-40))); } catch {}
+    }, [chatMessages]);
+
+    useEffect(() => {
+        const last = [...chatMessages].reverse().find(m => m.role === 'user');
+        if (!last) return;
+        const m = last.content.match(/(?:cliente[^\w]*(?:é|e|se chama|chama)?[:\s]+|para[:\s]+|nome[:\s]+)([A-ZÁÉÍÓÚÂÊÎÔÛÃÕÇ][a-záéíóúâêîôûãõç]+(?:\s+[A-ZÁÉÍÓÚÂÊÎÔÛÃÕÇ][a-záéíóúâêîôûãõç]+)*)/u);
+        if (m && m[1]) {
+            const n = m[1].trim();
+            setPdfFileName('Pasta_' + n.replace(/\s+/g, '_'));
+            setClientName(n);
+            localStorage.setItem('dst_client', n);
+        }
+    }, [chatMessages]);
+
     // === ESTADOS PARA CRIAÇÃO DE PASTA DO CLIENTE ===
     const fileInputRef = useRef(null);
     const [isCreatingFolder, setIsCreatingFolder] = useState(false);
     const [isFinalizingFolder, setIsFinalizingFolder] = useState(false);
+    const [showThumbsUp, setShowThumbsUp] = useState(false);
     const [pendingDocs, setPendingDocs] = useState([]);
     const [pdfFileName, setPdfFileName] = useState("Pasta_do_Cliente");
     const [draggedItemIndex, setDraggedItemIndex] = useState(null);
@@ -191,6 +222,18 @@ export default function App() {
             script.id = 'pdf-lib-script';
             script.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js';
             script.async = true;
+            document.body.appendChild(script);
+        }
+        if (!document.getElementById('pdfjs-script')) {
+            const script = document.createElement('script');
+            script.id = 'pdfjs-script';
+            script.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+            script.async = true;
+            script.onload = () => {
+                if (window.pdfjsLib) {
+                    window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+                }
+            };
             document.body.appendChild(script);
         }
     }, []);
@@ -312,16 +355,43 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
             setChatMessages(prev => [...prev, { role: 'bot', content: responseText }]);
         }
         setIsChatLoading(false);
+        setTimeout(() => chatInputRef.current?.focus(), 100);
     };
 
-    const handleFileUpload = (e) => {
+    const generatePdfPreview = async (file) => {
+        try {
+            if (!window.pdfjsLib) return null;
+            const arrayBuffer = await file.arrayBuffer();
+            const pdf = await window.pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+            const page = await pdf.getPage(1);
+            const viewport = page.getViewport({ scale: 1.5 });
+            const canvas = document.createElement('canvas');
+            canvas.width = viewport.width;
+            canvas.height = viewport.height;
+            const ctx = canvas.getContext('2d');
+            await page.render({ canvasContext: ctx, viewport }).promise;
+            return canvas.toDataURL('image/jpeg', 0.8);
+        } catch (e) {
+            return null;
+        }
+    };
+
+    const handleFileUpload = async (e) => {
         const files = Array.from(e.target.files);
         if (files.length === 0) return;
-        const newDocs = files.map(file => ({
-            id: Math.random().toString(36).substring(7),
-            file,
-            name: file.name,
-            previewUrl: file.type.startsWith('image/') ? URL.createObjectURL(file) : null
+        const newDocs = await Promise.all(files.map(async (file) => {
+            let previewUrl = null;
+            if (file.type.startsWith('image/')) {
+                previewUrl = URL.createObjectURL(file);
+            } else if (file.type === 'application/pdf') {
+                previewUrl = await generatePdfPreview(file);
+            }
+            return {
+                id: Math.random().toString(36).substring(7),
+                file,
+                name: file.name,
+                previewUrl
+            };
         }));
         setPendingDocs(prev => [...prev, ...newDocs]);
         if (!isCreatingFolder) {
@@ -437,6 +507,8 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
             setIsCreatingFolder(false);
             setPendingDocs([]);
             setIsFinalizingFolder(false);
+            setShowThumbsUp(true);
+            setTimeout(() => setShowThumbsUp(false), 2800);
         } catch (error) {
             setChatMessages(prev => [...prev, { role: 'bot', content: "Ops, algo não deu certo ao gerar o arquivo. 😕 Tente conferir se as imagens estão legíveis." }]);
         }
@@ -472,11 +544,26 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }, [chatMessages, isChatOpen]);
 
+    const ZONES = [
+        { id: 'Norte', label: 'Norte', c: 'blue' },
+        { id: 'Sul', label: 'Sul', c: 'rose' },
+        { id: 'Leste', label: 'Leste', c: 'amber' },
+        { id: 'Oeste', label: 'Oeste', c: 'emerald' },
+        { id: 'Centro', label: 'Centro', c: 'violet' },
+    ];
+    const zoneColors = {
+        blue:    a => a ? 'bg-blue-600 text-white border-blue-600' : 'border-slate-200 text-slate-500 hover:border-blue-400 hover:text-blue-600',
+        rose:    a => a ? 'bg-rose-500 text-white border-rose-500' : 'border-slate-200 text-slate-500 hover:border-rose-400 hover:text-rose-500',
+        amber:   a => a ? 'bg-amber-500 text-white border-amber-500' : 'border-slate-200 text-slate-500 hover:border-amber-400 hover:text-amber-500',
+        emerald: a => a ? 'bg-emerald-600 text-white border-emerald-600' : 'border-slate-200 text-slate-500 hover:border-emerald-400 hover:text-emerald-600',
+        violet:  a => a ? 'bg-violet-600 text-white border-violet-600' : 'border-slate-200 text-slate-500 hover:border-violet-400 hover:text-violet-600',
+    };
     const filteredRevistas = revistasData.filter(revista => {
         const matchesSearch = revista.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
             revista.region.toLowerCase().includes(searchTerm.toLowerCase());
         const matchesBrand = revista.brand === activeBrand;
-        return matchesSearch && matchesBrand;
+        const matchesZone = !activeZone || revista.region.toLowerCase().includes(activeZone.toLowerCase());
+        return matchesSearch && matchesBrand && matchesZone;
     });
 
     return (
@@ -512,7 +599,7 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
                                     />
                                 </div>
                                 <button 
-                                    onClick={() => { const novo = !modoNoturno; setModoNoturno(novo); localStorage.setItem('modoNoturno', novo); }} 
+                                    onClick={() => { haptic('medium'); const novo = !modoNoturno; setModoNoturno(novo); localStorage.setItem('modoNoturno', novo); }} 
                                     className={`p-2.5 rounded-xl border transition-all duration-300 hover:scale-105 ${
                                         modoNoturno 
                                         ? 'bg-slate-800 border-slate-700 text-amber-400 hover:bg-slate-700 shadow-lg shadow-black/20' 
@@ -551,15 +638,15 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
                 </div>
 
                 {/* NAVEGAÇÃO DE ABAS */}
-                <div className={`border-b mb-8 overflow-x-auto custom-scrollbar transition-colors duration-500 ${modoNoturno ? 'border-slate-800' : 'border-gray-200'}`}>
+                <div className={`border-b overflow-x-auto custom-scrollbar transition-colors duration-500 ${modoNoturno ? 'border-slate-800' : 'border-gray-200'}`}>
                     <nav className="-mb-px flex space-x-6 sm:space-x-8 min-w-max" aria-label="Tabs">
-                        <button onClick={() => setActiveBrand('Direcional')} className={`whitespace-nowrap py-4 px-2 border-b-2 transition-colors flex items-center ${activeBrand === 'Direcional' ? (modoNoturno ? 'border-blue-500' : 'border-blue-900') : 'border-transparent hover:border-gray-300'}`}>
+                        <button onClick={() => { haptic(); setActiveBrand('Direcional'); }} className={`whitespace-nowrap py-4 px-2 border-b-2 transition-colors flex items-center ${activeBrand === 'Direcional' ? (modoNoturno ? 'border-blue-500' : 'border-blue-900') : 'border-transparent hover:border-gray-300'}`}>
                             <div className={`flex items-center transition-all ${activeBrand === 'Direcional' ? 'opacity-100' : 'opacity-50 grayscale hover:grayscale-0 hover:opacity-100'}`}>
                                 <span className={`font-black text-lg tracking-tight ${modoNoturno ? 'text-blue-400' : 'text-blue-900'}`}>DIRECIONAL</span>
                                 <span className="w-1.5 h-1.5 bg-red-600 ml-1 rounded-sm"></span>
                             </div>
                         </button>
-                        <button onClick={() => setActiveBrand('Riva')} className={`whitespace-nowrap py-4 px-2 border-b-2 transition-colors flex items-center ${activeBrand === 'Riva' ? (modoNoturno ? 'border-indigo-400' : 'border-indigo-950') : 'border-transparent hover:border-gray-300'}`}>
+                        <button onClick={() => { haptic(); setActiveBrand('Riva'); }} className={`whitespace-nowrap py-4 px-2 border-b-2 transition-colors flex items-center ${activeBrand === 'Riva' ? (modoNoturno ? 'border-indigo-400' : 'border-indigo-950') : 'border-transparent hover:border-gray-300'}`}>
                             <div className={`flex items-center transition-all ${activeBrand === 'Riva' ? 'opacity-100' : 'opacity-50 grayscale hover:grayscale-0 hover:opacity-100'}`}>
                                 <span className={`font-black text-lg tracking-tight ${modoNoturno ? 'text-indigo-400' : 'text-indigo-950'}`}>RIVA</span>
                                 <span className={`w-1.5 h-1.5 ml-1 rounded-sm ${modoNoturno ? 'bg-indigo-400' : 'bg-indigo-950'}`}></span>
@@ -577,13 +664,13 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
                                 <TableProperties size={16} className={`ml-1.5 ${modoNoturno ? 'text-violet-400' : 'text-violet-600'}`} />
                             </div>
                         </a>
-                        <button onClick={() => setActiveBrand('Utilitarios')} className={`whitespace-nowrap py-4 px-2 border-b-2 transition-colors flex items-center ${activeBrand === 'Utilitarios' ? 'border-orange-600' : 'border-transparent hover:border-gray-300'}`}>
+                        <button onClick={() => { haptic(); setActiveBrand('Utilitarios'); }} className={`whitespace-nowrap py-4 px-2 border-b-2 transition-colors flex items-center ${activeBrand === 'Utilitarios' ? 'border-orange-600' : 'border-transparent hover:border-gray-300'}`}>
                             <div className={`flex items-center transition-all ${activeBrand === 'Utilitarios' ? 'opacity-100' : 'opacity-50 grayscale hover:grayscale-0 hover:opacity-100'}`}>
                                 <span className="text-orange-600 font-black text-lg tracking-tight">UTILITÁRIOS</span>
                                 <BookMarked size={16} className="ml-1.5 text-orange-600" />
                             </div>
                         </button>
-                        <button onClick={() => setActiveBrand('Guia')} className={`whitespace-nowrap py-4 px-2 border-b-2 transition-colors flex items-center ${activeBrand === 'Guia' ? 'border-rose-600' : 'border-transparent hover:border-gray-300'}`}>
+                        <button onClick={() => { haptic(); setActiveBrand('Guia'); }} className={`whitespace-nowrap py-4 px-2 border-b-2 transition-colors flex items-center ${activeBrand === 'Guia' ? 'border-rose-600' : 'border-transparent hover:border-gray-300'}`}>
                             <div className={`flex items-center transition-all ${activeBrand === 'Guia' ? 'opacity-100' : 'opacity-50 grayscale hover:grayscale-0 hover:opacity-100'}`}>
                                 <span className="text-rose-600 font-black text-lg tracking-tight">GUIA</span>
                                 <HelpCircle size={16} className="ml-1.5 text-rose-600" />
@@ -591,6 +678,25 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
                         </button>
                     </nav>
                 </div>
+
+                {/* FILTROS DE ZONA — abaixo das abas, só quando Direcional/Riva */}
+                {(activeBrand === 'Direcional' || activeBrand === 'Riva') && (
+                    <div className="flex items-center gap-1.5 flex-wrap py-3 mb-5">
+                        {ZONES.map(z => {
+                            const a = activeZone === z.id;
+                            return (
+                                <button key={z.id}
+                                    onClick={() => { haptic(); setActiveZone(a ? null : z.id); }}
+                                    className={`text-[10px] font-black uppercase tracking-wider px-3 py-1.5 rounded-lg border transition-all ${zoneColors[z.c](a)}`}>
+                                    {z.label}
+                                </button>
+                            );
+                        })}
+                        {activeZone && (
+                            <button onClick={() => { haptic(); setActiveZone(null); }} className={`text-[10px] font-bold px-2 py-1.5 transition-colors ${modoNoturno ? 'text-slate-500 hover:text-slate-300' : 'text-slate-400 hover:text-slate-600'}`}>✕ limpar</button>
+                        )}
+                    </div>
+                )}
 
                 {(activeBrand === 'Direcional' || activeBrand === 'Riva') && (
                     <>
@@ -629,7 +735,7 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
                                                 <a href={revista.link} target="_blank" rel="noopener noreferrer" className={`w-full flex items-center justify-center gap-2 py-3 rounded-lg font-semibold transition-colors duration-200 ${revista.brand === 'Direcional' ? 'bg-red-600 hover:bg-red-700 text-white' : 'bg-indigo-950 hover:bg-indigo-900 text-white'}`}>
                                                     Acessar Revista (PDF) <ExternalLink size={18} />
                                                 </a>
-                                                <button onClick={() => setSelectedPois(revista)} className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-lg font-semibold transition-colors duration-200 border text-sm ${modoNoturno ? 'bg-slate-700 border-slate-600 text-slate-200 hover:bg-slate-600' : 'bg-slate-100 border-slate-200 text-slate-700 hover:bg-slate-200'}`}>
+                                                <button onClick={() => { haptic(); setSelectedPois(revista); }} className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-lg font-semibold transition-colors duration-200 border text-sm ${modoNoturno ? 'bg-slate-700 border-slate-600 text-slate-200 hover:bg-slate-600' : 'bg-slate-100 border-slate-200 text-slate-700 hover:bg-slate-200'}`}>
                                                     <MapPin size={16} className="text-rose-500" /> Ver Pontos de Referência
                                                 </button>
                                             </div>
@@ -659,7 +765,7 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
                     <div className="max-w-4xl mx-auto space-y-6">
                         {/* ITEM 1: CÓDIGO DAS FAIXAS */}
                         <div className={`border rounded-xl overflow-hidden shadow-sm transition-colors ${modoNoturno ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}>
-                            <button onClick={() => setOpenGuiaIndex(openGuiaIndex === 0 ? null : 0)} className={`w-full text-left p-5 flex justify-between items-center transition-colors ${modoNoturno ? 'bg-slate-800 hover:bg-slate-700' : 'bg-white hover:bg-slate-50'}`}>
+                            <button onClick={() => { haptic(); setOpenGuiaIndex(openGuiaIndex === 0 ? null : 0); }} className={`w-full text-left p-5 flex justify-between items-center transition-colors ${modoNoturno ? 'bg-slate-800 hover:bg-slate-700' : 'bg-white hover:bg-slate-50'}`}>
                                 <h3 className={`font-bold text-lg flex items-center gap-2 ${modoNoturno ? 'text-white' : 'text-slate-800'}`}><HelpCircle className="text-blue-500" size={20} /> CÓDIGO DAS FAIXAS DE RENDA</h3>
                                 {openGuiaIndex === 0 ? <ChevronUp className="text-slate-400" /> : <ChevronDown className="text-slate-400" />}
                             </button>
@@ -688,7 +794,7 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
 
                         {/* ITEM 2: PROBLEMAS COM CADASTRO/OPORTUNIDADE */}
                         <div className={`border rounded-xl overflow-hidden shadow-sm transition-colors ${modoNoturno ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}>
-                            <button onClick={() => setOpenGuiaIndex(openGuiaIndex === 1 ? null : 1)} className={`w-full text-left p-5 flex justify-between items-center transition-colors ${modoNoturno ? 'bg-slate-800 hover:bg-slate-700' : 'bg-white hover:bg-slate-50'}`}>
+                            <button onClick={() => { haptic(); setOpenGuiaIndex(openGuiaIndex === 1 ? null : 1); }} className={`w-full text-left p-5 flex justify-between items-center transition-colors ${modoNoturno ? 'bg-slate-800 hover:bg-slate-700' : 'bg-white hover:bg-slate-50'}`}>
                                 <h3 className={`font-bold text-lg flex items-center gap-2 ${modoNoturno ? 'text-white' : 'text-slate-800'}`}><AlertTriangle className="text-rose-500" size={20} /> PROBLEMAS COM CADASTRO OU OPORTUNIDADE</h3>
                                 {openGuiaIndex === 1 ? <ChevronUp className="text-slate-400" /> : <ChevronDown className="text-slate-400" />}
                             </button>
@@ -721,7 +827,7 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
 
                         {/* ITEM 3: TERMOS TÉCNICOS */}
                         <div className={`border rounded-xl overflow-hidden shadow-sm transition-colors ${modoNoturno ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}>
-                            <button onClick={() => setOpenGuiaIndex(openGuiaIndex === 2 ? null : 2)} className={`w-full text-left p-5 flex justify-between items-center transition-colors ${modoNoturno ? 'bg-slate-800 hover:bg-slate-700' : 'bg-white hover:bg-slate-50'}`}>
+                            <button onClick={() => { haptic(); setOpenGuiaIndex(openGuiaIndex === 2 ? null : 2); }} className={`w-full text-left p-5 flex justify-between items-center transition-colors ${modoNoturno ? 'bg-slate-800 hover:bg-slate-700' : 'bg-white hover:bg-slate-50'}`}>
                                 <h3 className={`font-bold text-lg flex items-center gap-2 ${modoNoturno ? 'text-white' : 'text-slate-800'}`}><Book className="text-emerald-500" size={20} /> TERMOS TÉCNICOS ATUALMENTE USADOS</h3>
                                 {openGuiaIndex === 2 ? <ChevronUp className="text-slate-400" /> : <ChevronDown className="text-slate-400" />}
                             </button>
@@ -779,19 +885,19 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
                                     </li>
                                 ))}
                             </ul>
-                            <button onClick={() => setSelectedPois(null)} className={`w-full mt-6 py-2.5 font-semibold rounded-lg transition-colors text-sm ${modoNoturno ? 'bg-slate-700 text-white hover:bg-slate-600' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'}`}>Fechar</button>
+                            <button onClick={() => { haptic(); setSelectedPois(null); }} className={`w-full mt-6 py-2.5 font-semibold rounded-lg transition-colors text-sm ${modoNoturno ? 'bg-slate-700 text-white hover:bg-slate-600' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'}`}>Fechar</button>
                         </div>
                     </div>
                 </div>
             )}
 
             {/* --- ÍCONE DO ROBÔ E BALÃO AMIGÁVEL COM LÓGICA DE RECOLHER NO SCROLL --- */}
-            <div className={`fixed bottom-8 right-8 z-40 flex flex-col items-end transition-all duration-500 ${isChatOpen ? 'scale-0 opacity-0 pointer-events-none' : 'scale-100 opacity-100'}`}>
+            <div className={`fixed bottom-8 right-8 z-40 flex flex-row items-end gap-3 transition-all duration-500 ${isChatOpen ? 'scale-0 opacity-0 pointer-events-none' : 'scale-100 opacity-100'}`}>
                 <div 
-                    className={`mb-4 px-5 py-3 rounded-2xl shadow-xl border relative flex items-center gap-2 group cursor-pointer transition-all duration-500 origin-bottom-right ${
+                    className={`px-5 py-3 rounded-2xl shadow-xl border relative flex items-center gap-2 group cursor-pointer transition-all duration-500 origin-bottom-right ${
                         isScrolling 
-                        ? 'scale-0 opacity-0 translate-y-8 translate-x-4 pointer-events-none' 
-                        : 'scale-100 opacity-100 translate-y-0 translate-x-0 animate-float'
+                        ? 'scale-0 opacity-0 translate-y-8 pointer-events-none' 
+                        : 'scale-100 opacity-100 translate-y-0 animate-float'
                     } ${modoNoturno ? 'bg-slate-800 border-slate-700' : 'bg-white border-blue-100'}`}
                     onClick={() => setIsChatOpen(true)}
                 >
@@ -801,22 +907,21 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
                     <span className={`font-bold text-sm whitespace-nowrap overflow-hidden transition-all duration-300 ${modoNoturno ? 'text-white' : 'text-slate-700'} ${isScrolling ? 'max-w-0' : 'max-w-xs'}`}>
                         {robotFloatingPhrases[robotPhraseIndex]}
                     </span>
-                    <div className={`absolute -bottom-2 right-6 w-4 h-4 border-r border-b rotate-45 ${modoNoturno ? 'bg-slate-800 border-slate-700' : 'bg-white border-blue-100'}`}></div>
+                    <div className={`absolute -right-2 bottom-4 w-4 h-4 border-r border-b rotate-[-45deg] ${modoNoturno ? 'bg-slate-800 border-slate-700' : 'bg-white border-blue-100'}`}></div>
                 </div>
 
                 <button
-                    onClick={() => setIsChatOpen(true)}
-                    className="w-20 h-20 bg-gradient-to-br from-blue-500 via-blue-600 to-indigo-800 text-white rounded-[2.5rem] shadow-2xl shadow-blue-500/30 hover:rounded-[1.5rem] hover:scale-110 active:scale-95 transition-all duration-500 flex items-center justify-center relative group overflow-hidden border-2 border-white/20"
+                    onClick={() => { haptic('medium'); setIsChatOpen(true); }}
+                    className="w-14 h-14 bg-gradient-to-br from-blue-500 via-blue-600 to-indigo-800 text-white rounded-[1.75rem] shadow-2xl shadow-blue-500/30 hover:rounded-[1rem] hover:scale-110 active:scale-95 transition-all duration-500 flex items-center justify-center relative group overflow-hidden border-2 border-white/20"
                 >
                     <div className="absolute inset-0 bg-gradient-to-tr from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                    <div className="flex flex-col items-center">
-                        <Bot className="w-10 h-10 relative z-10 transition-transform group-hover:-translate-y-1" strokeWidth={1.5} />
-                        <div className="h-1.5 w-6 bg-white/30 rounded-full mt-1.5 group-hover:w-8 transition-all blur-[1px]"></div>
-                    </div>
-                    <span className="absolute top-4 right-4 flex h-3 w-3">
-                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                        <span className="relative inline-flex rounded-full h-3 w-3 bg-green-500 border border-white"></span>
-                    </span>
+                    {/* Signal-style icon: circle with a tail dot */}
+                    <svg viewBox="0 0 24 24" fill="none" className="w-7 h-7 relative z-10 transition-transform group-hover:-translate-y-0.5" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 2C6.477 2 2 6.254 2 11.5c0 2.576 1.086 4.91 2.857 6.614L4 22l4.23-1.394A10.456 10.456 0 0012 21c5.523 0 10-4.254 10-9.5S17.523 2 12 2z" fill="white" fillOpacity="0.95"/>
+                        <circle cx="8.5" cy="11.5" r="1.2" fill="#3b82f6"/>
+                        <circle cx="12" cy="11.5" r="1.2" fill="#3b82f6"/>
+                        <circle cx="15.5" cy="11.5" r="1.2" fill="#3b82f6"/>
+                    </svg>
                 </button>
                 <style dangerouslySetInnerHTML={{ __html: `
                     @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
@@ -824,6 +929,10 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
                     .custom-scrollbar::-webkit-scrollbar { height: 4px; width: 4px; }
                     .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
                     html { scroll-behavior: smooth; }
+                    @keyframes slide-up { from { transform: translateY(100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+                    .animate-slide-up { animation: slide-up 0.3s cubic-bezier(0.34,1.2,0.64,1) both; }
+                    @keyframes thumbsup { 0% { transform: scale(0) rotate(-20deg); opacity: 0; } 30% { transform: scale(1.3) rotate(8deg); opacity: 1; } 60% { transform: scale(1.1) rotate(-4deg); } 80% { transform: scale(1.15) rotate(2deg); opacity: 1; } 100% { transform: scale(1) rotate(0deg) translateY(-40px); opacity: 0; } }
+                    .animate-thumbsup { animation: thumbsup 2.6s cubic-bezier(0.34,1.2,0.64,1) forwards; }
                 `}} />
             </div>
 
@@ -832,12 +941,17 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
                 ${isChatOpen ? 'scale-100 opacity-100' : 'scale-0 opacity-0 pointer-events-none'}
                 ${isCreatingFolder
                     ? 'inset-0 rounded-none md:inset-3 md:rounded-3xl'
-                    : 'bottom-6 right-6 rounded-3xl w-[350px] sm:w-[420px] h-[600px] max-h-[85vh] origin-bottom-right'}
+                    : 'inset-0 rounded-none md:bottom-6 md:right-6 md:inset-auto md:rounded-3xl md:w-[350px] lg:w-[420px] md:h-[600px] md:max-h-[85vh] origin-bottom-right'}
                 ${modoNoturno ? 'bg-slate-800' : 'bg-white'}`}>
                 <div className="bg-gradient-to-r from-indigo-900 to-blue-800 p-5 flex items-center justify-between shrink-0 shadow-lg">
                     <div className="flex items-center gap-3">
                         <div className="bg-white/10 p-2.5 rounded-2xl backdrop-blur-md border border-white/20">
-                            <Bot className="w-6 h-6 text-white" />
+                            <svg viewBox="0 0 24 24" fill="none" className="w-6 h-6" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M12 2C6.477 2 2 6.254 2 11.5c0 2.576 1.086 4.91 2.857 6.614L4 22l4.23-1.394A10.456 10.456 0 0012 21c5.523 0 10-4.254 10-9.5S17.523 2 12 2z" fill="white" fillOpacity="0.95"/>
+                                <circle cx="8.5" cy="11.5" r="1.2" fill="#6366f1"/>
+                                <circle cx="12" cy="11.5" r="1.2" fill="#6366f1"/>
+                                <circle cx="15.5" cy="11.5" r="1.2" fill="#6366f1"/>
+                            </svg>
                         </div>
                         <div>
                             <h3 className="font-bold text-white tracking-tight">IA Destemidos {isCreatingFolder && "✨"}</h3>
@@ -847,7 +961,7 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
                             </p>
                         </div>
                     </div>
-                    <button onClick={() => setIsChatOpen(false)} className="text-white/60 hover:text-white hover:bg-white/10 p-2 rounded-xl transition-all">
+                    <button onClick={() => { haptic(); setIsChatOpen(false); }} className="text-white/60 hover:text-white hover:bg-white/10 p-2 rounded-xl transition-all">
                         <X className="w-5 h-5" />
                     </button>
                 </div>
@@ -879,80 +993,126 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
                 )}
 
                 {isCreatingFolder && (
-                    <div className={`p-4 sm:p-6 flex-1 overflow-y-auto custom-scrollbar flex flex-col gap-6 relative transition-colors ${modoNoturno ? 'bg-slate-900' : 'bg-slate-50'}`}>
-                        <div className={`p-5 rounded-2xl shadow-sm border flex flex-row items-center gap-4 relative overflow-hidden transition-colors ${modoNoturno ? 'bg-slate-800 border-slate-700 text-white' : 'bg-white border-slate-100 text-slate-800'}`}>
-                            <h3 className="font-black text-xl flex items-center gap-3 shrink-0">
-                                <FolderPlus className="text-indigo-600" size={24} />
-                                Criar Pasta do Cliente
-                            </h3>
-                            <div className={`flex-1 p-2.5 rounded-xl border text-[10px] leading-relaxed flex flex-wrap gap-x-3 gap-y-1 items-center ${modoNoturno ? 'bg-slate-700 border-slate-600 text-slate-300' : 'bg-indigo-50 border-indigo-100 text-indigo-800'}`}>
-                                <span className="font-black uppercase tracking-wider">📋 Ordem:</span>
-                                <span><span className={`font-black ${modoNoturno ? 'text-white' : 'text-indigo-900'}`}>1º Pessoais</span><span className={`ml-1 ${modoNoturno ? 'text-slate-400' : 'text-indigo-500'}`}>(RG, CPF, Certidão, Residência)</span></span>
-                                <span><span className={`font-black ${modoNoturno ? 'text-white' : 'text-indigo-900'}`}>2º Financeiros</span><span className={`ml-1 ${modoNoturno ? 'text-slate-400' : 'text-indigo-500'}`}>(Contracheque, IR, Extrato)</span></span>
-                                <span className={`font-bold ${modoNoturno ? 'text-slate-500' : 'text-indigo-400'}`}>💡 Segure e arraste para reordenar</span>
+                    <div className={`flex-1 overflow-hidden flex flex-col transition-colors ${modoNoturno ? 'bg-slate-900' : 'bg-slate-50'}`}>
+
+                        {/* HEADER — fora do scroll, nunca some */}
+                        <div className={`shrink-0 border-b transition-colors ${modoNoturno ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-100'}`}>
+                            <div className={`flex items-center justify-between px-3 py-2 border-b ${modoNoturno ? 'border-slate-700' : 'border-slate-100'}`}>
+                                <h3 className={`font-black text-sm flex items-center gap-2 ${modoNoturno ? 'text-white' : 'text-slate-800'}`}>
+                                    <FolderPlus className="text-indigo-600" size={16} />
+                                    Criar Pasta do Cliente
+                                </h3>
+                                <button onClick={() => { haptic(); setIsCreatingFolder(false); }} className={`text-[10px] font-black uppercase tracking-wider px-3 py-1.5 rounded-lg border transition-all flex items-center gap-1 ${modoNoturno ? 'bg-slate-700 border-slate-600 text-indigo-300 hover:bg-slate-600' : 'bg-indigo-50 text-indigo-600 border-indigo-100 hover:bg-indigo-100'}`}>
+                                    ← Chat
+                                </button>
                             </div>
-                            <button onClick={() => setIsCreatingFolder(false)} className={`shrink-0 text-[10px] font-black uppercase tracking-wider px-3 py-1.5 rounded-lg border transition-all ${modoNoturno ? 'bg-slate-700 border-slate-600 text-slate-300 hover:bg-slate-600' : 'bg-slate-100 border-transparent text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 hover:border-indigo-100'}`}>
-                                Voltar ao Chat
-                            </button>
+                            <div className={`px-3 py-1.5 text-[9px] flex flex-wrap gap-x-2 gap-y-0.5 ${modoNoturno ? 'text-slate-400' : 'text-indigo-700'}`}>
+                                <span className="font-black">📋 Ordem:</span>
+                                <span><b>1º</b> RG · CPF · Certidão · Residência</span>
+                                <span><b>2º</b> CTPS · Contracheque · Extrato · FGTS</span>
+                                <span className="opacity-60">💡 Arraste para reordenar</span>
+                            </div>
                         </div>
-                        
-                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-5">
-                            {pendingDocs.map((doc, index) => (
-                                <div
-                                    key={doc.id}
-                                    data-doc-index={index}
-                                    draggable
-                                    onDragStart={(e) => handleDragStart(e, index)}
-                                    onDragEnd={handleDragEnd}
-                                    onDragOver={handleDragOver}
-                                    onDrop={(e) => handleDrop(e, index)}
-                                    onTouchStart={(e) => handleTouchStart(e, index)}
-                                    onTouchMove={handleTouchMove}
-                                    onTouchEnd={handleTouchEnd}
-                                    className={`relative group border-2 border-dashed ${draggedItemIndex === index ? 'border-indigo-400 scale-95 opacity-50' : (modoNoturno ? 'border-transparent bg-slate-800 hover:border-indigo-500' : 'border-transparent bg-white hover:border-indigo-300')} rounded-2xl overflow-hidden shadow-sm hover:shadow-lg transition-all aspect-[3/4] flex flex-col cursor-move`}>
-                                    <div className="absolute top-2 left-2 bg-indigo-900/80 text-white text-[10px] font-black w-6 h-6 flex items-center justify-center rounded-lg z-10 backdrop-blur-sm">{index + 1}</div>
-                                    <button onClick={(e) => { e.stopPropagation(); removeDoc(doc.id); }} className="absolute top-2 right-2 bg-red-500 text-white p-2 rounded-xl opacity-0 group-hover:opacity-100 active:opacity-100 transition-all z-10 hover:bg-red-600 shadow-lg"><Trash2 size={14} /></button>
-                                    <div className={`flex-1 flex items-center justify-center overflow-hidden ${modoNoturno ? 'bg-slate-950' : 'bg-slate-100'}`}>
-                                        {doc.previewUrl ? <img src={doc.previewUrl} alt="preview" className="w-full h-full object-cover" /> : <div className="flex flex-col items-center gap-2 text-slate-400"><FileIcon size={40} className="text-red-400" /><span className="text-[10px] font-black uppercase tracking-widest">PDF</span></div>}
+
+                        {/* DOCUMENTOS — área scrollável */}
+                        <div className="flex-1 overflow-y-auto custom-scrollbar p-3">
+                            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-2.5">
+                                {pendingDocs.map((doc, index) => (
+                                    <div
+                                        key={doc.id}
+                                        data-doc-index={index}
+                                        draggable
+                                        onDragStart={(e) => handleDragStart(e, index)}
+                                        onDragEnd={handleDragEnd}
+                                        onDragOver={handleDragOver}
+                                        onDrop={(e) => handleDrop(e, index)}
+                                        onTouchStart={(e) => handleTouchStart(e, index)}
+                                        onTouchMove={handleTouchMove}
+                                        onTouchEnd={handleTouchEnd}
+                                        className={`relative group border-2 border-dashed ${draggedItemIndex === index ? 'border-indigo-400 scale-95 opacity-50' : (modoNoturno ? 'border-transparent bg-slate-800 hover:border-indigo-500' : 'border-transparent bg-white hover:border-indigo-300')} rounded-xl overflow-hidden shadow-sm hover:shadow-lg transition-all aspect-[3/4] flex flex-col cursor-move`}>
+                                        <div className="absolute top-1 left-1 bg-indigo-900/80 text-white text-[9px] font-black w-5 h-5 flex items-center justify-center rounded-md z-10 backdrop-blur-sm">{index + 1}</div>
+                                        <button onClick={(e) => { e.stopPropagation(); haptic('heavy'); removeDoc(doc.id); }} className="absolute top-1 right-1 bg-red-500 text-white p-1 rounded-lg opacity-0 group-hover:opacity-100 active:opacity-100 transition-all z-10 hover:bg-red-600 shadow-lg"><Trash2 size={11} /></button>
+                                        <div className={`flex-1 flex items-center justify-center overflow-hidden relative ${modoNoturno ? 'bg-slate-950' : 'bg-slate-100'}`}>
+                                            {doc.previewUrl ? (
+                                                <>
+                                                    <img src={doc.previewUrl} alt="preview" className="w-full h-full object-cover" />
+                                                    {doc.file.type === 'application/pdf' && (
+                                                        <div className="absolute bottom-1 right-1 bg-red-600 text-white text-[8px] font-black px-1.5 py-0.5 rounded-md shadow-md">PDF</div>
+                                                    )}
+                                                </>
+                                            ) : (
+                                                <div className="flex flex-col items-center gap-1 text-slate-400">
+                                                    <FileIcon size={28} className="text-red-400" />
+                                                    <span className="text-[9px] font-black uppercase tracking-widest">PDF</span>
+                                                </div>
+                                            )}
+                                        </div>
+                                        <div className={`p-1.5 border-t text-[8px] font-bold truncate text-center uppercase tracking-tight ${modoNoturno ? 'bg-slate-800 border-slate-700 text-slate-400' : 'bg-white border-slate-50 text-slate-500'}`}>{doc.name}</div>
                                     </div>
-                                    <div className={`p-3 border-t text-[10px] font-bold truncate text-center uppercase tracking-tight ${modoNoturno ? 'bg-slate-800 border-slate-700 text-slate-400' : 'bg-white border-slate-50 text-slate-500'}`}>{doc.name}</div>
-                                </div>
-                            ))}
-                            <button onClick={() => fileInputRef.current?.click()} className={`aspect-[3/4] rounded-2xl border-2 border-dashed flex flex-col items-center justify-center cursor-pointer transition-all shadow-sm ${modoNoturno ? 'bg-slate-800 border-slate-700 text-slate-500 hover:border-indigo-500 hover:bg-slate-700 hover:text-indigo-400' : 'bg-white border-indigo-200 text-indigo-400 hover:border-indigo-500 hover:bg-indigo-50/50'}`}>
-                                <Plus size={32} className="mb-2" />
-                                <span className="text-[10px] font-black text-center leading-tight uppercase tracking-widest">Adicionar<br/>Arquivo</span>
-                            </button>
+                                ))}
+                                <button onClick={() => { haptic(); fileInputRef.current?.click(); }} className={`aspect-[3/4] rounded-xl border-2 border-dashed flex flex-col items-center justify-center cursor-pointer transition-all shadow-sm ${modoNoturno ? 'bg-slate-800 border-slate-700 text-slate-500 hover:border-indigo-500 hover:bg-slate-700 hover:text-indigo-400' : 'bg-white border-indigo-200 text-indigo-400 hover:border-indigo-500 hover:bg-indigo-50/50'}`}>
+                                    <Plus size={20} className="mb-1" />
+                                    <span className="text-[9px] font-black text-center leading-tight uppercase tracking-widest">Adicionar<br/>Arquivo</span>
+                                </button>
+                            </div>
                         </div>
-                        
+
+                        {/* BOTÃO FINALIZAR — fora do scroll, nunca some */}
                         {pendingDocs.length > 0 && (
-                            <div className="mt-auto flex justify-end sticky bottom-0 z-20 pt-4">
-                                <button onClick={() => setIsFinalizingFolder(true)} className="bg-indigo-600 hover:bg-indigo-700 text-white px-8 py-3.5 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl hover:shadow-indigo-200/50 hover:-translate-y-1 transition-all flex items-center gap-2">
-                                    <Wand2 size={18} /> Finalizar PDF
+                            <div className={`shrink-0 px-3 py-2.5 border-t flex justify-end ${modoNoturno ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-100'}`}>
+                                <button onClick={() => { haptic('medium'); setIsFinalizingFolder(true); }} className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2.5 rounded-2xl font-black text-xs uppercase tracking-widest shadow-lg hover:-translate-y-0.5 transition-all flex items-center gap-2">
+                                    <Wand2 size={16} /> Finalizar PDF
                                 </button>
                             </div>
                         )}
                     </div>
                 )}
 
-                <div className={`p-4 border-t rounded-b-3xl shrink-0 flex flex-col gap-3 transition-colors ${isCreatingFolder ? 'hidden' : ''} ${modoNoturno ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-50'}`}>
-                    <div className="flex gap-2">
-                        <button onClick={() => { setIsCreatingFolder(true); fileInputRef.current?.click(); }} className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all shadow-sm border ${modoNoturno ? 'bg-slate-700 border-slate-600 text-indigo-300 hover:bg-slate-600' : 'bg-indigo-50 text-indigo-700 border-indigo-100 hover:bg-indigo-100'}`}>
-                            <FolderPlus size={16} /> Vamos subir uma pasta?
+                <div className={`border-t rounded-b-3xl shrink-0 flex flex-col transition-colors ${isCreatingFolder ? 'hidden' : ''} ${modoNoturno ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-50'}`}>
+                    <div className="px-3 pt-2.5 pb-2 flex gap-1.5 items-center overflow-x-auto custom-scrollbar">
+                        {/* Botão Subir Pasta — destaque */}
+                        <button onClick={() => { haptic(); setIsCreatingFolder(true); fileInputRef.current?.click(); }}
+                            className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider transition-all bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm shadow-indigo-300/40">
+                            <FolderPlus size={12} /> Pasta
                         </button>
+                        {/* Separador */}
+                        <div className={`shrink-0 w-px h-4 ${modoNoturno ? 'bg-slate-600' : 'bg-slate-200'}`}></div>
+                        {/* Sugestões rápidas na mesma linha */}
+                        {[
+                            { label: 'Docs CLT', msg: 'Documentos para CLT' },
+                            { label: 'Autônomo', msg: 'Documentos para autônomo' },
+                            { label: 'Zona Norte', msg: 'Empreendimentos na Zona Norte' },
+                            { label: 'Menor apê', msg: 'Qual o menor apartamento?' },
+                            { label: 'Brisas', msg: 'Me mostra o Brisas do Horizonte' },
+                            { label: 'Investidor', msg: 'Como funciona a tabela investidor?' },
+                        ].map(s => (
+                            <button key={s.label}
+                                onClick={() => { haptic(); setChatInput(s.msg); setTimeout(() => chatInputRef.current?.focus(), 50); }}
+                                className={`shrink-0 text-[10px] font-bold px-3 py-1.5 rounded-full border transition-all whitespace-nowrap ${modoNoturno ? 'bg-slate-700 border-slate-600 text-slate-300 hover:bg-slate-600 hover:border-indigo-500 hover:text-indigo-300' : 'bg-slate-100 border-transparent text-slate-500 hover:bg-indigo-50 hover:border-indigo-200 hover:text-indigo-600'}`}>
+                                {s.label}
+                            </button>
+                        ))}
+                        {clientName && (
+                            <span className={`shrink-0 flex items-center gap-1 text-[10px] font-bold px-2.5 py-1.5 rounded-full border ${modoNoturno ? 'bg-slate-700 border-slate-600 text-emerald-400' : 'bg-emerald-50 border-emerald-100 text-emerald-600'}`}>
+                                👤 {clientName}
+                            </span>
+                        )}
                     </div>
-                    <div className="relative flex items-center gap-2">
-                        <input type="file" ref={fileInputRef} onChange={handleFileUpload} multiple accept="image/png, image/jpeg, image/jpg, application/pdf" className="hidden" />
-                        <button onClick={() => fileInputRef.current?.click()} className={`p-3 rounded-2xl transition-all shrink-0 ${modoNoturno ? 'text-slate-500 hover:bg-slate-700 hover:text-white' : 'text-slate-400 hover:bg-slate-50 hover:text-indigo-600'}`} title="Anexar algo"><Paperclip size={20} /></button>
-                        <input 
-                            type="text" 
-                            value={chatInput} 
-                            onChange={(e) => setChatInput(e.target.value)} 
-                            onKeyDown={(e) => e.key === 'Enter' && handleSendChatMessage()} 
-                            placeholder="Posso te ajudar com algo?" 
-                            className={`w-full rounded-2xl px-5 py-3.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600/20 transition-all ${modoNoturno ? 'bg-slate-900 text-white border border-slate-700 placeholder-slate-500' : 'bg-slate-100 text-slate-800 placeholder-slate-400 border-transparent'}`} 
-                            disabled={isChatLoading} 
-                        />
-                        <button onClick={handleSendChatMessage} disabled={!chatInput.trim() || isChatLoading} className="absolute right-2 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-200 text-white p-2.5 rounded-xl transition-all flex items-center justify-center shadow-md"><Send className="w-4 h-4" /></button>
+                    <div className="px-3 pb-3">
+                        <div className="relative flex items-center">
+                            <input type="file" ref={fileInputRef} onChange={handleFileUpload} multiple accept="image/png, image/jpeg, image/jpg, application/pdf" className="hidden" />
+                            <input 
+                                ref={chatInputRef}
+                                type="text" 
+                                value={chatInput} 
+                                onChange={(e) => setChatInput(e.target.value)} 
+                                onKeyDown={(e) => e.key === 'Enter' && handleSendChatMessage()} 
+                                placeholder="Posso te ajudar com algo?" 
+                                className={`w-full rounded-2xl px-5 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600/20 transition-all ${modoNoturno ? 'bg-slate-900 text-white border border-slate-700 placeholder-slate-500' : 'bg-slate-100 text-slate-800 placeholder-slate-400 border-transparent'}`} 
+                                disabled={isChatLoading} 
+                            />
+                            <button onClick={() => { haptic('medium'); handleSendChatMessage(); }} disabled={!chatInput.trim() || isChatLoading} className="absolute right-2 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-200 text-white p-2.5 rounded-xl transition-all flex items-center justify-center shadow-md"><Send className="w-4 h-4" /></button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -984,12 +1144,52 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
                                 autoFocus 
                             />
                         </div>
-                        <button onClick={generateClientPDF} disabled={isChatLoading} className="w-full mt-2 text-xs bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-4 rounded-2xl font-black uppercase tracking-widest transition-all shadow-xl hover:shadow-indigo-200/50 hover:-translate-y-1 disabled:opacity-50 flex items-center justify-center gap-3">
+                        <button onClick={() => { haptic('success'); generateClientPDF(); }} disabled={isChatLoading} className="w-full mt-2 text-xs bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-4 rounded-2xl font-black uppercase tracking-widest transition-all shadow-xl hover:shadow-indigo-200/50 hover:-translate-y-1 disabled:opacity-50 flex items-center justify-center gap-3">
                             {isChatLoading ? <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div> : <><Wand2 size={20} /> Baixar PDF Unificado</>}
                         </button>
                     </div>
                 </div>
             )}
+
+            {showOnboarding && (() => {
+                const steps = [
+                    { emoji: '👋', title: 'Bem-vindo, Destemido!', desc: 'Deixa eu te mostrar o app em 3 passos bem rápidos.', btn: 'Bora!' },
+                    { emoji: '🏠', title: 'Catálogo', desc: 'Nas abas DIRECIONAL e RIVA você vê todos os imóveis. Use os filtros de zona para achar rápido.', btn: 'Entendi!' },
+                    { emoji: '🤖', title: 'IA de apoio', desc: 'O botão flutuante abre a IA — ela tira dúvidas sobre documentos, imóveis e ainda monta a Pasta do Cliente em PDF.', btn: 'Começar!' },
+                ];
+                const step = steps[onboardingStep];
+                return (
+                    <div className="fixed inset-0 z-[70] flex items-center justify-center px-4" style={{background:'rgba(15,23,42,0.75)',backdropFilter:'blur(4px)'}}>
+                        <div className={`rounded-3xl w-full max-w-sm p-8 flex flex-col items-center gap-4 shadow-2xl animate-slide-up ${modoNoturno ? 'bg-slate-800' : 'bg-white'}`}>
+                            <div className="text-5xl">{step.emoji}</div>
+                            <div className="flex gap-1.5">
+                                {steps.map((_, i) => <div key={i} className={`h-1.5 rounded-full transition-all duration-300 ${i === onboardingStep ? 'w-6 bg-indigo-600' : 'w-1.5 bg-slate-200'}`}></div>)}
+                            </div>
+                            <h2 className={`text-xl font-black text-center ${modoNoturno ? 'text-white' : 'text-slate-800'}`}>{step.title}</h2>
+                            <p className={`text-sm text-center leading-relaxed ${modoNoturno ? 'text-slate-400' : 'text-slate-500'}`}>{step.desc}</p>
+                            <button
+                                onClick={() => {
+                                    haptic('medium');
+                                    if (onboardingStep < steps.length - 1) { setOnboardingStep(p => p + 1); }
+                                    else { setShowOnboarding(false); localStorage.setItem('dst_onboarded', '1'); }
+                                }}
+                                className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-black text-sm uppercase tracking-widest py-4 rounded-2xl transition-all shadow-lg hover:-translate-y-0.5">
+                                {step.btn}
+                            </button>
+                            <button onClick={() => { setShowOnboarding(false); localStorage.setItem('dst_onboarded', '1'); }} className={`text-xs transition-colors ${modoNoturno ? 'text-slate-500 hover:text-slate-300' : 'text-slate-400 hover:text-slate-600'}`}>Pular</button>
+                        </div>
+                    </div>
+                );
+            })()}
+
+
+            {/* ANIMAÇÃO 👍 PÓS-DOWNLOAD */}
+            {showThumbsUp && (
+                <div className="fixed inset-0 z-[80] flex items-center justify-center pointer-events-none">
+                    <div className="animate-thumbsup text-[120px] select-none drop-shadow-2xl">👍</div>
+                </div>
+            )}
+
         </div>
     );
 }

@@ -147,8 +147,7 @@ export default function App() {
     const [isChatLoading, setIsChatLoading] = useState(false);
     const messagesEndRef = useRef(null);
     const chatInputRef = useRef(null);
-    const [showOnboarding, setShowOnboarding] = useState(() => !localStorage.getItem('dst_onboarded'));
-    const [onboardingStep, setOnboardingStep] = useState(0);
+
     const [activeZone, setActiveZone] = useState(null);
     const [clientName, setClientName] = useState(() => localStorage.getItem('dst_client') || '');
 
@@ -232,6 +231,11 @@ export default function App() {
             script.onload = () => {
                 if (window.pdfjsLib) {
                     window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+                    // Pré-carrega o worker para que esteja pronto quando o usuário clicar
+                    const workerScript = document.createElement('script');
+                    workerScript.src = window.pdfjsLib.GlobalWorkerOptions.workerSrc;
+                    workerScript.async = true;
+                    document.body.appendChild(workerScript);
                 }
             };
             document.body.appendChild(script);
@@ -462,6 +466,60 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
         setDraggedItemIndex(null);
     };
 
+    // Garante que o pdf.js está pronto (worker configurado) antes de usar
+    const waitForPdfJs = () => new Promise((resolve, reject) => {
+        if (window.pdfjsLib && window.pdfjsLib.GlobalWorkerOptions.workerSrc) return resolve();
+        let tries = 0;
+        const interval = setInterval(() => {
+            if (window.pdfjsLib && window.pdfjsLib.GlobalWorkerOptions.workerSrc) {
+                clearInterval(interval);
+                resolve();
+            } else if (++tries > 40) { // 4 segundos
+                clearInterval(interval);
+                reject(new Error('pdf.js não carregou'));
+            }
+        }, 100);
+    });
+
+    // Renderiza TODAS as páginas de qualquer PDF via pdf.js → canvas offscreen → PNG bytes
+    // Funciona com PDFs normais, encriptados, assinados digitalmente (CTPS, Dataprev, etc.)
+    const pdfToImageBytes = async (arrayBuffer) => {
+        await waitForPdfJs();
+        // Copia o buffer pois pdf.js pode consumi-lo
+        const dataCopy = arrayBuffer.slice(0);
+        const loadingTask = window.pdfjsLib.getDocument({
+            data: new Uint8Array(dataCopy),
+            password: '',
+            disableRange: true,
+            disableStream: true,
+        });
+        const pdfDoc = await loadingTask.promise;
+        const pages = [];
+        for (let pageNum = 1; pageNum <= pdfDoc.numPages; pageNum++) {
+            const page = await pdfDoc.getPage(pageNum);
+            // Escala 2.0 = ~144 DPI, boa qualidade sem arquivo enorme
+            const viewport = page.getViewport({ scale: 2.0 });
+            const canvas = document.createElement('canvas');
+            canvas.width  = Math.floor(viewport.width);
+            canvas.height = Math.floor(viewport.height);
+            const ctx = canvas.getContext('2d');
+            // Fundo branco (evita transparência virar preto no PDF final)
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            await page.render({ canvasContext: ctx, viewport }).promise;
+            // canvas → PNG → Uint8Array
+            const dataUrl = canvas.toDataURL('image/png');
+            const base64  = dataUrl.split(',')[1];
+            const binaryStr = atob(base64);
+            const bytes = new Uint8Array(binaryStr.length);
+            for (let i = 0; i < binaryStr.length; i++) bytes[i] = binaryStr.charCodeAt(i);
+            // Dimensões em pontos PDF (72 DPI) = pixels / 2 (escala 2x)
+            pages.push({ bytes, widthPt: canvas.width / 2, heightPt: canvas.height / 2 });
+            page.cleanup();
+        }
+        return pages;
+    };
+
     const generateClientPDF = async () => {
         if (!window.PDFLib) {
             alert("Aguarde um instante, estou preparando o motor de PDFs... 🛠️");
@@ -471,12 +529,23 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
         try {
             const { PDFDocument } = window.PDFLib;
             const mergedPdf = await PDFDocument.create();
+
             for (const doc of pendingDocs) {
                 const arrayBuffer = await doc.file.arrayBuffer();
+
                 if (doc.file.type === 'application/pdf') {
-                    const loadedPdf = await PDFDocument.load(arrayBuffer);
-                    const copiedPages = await mergedPdf.copyPages(loadedPdf, loadedPdf.getPageIndices());
-                    copiedPages.forEach((page) => mergedPdf.addPage(page));
+                    // Todo PDF passa pelo pdf.js → canvas → PNG para suportar
+                    // PDFs encriptados/assinados (CTPS Dataprev, holerites, etc.)
+                    const pages = await pdfToImageBytes(arrayBuffer);
+                    for (const pg of pages) {
+                        const embedded = await mergedPdf.embedPng(pg.bytes);
+                        const pdfPage  = mergedPdf.addPage([pg.widthPt, pg.heightPt]);
+                        pdfPage.drawImage(embedded, {
+                            x: 0, y: 0,
+                            width:  pg.widthPt,
+                            height: pg.heightPt,
+                        });
+                    }
                 } else if (doc.file.type.startsWith('image/')) {
                     let image;
                     if (doc.file.type === 'image/jpeg' || doc.file.type === 'image/jpg') {
@@ -488,21 +557,28 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
                     const { width, height } = page.getSize();
                     const imgDims = image.scale(1);
                     const scale = Math.min((width - 40) / imgDims.width, (height - 40) / imgDims.height, 1);
-                    const drawWidth = imgDims.width * scale;
+                    const drawWidth  = imgDims.width  * scale;
                     const drawHeight = imgDims.height * scale;
                     page.drawImage(image, {
-                        x: width / 2 - drawWidth / 2, y: height / 2 - drawHeight / 2,
-                        width: drawWidth, height: drawHeight,
+                        x: width  / 2 - drawWidth  / 2,
+                        y: height / 2 - drawHeight / 2,
+                        width:  drawWidth,
+                        height: drawHeight,
                     });
                 }
             }
+
             const pdfBytes = await mergedPdf.save();
             const blob = new Blob([pdfBytes], { type: 'application/pdf' });
-            const url = URL.createObjectURL(blob);
+            const url  = URL.createObjectURL(blob);
             const link = document.createElement('a');
-            link.href = url;
+            link.href  = url;
             link.download = `${pdfFileName || 'Pasta_do_Cliente'}.pdf`;
+            document.body.appendChild(link);
             link.click();
+            document.body.removeChild(link);
+            setTimeout(() => URL.revokeObjectURL(url), 5000);
+
             setChatMessages(prev => [...prev, { role: 'bot', content: "✅ **Missão cumprida!** Seu PDF foi gerado e o download começou.\n\nSua pasta está prontinha e organizada. Mais algum desafio para hoje?" }]);
             setIsCreatingFolder(false);
             setPendingDocs([]);
@@ -510,7 +586,8 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
             setShowThumbsUp(true);
             setTimeout(() => setShowThumbsUp(false), 2800);
         } catch (error) {
-            setChatMessages(prev => [...prev, { role: 'bot', content: "Ops, algo não deu certo ao gerar o arquivo. 😕 Tente conferir se as imagens estão legíveis." }]);
+            console.error('Erro ao gerar PDF:', error);
+            setChatMessages(prev => [...prev, { role: 'bot', content: `Ops, algo não deu certo ao gerar o arquivo. 😕\n\nDetalhe: ${error.message || 'erro desconhecido'}` }]);
         }
         setIsChatLoading(false);
     };
@@ -1150,36 +1227,7 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
                 </div>
             )}
 
-            {showOnboarding && (() => {
-                const steps = [
-                    { emoji: '👋', title: 'Bem-vindo, Destemido!', desc: 'Deixa eu te mostrar o app em 3 passos bem rápidos.', btn: 'Bora!' },
-                    { emoji: '🏠', title: 'Catálogo', desc: 'Nas abas DIRECIONAL e RIVA você vê todos os imóveis. Use os filtros de zona para achar rápido.', btn: 'Entendi!' },
-                    { emoji: '🤖', title: 'IA de apoio', desc: 'O botão flutuante abre a IA — ela tira dúvidas sobre documentos, imóveis e ainda monta a Pasta do Cliente em PDF.', btn: 'Começar!' },
-                ];
-                const step = steps[onboardingStep];
-                return (
-                    <div className="fixed inset-0 z-[70] flex items-center justify-center px-4" style={{background:'rgba(15,23,42,0.75)',backdropFilter:'blur(4px)'}}>
-                        <div className={`rounded-3xl w-full max-w-sm p-8 flex flex-col items-center gap-4 shadow-2xl animate-slide-up ${modoNoturno ? 'bg-slate-800' : 'bg-white'}`}>
-                            <div className="text-5xl">{step.emoji}</div>
-                            <div className="flex gap-1.5">
-                                {steps.map((_, i) => <div key={i} className={`h-1.5 rounded-full transition-all duration-300 ${i === onboardingStep ? 'w-6 bg-indigo-600' : 'w-1.5 bg-slate-200'}`}></div>)}
-                            </div>
-                            <h2 className={`text-xl font-black text-center ${modoNoturno ? 'text-white' : 'text-slate-800'}`}>{step.title}</h2>
-                            <p className={`text-sm text-center leading-relaxed ${modoNoturno ? 'text-slate-400' : 'text-slate-500'}`}>{step.desc}</p>
-                            <button
-                                onClick={() => {
-                                    haptic('medium');
-                                    if (onboardingStep < steps.length - 1) { setOnboardingStep(p => p + 1); }
-                                    else { setShowOnboarding(false); localStorage.setItem('dst_onboarded', '1'); }
-                                }}
-                                className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-black text-sm uppercase tracking-widest py-4 rounded-2xl transition-all shadow-lg hover:-translate-y-0.5">
-                                {step.btn}
-                            </button>
-                            <button onClick={() => { setShowOnboarding(false); localStorage.setItem('dst_onboarded', '1'); }} className={`text-xs transition-colors ${modoNoturno ? 'text-slate-500 hover:text-slate-300' : 'text-slate-400 hover:text-slate-600'}`}>Pular</button>
-                        </div>
-                    </div>
-                );
-            })()}
+
 
 
             {/* ANIMAÇÃO 👍 PÓS-DOWNLOAD */}

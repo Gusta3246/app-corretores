@@ -2,7 +2,7 @@
 <html lang="pt-br">
 <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
     <title>Destemidos</title>
 
     <link rel="icon" type="image/png" href="https://i.postimg.cc/XpWRf9pj/logo.png" />
@@ -56,31 +56,27 @@
     <link rel="apple-touch-startup-image" media="screen and (device-width: 744px) and (device-height: 1133px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" href="/splash_screens/8.3__iPad_Mini_portrait.png">
 
     <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black" />
     <meta name="apple-mobile-web-app-title" content="Destemidos">
     
     <meta name="mobile-web-app-capable" content="yes" />
-    <meta name="theme-color" content="#ffffff" id="theme-color-meta" />
+    <meta name="theme-color" content="#0F172A" id="theme-color-meta" />
 
     <script src="https://cdn.tailwindcss.com"></script>
 
     <style>
         :root {
-            --topo-seguro: 0px;
-            --notch-bg: #ffffff;
-        }
-        /* Somente iOS standalone: ativa safe area */
-        html.ios-standalone {
-            --topo-seguro: env(safe-area-inset-top);
+            --topo-seguro: env(safe-area-inset-top, 0px);
+            --notch-bg: #0F172A;
         }
         html, body {
             margin: 0;
             padding: 0;
-            background-color: #ffffff;
+            background-color: #0F172A;
             overscroll-behavior-y: none;
         }
-        /* Barra do notch: SOMENTE iOS standalone */
-        html.ios-standalone body::before {
+        /* Barra do notch — sempre ativa, cobre a safe area com a cor do header */
+        body::before {
             content: "";
             position: fixed;
             top: 0;
@@ -93,8 +89,12 @@
         }
         #root {
             padding-top: var(--topo-seguro);
-            padding-bottom: env(safe-area-inset-bottom);
-            min-height: 100vh;
+            padding-bottom: env(safe-area-inset-bottom, 0px);
+            min-height: 100dvh;
+        }
+        /* Bloqueia zoom no iOS ao focar inputs — reforço CSS */
+        input, textarea, select {
+            font-size: 16px !important;
         }
         #install-popup {
             transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
@@ -205,19 +205,13 @@
         // === DETECÇÃO iOS + CONTROLE DA BARRA DO NOTCH ===
         const isIos = /iphone|ipad|ipod/.test(window.navigator.userAgent.toLowerCase());
 
-        // Ativa classe ios-standalone SOMENTE no iOS em modo PWA
-        if (isIos && isStandalone()) {
-            document.documentElement.classList.add('ios-standalone');
-        }
-
         // Função global chamada pelo React quando o usuário muda o tema
         window.setNotchTheme = function(dark) {
             const bg = dark ? '#0F172A' : '#ffffff';
-            const themeColor = dark ? '#0F172A' : '#ffffff';
             document.documentElement.style.setProperty('--notch-bg', bg);
-            document.documentElement.style.setProperty('--topo-seguro', 'env(safe-area-inset-top)');
+            document.body.style.backgroundColor = bg;
             const meta = document.getElementById('theme-color-meta');
-            if (meta) meta.setAttribute('content', themeColor);
+            if (meta) meta.setAttribute('content', bg);
         };
 
         if (isIos && !isStandalone()) {

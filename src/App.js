@@ -212,6 +212,9 @@ export default function App() {
     const [pendingDocs, setPendingDocs] = useState([]);
     const [pdfFileName, setPdfFileName] = useState("Pasta_do_Cliente");
     const [draggedItemIndex, setDraggedItemIndex] = useState(null);
+    const [dragGhostPos, setDragGhostPos] = useState({ x: 0, y: 0 });
+    const [isDraggingActive, setIsDraggingActive] = useState(false);
+    const [fullscreenDoc, setFullscreenDoc] = useState(null);
     const touchDragIndex = useRef(null);
     const touchTargetIndex = useRef(null);
 
@@ -407,13 +410,28 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
 
     const handleDragStart = (e, index) => {
         setDraggedItemIndex(index);
+        setIsDraggingActive(true);
         e.dataTransfer.effectAllowed = "move";
-        setTimeout(() => { e.target.style.opacity = '0.5'; }, 0);
+        // Ghost customizado transparente
+        const ghost = document.createElement('div');
+        ghost.style.position = 'absolute';
+        ghost.style.top = '-9999px';
+        ghost.style.opacity = '0';
+        document.body.appendChild(ghost);
+        e.dataTransfer.setDragImage(ghost, 0, 0);
+        setTimeout(() => document.body.removeChild(ghost), 0);
     };
 
     const handleDragEnd = (e) => {
-        e.target.style.opacity = '1';
+        setIsDraggingActive(false);
         setDraggedItemIndex(null);
+        setDragGhostPos({ x: 0, y: 0 });
+    };
+
+    const handleGlobalDragOver = (e) => {
+        if (isDraggingActive) {
+            setDragGhostPos({ x: e.clientX, y: e.clientY });
+        }
     };
 
     const handleDragOver = (e) => {
@@ -436,11 +454,15 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
     const handleTouchStart = (e, index) => {
         touchDragIndex.current = index;
         setDraggedItemIndex(index);
+        setIsDraggingActive(true);
+        const touch = e.touches[0];
+        setDragGhostPos({ x: touch.clientX, y: touch.clientY });
     };
 
     const handleTouchMove = (e) => {
         e.preventDefault();
         const touch = e.touches[0];
+        setDragGhostPos({ x: touch.clientX, y: touch.clientY });
         const element = document.elementFromPoint(touch.clientX, touch.clientY);
         if (element) {
             const card = element.closest('[data-doc-index]');
@@ -464,6 +486,8 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
         touchDragIndex.current = null;
         touchTargetIndex.current = null;
         setDraggedItemIndex(null);
+        setIsDraggingActive(false);
+        setDragGhostPos({ x: 0, y: 0 });
     };
 
     // Garante que o pdf.js está pronto (worker configurado) antes de usar
@@ -644,7 +668,9 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
     });
 
     return (
-        <div className={`min-h-screen font-sans pb-12 relative transition-colors duration-500 ${modoNoturno ? 'bg-[#0B1120] text-slate-100' : 'bg-slate-50 text-slate-800'}`}>
+        <div className={`min-h-screen font-sans pb-12 relative transition-colors duration-500 ${modoNoturno ? 'bg-[#0B1120] text-slate-100' : 'bg-slate-50 text-slate-800'}`}
+            onMouseMove={handleGlobalDragOver}
+        >
             <header className={`shadow-sm sticky top-0 z-30 transition-colors duration-500 ${modoNoturno ? 'bg-[#0F172A] border-b border-slate-800' : 'bg-white'}`}>
                 <div className="max-w-5xl mx-auto px-4 py-4 sm:px-6 lg:px-8">
                     <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
@@ -1105,7 +1131,8 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
                                         onTouchStart={(e) => handleTouchStart(e, index)}
                                         onTouchMove={handleTouchMove}
                                         onTouchEnd={handleTouchEnd}
-                                        className={`relative group border-2 border-dashed ${draggedItemIndex === index ? 'border-indigo-400 scale-95 opacity-50' : (modoNoturno ? 'border-transparent bg-slate-800 hover:border-indigo-500' : 'border-transparent bg-white hover:border-indigo-300')} rounded-xl overflow-hidden shadow-sm hover:shadow-lg transition-all aspect-[3/4] flex flex-col cursor-move`}>
+                                        onClick={() => { if (!isDraggingActive) { haptic('light'); setFullscreenDoc(doc); } }}
+                                        className={`relative group border-2 border-dashed ${draggedItemIndex === index ? 'border-indigo-400 scale-90 opacity-30 rotate-3' : (modoNoturno ? 'border-transparent bg-slate-800 hover:border-indigo-500' : 'border-transparent bg-white hover:border-indigo-300')} rounded-xl overflow-hidden shadow-sm hover:shadow-lg transition-all aspect-[3/4] flex flex-col cursor-move`}>
                                         <div className="absolute top-1 left-1 bg-indigo-900/80 text-white text-[9px] font-black w-5 h-5 flex items-center justify-center rounded-md z-10 backdrop-blur-sm">{index + 1}</div>
                                         <button onClick={(e) => { e.stopPropagation(); haptic('heavy'); removeDoc(doc.id); }} className="absolute top-1 right-1 bg-red-500 text-white p-1 rounded-lg opacity-0 group-hover:opacity-100 active:opacity-100 transition-all z-10 hover:bg-red-600 shadow-lg"><Trash2 size={11} /></button>
                                         <div className={`flex-1 flex items-center justify-center overflow-hidden relative ${modoNoturno ? 'bg-slate-950' : 'bg-slate-100'}`}>
@@ -1234,6 +1261,94 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
             {showThumbsUp && (
                 <div className="fixed inset-0 z-[80] flex items-center justify-center pointer-events-none">
                     <div className="animate-thumbsup text-[120px] select-none drop-shadow-2xl">👍</div>
+                </div>
+            )}
+
+            {/* GHOST FLUTUANTE DE DRAG */}
+            {isDraggingActive && draggedItemIndex !== null && pendingDocs[draggedItemIndex] && (dragGhostPos.x > 0 || dragGhostPos.y > 0) && (
+                <div
+                    className="fixed z-[200] pointer-events-none"
+                    style={{
+                        left: dragGhostPos.x - 30,
+                        top: dragGhostPos.y - 40,
+                        transform: 'rotate(-6deg) scale(1.08)',
+                        transition: 'transform 0.1s ease',
+                    }}
+                >
+                    <div className="w-16 h-20 rounded-xl overflow-hidden shadow-2xl border-2 border-indigo-400 bg-white"
+                        style={{ boxShadow: '0 12px 40px rgba(99,102,241,0.45), 0 2px 8px rgba(0,0,0,0.25)' }}
+                    >
+                        {pendingDocs[draggedItemIndex].previewUrl ? (
+                            <img src={pendingDocs[draggedItemIndex].previewUrl} alt="drag" className="w-full h-full object-cover" />
+                        ) : (
+                            <div className="w-full h-full flex flex-col items-center justify-center bg-slate-100 gap-1">
+                                <FileIcon size={22} className="text-red-400" />
+                                <span className="text-[7px] font-black text-slate-400 uppercase">PDF</span>
+                            </div>
+                        )}
+                    </div>
+                    {/* Sombra pulsante */}
+                    <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 w-10 h-3 rounded-full bg-indigo-500/30 blur-md animate-pulse"></div>
+                </div>
+            )}
+
+            {/* MODAL FULLSCREEN DE VISUALIZAÇÃO DE DOCUMENTO */}
+            {fullscreenDoc && (
+                <div
+                    className="fixed inset-0 z-[300] flex items-center justify-center bg-black/90 backdrop-blur-md"
+                    onClick={() => setFullscreenDoc(null)}
+                >
+                    <div
+                        className="relative w-full h-full flex flex-col items-center justify-center p-4"
+                        onClick={e => e.stopPropagation()}
+                    >
+                        {/* Header */}
+                        <div className="absolute top-0 left-0 right-0 flex items-center justify-between px-5 py-4 bg-gradient-to-b from-black/80 to-transparent z-10">
+                            <div className="flex items-center gap-3">
+                                <div className="bg-indigo-600 p-2 rounded-xl">
+                                    <FileIcon size={16} className="text-white" />
+                                </div>
+                                <div>
+                                    <p className="text-white font-black text-sm uppercase tracking-wide truncate max-w-[200px] sm:max-w-xs">{fullscreenDoc.name}</p>
+                                    <p className="text-white/50 text-[10px] uppercase tracking-widest font-bold">
+                                        {fullscreenDoc.file.type === 'application/pdf' ? 'PDF' : 'Imagem'}
+                                        {' · '}{(fullscreenDoc.file.size / 1024).toFixed(0)} KB
+                                    </p>
+                                </div>
+                            </div>
+                            <button
+                                onClick={() => setFullscreenDoc(null)}
+                                className="bg-white/10 hover:bg-white/20 text-white p-2.5 rounded-2xl transition-all border border-white/10 backdrop-blur-sm"
+                            >
+                                <X size={20} />
+                            </button>
+                        </div>
+
+                        {/* Conteúdo */}
+                        <div className="w-full h-full flex items-center justify-center pt-16 pb-4">
+                            {fullscreenDoc.previewUrl ? (
+                                <img
+                                    src={fullscreenDoc.previewUrl}
+                                    alt={fullscreenDoc.name}
+                                    className="max-w-full max-h-full object-contain rounded-2xl shadow-2xl"
+                                    style={{ maxHeight: 'calc(100vh - 100px)' }}
+                                />
+                            ) : (
+                                <div className="flex flex-col items-center justify-center gap-6 text-white/60">
+                                    <div className="bg-white/10 p-10 rounded-3xl border border-white/10">
+                                        <FileIcon size={64} className="text-red-400" />
+                                    </div>
+                                    <div className="text-center">
+                                        <p className="text-white font-black text-lg">Pré-visualização indisponível</p>
+                                        <p className="text-white/40 text-sm mt-1">Este PDF não pôde ser renderizado</p>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Fechar tocando fora */}
+                        <p className="absolute bottom-5 left-0 right-0 text-center text-white/30 text-xs font-bold uppercase tracking-widest pointer-events-none">Toque fora para fechar</p>
+                    </div>
                 </div>
             )}
 

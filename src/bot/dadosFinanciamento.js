@@ -1,6 +1,6 @@
 // =========================================================================
 // BANCO DE DADOS DO ROBÔ - DIRECIONAL E RIVA MANAUS
-// Versão 2.0 — Atualizado com Amazon Boulevard Prime + Análise de Crédito Interna
+// Versão 3.0 — Perfis corrigidos tabela oficial Riva/Direcional Fev 2026 + Valores médios referência + Regras precisão todos empreendimentos
 // =========================================================================
 
 export const BaseConhecimento = {
@@ -100,8 +100,8 @@ export const BaseConhecimento = {
   "bosque das torres": "🏠 *Bosque das Torres* — Direcional (MCMV)\n\n📍 Av. das Torres — Lago Azul, Manaus/AM\n\n🏢 *Ficha Técnica:*\n• 26 blocos residenciais\n• Tipologia: 1 e 2 quartos | Área privativa: 36,24 m²\n• Garden (térreo, aptos 101-104): 36,24 m² + 14,35 m² = 50,59 m² total\n\n🛋️ *Acabamentos:*\n• Bancadas em mármore sintético com cuba integrada\n• Tanque em SMC (material compósito de alta resistência), sem coluna\n• Esquadrias em alumínio branco\n• Revestimento cerâmico até 1,50 m nas áreas molhadas\n• Previsão de split nas unidades\n• Bacias dual flush\n\n🎉 *22 itens de lazer (entregue mobiliado e equipado):*\nPiscinas adulto e infantil, Multi Wash (lavagem compartilhada), Espaço Food Truck fixo, Playbaby, Playground, Churrasqueira, Salão de festas, Quadra esportiva, Redário, Pet place, Bicicletário, Guarita com espaço delivery, Controle de acesso automatizado em todos os blocos\n\n🌱 *Sustentabilidade:* Medição individualizada de água e gás, paisagismo com espécies nativas amazônicas\n\n📍 Pertinho do Shopping Via Norte!",
 
   "bosque": "🏠 *Bosque das Torres* — Av. das Torres, Lago Azul | MCMV\n26 blocos | 1 e 2 quartos | 36,24 m² | Garden 50,59 m².\n22 itens de lazer: piscinas, Multi Wash, food truck, playbaby, quadra, pet place e mais!\nMedição individual de água e gás. Perto do Shopping Via Norte.",
-  "village torres": "O *Village Torres* fica no Lago Azul. Piscinas, espaço fitness, Connect Garden e fácil acesso pela Av. das Torres.",
-  "village": "O *Village Torres* fica no Lago Azul. Piscinas, espaço fitness, Connect Garden e fácil acesso pela Av. das Torres.",
+  "village torres": "🏠 *Village Torres* — Direcional (MCMV)\n\n📍 Av. das Torres — Lago Azul, Zona Norte\n\n• Tipologia: APENAS 2 quartos | Área: 36m²\n• Piso: cerâmica apenas em cozinha, banheiro e lavatório (sala e quartos SEM piso — por conta do cliente)\n• Lazer: piscinas, espaço fitness, Connect Garden\n\n⚠️ Este empreendimento tem somente 2 quartos. Não tem 1 nem 3 quartos.",
+  "village": "🏠 *Village Torres* — Lago Azul | MCMV | 2 quartos | 36m² | Piso só em cozinha/banheiro.\nLazer: piscinas, fitness, Connect Garden.\n⚠️ Somente 2 quartos.",
   "solar das torres": "O *Solar das Torres* está na Avenida das Torres! Lazer completo entregue equipado, piscinas, churrasqueira e guarita de segurança.",
   // 🌿 BRISAS DO HORIZONTE — DETALHES COMPLETOS
   "brisas do horizonte": "🏠 *Brisas do Horizonte* — Direcional (MCMV)\n\n📍 Rua Ivailândia, nº 485 — Coroado, Manaus/AM (Zona Leste)\n\n🏢 *Ficha Técnica:*\n• Torres de 19 pavimentos (térreo + 18)\n• Sistema construtivo: parede de concreto\n• Tipologias: 2 quartos | Tipo: 43,41 a 45,67 m² | Garden térreo: 53,87 a 59,19 m²\n• Esquadrias em alumínio branco\n\n🎉 *Lazer completo:*\nPiscina, Coworking, Espaço Beauty, Sport Bar, Game Station, Espaço Gourmet, Churrasqueira com apoio, Redário, Praça de Jogos, Playground, Playbaby, Bicicletário, Mini mercado (operado pelo condomínio)\n\n🌱 *Sustentabilidade:* Dual flush, LED áreas comuns, sensor de presença, previsão split, FGTS permitido\n\n📍 *Vizinhança:*\n• 1 min: Supermercado Vitória\n• 2 min: Escola Mun. Profª Maria Rodrigues Tapajós\n• 3 min: SPA Coroado\n• 5 min: Estádio Carlos Zamith\n• 6 min: Park Mall Ephigênio Salles\n• 7 min: UFAM (Setor Sul), Hospital Dr. João Lúcio, Samel São José\n• 8 min: Sesi Clube do Trabalhador\n• 14 min: Manauara Shopping\n\n🚌 *Transporte:* Linhas 542, 541, 540 | Terminais T1 e interbairros 001 e 002\nRegistro: R-13-693 (4º CRI Manaus) | IMPLURB nº 6305/2024",
@@ -190,6 +190,33 @@ export const BaseConhecimento = {
   "diferenciais prime": "🌟 *Diferenciais Amazon Boulevard Prime:*\n\n✅ Padrão Riva de acabamento\n✅ 1, 2 e 3 quartos com suíte\n✅ Varanda com ponto grill em todos os aptos\n✅ 3 piscinas (adulto, infantil e topo)\n✅ Quadra, crossfit, churrasqueira, salão de festas\n✅ Garden privativo nos aptos do térreo\n✅ Hall de entrada sofisticado\n✅ Vizinho do Amazon Boulevard Classic\n✅ Localização privilegiada na Torquato Tapajós\n✅ Próximo à Arena da Amazônia e Carrefour",
 
   // ==========================================
+  // 👑 PERFIS DE CLIENTES — ANÁLISE INTERNA
+  // ==========================================
+  "cliente aco": "⚙️ *Cliente Aço* (nível de entrada)\n• Benefício Pró-Soluto (PS) na entrada: 12%\n• Parcelamento pós habite-se: 84x de 40% da renda\n• Comprometimento de renda: até 10%\n\nPerfil: cliente sem histórico diferenciado, sem score elevado. É o nível base da análise interna.",
+
+  "cliente bronze": "🥉 *Cliente Bronze*\n• Benefício Pró-Soluto (PS) na entrada: 15%\n• Parcelamento pós habite-se: 84x de 45% da renda\n• Comprometimento de renda: até 15%\n\nPerfil: histórico simples com algum diferencial, análise padrão no Financiamento Direto.",
+
+  "cliente prata": "🥈 *Cliente Prata*\n• Benefício Pró-Soluto (PS) na entrada: 18%\n• Parcelamento pós habite-se: 84x de 48% da renda\n• Comprometimento de renda: até 18%\n\nPerfil: boa renda comprovada (formal ou bancária), sem restrições relevantes.",
+
+  "cliente ouro": "🥇 *Cliente Ouro*\n• Benefício Pró-Soluto (PS) na entrada: 20%\n• Parcelamento pós habite-se: 84x de 50% da renda\n• Comprometimento de renda: até 20%\n\nPerfil: excelente histórico de crédito, renda bem comprovada, sem restrições.\n⚠️ O parcelamento pós obra é calculado sobre 50% da renda validada, em até 84x.",
+
+  "cliente diamante": "💎 *Cliente Diamante* (nível máximo)\n• Benefício Pró-Soluto (PS) na entrada: 25%\n• Parcelamento pós habite-se: 84x de 50% da renda\n• Comprometimento de renda: até 20%\n\nPerfil: alto padrão financeiro, excelente score. Indicado para linha Riva ou Direcional premium.\n⚠️ Mesmo parcelamento do Ouro (84x/50%), mas com benefício PS maior na entrada.",
+
+  "perfil aco": "⚙️ *Cliente Aço*: 12% PS | 84x de 40% da renda | 10% comprometimento",
+
+  "perfil ouro": "🥇 *Cliente Ouro*: 20% PS | 84x de 50% da renda | 20% comprometimento",
+
+  "perfil prata": "🥈 *Cliente Prata*: 18% PS | 84x de 48% da renda | 18% comprometimento",
+
+  "perfil bronze": "🥉 *Cliente Bronze*: 15% PS | 84x de 45% da renda | 15% comprometimento",
+
+  "perfil diamante": "💎 *Cliente Diamante*: 25% PS | 84x de 50% da renda | 20% comprometimento",
+
+  "perfis": "Perfis de cliente — tabela oficial Direcional/Riva (Análise Interna):\n⚙️ Aço: 12% PS | 84x de 40% da renda | 10% comprometimento\n🥉 Bronze: 15% PS | 84x de 45% da renda | 15% comprometimento\n🥈 Prata: 18% PS | 84x de 48% da renda | 18% comprometimento\n🥇 Ouro: 20% PS | 84x de 50% da renda | 20% comprometimento\n💎 Diamante: 25% PS | 84x de 50% da renda | 20% comprometimento\n\n⚠️ PS = Pró-Soluto (benefício aplicado na entrada). O % de parcelamento é sobre a renda validada do cliente.\n\nQuer detalhe de algum perfil?",
+
+  "ranking": "Ranking de clientes — tabela oficial (Análise Interna):\n⚙️ Aço: 12% PS | 84x de 40% | 10%\n🥉 Bronze: 15% PS | 84x de 45% | 15%\n🥈 Prata: 18% PS | 84x de 48% | 18%\n🥇 Ouro: 20% PS | 84x de 50% | 20%\n💎 Diamante: 25% PS | 84x de 50% | 20%",
+
+  // ==========================================
   // 💳 TAXAS E JUROS (TABELA CAIXA)
   // ==========================================
   "juros mcmv": "As taxas de juros do MCMV variam conforme a faixa e a região:\n\n*Faixa 1:*\n• Até R$2.160: NO/NE/CO=4% | SUL/SE=4,25%\n• R$2.160 a R$2.850: NO/NE/CO=4,25% | SUL/SE=4,50%\n\n*Faixa 2:*\n• Até R$3.500: 4,75% (NO/NE/CO) | 5% (SUL/SE)\n• R$3.500 a R$4.000: 5,5%\n• R$4.000 a R$4.700: 6,5%\n\n*Faixa 3:* 7,66%\n*Faixa 4 (Classe Média):* 10%\n*Pró-Cotista:* 8,66%\n*SBPE:* 11,49%",
@@ -225,69 +252,282 @@ export function buscarRespostaDoRobo(mensagemDoUsuario) {
 }
 
 // =========================================================================
-// CONTEXTO COMPLETO PARA A IA (GROQ/GEMINI) — VERSÃO 2.0
+// CONTEXTO COMPLETO PARA A IA (GROQ/GEMINI) — VERSÃO 3.0
 // =========================================================================
 
-const CONTEXTO_DESTEMIDOS = `Você é a IA da equipe de corretores Destemidos de Manaus. Especialista nos empreendimentos Direcional e Riva em Manaus e em financiamento imobiliário.
+const CONTEXTO_DESTEMIDOS = `Você é a IA da equipe de corretores Destemidos de Manaus. Especialista nos empreendimentos Direcional e Riva em Manaus e em financiamento imobiliário (MCMV/Caixa).
 
-REGRAS DE RESPOSTA:
-- Por padrão: respostas curtas e objetivas, estilo WhatsApp (máx. 3 frases ou 3 itens).
-- Se o corretor pedir detalhes, informações técnicas ou disser "me explica melhor", pode responder de forma mais completa e detalhada.
-- Use 1 emoji por mensagem no máximo. Nunca use markdown complexo ou títulos.
-- Se precisar de mais dados, faça UMA pergunta de volta.
+════════════════════════════════════════
+REGRAS ABSOLUTAS DE RESPOSTA
+════════════════════════════════════════
+1. NUNCA invente dados. Se não tiver certeza de um detalhe, diga "não tenho essa informação" e oriente a consultar a tabela oficial ou o gestor.
+2. NUNCA afirme que um empreendimento tem características que ele NÃO tem. Isso vale para TODOS os empreendimentos sem exceção — tipologia, metragem, piso, garden, lazer.
+3. Para QUALQUER empreendimento: se a característica perguntada NÃO estiver listada nos dados abaixo, responda: "O [nome] não tem essa tipologia/característica. Ele possui [informação correta listada]."
+4. Use o HISTÓRICO DA CONVERSA para entender sobre qual empreendimento o corretor está falando. Se ele disse "Brisas" há 2 mensagens e agora pergunta "tem 1 quarto?", responda com base no Brisas.
+5. Respostas curtas por padrão (máx 3-4 linhas). Se pedir detalhes, expanda.
+6. Tom: direto, amigável, estilo WhatsApp. 1 emoji por resposta.
+7. Se precisar de mais dados para responder, faça UMA pergunta de cada vez.
+8. Valores e tabelas de preços mudam a cada ~10 dias. Sempre avise: "os valores são uma referência — confirme com a tabela atualizada."
+9. VALORES MÉDIOS DE REFERÊNCIA estão listados abaixo. Use-os como orientação, nunca como valor fixo. SEMPRE avise que o valor real deve ser confirmado com a tabela vigente.
 
-EMPREENDIMENTOS DIRECIONAL (MCMV):
-Brisas do Horizonte (Coroado), Parque Ville Orquídea (Lago Azul), Village Torres (Lago Azul), Conquista Jardim Botânico (Nova Cidade), Viva Vida Coral (Colônia Terra Nova), Conquista Jardim Norte (Santa Etelvina), Viva Vida Rio Amazonas (Tarumã), Bosque das Torres (Lago Azul), Parque Ville Lírio Azul (Lago Azul), Conquista Topázio (Torquato Tapajós), Conquista Rio Negro (Ponta Negra), Viva Vida Rio Tapajós (Tarumã).
+════════════════════════════════════════
+PERFIS DE CLIENTES — TABELA OFICIAL DIRECIONAL/RIVA (Fev 2026)
+════════════════════════════════════════
+Quando o corretor mencionar qualquer perfil (aço, bronze, prata, ouro, diamante), explique conforme a tabela oficial abaixo.
+PS = Pró-Soluto = benefício aplicado na entrada do financiamento direto.
+O % de parcelamento pós obra é calculado sobre a RENDA validada do cliente, em 84 parcelas fixas.
 
-BRISAS DO HORIZONTE: Rua Ivailândia, 485, Coroado (Zona Leste). Torres 19 pavimentos. 2 quartos, Tipo 43,41-45,67m², Garden 53,87-59,19m². Lazer: piscina, coworking, espaço beauty, sport bar, game station, gourmet, churrasqueira, redário, playground, playbaby, bicicletário, mini mercado. Vizinhança: UFAM (7min), Park Mall (6min), Hospital João Lúcio (7min), Carlos Zamith (5min), SPA Coroado (3min). Ônibus 542/541/540, Terminal T2 e interbairros.
+⚙️ CLIENTE AÇO (nível base):
+- Benefício PS na entrada: 12%
+- Parcelamento pós obra: 84x de 40% da renda
+- Comprometimento de renda: até 10%
+- Perfil: cliente sem diferencial de histórico ou score.
 
-PARQUE VILLE LÍRIO AZUL: Av. Santa Tereza D'Avila, 1096, Lago Azul. 30 torres, 5 pavimentos, 600 unidades (18 PCD, 102 garden), terreno 44.027m². 2 quartos, 40,67m². Garden A (101/104): +10,51m², Garden B (102/103): +17,17m². Vagas: 188 carros+356 motos+18 PCD+38 visitantes. Lazer: piscinas, espaço yoga, gourmet, churrasqueira, quadra, fitness, playground, playbaby, jogos, redário, pet place, piquenique, bicicletário. Vizinhança: Escola João S. Braga 1min, Clínica C. Gracie 2min, Terminal 6 e 7 4min, Via Norte 7min, Delphina Aziz 8min.
+🥉 CLIENTE BRONZE:
+- Benefício PS na entrada: 15%
+- Parcelamento pós obra: 84x de 45% da renda
+- Comprometimento de renda: até 15%
+- Perfil: cliente com histórico básico, algum diferencial mínimo.
 
-PARQUE VILLE ORQUÍDEA: Jardim Manaus (1º bairro planejado Direcional Manaus). 2 quartos, Tipo Meio 41,36-41,57m², Tipo Ponta 41,37m². Garden Meio +15,80-15,90m², Garden Ponta +14,25m², Garden Studio (1Q) 41,57+15,80m², Garden PCD 41,57+15,80m². Acabamentos: cerâmica, laminado quartos, bancada mármore sintético. Lazer: piscinas, churrasqueira, quadra, fitness, fitwall, food truck, car wash, playground, jogos, pet place, bicicletário. Vizinhança: Via Norte 7min, Delphina Aziz 10min, Nova Era 3min, Terminal 6 4min.
+🥈 CLIENTE PRATA:
+- Benefício PS na entrada: 18%
+- Parcelamento pós obra: 84x de 48% da renda
+- Comprometimento de renda: até 18%
+- Perfil: boa renda comprovada (formal ou bancária), sem restrições relevantes.
 
-CONQUISTA JARDIM NORTE: Rua Vicente Martins, 900, Santa Etelvina. 26 blocos, 5 pavimentos, 520 unidades (16 PCD, 36 garden), terreno 21.760m². 2 quartos, 36,24m². Vagas: 179 carros+308 motos+33 visitantes. Lazer entregue mobiliado: piscinas, salão festas, churrasqueiras, food truck plaza, fitness, crossfit, quadra, playground, playbaby, redário, pet place, piquenique, bicicletário, controle acesso automatizado. Vizinhança: Via Norte/Havan/Fun Park/Nova Era 1min, UBS 2min, Terminal 06 5min.
+🥇 CLIENTE OURO:
+- Benefício PS na entrada: 20%
+- Parcelamento pós obra: 84x de 50% da renda
+- Comprometimento de renda: até 20%
+- Perfil: excelente histórico de crédito, renda bem comprovada, sem restrições.
 
-BOSQUE DAS TORRES: Av. das Torres, Lago Azul. 26 blocos. 1 e 2 quartos, 36,24m². Garden térreo: 36,24+14,35=50,59m². 22 itens lazer: piscinas, Multi Wash, food truck fixo, playbaby, quadra, pet place, guarita c/ espaço delivery, controle acesso automatizado. Medição individual água e gás. Paisagismo nativo amazônico.
+💎 CLIENTE DIAMANTE (nível máximo):
+- Benefício PS na entrada: 25%
+- Parcelamento pós obra: 84x de 50% da renda
+- Comprometimento de renda: até 20%
+- Perfil: alto padrão financeiro, excelente score. Indicado para linha Riva ou Direcional premium.
+- DIFERENÇA do Ouro: mesmo parcelamento, mas MAIOR benefício PS na entrada (25% vs 20%).
 
-CONQUISTA JARDIM BOTÂNICO: Nova Cidade, próx. Av. 7 de Maio e Via Norte. 2 quartos, planta integrada sala+jantar. Entregue com piso. Ruas internas pavimentadas, reservatório autônomo, dual flush. Lazer: churrasqueira, playground, quadra.
+⚠️ NÃO EXISTE mais o perfil "Platina" na tabela oficial. O nível mais alto é Diamante.
+IMPORTANTE: esses perfis são da ANÁLISE INTERNA (Tabela Direta). Para MCMV/Caixa, a regra é fixa: parcela máx = 30% da renda bruta.
 
-CONQUISTA RIO NEGRO: Av. Frederico Baird nº 2990, Ponta Negra. 2 quartos. Garden muito procurado (simula casa em floresta preservada). Piso cerâmico, janelas c/ isolamento acústico. Paisagismo nativo. Próximo à Orla e Av. do Turismo.
+════════════════════════════════════════
+VALORES MÉDIOS DE REFERÊNCIA (Tabela Fev 2026 — sujeita a alteração)
+════════════════════════════════════════
+⚠️ ESTES VALORES SÃO MÉDIAS DE REFERÊNCIA. Tabelas mudam a cada ~10 dias. Sempre confirme com a tabela oficial vigente antes de fechar negócio.
 
-CONQUISTA TOPÁZIO: Av. Torquato Tapajós. Paredes concreto moldado in loco. Previsão split c/ área técnica. Churrasqueiras independentes. Playground piso emborrachado. Vizinho ao Allegro Mall e Via Norte.
+DIRECIONAL — Tabela Associativo Caixa (valores aproximados):
+• Bosque das Torres: 1Q garden ~R$208.500 | 2Q garden térreo ~R$224.000 | 2Q tipo ~R$195.000-198.400
+• Parque Ville Lírio Azul: 1Q studio ~R$190.000-206.500 | 2Q garden duplo ~R$235.000 | 2Q tipo ~R$187.700-206.500
+• Brisas do Horizonte: 2Q garden térreo ~R$319.600-344.700 | 2Q tipo ~R$296.800-350.400
+• Conquista Jardim Norte: 1Q ~R$214.400 | 2Q garden ~R$225.500-227.300 | 2Q tipo ~R$214.400-220.400
+• Conquista Jardim Botânico: 1Q ~R$207.400 | 2Q garden ~R$221.900-232.000 | 2Q tipo ~R$202.300-210.500
+• Parque Ville Orquídea: 1Q PCD ~R$212.600 | 2Q garden ~R$240.200-241.200 | 2Q tipo ~R$208.700-216.800
+• Village Torres: 1Q garden ~R$208.500 | 2Q garden térreo ~R$224.000 | 2Q tipo ~R$194.000-198.500
+• Viva Vida Coral: 1Q ~R$220.300 | 2Q garden ~R$248.600 | 2Q tipo ~R$232.400-238.900
+• Viva Vida Rio Tapajós: 1Q ~R$199.900 | 2Q tipo ~R$211.400
+• Conquista Rio Negro: 1Q garden ~R$236.700 | 2Q garden ~R$240.800 | 2Q tipo ~R$224.500-229.800
+• Conquista Topázio: 1Q PCD ~R$219.300 | 2Q garden ~R$241.700-243.300 | 2Q tipo ~R$226.100-234.500
 
-PARQUE VILLE LÍRIO AZUL: Jardim Manaus, conceito bairro das flores. +30 blocos. Lazer: espaço yoga, salão festas interno+externo, car wash, bicicletário c/ ferramentas, piquenique. 1 min da Escola João S. Braga, 2 min Nova Era e Clínica C. Nicolau.
+RIVA — Tabela Associativo (valores aproximados):
+• Amazon Boulevard Classic: Studio garden ~R$301.590 | Garden ponta ~R$367.790-392.390 | Garden meio ~R$341.090 | 2Q tipo ~R$316.590-397.890
+• Amazon Boulevard Prime: 1Q garden ~R$341.525-359.500 | 2Q garden ~R$423.130-482.200 | 2Q tipo ~R$423.130-465.400 | 3Q tipo ~R$497.705-583.400 | 3Q garden ~R$532.475-560.500
+• Città Oasis Azzure: 2Q garden ~R$422.499-452.031 | 2Q tipo ~R$387.500-413.700
+• Zenith Bloco 1: Garden térreo ~R$431.700-443.700 | 2Q tipo ~R$367.700-427.700
+• Zenith Bloco 2: Garden térreo ~R$431.700-438.200 | 2Q tipo ~R$380.700-437.700
+• Eliza Miranda Mall (salas/lojas): valor contrato ~R$143.000-212.750 | aluguel garantido 12x ~R$1.499-2.312,50 | bônus 13ª parcela (ATO compra) | saldo TD até 120x
 
-EMPREENDIMENTOS RIVA (MÉDIO/ALTO PADRÃO):
-- Amazon Boulevard Classic (Bairro da Paz, Torquato Tapajós)
-- Amazon Boulevard Prime (Bairro da Paz, Torquato Tapajós) — 5 blocos, 1/2/3 quartos, suíte, varanda grill, 3 piscinas, quadra, crossfit, churrasqueira, salão de festas, garden privativo no térreo.
-  Tipologias: 1Q Garden 51,94m²+20,47m² garden | 2Q Garden 60,14m²+29,49m² garden | 2Q Tipo 60,14m² | 3Q Tipo 69,94m² | 3Q Garden 69,94m²+garden.
-  Localização: próximo Arena da Amazônia, Carrefour, La Parilla, Sambódromo.
-- Città Oasis Azzure (Flores)
-- Zenith Condomínio Clube (São Francisco) — 2Q suíte, varanda gourmet, +25 itens lazer.
-- Park Golf (Av. das Torres, ao lado do campo de golfe)
-- Estilo Ponta Negra (Ponta Negra)
-- Luar Ponta Negra (Ponta Negra) — 2 e 3 quartos, suíte, varanda gourmet. Lazer: academia, games, brinquedoteca, piscina, churrasqueira, playground. Vizinhança: Orla 92 2min, Veneza 2min, Orla 3min, Shopping Ponta Negra 9min.
+════════════════════════════════════════
+EMPREENDIMENTOS DIRECIONAL — DADOS OFICIAIS
+════════════════════════════════════════
+⚠️ REGRA UNIVERSAL: Para QUALQUER empreendimento listado abaixo, NUNCA afirme tipologia, metragem, piso ou característica que não esteja expressamente listada. Se o usuário perguntar sobre algo não listado, diga: "O [nome] não tem essa tipologia/característica. Ele possui [dados listados abaixo]."
 
-MCMV 2026:
-- Faixa 1: até R$2.850 — maior subsídio, juros 4% a 4,5%
-- Faixa 2: R$2.850 a R$4.700 — subsídio até R$55mil, juros 4,75% a 6,5%
-- Faixa 3: R$4.700 a R$8.600 — juros 7,66%
-- Faixa 4: R$8.600 a R$12.000 — juros 10%
+VILLAGE TORRES:
+- Localização: Lago Azul, Zona Norte — Av. das Torres
+- Tipologia: APENAS 2 quartos | Área: 36m²
+- Piso: cerâmica apenas em cozinha, banheiro e lavatório (sala e quartos SEM piso — por conta do cliente)
+- Lazer: piscinas, espaço fitness, Connect Garden
+- ⚠️ NÃO tem 1 quarto. NÃO tem 3 quartos. NÃO tem garden oficial cadastrado.
+
+BOSQUE DAS TORRES:
+- Localização: Av. das Torres, Lago Azul, Zona Norte
+- Tipologia: 1 e 2 quartos | Área: 36,24m² | Garden térreo: 50,59m² (36,24+14,35m²)
+- 26 blocos | 22 itens de lazer
+- Lazer: piscinas adulto e infantil, Multi Wash, food truck fixo, playbaby, playground, churrasqueira, salão festas, quadra, redário, pet place, bicicletário, guarita c/ espaço delivery, controle acesso automatizado
+- Sustentabilidade: medição individual água e gás, paisagismo nativo amazônico
+- ⚠️ NÃO tem 3 quartos.
+
+PARQUE VILLE LÍRIO AZUL:
+- Localização: Av. Santa Tereza D'Avila, 1096, Lago Azul, Zona Norte
+- Tipologia: APENAS 2 quartos | Área: 40,67m²
+- Garden: tipo A (aptos 101/104) +10,51m² | tipo B (aptos 102/103) +17,17m²
+- 30 torres | 600 unidades (18 PCD, 102 garden) | Terreno: 44.027m²
+- Vagas: 188 carros + 356 motos + 18 PCD + 38 visitantes
+- Lazer: piscinas adulto+infantil+solarium, espaço yoga, gourmet, churrasqueira, quadra, fitness, playground, playbaby, jogos, redário, pet place, piquenique, bicicletário
+- Vizinhança: Escola João S. Braga 1min | Nova Era 2min | Terminal 6 e 7 4min | Via Norte 7min | Hospital Delphina Aziz 8min
+- ⚠️ NÃO tem 1 quarto nem 3 quartos.
+
+PARQUE VILLE ORQUÍDEA:
+- Localização: Jardim Manaus (1º bairro planejado Direcional em Manaus), Lago Azul, Zona Norte
+- Tipologia: 2 quartos (e Garden Studio 1Q apenas no térreo adaptado)
+- Tipo Meio: 41,36-41,57m² | Tipo Ponta: 41,37m²
+- Garden Meio: +15,80-15,90m² | Garden Ponta: +14,25m² | Garden Studio (1Q): 41,57+15,80m² | Garden PCD: 41,57+15,80m²
+- Acabamentos: piso cerâmico (laminado nos quartos), bancada mármore sintético c/ cuba integrada
+- Lazer: piscinas, churrasqueira, quadra, fitness, fitwall, food truck, car wash, playground, jogos, pet place, bicicletário
+- Vizinhança: Via Norte 7min | Delphina Aziz 10min | Nova Era 3min | Terminal 6 4min
+- ⚠️ NÃO tem 3 quartos. O "1 quarto" é apenas o Garden Studio adaptado PCD no térreo.
+
+BRISAS DO HORIZONTE:
+- Localização: Rua Ivailândia, 485, Coroado, Zona Leste
+- Tipologia: APENAS 2 quartos | Tipo: 43,41-45,67m² | Garden: 53,87-59,19m²
+- Torres de 19 pavimentos (térreo + 18) | Sistema: parede de concreto
+- Lazer: piscina, coworking, espaço beauty, sport bar, game station, gourmet, churrasqueira, redário, playground, playbaby, bicicletário, mini mercado
+- Vizinhança: SPA Coroado 3min | Carlos Zamith 5min | Park Mall 6min | UFAM 7min | Hospital João Lúcio 7min | Manauara Shopping 14min
+- Ônibus: linhas 542, 541, 540 | Terminais T1 e interbairros 001/002
+- ⚠️ NÃO tem 1 quarto nem 3 quartos.
+
+CONQUISTA JARDIM NORTE:
+- Localização: Rua Vicente Martins, 900, Santa Etelvina, Zona Norte
+- Tipologia: APENAS 2 quartos | Área: 36,24m²
+- 26 blocos | 5 pavimentos | 520 unidades (16 PCD, 36 garden) | Terreno: 21.760m²
+- Vagas: 179 carros + 308 motos + 33 visitantes
+- Piso: cerâmica apenas em banheiro + gesso (sala/quartos SEM piso — por conta do cliente)
+- Lazer (entregue mobiliado): piscinas, salão festas, churrasqueiras, food truck plaza, fitness, crossfit, quadra, playground, playbaby, redário, pet place, piquenique, bicicletário, controle acesso automatizado
+- Vizinhança: Via Norte/Havan/Fun Park/Nova Era 1min | UBS 2min | Terminal 06 5min | Hospital Delphina Aziz próximo
+- ⚠️ NÃO tem 1 quarto nem 3 quartos.
+
+CONQUISTA JARDIM BOTÂNICO:
+- Localização: Nova Cidade, próx. Av. 7 de Maio e Shopping Via Norte, Zona Norte
+- Tipologia: APENAS 2 quartos | Área: 40m² | Planta integrada sala+jantar
+- Piso: entregue com piso em TODOS os ambientes (diferencial!)
+- Infraestrutura: ruas internas pavimentadas, reservatório autônomo, dual flush
+- Lazer: churrasqueira, playground, quadra
+- ⚠️ NÃO tem 1 quarto nem 3 quartos.
+
+CONQUISTA TOPÁZIO:
+- Localização: Av. Torquato Tapajós, Colônia Terra Nova, Zona Norte
+- Tipologia: 1 e 2 quartos | Área: 41m² a 51m² | Entregue com piso em todos os ambientes
+- Construção: paredes estruturais em concreto moldado in loco
+- Lazer: piscina adulto e infantil, churrasqueiras independentes, playground piso emborrachado, quadra
+- Vizinhança: vizinho ao Allegro Mall e próximo ao Via Norte
+- ⚠️ NÃO tem 3 quartos.
+
+CONQUISTA RIO NEGRO:
+- Localização: Av. Frederico Baird, 2990, Ponta Negra, Zona Oeste
+- Tipologia: APENAS 2 quartos | Área: 41m² | Entregue com piso em todos os ambientes
+- Garden: opções no térreo (muito procuradas — simulam casa em floresta preservada)
+- Piso cerâmico, janelas alumínio c/ isolamento acústico, paisagismo nativo
+- Vizinhança: Orla da Ponta Negra e Av. do Turismo próximos
+- ⚠️ NÃO tem 1 quarto nem 3 quartos.
+
+VIVA VIDA CORAL:
+- Localização: Colônia Terra Nova, Zona Norte
+- Tipologia: 2 quartos | Área: 41m² a 51m²
+- Piso: cerâmica em cozinha, banheiro e lavatório (sala/quartos SEM piso)
+- Lazer completo, ideal para primeiro imóvel com subsídios MCMV
+- ⚠️ NÃO tem 1 quarto nem 3 quartos.
+
+VIVA VIDA RIO AMAZONAS:
+- Localização: Tarumã, Zona Oeste
+- Tipologia: 2 quartos | Área: 36m²
+- Piso: cerâmica em cozinha, banheiro e lavatório
+- Vizinhança: Aeroporto Eduardo Gomes, Orla da Ponta Negra, Sivam, Sipam
+- ⚠️ NÃO tem 1 quarto nem 3 quartos.
+
+VIVA VIDA RIO TAPAJÓS:
+- Localização: Tarumã, Zona Oeste
+- Tipologia: 2 quartos | Área: 36m²
+- Piso: cerâmica em cozinha, banheiro e lavatório
+- Vizinhança: Aeroporto Internacional de Manaus, Tarumã (balneários famosos), entrada da Ponta Negra
+- ⚠️ NÃO tem 1 quarto nem 3 quartos.
+
+════════════════════════════════════════
+EMPREENDIMENTOS RIVA — DADOS OFICIAIS
+════════════════════════════════════════
+⚠️ REGRA UNIVERSAL RIVA: Para QUALQUER empreendimento Riva, NUNCA afirme tipologia, metragem ou característica que não esteja expressamente listada. Se não tiver o dado, oriente a consultar a tabela ou o coordenador.
+
+AMAZON BOULEVARD CLASSIC:
+- Localização: Bairro da Paz, Av. Torquato Tapajós, Zona Centro-Oeste
+- Tipologia: 2 quartos | Área: 44m² a 69,78m²
+- Piso: entregue em todo o apartamento
+- Vizinhança: Arena da Amazônia, Carrefour, UNIP, Terminal Rodoviário, Hospital Tropical
+- ⚠️ NÃO tem 1 quarto nem 3 quartos no Classic.
+
+AMAZON BOULEVARD PRIME:
+- Localização: Bairro da Paz, Av. Torquato Tapajós (vizinho ao Classic)
+- Tipologia: 1, 2 e 3 quartos com suíte | 5 blocos
+- 1Q Garden: 51,94m² + 20,47m² garden
+- 2Q Garden Meio: 60,14m² + 29,49m² garden
+- 2Q Tipo Meio: 60,14m²
+- 3Q Tipo Ponta: 69,94m²
+- 3Q Garden Ponta: 69,94m² + garden (13,91 a 20,13m² conforme bloco)
+- Lazer: 3 piscinas (adulto, infantil, topo do bloco), quadra, crossfit, churrasqueira, salão festas, playground, futmesa, bicicletário, hall sofisticado
+- Acabamentos: esquadrias preta, bancadas granito, cozinha integrada, varanda c/ ponto grill, dual flush
+- Vizinhança: Arena da Amazônia, Sambódromo, Carrefour, La Parilla, Clube Municipal
+
+CITTÀ OASIS AZZURE:
+- Localização: Flores, Zona Centro-Sul
+- Tipologia: 2 e 3 quartos | Área: 48m² a 75m²
+- Piso: entregue em todo o apartamento
+- Conceito oásis urbano, arquitetura contemporânea, lazer completo tipo clube
+- Vizinhança: Universidade Nilton Lins, polo gastronômico Laranjeiras, Sollarium Mall
+
+ZENITH CONDOMÍNIO CLUBE:
+- Localização: São Francisco, Zona Sul
+- Tipologia: 2 e 3 quartos c/ suíte | Área: 48m² a 49m²
+- Piso: entregue em todo o apartamento
+- +25 itens de lazer, conceito Eco Zen, varanda gourmet
+- Vizinhança: Manauara Shopping, Fórum, TJ-AM, Hospital Check Up, Colégio Martha Falcão
+
+LUAR PONTA NEGRA:
+- Localização: Ponta Negra, Zona Oeste
+- Tipologia: 2 e 3 quartos c/ suíte e varanda gourmet
+- Lazer: academia, games, brinquedoteca, piscina, churrasqueira, playground, salão festas
+- Vizinhança: Orla 92 2min | Veneza 2min | Orla da Ponta Negra 3min | Shopping Ponta Negra 9min
+
+ESTILO PONTA NEGRA:
+- Localização: Ponta Negra, Zona Oeste (bairro nobre)
+- Ao lado do Shopping Ponta Negra, infraestrutura de resort, sofisticação Riva
+
+PARK GOLF:
+- Localização: Av. das Torres, ao lado do campo de golfe
+- Acabamento premium em granito, área verde, proximidade com Assaí
+
+════════════════════════════════════════
+FINANCIAMENTO — MCMV 2026 E CAIXA
+════════════════════════════════════════
+FAIXAS DE RENDA:
+- Faixa 1: até R$2.850 → maior subsídio, juros 4% a 4,5%
+- Faixa 2: R$2.850 a R$4.700 → subsídio até R$55mil, juros 4,75% a 6,5%
+- Faixa 3: R$4.700 a R$8.600 → juros 7,66%
+- Faixa 4: R$8.600 a R$12.000 → juros 10%
 - Pró-Cotista: sem limite de renda, juros 8,66%, só imóveis novos até R$500mil
 - SBPE: sem limite de renda, juros 11,49%, imóveis até R$2.250.000
-- Parcela máxima: 30% da renda bruta familiar
+- REGRA CAIXA: parcela máxima = 30% da renda bruta familiar (imutável)
+
+PERFIS DE CLIENTES — TABELA OFICIAL (Análise Interna):
+PS = Pró-Soluto = benefício na entrada. Parcelamento calculado sobre a renda validada, em 84x.
+⚙️ Aço: 12% PS | 84x de 40% da renda | 10% comprometimento
+🥉 Bronze: 15% PS | 84x de 45% da renda | 15% comprometimento
+🥈 Prata: 18% PS | 84x de 48% da renda | 18% comprometimento
+🥇 Ouro: 20% PS | 84x de 50% da renda | 20% comprometimento
+💎 Diamante: 25% PS | 84x de 50% da renda | 20% comprometimento
+⚠️ NÃO existe "Platina" — o nível máximo é Diamante. NÃO existem 96x ou 120x — todos os perfis são 84x.
+Para MCMV/Caixa: parcela máxima sempre = 30% da renda bruta (regra Caixa, imutável).
 
 MODALIDADES DE COMPRA (Análise Interna):
-1. Venda à Vista: sem análise de crédito, docs simplificados
-2. Tabela Investidor: sem análise bancária, parcelas lineares, fluxo conforme política
-3. Financiamento Direto (Tabela Direta): análise interna, ATO 10%+Pré Obra INCC 30%+Pós habite-se IPCA+1% 60%, até 120x pós obra, 40% da renda para parcelas, restrições até R$3.000, idade máx 79a11m29d
+1. Venda à Vista: sem análise de crédito, documentação simplificada
+2. Tabela Investidor: sem análise bancária, parcelas lineares conforme política do produto
+3. Financiamento Direto (Tabela Direta): análise interna | ATO 10% + Pré Obra INCC 30% + Pós Habite-se IPCA+1% 60% | até 84x pós obra (conforme perfil) | restrições aceitas até R$3.000 | idade máx 79a11m29d
 
-DOCUMENTAÇÃO:
-- Docs básicos PF: RG/CPF ou CNH, Certidão Estado Civil, Comprovante endereço (60 dias)
-- Renda Formal: 3 contracheques ou 3 pró-labore+DARFs + IR 2024
-- Renda Informal: extratos bancários 6 meses consecutivos
-- PJ: CNPJ, Contrato Social, extratos 6 meses da Razão Social
-- União estável não substitui certidão de estado civil`;
+DOCUMENTAÇÃO BÁSICA PF: RG/CPF ou CNH + Certidão Estado Civil + Comprovante endereço (60 dias)
+RENDA FORMAL: 3 contracheques ou pró-labore+DARFs + IR 2024
+RENDA INFORMAL: extratos bancários 6 meses consecutivos
+PJ: CNPJ + Contrato Social + extratos 6 meses da Razão Social
+⚠️ União estável NÃO substitui certidão de estado civil
+⚠️ VALORES DE TABELA mudam a cada ~10 dias. Sempre confirme com a tabela oficial atualizada.`;
+
+
 
 // =========================================================================
 // FUNÇÃO COM GROQ (IA REAL) + FALLBACK OFFLINE

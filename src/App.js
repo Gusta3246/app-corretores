@@ -589,7 +589,7 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
                                     <input 
                                         type="text" 
                                         placeholder="Buscar por nome ou bairro..." 
-                                        className={`block w-full pl-10 pr-3 py-2.5 border rounded-xl leading-5 transition-all sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-600 ${
+                                        className={`block w-full pl-10 pr-3 py-2.5 border rounded-xl leading-5 transition-all text-base focus:outline-none focus:ring-2 focus:ring-blue-600 ${
                                             modoNoturno 
                                             ? 'bg-slate-800 border-slate-700 text-white placeholder-slate-500 focus:bg-slate-900' 
                                             : 'bg-slate-50 border-gray-200 text-slate-800 placeholder-gray-400 focus:bg-white'
@@ -1108,7 +1108,7 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
                                 onChange={(e) => setChatInput(e.target.value)} 
                                 onKeyDown={(e) => e.key === 'Enter' && handleSendChatMessage()} 
                                 placeholder="Posso te ajudar com algo?" 
-                                className={`w-full rounded-2xl px-5 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600/20 transition-all ${modoNoturno ? 'bg-slate-900 text-white border border-slate-700 placeholder-slate-500' : 'bg-slate-100 text-slate-800 placeholder-slate-400 border-transparent'}`} 
+                                className={`w-full rounded-2xl px-5 py-3 text-base focus:outline-none focus:ring-2 focus:ring-indigo-600/20 transition-all ${modoNoturno ? 'bg-slate-900 text-white border border-slate-700 placeholder-slate-500' : 'bg-slate-100 text-slate-800 placeholder-slate-400 border-transparent'}`} 
                                 disabled={isChatLoading} 
                             />
                             <button onClick={() => { haptic('medium'); handleSendChatMessage(); }} disabled={!chatInput.trim() || isChatLoading} className="absolute right-2 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-200 text-white p-2.5 rounded-xl transition-all flex items-center justify-center shadow-md"><Send className="w-4 h-4" /></button>
@@ -1135,7 +1135,7 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
                                 type="text" 
                                 value={pdfFileName} 
                                 onChange={(e) => setPdfFileName(e.target.value)} 
-                                className={`w-full text-sm border-2 rounded-2xl px-5 py-4 font-bold transition-all focus:outline-none focus:ring-8 focus:ring-indigo-500/5 ${
+                                className={`w-full text-base border-2 rounded-2xl px-5 py-4 font-bold transition-all focus:outline-none focus:ring-8 focus:ring-indigo-500/5 ${
                                     modoNoturno 
                                     ? 'bg-slate-900 border-slate-700 text-white focus:border-indigo-500' 
                                     : 'bg-slate-50 border-slate-100 text-slate-800 focus:border-indigo-500'

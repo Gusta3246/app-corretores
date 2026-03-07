@@ -351,7 +351,7 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
         }
 
         try {
-            const historico = novasMensagens.slice(-10); // últimas 10 mensagens como contexto
+            const historico = novasMensagens.slice(-4); // últimas 4 mensagens (evita 413 Content Too Large na Groq)
             const responseText = await buscarRespostaGemini(userMessage, historico.slice(0, -1));
             setChatMessages(prev => [...prev, { role: 'bot', content: responseText }]);
         } catch (e) {

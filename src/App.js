@@ -129,13 +129,70 @@ export default function App() {
     const [fraseDoDia] = useState(frasesMotivacionais[dayIndex % frasesMotivacionais.length]);
     const [imagemDoDia] = useState(imagensEquipeDiarias[dayIndex % imagensEquipeDiarias.length]);
     const [modoNoturno, setModoNoturno] = useState(() => localStorage.getItem('modoNoturno') === 'true');
+    const [bannerFocusY, setBannerFocusY] = useState('30%');
+
+    // Detecta a região com mais "peso visual" no terço superior da imagem
+    // para enquadrar rostos sem depender de API externa (evita CORS)
+    useEffect(() => {
+        const cacheKey = `dst_face_${imagemDoDia}`;
+        const cached = localStorage.getItem(cacheKey);
+        if (cached) { setBannerFocusY(cached); return; }
+
+        const img = new window.Image();
+        img.crossOrigin = 'anonymous';
+        img.onload = () => {
+            try {
+                const SAMPLE_W = 120, SAMPLE_H = 80;
+                const canvas = document.createElement('canvas');
+                canvas.width = SAMPLE_W;
+                canvas.height = SAMPLE_H;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, SAMPLE_W, SAMPLE_H);
+                const data = ctx.getImageData(0, 0, SAMPLE_W, SAMPLE_H).data;
+
+                // Divide em 4 faixas horizontais e calcula "riqueza de cor" (saturação média)
+                // Faixas com mais saturação = mais rostos/pessoas
+                const bands = 4;
+                const bandH = Math.floor(SAMPLE_H / bands);
+                const scores = Array(bands).fill(0);
+                for (let b = 0; b < bands; b++) {
+                    let sat = 0, count = 0;
+                    for (let y = b * bandH; y < (b + 1) * bandH; y++) {
+                        for (let x = 0; x < SAMPLE_W; x++) {
+                            const i = (y * SAMPLE_W + x) * 4;
+                            const r = data[i], g = data[i+1], bl = data[i+2];
+                            const mx = Math.max(r,g,bl), mn = Math.min(r,g,bl);
+                            sat += mx === 0 ? 0 : (mx - mn) / mx;
+                            count++;
+                        }
+                    }
+                    scores[b] = sat / count;
+                }
+
+                // Encontra a faixa com maior saturação (provavelmente onde estão as pessoas)
+                const bestBand = scores.indexOf(Math.max(...scores));
+                // Mapeia a faixa para uma posição Y% — prioriza topo/meio
+                const posMap = ['15%', '25%', '40%', '55%'];
+                const pos = posMap[bestBand] || '30%';
+                localStorage.setItem(cacheKey, pos);
+                setBannerFocusY(pos);
+            } catch {
+                setBannerFocusY('30%');
+            }
+        };
+        img.onerror = () => setBannerFocusY('30%');
+        img.src = imagemDoDia;
+    }, [imagemDoDia]);
 
     // Estados para a aba Guia e Modal de POIs
     const [openGuiaIndex, setOpenGuiaIndex] = useState(null);
     const [selectedPois, setSelectedPois] = useState(null);
+    const [closingPoi, setClosingPoi] = useState(false);
 
     // === ESTADOS DA IA OFFLINE ===
     const [isChatOpen, setIsChatOpen] = useState(false);
+    const [closingChat, setClosingChat] = useState(false);
+    const [closingFolder, setClosingFolder] = useState(false);
     const [chatMessages, setChatMessages] = useState(() => {
         try {
             const s = localStorage.getItem('dst_chat');
@@ -153,6 +210,25 @@ export default function App() {
     const [showPastaRapidaInfo, setShowPastaRapidaInfo] = useState(false);
     const [pastaRapidaCountdown, setPastaRapidaCountdown] = useState(10);
     const pastaRapidaClicksRef = useRef(parseInt(localStorage.getItem('dst_pr_clicks') || '0'));
+
+    // Hide search bar on mobile scroll down, show on scroll up
+    const [searchBarVisible, setSearchBarVisible] = useState(true);
+    const lastScrollY = useRef(0);
+    useEffect(() => {
+        const isMobile = () => window.innerWidth < 768;
+        const onScroll = () => {
+            if (!isMobile()) { setSearchBarVisible(true); return; }
+            const current = window.scrollY;
+            if (current > lastScrollY.current + 8 && current > 60) {
+                setSearchBarVisible(false);
+            } else if (current < lastScrollY.current - 8) {
+                setSearchBarVisible(true);
+            }
+            lastScrollY.current = current;
+        };
+        window.addEventListener('scroll', onScroll, { passive: true });
+        return () => window.removeEventListener('scroll', onScroll);
+    }, []);
 
     // Trava scroll do body quando modais/chat estão abertos
     useEffect(() => {
@@ -235,6 +311,13 @@ export default function App() {
             localStorage.setItem('dst_client', n);
         }
     }, [chatMessages]);
+
+    // 'idle' | 'gather' | 'shake' | 'scatter'
+    const [cardAnimPhase, setCardAnimPhase] = useState('idle');
+    // Stores {id, x, y, w, h} of each card's real DOM position for the pile animation
+    const [cardRects, setCardRects] = useState([]);  // absolute positions of each card in viewport
+    const [gridCenter, setGridCenter] = useState({ x: 0, y: 0 });
+    const cardGridRef = useRef(null);
 
     // === ESTADOS PARA CRIAÇÃO DE PASTA DO CLIENTE ===
     const fileInputRef = useRef(null);
@@ -604,25 +687,22 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
         }
     };
 
-    // ✅ OTIMIZAÇÃO PRINCIPAL: processa em lotes de 3 em paralelo
-    // Muito mais rápido que sequencial, sem sobrecarregar a API
     const classifyInBatches = async (docs, batchSize = 3) => {
         const results = new Array(docs.length);
         for (let i = 0; i < docs.length; i += batchSize) {
             const batch = docs.slice(i, i + batchSize);
             const batchResults = await Promise.all(
                 batch.map(async (doc, batchIdx) => {
-                    const globalIdx = i + batchIdx;
-                    setPendingDocs(prev => prev.map((d, idx) => idx === globalIdx ? { ...d, aiLabel: '🔍' } : d));
-                    setOrganizeProgress(prev => ({ ...prev, current: globalIdx + 1, label: doc.name.length > 22 ? doc.name.substring(0, 22) + '…' : doc.name }));
+                    // Find this doc by ID in current pendingDocs (not by index)
+                    setPendingDocs(prev => prev.map(d => d.id === doc.id ? { ...d, aiLabel: '🔍' } : d));
+                    setOrganizeProgress(prev => ({ ...prev, current: i + batchIdx + 1, label: doc.name.length > 22 ? doc.name.substring(0, 22) + '…' : doc.name }));
                     const result = await classifyDoc(doc.file);
                     const done = { ...doc, aiLabel: result.label, aiOrder: result.order };
-                    setPendingDocs(prev => prev.map((d, idx) => idx === globalIdx ? done : d));
+                    setPendingDocs(prev => prev.map(d => d.id === doc.id ? done : d));
                     return done;
                 })
             );
             batchResults.forEach((r, batchIdx) => { results[i + batchIdx] = r; });
-            // ✅ Pequena pausa entre lotes para não saturar a API
             if (i + batchSize < docs.length) await sleep(500);
         }
         return results;
@@ -645,6 +725,7 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
         setIsCreatingFolder(true);
         setIsOrganizingDocs(true);
         setOrganizeProgress({ current: 0, total: files.length, label: 'Preparando...' });
+        setCardAnimPhase('pulse');
         setChatMessages(prev => [...prev, {
             role: 'bot',
             content: `🧠 **Pasta Rápida ativada!** ${files.length} documento${files.length > 1 ? 's' : ''} recebido${files.length > 1 ? 's' : ''}.\n\nAnalisando com IA... ✨`
@@ -664,12 +745,17 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
         // Classifica SOMENTE os novos documentos
         const classified = await classifyInBatches(newDocsBase, 3);
 
-        // Mescla os já existentes (organizados) com os novos classificados, depois re-ordena tudo
+        // Mescla TODOS os docs existentes + os novos classificados e re-ordena tudo junto
         setPendingDocs(prev => {
-            const existingOrganized = prev.filter(d => d.aiLabel !== '⏳' && d.aiLabel !== '🔍' && !newDocsBase.some(n => n.id === d.id));
-            const merged = [...existingOrganized, ...classified];
+            // Existing docs that are NOT part of the new batch (keep their aiOrder)
+            const existing = prev.filter(d => !newDocsBase.some(n => n.id === d.id));
+            const merged = [...existing, ...classified];
             return merged.sort((a, b) => (a.aiOrder ?? 99) - (b.aiOrder ?? 99));
         });
+
+        // Fase final: scatter — cards reaparecem nos seus lugares
+        setCardAnimPhase('scatter');
+        setTimeout(() => { setCardAnimPhase('idle'); }, 800);
 
         setIsOrganizingDocs(false);
         setOrganizeProgress({ current: 0, total: 0, label: '' });
@@ -679,6 +765,55 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
             role: 'bot',
             content: `✅ **Novos documentos adicionados e organizados:**\n\n${resumo}\n\nAjuste arrastando se precisar e clique em **Finalizar PDF**! 📄`
         }]);
+    };
+
+    // Reorganiza TODOS os documentos já presentes na pasta
+    const handleOrganizeAll = async () => {
+        if (!OPENROUTER_KEY || pendingDocs.length === 0 || isOrganizingDocs) return;
+
+        setIsOrganizingDocs(true);
+        setOrganizeProgress({ current: 0, total: pendingDocs.length, label: 'Preparando...' });
+        setCardAnimPhase('pulse');
+
+        setChatMessages(prev => [...prev, {
+            role: 'bot',
+            content: `🔄 **Reorganizando ${pendingDocs.length} documento${pendingDocs.length > 1 ? 's' : ''}...**\n\nAnalisando tudo com IA... ✨`
+        }]);
+
+        // Re-classifica TODOS os docs
+        const allDocs = [...pendingDocs];
+        const classified = await classifyInBatches(allDocs, 3);
+
+        // Ordena tudo
+        const sorted = [...classified].sort((a, b) => (a.aiOrder ?? 99) - (b.aiOrder ?? 99));
+        setPendingDocs(sorted);
+
+        setCardAnimPhase('scatter');
+        setTimeout(() => { setCardAnimPhase('idle'); }, 800);
+
+        setIsOrganizingDocs(false);
+        setOrganizeProgress({ current: 0, total: 0, label: '' });
+
+        const resumo = sorted.map((d, i) => `${i + 1}. ${d.aiLabel}`).join('\n');
+        setChatMessages(prev => [...prev, {
+            role: 'bot',
+            content: `✅ **Tudo organizado na ordem certa:**\n\n${resumo}\n\nAjuste arrastando se precisar e clique em **Finalizar PDF**! 📄`
+        }]);
+    };
+
+    const closePoi = () => {
+        setClosingPoi(true);
+        setTimeout(() => { setSelectedPois(null); setClosingPoi(false); }, 320);
+    };
+
+    const closeChat = () => {
+        setClosingChat(true);
+        setTimeout(() => { setIsChatOpen(false); setClosingChat(false); setIsCreatingFolder(false); }, 350);
+    };
+
+    const backToChat = () => {
+        setClosingFolder(true);
+        setTimeout(() => { setIsCreatingFolder(false); setClosingFolder(false); }, 320);
     };
 
     const handleDragStart = (e, index) => {
@@ -789,7 +924,8 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
         const pages = [];
         for (let pageNum = 1; pageNum <= pdfDoc.numPages; pageNum++) {
             const page = await pdfDoc.getPage(pageNum);
-            const viewport = page.getViewport({ scale: 2.0 });
+            // scale 1.2 + JPEG 0.82 = muito mais rápido que 2.0 + PNG, qualidade suficiente para documentos
+            const viewport = page.getViewport({ scale: 1.2 });
             const canvas = document.createElement('canvas');
             canvas.width  = Math.floor(viewport.width);
             canvas.height = Math.floor(viewport.height);
@@ -797,12 +933,12 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
             ctx.fillStyle = '#ffffff';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
             await page.render({ canvasContext: ctx, viewport }).promise;
-            const dataUrl = canvas.toDataURL('image/png');
+            const dataUrl = canvas.toDataURL('image/jpeg', 0.82);
             const base64  = dataUrl.split(',')[1];
             const binaryStr = atob(base64);
             const bytes = new Uint8Array(binaryStr.length);
             for (let i = 0; i < binaryStr.length; i++) bytes[i] = binaryStr.charCodeAt(i);
-            pages.push({ bytes, widthPt: canvas.width / 2, heightPt: canvas.height / 2 });
+            pages.push({ bytes, widthPt: canvas.width / 1.2, heightPt: canvas.height / 1.2, isJpeg: true });
             page.cleanup();
         }
         return pages;
@@ -824,7 +960,7 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
                 if (doc.file.type === 'application/pdf') {
                     const pages = await pdfToImageBytes(arrayBuffer);
                     for (const pg of pages) {
-                        const embedded = await mergedPdf.embedPng(pg.bytes);
+                        const embedded = pg.isJpeg ? await mergedPdf.embedJpg(pg.bytes) : await mergedPdf.embedPng(pg.bytes);
                         const pdfPage  = mergedPdf.addPage([pg.widthPt, pg.heightPt]);
                         pdfPage.drawImage(embedded, {
                             x: 0, y: 0,
@@ -834,11 +970,16 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
                     }
                 } else if (doc.file.type.startsWith('image/')) {
                     let image;
-                    if (doc.file.type === 'image/jpeg' || doc.file.type === 'image/jpg') {
-                        image = await mergedPdf.embedJpg(arrayBuffer);
-                    } else if (doc.file.type === 'image/png') {
+                    if (doc.file.type === 'image/png') {
                         image = await mergedPdf.embedPng(arrayBuffer);
-                    } else { continue; }
+                    } else {
+                        // JPEG, WEBP and others — convert to JPEG for speed
+                        try {
+                            image = await mergedPdf.embedJpg(arrayBuffer);
+                        } catch {
+                            image = await mergedPdf.embedPng(arrayBuffer);
+                        }
+                    }
                     const page = mergedPdf.addPage();
                     const { width, height } = page.getSize();
                     const imgDims = image.scale(1);
@@ -905,9 +1046,37 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
         return result;
     };
 
+    const chatScrollRef = useRef(null);
+
+    useEffect(() => {
+        if (isChatOpen && chatScrollRef.current) {
+            // Instant jump to bottom when opening chat
+            chatScrollRef.current.scrollTop = chatScrollRef.current.scrollHeight;
+        }
+    }, [isChatOpen]);
+
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-    }, [chatMessages, isChatOpen]);
+    }, [chatMessages]);
+
+    const [chatBtnIcon, setChatBtnIcon] = useState('chat'); // 'chat' | 'folder'
+    const [chatBtnIconVisible, setChatBtnIconVisible] = useState(true);
+    useEffect(() => {
+        const randomDelay = () => 2200 + Math.random() * 4800; // 2.2s – 7s random
+        let timer;
+        const schedule = () => {
+            timer = setTimeout(() => {
+                setChatBtnIconVisible(false);
+                setTimeout(() => {
+                    setChatBtnIcon(p => p === 'chat' ? 'folder' : 'chat');
+                    setChatBtnIconVisible(true);
+                }, 650);
+                schedule();
+            }, randomDelay());
+        };
+        schedule();
+        return () => clearTimeout(timer);
+    }, []);
 
     const ZONES = [
         { id: 'Norte', label: 'Norte', c: 'blue' },
@@ -935,7 +1104,7 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
         <div className={`min-h-screen font-sans pb-12 relative transition-colors duration-500 ${modoNoturno ? 'bg-[#0B1120] text-slate-100' : 'bg-slate-50 text-slate-800'}`}
             onMouseMove={handleGlobalDragOver}
         >
-            <header className={`shadow-sm sticky top-0 z-30 transition-colors duration-500 ${modoNoturno ? 'bg-[#0F172A] border-b border-slate-800' : 'bg-white'}`}>
+            <header className={`sticky top-0 z-30 transition-all duration-500 backdrop-blur-xl border-b ${modoNoturno ? 'bg-slate-900/70 border-slate-800/60 shadow-black/20 shadow-sm' : 'bg-white/75 border-slate-200/60 shadow-slate-200/40 shadow-sm'}`}>
                 <div className="max-w-5xl mx-auto px-4 py-4 sm:px-6 lg:px-8">
                     <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
                         <div className="flex items-center gap-3">
@@ -948,7 +1117,7 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
                             </div>
                         </div>
                         {(activeBrand === 'Direcional' || activeBrand === 'Riva') && (
-                            <div className="w-full sm:w-auto flex items-center gap-2">
+                            <div className={`w-full sm:w-auto flex items-center gap-2 sm:overflow-visible overflow-hidden transition-all duration-300 ease-in-out ${searchBarVisible ? 'max-h-20 opacity-100 mt-0' : 'max-h-0 opacity-0 -mt-1 pointer-events-none sm:max-h-20 sm:opacity-100 sm:mt-0 sm:pointer-events-auto'}`}>
                                 <div className="relative flex-1 sm:w-80">
                                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                                         <Search className="h-5 w-5 text-gray-400" />
@@ -985,7 +1154,7 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
             <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 mt-8">
                 {/* BANNER INSPIRAÇÃO DIÁRIA */}
                 <div className="mb-8 relative rounded-2xl overflow-hidden shadow-lg group">
-                    <img src={imagemDoDia} onError={(e) => { e.target.src = '' }} alt="Equipe Destemidos" className="w-full h-64 sm:h-80 object-cover object-center group-hover:scale-105 transition-transform duration-1000 bg-slate-200" />
+                    <img src={imagemDoDia} onError={(e) => { e.target.src = '' }} alt="Equipe Destemidos" className="w-full h-64 sm:h-80 object-cover group-hover:scale-105 transition-transform duration-1000 bg-slate-200" style={{ objectPosition: `center ${bannerFocusY}` }} />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/50 to-transparent flex flex-col justify-end p-6 sm:p-8">
                         <div className="flex items-center gap-2 mb-3">
                             <span className="bg-amber-500 text-amber-950 text-xs font-black uppercase tracking-wider py-1.5 px-3 rounded-full flex items-center gap-1 shadow-lg">
@@ -1046,24 +1215,6 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
                     </nav>
                 </div>
 
-                {/* FILTROS DE ZONA */}
-                {(activeBrand === 'Direcional' || activeBrand === 'Riva') && (
-                    <div className="flex items-center gap-1.5 flex-wrap py-3 mb-5">
-                        {ZONES.map(z => {
-                            const a = activeZone === z.id;
-                            return (
-                                <button key={z.id}
-                                    onClick={() => { haptic(); setActiveZone(a ? null : z.id); }}
-                                    className={`text-[10px] font-black uppercase tracking-wider px-3 py-1.5 rounded-lg border transition-all ${zoneColors[z.c](a)}`}>
-                                    {z.label}
-                                </button>
-                            );
-                        })}
-                        {activeZone && (
-                            <button onClick={() => { haptic(); setActiveZone(null); }} className={`text-[10px] font-bold px-2 py-1.5 transition-colors ${modoNoturno ? 'text-slate-500 hover:text-slate-300' : 'text-slate-400 hover:text-slate-600'}`}>✕ limpar</button>
-                        )}
-                    </div>
-                )}
 
                 {(activeBrand === 'Direcional' || activeBrand === 'Riva') && (
                     <>
@@ -1080,7 +1231,14 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
                                         <div className="relative h-48 overflow-hidden bg-slate-100">
                                             <img src={revista.cover} onError={(e) => { e.target.onerror = null; e.target.src = 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&q=80&w=400'; }} alt={`Capa ${revista.title}`} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                                             <div className="absolute top-3 left-3 z-10">
-                                                <div className="bg-white px-3 py-1.5 rounded-lg shadow-md flex items-center justify-center h-10 min-w-[100px]">
+                                                <div className="px-3 py-1.5 rounded-lg flex items-center justify-center h-10 min-w-[100px]"
+                                                    style={{
+                                                        background: 'rgba(255,255,255,0.82)',
+                                                        backdropFilter: 'blur(8px) saturate(140%)',
+                                                        WebkitBackdropFilter: 'blur(8px) saturate(140%)',
+                                                        border: '1px solid rgba(255,255,255,0.9)',
+                                                        boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+                                                    }}>
                                                     <img src={revista.brand === 'Direcional' ? 'https://i.postimg.cc/crYQS8mh/image.png' : 'https://i.postimg.cc/R3Q9f9Bc/image.png'} alt={revista.brand} className="h-full max-h-[22px] w-auto max-w-[85px] object-contain" />
                                                 </div>
                                             </div>
@@ -1099,7 +1257,7 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
                                                 </div>
                                             </div>
                                             <div className="mt-auto flex flex-col gap-2">
-                                                <a href={revista.link} target="_blank" rel="noopener noreferrer" className={`w-full flex items-center justify-center gap-2 py-3 rounded-lg font-semibold transition-colors duration-200 ${revista.brand === 'Direcional' ? 'bg-red-600 hover:bg-red-700 text-white' : 'bg-indigo-950 hover:bg-indigo-900 text-white'}`}>
+                                                <a href={revista.link} target="_blank" rel="noopener noreferrer" className={`w-full flex items-center justify-center gap-2 py-3 rounded-lg font-semibold transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg ${revista.brand === 'Direcional' ? 'bg-gradient-to-r from-orange-500 via-red-500 to-orange-600 hover:from-orange-600 hover:to-red-600 shadow-orange-300/30 text-white' : 'bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 hover:from-blue-700 hover:to-indigo-700 shadow-blue-300/30 text-white'}`}>
                                                     Acessar Revista (PDF) <ExternalLink size={18} />
                                                 </a>
                                                 <button onClick={() => { haptic(); setSelectedPois(revista); }} className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-lg font-semibold transition-colors duration-200 border text-sm ${modoNoturno ? 'bg-slate-700 border-slate-600 text-slate-200 hover:bg-slate-600' : 'bg-slate-100 border-slate-200 text-slate-700 hover:bg-slate-200'}`}>
@@ -1236,23 +1394,23 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
 
             {/* MODAL PONTOS DE REFERÊNCIA */}
             {selectedPois && (
-                <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setSelectedPois(null)}>
-                    <div className={`rounded-2xl w-full max-w-md overflow-hidden shadow-2xl transform transition-all ${modoNoturno ? 'bg-slate-800' : 'bg-white'}`} onClick={e => e.stopPropagation()}>
-                        <div className={`p-4 border-b flex justify-between items-center ${modoNoturno ? 'bg-slate-900/50 border-slate-700' : 'bg-slate-50 border-slate-100'}`}>
+                <div className={`fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 ${closingPoi ? 'poi-backdrop-out' : 'poi-backdrop'}`} onClick={closePoi}>
+                    <div className={`rounded-2xl w-full max-w-md overflow-hidden shadow-2xl border ${closingPoi ? 'poi-modal-close' : 'poi-modal-open'} ${modoNoturno ? 'bg-slate-800/80 border-slate-700/60 backdrop-blur-xl' : 'bg-white/80 border-slate-200/60 backdrop-blur-xl'}`} onClick={e => e.stopPropagation()}>
+                        <div className={`p-4 border-b flex justify-between items-center ${modoNoturno ? 'bg-slate-900/40 border-slate-700/60' : 'bg-white/60 border-slate-200/60'}`}>
                             <h3 className={`font-bold flex items-center gap-2 ${modoNoturno ? 'text-white' : 'text-slate-800'}`}><MapPin className="text-rose-500" size={20} /> Pontos de Referência</h3>
-                            <button onClick={() => setSelectedPois(null)} className="text-slate-400 hover:text-slate-600 p-1 rounded-full hover:bg-slate-200 transition-colors"><X size={20} /></button>
+                            <button onClick={closePoi} className="text-slate-400 hover:text-slate-600 p-1 rounded-full hover:bg-slate-200 transition-colors"><X size={20} /></button>
                         </div>
                         <div className="p-6">
                             <h4 className={`font-bold text-lg mb-4 border-b pb-2 ${modoNoturno ? 'text-white border-slate-700' : 'text-slate-800 border-slate-100'}`}>{selectedPois.title}</h4>
                             <ul className="space-y-3">
                                 {selectedPois.pois.map((poi, idx) => (
-                                    <li key={idx} className={`flex items-start gap-3 text-sm leading-relaxed ${modoNoturno ? 'text-slate-300' : 'text-slate-600'}`}>
+                                    <li key={idx} style={{animationDelay:`${idx * 0.055}s`}} className={`flex items-start gap-3 text-sm leading-relaxed poi-item-in ${modoNoturno ? 'text-slate-300' : 'text-slate-600'}`}>
                                         <div className="w-2 h-2 rounded-full bg-rose-500 mt-1.5 shrink-0 shadow-sm"></div>
                                         <span className="font-medium">{poi}</span>
                                     </li>
                                 ))}
                             </ul>
-                            <button onClick={() => { haptic(); setSelectedPois(null); }} className={`w-full mt-6 py-2.5 font-semibold rounded-lg transition-colors text-sm ${modoNoturno ? 'bg-slate-700 text-white hover:bg-slate-600' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'}`}>Fechar</button>
+                            <button onClick={() => { haptic(); closePoi(); }} className={`w-full mt-6 py-2.5 font-semibold rounded-lg transition-colors text-sm ${modoNoturno ? 'bg-slate-700 text-white hover:bg-slate-600' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'}`}>Fechar</button>
                         </div>
                     </div>
                 </div>
@@ -1279,19 +1437,50 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
 
                 <button
                     onClick={() => { haptic('medium'); setIsChatOpen(true); }}
-                    className="w-14 h-14 bg-gradient-to-br from-blue-500 via-blue-600 to-indigo-800 text-white rounded-[1.75rem] shadow-2xl shadow-blue-500/30 hover:rounded-[1rem] hover:scale-110 active:scale-95 transition-all duration-500 flex items-center justify-center relative group overflow-hidden border-2 border-white/20"
+                    className="w-14 h-14 bg-gradient-to-br from-blue-500 via-blue-600 to-indigo-800 text-white rounded-[1.75rem] hover:rounded-[1rem] hover:scale-110 active:scale-95 transition-all duration-500 flex items-center justify-center relative group overflow-hidden border-2 border-white/20"
+                    style={{ animation: 'btn-glow-pulse 2s ease-in-out infinite' }}
                 >
                     <div className="absolute inset-0 bg-gradient-to-tr from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                    <svg viewBox="0 0 24 24" fill="none" className="w-7 h-7 relative z-10 transition-transform group-hover:-translate-y-0.5" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M12 2C6.477 2 2 6.254 2 11.5c0 2.576 1.086 4.91 2.857 6.614L4 22l4.23-1.394A10.456 10.456 0 0012 21c5.523 0 10-4.254 10-9.5S17.523 2 12 2z" fill="white" fillOpacity="0.95"/>
-                        <circle cx="8.5" cy="11.5" r="1.2" fill="#3b82f6"/>
-                        <circle cx="12" cy="11.5" r="1.2" fill="#3b82f6"/>
-                        <circle cx="15.5" cy="11.5" r="1.2" fill="#3b82f6"/>
-                    </svg>
+                    {/* smooth sweep shine */}
+                    <div className="btn-shine-layer absolute inset-0"></div>
+                    <div className="relative z-10 w-7 h-7 flex items-center justify-center" style={{opacity: chatBtnIconVisible ? 1 : 0, transition: 'opacity 1.1s ease'}}>
+                        {chatBtnIcon === 'chat' ? (
+                            <svg viewBox="0 0 24 24" fill="none" className="w-7 h-7" style={{animation:'icon-pop 0.35s cubic-bezier(0.34,1.6,0.64,1)'}} xmlns="http://www.w3.org/2000/svg">
+                                <path d="M12 2C6.477 2 2 6.254 2 11.5c0 2.576 1.086 4.91 2.857 6.614L4 22l4.23-1.394A10.456 10.456 0 0012 21c5.523 0 10-4.254 10-9.5S17.523 2 12 2z" fill="white" fillOpacity="0.95"/>
+                                <circle cx="8.5" cy="11.5" r="1.2" fill="#3b82f6"/>
+                                <circle cx="12" cy="11.5" r="1.2" fill="#3b82f6"/>
+                                <circle cx="15.5" cy="11.5" r="1.2" fill="#3b82f6"/>
+                            </svg>
+                        ) : (
+                            <svg viewBox="0 0 24 24" fill="none" className="w-7 h-7" style={{animation:'icon-pop 0.35s cubic-bezier(0.34,1.6,0.64,1)'}} xmlns="http://www.w3.org/2000/svg">
+                                <path d="M3 7a2 2 0 012-2h3.586a1 1 0 01.707.293L10.707 6.7A1 1 0 0011.414 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V7z" fill="white" fillOpacity="0.95" stroke="rgba(255,255,255,0.4)" strokeWidth="0.5"/>
+                                <path d="M7 13h10M7 16h6" stroke="#60a5fa" strokeWidth="1.5" strokeLinecap="round"/>
+                            </svg>
+                        )}
+                    </div>
                 </button>
                 <style dangerouslySetInnerHTML={{ __html: `
                     @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
                     .animate-float { animation: float 4s ease-in-out infinite; }
+                    @keyframes btn-glow-pulse { 0%,100% { box-shadow: 0 0 0 0 rgba(99,102,241,0), 0 8px 32px rgba(59,130,246,0.45); transform: scale(1); } 50% { box-shadow: 0 0 0 8px rgba(99,102,241,0.18), 0 8px 40px rgba(59,130,246,0.7); transform: scale(1.03); } }
+                    @keyframes btn-shine-sweep { 0% { transform: translateX(-180%) skewX(-18deg); opacity:0; } 10% { opacity:1; } 55% { transform: translateX(280%) skewX(-18deg); opacity:0.8; } 100% { transform: translateX(280%) skewX(-18deg); opacity:0; } }
+                    .btn-shine-layer { position:absolute; inset:0; overflow:hidden; border-radius:inherit; pointer-events:none; }
+                    .btn-shine-layer::after { content:''; position:absolute; top:-20%; left:0; width:60%; height:140%; background: linear-gradient(105deg, transparent 10%, rgba(255,255,255,0.32) 50%, transparent 90%); animation: btn-shine-sweep 3.8s ease-in-out infinite; }
+                    @keyframes icon-pop { 0% { transform: scale(0.55) rotate(-10deg); opacity:0; } 60% { transform: scale(1.15) rotate(3deg); opacity:1; } 100% { transform: scale(1) rotate(0deg); opacity:1; } }
+                    /* PDF loading bar that sweeps inside button */
+                    @keyframes pdf-bar-sweep { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }
+                    .pdf-loading-bar { background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.35) 50%, transparent 100%); animation: pdf-bar-sweep 1.1s ease-in-out infinite; }
+                    /* POI modal open animation */
+                    @keyframes poi-backdrop-in  { from { opacity:0; } to   { opacity:1; } }
+                    @keyframes poi-backdrop-out { from { opacity:1; } to   { opacity:0; } }
+                    @keyframes poi-modal-in     { 0% { opacity:0; transform: scale(0.88) translateY(24px); } 60% { opacity:1; transform: scale(1.02) translateY(-3px); } 100% { opacity:1; transform: scale(1) translateY(0); } }
+                    @keyframes poi-modal-close  { 0% { opacity:1; transform: scale(1) translateY(0); } 40% { opacity:1; transform: scale(1.02) translateY(-3px); } 100% { opacity:0; transform: scale(0.88) translateY(24px); } }
+                    @keyframes poi-item-in { from { opacity: 0; transform: translateX(-10px); } to { opacity: 1; transform: translateX(0); } }
+                    .poi-backdrop     { animation: poi-backdrop-in  0.22s ease both; }
+                    .poi-backdrop-out { animation: poi-backdrop-out 0.30s ease both; }
+                    .poi-modal-open   { animation: poi-modal-in    0.38s cubic-bezier(0.34,1.3,0.64,1) both; }
+                    .poi-modal-close  { animation: poi-modal-close 0.30s cubic-bezier(0.4,0,0.6,1) both; }
+                    .poi-item-in      { animation: poi-item-in 0.3s ease both; opacity:0; }
                     .custom-scrollbar::-webkit-scrollbar { height: 4px; width: 4px; }
                     .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
                     html { scroll-behavior: smooth; }
@@ -1308,24 +1497,46 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
                     @keyframes pr-pulse { 0%, 100% { box-shadow: 0 0 0 3px rgba(249,115,22,0.35), 0 0 20px 6px rgba(249,115,22,0.45), 0 2px 8px rgba(0,0,0,0.2); transform: scale(1); } 50% { box-shadow: 0 0 0 5px rgba(249,115,22,0.2), 0 0 28px 10px rgba(249,115,22,0.6), 0 2px 8px rgba(0,0,0,0.2); transform: scale(1.04); } }
                     @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
                     @keyframes pr-pulse { 0%, 100% { box-shadow: 0 0 0 2px rgba(249,115,22,0.4), 0 0 12px rgba(249,115,22,0.5); transform: scale(1); } 50% { box-shadow: 0 0 0 4px rgba(249,115,22,0.25), 0 0 22px rgba(249,115,22,0.7); transform: scale(1.04); } }
+                    /* Chat panel open / close */
+                    @keyframes chat-open-kf  { 0% { opacity:0; transform: scale(0.88) translateY(20px); } 60% { opacity:1; transform: scale(1.01) translateY(-2px); } 100% { opacity:1; transform: scale(1) translateY(0); } }
+                    @keyframes chat-close-kf { 0% { opacity:1; transform: scale(1) translateY(0); } 40% { opacity:1; transform: scale(1.01) translateY(-2px); } 100% { opacity:0; transform: scale(0.88) translateY(20px); } }
+                    .chat-opening { animation: chat-open-kf  0.38s cubic-bezier(0.34,1.3,0.64,1) both; }
+                    .chat-closing { animation: chat-close-kf 0.32s cubic-bezier(0.4,0,0.6,1) both; }
+                    /* Folder → Chat collapse/expand */
+                    @keyframes folder-collapse-kf { 0% { opacity:1; transform: scaleY(1) translateY(0); } 40% { opacity:0.6; transform: scaleY(0.85) translateY(8px); } 100% { opacity:0; transform: scaleY(0.55) translateY(20px); } }
+                    @keyframes folder-expand-kf  { 0% { opacity:0; transform: scaleY(0.55) translateY(20px); } 60% { opacity:1; transform: scaleY(1.03) translateY(-3px); } 100% { opacity:1; transform: scaleY(1) translateY(0); } }
+                    .folder-collapsing { animation: folder-collapse-kf 0.30s cubic-bezier(0.4,0,0.6,1) both; transform-origin: bottom center; }
+                    .folder-expanding  { animation: folder-expand-kf  0.36s cubic-bezier(0.34,1.3,0.64,1) both; transform-origin: bottom center; }
+                    /* === CARD ANIMATIONS DURING AI ANALYSIS === */
+                    @keyframes card-pulse-fade {
+                        0%,100% { opacity: 1; transform: scale(1); box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+                        50%     { opacity: 0.45; transform: scale(0.97); box-shadow: 0 0 0 2px rgba(249,115,22,0.4), 0 4px 16px rgba(249,115,22,0.25); }
+                    }
+                    @keyframes card-scatter-in {
+                        0%   { opacity: 0; transform: scale(0.7) translateY(12px); }
+                        60%  { opacity: 1; transform: scale(1.06) translateY(-3px); }
+                        100% { opacity: 1; transform: scale(1) translateY(0); }
+                    }
+                    .card-analyzing { animation: card-pulse-fade 1.4s ease-in-out infinite; }
+                    .card-scatter   { animation: card-scatter-in 0.5s cubic-bezier(0.34,1.4,0.64,1) both; }
                 `}} />
             </div>
 
             {/* CHATBOT CONTAINER */}
-            <div className={`fixed z-50 transition-all duration-500 overflow-hidden flex flex-col shadow-2xl
-                ${isChatOpen ? 'scale-100 opacity-100' : 'scale-0 opacity-0 pointer-events-none'}
+            <div className={`fixed z-50 overflow-hidden flex flex-col shadow-2xl
+                ${isChatOpen ? (closingChat ? 'chat-closing' : 'chat-opening') : 'scale-0 opacity-0 pointer-events-none'}
                 ${isCreatingFolder
                     ? 'inset-0 rounded-none md:inset-3 md:rounded-3xl'
                     : 'inset-0 rounded-none md:bottom-6 md:right-6 md:inset-auto md:rounded-3xl md:w-[350px] lg:w-[420px] md:h-[600px] md:max-h-[85vh] origin-bottom-right'}
                 ${modoNoturno ? 'bg-slate-800' : 'bg-white'}`}>
-                <div className="bg-gradient-to-r from-indigo-900 to-blue-800 p-5 flex items-center justify-between shrink-0 shadow-lg">
+                <div className={`p-5 flex items-center justify-between shrink-0 shadow-lg backdrop-blur-xl border-b ${isCreatingFolder ? 'bg-gradient-to-r from-orange-600 to-red-500 border-orange-700/40' : 'bg-gradient-to-r from-orange-500 to-red-500'}`}>
                     <div className="flex items-center gap-3">
                         <div className="bg-white/10 p-2.5 rounded-2xl backdrop-blur-md border border-white/20">
                             <svg viewBox="0 0 24 24" fill="none" className="w-6 h-6" xmlns="http://www.w3.org/2000/svg">
                                 <path d="M12 2C6.477 2 2 6.254 2 11.5c0 2.576 1.086 4.91 2.857 6.614L4 22l4.23-1.394A10.456 10.456 0 0012 21c5.523 0 10-4.254 10-9.5S17.523 2 12 2z" fill="white" fillOpacity="0.95"/>
-                                <circle cx="8.5" cy="11.5" r="1.2" fill="#6366f1"/>
-                                <circle cx="12" cy="11.5" r="1.2" fill="#6366f1"/>
-                                <circle cx="15.5" cy="11.5" r="1.2" fill="#6366f1"/>
+                                <circle cx="8.5" cy="11.5" r="1.2" fill="#f97316"/>
+                                <circle cx="12" cy="11.5" r="1.2" fill="#f97316"/>
+                                <circle cx="15.5" cy="11.5" r="1.2" fill="#f97316"/>
                             </svg>
                         </div>
                         <div>
@@ -1336,13 +1547,13 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
                             </p>
                         </div>
                     </div>
-                    <button onClick={() => { haptic(); setIsChatOpen(false); }} className="text-white/60 hover:text-white hover:bg-white/10 p-2 rounded-xl transition-all">
+                    <button onClick={() => { haptic(); closeChat(); }} className="text-white/60 hover:text-white hover:bg-white/10 p-2 rounded-xl transition-all">
                         <X className="w-5 h-5" />
                     </button>
                 </div>
 
                 {!isCreatingFolder && (
-                    <div className={`overflow-y-auto p-5 space-y-5 custom-scrollbar flex-1 transition-colors ${modoNoturno ? 'bg-slate-900/50' : 'bg-slate-50/50'}`}>
+                    <div ref={chatScrollRef} className={`overflow-y-auto p-5 space-y-5 custom-scrollbar flex-1 transition-colors ${modoNoturno ? 'bg-slate-900/50' : 'bg-slate-50/50'}`}>
                         {chatMessages.map((msg, idx) => (
                             <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                                 <div className={`max-w-[88%] rounded-2xl px-4 py-3 shadow-sm text-sm leading-relaxed ${
@@ -1368,17 +1579,26 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
                 )}
 
                 {isCreatingFolder && (
-                    <div className={`flex-1 overflow-hidden flex flex-col transition-colors ${modoNoturno ? 'bg-slate-900' : 'bg-slate-50'}`}>
+                    <div className={`flex-1 overflow-hidden flex flex-col transition-colors ${closingFolder ? 'folder-collapsing' : 'folder-expanding'} ${modoNoturno ? 'bg-slate-900' : 'bg-slate-50'}`}>
 
-                        <div className={`shrink-0 border-b transition-colors ${modoNoturno ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-100'}`}>
-                            <div className={`flex items-center justify-between px-3 py-2 border-b ${modoNoturno ? 'border-slate-700' : 'border-slate-100'}`}>
+                        <div className={`shrink-0 border-b backdrop-blur-xl transition-colors ${modoNoturno ? 'bg-slate-800/70 border-slate-700/60' : 'bg-white/70 border-slate-100/80'}`}>
+                            <div className={`flex items-center justify-between px-3 py-2 border-b ${modoNoturno ? 'border-slate-700/60' : 'border-slate-100/80'}`}>
                                 <h3 className={`font-black text-sm flex items-center gap-2 ${modoNoturno ? 'text-white' : 'text-slate-800'}`}>
                                     <FolderPlus className="text-orange-500" size={16} />
                                     Criar Pasta do Cliente
                                 </h3>
-                                <button onClick={() => { haptic(); setIsCreatingFolder(false); }} className={`text-[10px] font-black uppercase tracking-wider px-3 py-1.5 rounded-lg border transition-all flex items-center gap-1 ${modoNoturno ? 'bg-slate-700 border-slate-600 text-orange-300 hover:bg-slate-600' : 'bg-orange-50 text-orange-600 border-orange-100 hover:bg-orange-100'}`}>
-                                    ← Chat
-                                </button>
+                                <div className="flex items-center gap-2">
+                                    {pendingDocs.length > 0 && !isOrganizingDocs && (
+                                        <button
+                                            onClick={() => { haptic('medium'); handleOrganizeAll(); }}
+                                            className={`text-[10px] font-black uppercase tracking-wider px-3 py-1.5 rounded-lg border transition-all flex items-center gap-1 ${modoNoturno ? 'bg-orange-500/20 border-orange-500/40 text-orange-300 hover:bg-orange-500/30' : 'bg-orange-500 text-white border-orange-500 hover:bg-orange-600'}`}>
+                                            <Sparkles size={11} /> Organizar
+                                        </button>
+                                    )}
+                                    <button onClick={() => { haptic(); backToChat(); }} className={`text-[10px] font-black uppercase tracking-wider px-3 py-1.5 rounded-lg border transition-all flex items-center gap-1 ${modoNoturno ? 'bg-slate-700 border-slate-600 text-orange-300 hover:bg-slate-600' : 'bg-orange-50 text-orange-600 border-orange-100 hover:bg-orange-100'}`}>
+                                        ← Chat
+                                    </button>
+                                </div>
                             </div>
                             <div className={`px-3 py-1.5 text-[9px] flex flex-wrap gap-x-2 gap-y-0.5 ${modoNoturno ? 'text-slate-400' : 'text-orange-700'}`}>
                                 <span className="font-black">📋 Ordem:</span>
@@ -1388,7 +1608,7 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
                             </div>
                         </div>
 
-                        <div className="flex-1 overflow-y-auto custom-scrollbar p-3">
+                        <div ref={cardGridRef} className="flex-1 overflow-y-auto custom-scrollbar p-3 relative">
                             {isOrganizingDocs && (
                                 <div className="flex flex-col items-center justify-center gap-3 py-6">
                                     <div className="relative w-14 h-14">
@@ -1409,8 +1629,23 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
                                     )}
                                 </div>
                             )}
-                            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-2.5">
-                                {pendingDocs.map((doc, index) => (
+                            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-2.5" id="docs-grid">
+                                {pendingDocs.map((doc, index) => {
+                                    const total = pendingDocs.length;
+                                    const scatterDelay = cardAnimPhase === 'scatter' ? index * 0.07 : 0;
+                                    const pulseDelay = (index * 0.12) % 1.2; // stagger pulse so they don't all blink at once
+
+                                    let cardStyle = {};
+                                    let extraClass = '';
+                                    if (cardAnimPhase === 'pulse' || isOrganizingDocs) {
+                                        cardStyle = { animationDelay: `${pulseDelay}s` };
+                                        extraClass = 'card-analyzing';
+                                    } else if (cardAnimPhase === 'scatter') {
+                                        cardStyle = { animationDelay: `${scatterDelay}s` };
+                                        extraClass = 'card-scatter';
+                                    }
+
+                                    return (
                                     <div
                                         key={doc.id}
                                         data-doc-index={index}
@@ -1423,7 +1658,8 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
                                         onTouchMove={handleTouchMove}
                                         onTouchEnd={handleTouchEnd}
                                         onClick={() => { if (!isDraggingActive) { haptic('light'); setFullscreenDoc(doc); } }}
-                                        className={`relative group border-2 border-dashed ${draggedItemIndex === index ? 'border-orange-400 scale-90 opacity-30 rotate-3' : (modoNoturno ? 'border-transparent bg-slate-800 hover:border-orange-500' : 'border-transparent bg-white hover:border-orange-300')} rounded-xl overflow-hidden shadow-sm hover:shadow-lg transition-all aspect-[3/4] flex flex-col cursor-move`}>
+                                        style={cardStyle}
+                                        className={`relative group border-2 border-dashed ${extraClass} ${draggedItemIndex === index ? 'border-orange-400 scale-90 opacity-30 rotate-3' : (modoNoturno ? 'border-transparent bg-slate-800 hover:border-orange-500' : 'border-transparent bg-white hover:border-orange-300')} rounded-xl overflow-hidden shadow-sm hover:shadow-lg transition-colors aspect-[3/4] flex flex-col cursor-move`}>
                                         <div className="absolute top-1 left-1 bg-orange-900/80 text-white text-[9px] font-black w-5 h-5 flex items-center justify-center rounded-md z-10 backdrop-blur-sm">{index + 1}</div>
                                         <button onClick={(e) => { e.stopPropagation(); haptic('heavy'); removeDoc(doc.id); }} className="absolute top-1 right-1 bg-red-500 text-white p-1 rounded-lg opacity-0 group-hover:opacity-100 active:opacity-100 transition-all z-10 hover:bg-red-600 shadow-lg"><Trash2 size={11} /></button>
                                         <div className={`flex-1 flex items-center justify-center overflow-hidden relative ${modoNoturno ? 'bg-slate-950' : 'bg-slate-100'}`}>
@@ -1445,7 +1681,8 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
                                             {doc.aiLabel || doc.name}
                                         </div>
                                     </div>
-                                ))}
+                                    );
+                                })}
                                 <button onClick={() => { haptic(); fileInputRef.current?.click(); }} className={`aspect-[3/4] rounded-xl border-2 border-dashed flex flex-col items-center justify-center cursor-pointer transition-all shadow-sm ${modoNoturno ? 'bg-slate-800 border-slate-700 text-slate-500 hover:border-orange-500 hover:bg-slate-700 hover:text-orange-400' : 'bg-white border-orange-200 text-orange-400 hover:border-orange-500 hover:bg-orange-50/50'}`}>
                                     <Plus size={20} className="mb-1" />
                                     <span className="text-[9px] font-black text-center leading-tight uppercase tracking-widest">Adicionar<br/>Arquivo</span>
@@ -1536,11 +1773,28 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
             
             {/* MODAL PARA FINALIZAR */}
             {isFinalizingFolder && (
-                <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[60] flex items-center justify-center p-4" onClick={() => setIsFinalizingFolder(false)}>
-                    <div className={`rounded-3xl w-full max-w-sm overflow-hidden shadow-2xl p-7 relative flex flex-col gap-5 transform transition-all ${modoNoturno ? 'bg-slate-800' : 'bg-white'}`} onClick={e => e.stopPropagation()}>
-                        <button onClick={() => setIsFinalizingFolder(false)} className={`absolute top-5 right-5 p-1.5 rounded-xl transition-all ${modoNoturno ? 'text-slate-500 hover:text-white hover:bg-slate-700' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-50'}`}><X size={20} /></button>
-                        <div className={`flex items-center gap-4 mb-2 border-b pb-5 ${modoNoturno ? 'border-slate-700' : 'border-slate-50'}`}>
-                            <div className="bg-orange-100 p-3 rounded-2xl"><FileIcon className="text-orange-600" size={24} /></div>
+                <div className="fixed inset-0 z-[60] flex items-center justify-center p-4"
+                    style={{ background: 'rgba(200,210,225,0.28)', backdropFilter: 'blur(8px) saturate(140%)', WebkitBackdropFilter: 'blur(8px) saturate(140%)' }}
+                    onClick={() => setIsFinalizingFolder(false)}>
+                    <div
+                        className={`rounded-3xl w-full max-w-sm overflow-hidden shadow-2xl p-7 relative flex flex-col gap-5 transform transition-all`}
+                        style={modoNoturno ? {
+                            background: 'rgba(30,41,59,0.88)',
+                            backdropFilter: 'blur(28px) saturate(180%)',
+                            WebkitBackdropFilter: 'blur(28px) saturate(180%)',
+                            border: '1px solid rgba(255,255,255,0.10)',
+                            boxShadow: '0 24px 64px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.08)',
+                        } : {
+                            background: 'rgba(255,255,255,0.88)',
+                            backdropFilter: 'blur(28px) saturate(200%)',
+                            WebkitBackdropFilter: 'blur(28px) saturate(200%)',
+                            border: '1px solid rgba(255,255,255,0.95)',
+                            boxShadow: '0 24px 64px rgba(0,0,0,0.12), inset 0 1px 0 rgba(255,255,255,1)',
+                        }}
+                        onClick={e => e.stopPropagation()}>
+                        <button onClick={() => setIsFinalizingFolder(false)} className={`absolute top-5 right-5 p-1.5 rounded-xl transition-all ${modoNoturno ? 'text-slate-400 hover:text-white hover:bg-white/10' : 'text-slate-400 hover:text-slate-600 hover:bg-black/5'}`}><X size={20} /></button>
+                        <div className={`flex items-center gap-4 mb-2 border-b pb-5 ${modoNoturno ? 'border-white/10' : 'border-black/8'}`}>
+                            <div className="bg-orange-100/80 p-3 rounded-2xl" style={{backdropFilter:'blur(8px)'}}><FileIcon className="text-orange-600" size={24} /></div>
                             <div>
                                 <h3 className={`font-black text-lg leading-tight uppercase tracking-tight ${modoNoturno ? 'text-white' : 'text-slate-800'}`}>Salvar Pasta</h3>
                                 <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Dê um nome ao seu PDF</p>
@@ -1552,17 +1806,33 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
                                 type="text" 
                                 value={pdfFileName} 
                                 onChange={(e) => setPdfFileName(e.target.value)} 
-                                className={`w-full text-base border-2 rounded-2xl px-5 py-4 font-bold transition-all focus:outline-none focus:ring-8 focus:ring-indigo-500/5 ${
+                                className={`w-full text-base rounded-2xl px-5 py-4 font-bold transition-all focus:outline-none focus:ring-4 focus:ring-orange-400/20 ${
                                     modoNoturno 
-                                    ? 'bg-slate-900 border-slate-700 text-white focus:border-orange-500' 
-                                    : 'bg-slate-50 border-slate-100 text-slate-800 focus:border-orange-500'
-                                }`} 
+                                    ? 'bg-white/10 border border-white/15 text-white placeholder-white/30 focus:border-orange-400/60 focus:bg-white/15' 
+                                    : 'bg-white/60 border border-black/8 text-slate-800 focus:border-orange-400 focus:bg-white/90'
+                                }`}
+                                style={{backdropFilter:'blur(8px)', WebkitBackdropFilter:'blur(8px)'}}
                                 placeholder="Ex: Pasta_Joao_Silva" 
                                 autoFocus 
                             />
                         </div>
-                        <button onClick={() => { haptic('success'); generateClientPDF(); }} disabled={isChatLoading} className="w-full mt-2 text-xs bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white px-6 py-4 rounded-2xl font-black uppercase tracking-widest transition-all shadow-xl shadow-orange-300/40 hover:-translate-y-1 disabled:opacity-50 flex items-center justify-center gap-3 pasta-rapida-btn relative overflow-hidden">
-                            {isChatLoading ? <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div> : <><Wand2 size={20} /> Baixar PDF Unificado</>}
+                        <button onClick={() => { haptic('success'); generateClientPDF(); }} disabled={isChatLoading} className="w-full mt-2 text-xs bg-gradient-to-r from-orange-500 to-red-500 text-white px-6 py-4 rounded-2xl font-black uppercase tracking-widest transition-all shadow-xl shadow-orange-300/40 disabled:cursor-not-allowed flex items-center justify-center gap-3 relative overflow-hidden pasta-rapida-btn">
+                            {isChatLoading ? (
+                                <div className="absolute inset-0 flex items-center justify-center">
+                                    <div className="absolute inset-0 bg-gradient-to-r from-orange-400 to-red-400 opacity-80"></div>
+                                    <div className="absolute inset-0 pdf-loading-bar"></div>
+                                    <span className="relative z-10 font-black text-xs uppercase tracking-widest text-white/90 flex items-center gap-2">
+                                        <span className="flex gap-1">
+                                            <span className="w-1.5 h-1.5 rounded-full bg-white animate-bounce" style={{animationDelay:'0s'}}></span>
+                                            <span className="w-1.5 h-1.5 rounded-full bg-white animate-bounce" style={{animationDelay:'0.15s'}}></span>
+                                            <span className="w-1.5 h-1.5 rounded-full bg-white animate-bounce" style={{animationDelay:'0.3s'}}></span>
+                                        </span>
+                                        Gerando PDF...
+                                    </span>
+                                </div>
+                            ) : (
+                                <><Wand2 size={20} /> Baixar PDF Unificado</>
+                            )}
                         </button>
                     </div>
                 </div>
@@ -1709,13 +1979,6 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
                         </div>
                         {/* Barra de progresso + botão */}
                         <div className="px-5 pb-5 pt-3">
-                            {/* Barra de carregamento */}
-                            <div className={`w-full h-2 rounded-full mb-3 overflow-hidden ${modoNoturno ? 'bg-slate-700' : 'bg-slate-200'}`}>
-                                <div
-                                    className="h-2 rounded-full bg-gradient-to-r from-orange-500 to-amber-400 transition-all duration-1000 ease-linear"
-                                    style={{ width: `${((10 - pastaRapidaCountdown) / 10) * 100}%` }}
-                                />
-                            </div>
                             <button
                                 disabled={pastaRapidaCountdown > 0}
                                 onClick={() => { setShowPastaRapidaInfo(false); setTimeout(() => quickFolderInputRef.current?.click(), 150); }}
@@ -1726,7 +1989,11 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
                                 }`}>
                                 {pastaRapidaCountdown > 0 ? (
                                     <span className="flex items-center gap-2">
-                                        <span className={`w-6 h-6 rounded-full text-xs font-black flex items-center justify-center shrink-0 ${modoNoturno ? 'bg-slate-600 text-slate-300' : 'bg-slate-300 text-slate-600'}`}>{pastaRapidaCountdown}</span>
+                                        <span className="flex gap-1 items-center">
+                                            <span className="w-1.5 h-1.5 rounded-full bg-slate-400 animate-bounce" style={{animationDelay:'0s'}}></span>
+                                            <span className="w-1.5 h-1.5 rounded-full bg-slate-400 animate-bounce" style={{animationDelay:'0.2s'}}></span>
+                                            <span className="w-1.5 h-1.5 rounded-full bg-slate-400 animate-bounce" style={{animationDelay:'0.4s'}}></span>
+                                        </span>
                                         Aguarde para continuar...
                                     </span>
                                 ) : (

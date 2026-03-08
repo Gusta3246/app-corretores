@@ -1535,9 +1535,9 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
                         .chat-mobile-full { top: auto !important; height: auto !important; }
                         .chat-folder-full { top: 12px !important; left: 12px !important; right: 12px !important; bottom: 12px !important; height: auto !important; border-radius: 1.5rem !important; }
                     }
-                    /* Padding do main para compensar o header fixed */
-                    .main-content { padding-top: 136px; }
-                    @media (min-width: 640px) { .main-content { padding-top: 80px; } }
+                    /* Padding do main para compensar o header fixed (inclui notch no PWA) */
+                    .main-content { padding-top: calc(136px + env(safe-area-inset-top, 0px)); }
+                    @media (min-width: 640px) { .main-content { padding-top: calc(80px + env(safe-area-inset-top, 0px)); } }
                     /* Folder → Chat collapse/expand */
                     @keyframes folder-collapse-kf { 0% { opacity:1; transform: scaleY(1) translateY(0); } 40% { opacity:0.6; transform: scaleY(0.85) translateY(8px); } 100% { opacity:0; transform: scaleY(0.55) translateY(20px); } }
                     @keyframes folder-expand-kf  { 0% { opacity:0; transform: scaleY(0.55) translateY(20px); } 60% { opacity:1; transform: scaleY(1.03) translateY(-3px); } 100% { opacity:1; transform: scaleY(1) translateY(0); } }

@@ -1105,24 +1105,23 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
             onMouseMove={handleGlobalDragOver}
         >
             {/* ── SAFE AREA / NOTCH – iOS PWA standalone ─────────────────────
-                A div fixa cobre exatamente a área do notch com a cor do header.
-                env(safe-area-inset-top) retorna 0px no browser normal/desktop,
-                então ela some automaticamente. Só fica visível no modo PWA
-                standalone do iPhone, onde o valor é ~47px (notch real). ──── */}
+                Estende visualmente o header para cima, cobrindo o notch com
+                o mesmo glassmorphism. env() retorna 0px fora do PWA standalone,
+                então some automaticamente em browser normal e desktop. ──── */}
             <div
                 aria-hidden="true"
                 className="fixed top-0 left-0 w-full z-[9999] pointer-events-none"
                 style={{
                     height: 'env(safe-area-inset-top, 0px)',
-                    background: modoNoturno ? 'rgba(15,23,42,0.97)' : 'rgba(255,255,255,0.97)',
-                    backdropFilter: 'blur(20px)',
-                    WebkitBackdropFilter: 'blur(20px)',
+                    background: modoNoturno ? 'rgba(15,23,42,0.70)' : 'rgba(255,255,255,0.75)',
+                    backdropFilter: 'blur(20px) saturate(180%)',
+                    WebkitBackdropFilter: 'blur(20px) saturate(180%)',
+                    borderBottom: 'none',
                     transition: 'background 0.5s ease',
                 }}
             />
-            {/* Spacer: empurra o conteúdo para baixo do notch */}
-            <div style={{ height: 'env(safe-area-inset-top, 0px)' }} aria-hidden="true" />
-            <header className={`sticky top-0 z-30 transition-all duration-500 backdrop-blur-xl border-b ${modoNoturno ? 'bg-slate-900/70 border-slate-800/60 shadow-black/20 shadow-sm' : 'bg-white/75 border-slate-200/60 shadow-slate-200/40 shadow-sm'}`}>
+            <header className={`sticky z-30 transition-all duration-500 backdrop-blur-xl border-b ${modoNoturno ? 'bg-slate-900/70 border-slate-800/60 shadow-black/20 shadow-sm' : 'bg-white/75 border-slate-200/60 shadow-slate-200/40 shadow-sm'}`}
+                style={{ top: 'env(safe-area-inset-top, 0px)' }}>
                 <div className="max-w-5xl mx-auto px-4 py-4 sm:px-6 lg:px-8">
                     <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
                         <div className="flex items-center gap-3">
@@ -1546,7 +1545,8 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
                 ${isCreatingFolder
                     ? 'inset-0 rounded-none md:inset-3 md:rounded-3xl'
                     : 'inset-0 rounded-none md:bottom-6 md:right-6 md:inset-auto md:rounded-3xl md:w-[350px] lg:w-[420px] md:h-[600px] md:max-h-[85vh] origin-bottom-right'}
-                ${modoNoturno ? 'bg-slate-800' : 'bg-white'}`}>
+                ${modoNoturno ? 'bg-slate-800' : 'bg-white'}`}
+                style={{ top: 'env(safe-area-inset-top, 0px)' }}>
                 <div className={`p-5 flex items-center justify-between shrink-0 shadow-lg backdrop-blur-xl border-b ${isCreatingFolder ? 'bg-gradient-to-r from-orange-600 to-red-500 border-orange-700/40' : 'bg-gradient-to-r from-orange-500 to-red-500'}`}>
                     <div className="flex items-center gap-3">
                         <div className="bg-white/10 p-2.5 rounded-2xl backdrop-blur-md border border-white/20">

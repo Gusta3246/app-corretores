@@ -527,18 +527,41 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
     // =========================================================
     const OPENROUTER_KEY = process.env.REACT_APP_OPENROUTER_KEY;
 
-    // Modelos tentados em ordem — openrouter/auto primeiro (escolhe o melhor disponível)
+    // Modelos tentados em ordem — fallbacks caso o primeiro falhe
     const VISION_MODELS = [
-        'openrouter/auto',
-        'meta-llama/llama-3.2-11b-vision-instruct:free',
-        'google/gemma-3-27b-it:free',
+        'google/gemini-2.0-flash-001',
+        'google/gemini-flash-1.5',
+        'meta-llama/llama-3.2-90b-vision-instruct',
     ];
 
     const ORDER_MAP = {
-        rg: 1, cnh: 2, oab: 3, creci: 4, cpf: 5,
-        residencia: 6,
-        certidao_casamento: 7, certidao_nascimento: 8, certidao_obito: 9,
-        ctps: 10, contracheque: 11, imposto_renda: 12, extrato_bancario: 13, fgts: 14,
+        // ── Documentos urgentes / administrativos (vão na frente de tudo) ──
+        cancelamento: 0, autorizacao: 0, reserva: 0,
+
+        // ── Documentos de identificação (todos equivalentes ao RG) ──
+        rg_frente: 1,   // frente do RG — sempre antes do verso
+        rg_verso: 2,    // verso do RG
+        rg: 1,          // RG genérico (sem distinção frente/verso)
+        cnh: 3,         // CNH equivale a RG como identidade
+        oab: 3,         // OAB equivale a RG como identidade
+        creci: 3,       // CRECI equivale a RG como identidade
+        cpf: 4,         // CPF vem logo após o documento de identidade
+
+        // ── Documentos de estado civil / certidões ──
+        certidao_nascimento: 5,
+        certidao_casamento: 6,
+        certidao_obito: 7,
+
+        // ── Comprovante de residência ──
+        residencia: 8,
+
+        // ── Documentos de trabalho / renda ──
+        ctps: 9,
+        contracheque: 10,
+        imposto_renda: 11,
+        extrato_bancario: 12,
+        fgts: 13,
+
         outros: 99
     };
 
@@ -547,12 +570,14 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
 Responda APENAS com JSON válido, sem texto adicional: {"category":"CATEGORIA","label":"NOME DO DOCUMENTO"}
 
 CATEGORIAS POSSÍVEIS:
-- "rg" → RG ou Identidade: tem foto 3x4, impressão digital, número de RG, campos Nome/Filiação/Naturalidade
+- "rg" → RG ou Identidade (quando não dá para distinguir frente/verso): tem campos de identificação, número do RG
 - "cnh" → CNH: tem foto do motorista, logo DETRAN, letras de categoria (A B C D E), validade
 - "cpf" → CPF: tem número no formato XXX.XXX.XXX-XX, texto "Cadastro de Pessoas Físicas" ou "Receita Federal"
 - "oab" → OAB: tem logo da OAB, texto "Ordem dos Advogados do Brasil"
 - "creci" → CRECI: tem logo CRECI, texto "Conselho Regional de Corretores de Imóveis"
-- "residencia" → Comprovante de Residência: conta de luz, água, gás ou internet. Tem endereço completo com CEP, código de barras, data de vencimento, valor a pagar
+- "rg_frente" → RG Frente: lado com foto 3x4, nome, data de nascimento, número do RG
+- "rg_verso" → RG Verso: lado com impressão digital, filiação (nome dos pais), órgão emissor
+- "residencia" → Comprovante de Residência: conta de luz, água, gás, internet, telefone, TV por assinatura, fatura de celular — qualquer documento que tenha endereço completo com CEP e valor/vencimento
 - "certidao_casamento" → Certidão de Casamento: tem texto "CERTIDÃO DE CASAMENTO", nome do cartório, nomes dos cônjuges
 - "certidao_nascimento" → Certidão de Nascimento: tem texto "CERTIDÃO DE NASCIMENTO", nome do cartório
 - "certidao_obito" → Certidão de Óbito: tem texto "CERTIDÃO DE ÓBITO", data de falecimento
@@ -657,20 +682,243 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
         }
     };
 
+    // =========================================================
+    // DICIONÁRIO COMPARTILHADO — usado pelas Armas 1, 2, 4 e 5/6
+    // =========================================================
+    const KEYWORD_MAP = [
+        // ── Documentos urgentes / administrativos — vão na frente de tudo ──
+        { keywords: ['cancelamento','carta de cancelamento','distrato'], category: 'cancelamento', label: 'Carta de Cancelamento' },
+        { keywords: ['autorizacao cadastral','autorização cadastral','autorizacao','autorização','declaracao de esclarecimento','declaração de esclarecimento'], category: 'autorizacao', label: 'Autorização / Declaração' },
+        { keywords: ['reserva de unidade','reserva','proposta de compra'], category: 'reserva', label: 'Reserva de Unidade' },
+
+        // ── RG frente e verso (nome do arquivo com "frente" ou "verso") ──
+        { keywords: ['rg frente','rg_frente','identidade frente','frente rg','frente identidade','rg frente'], category: 'rg_frente', label: 'RG / Identidade (Frente)' },
+        { keywords: ['rg verso','rg_verso','identidade verso','verso rg','verso identidade'], category: 'rg_verso', label: 'RG / Identidade (Verso)' },
+
+        // ── Documentos de renda / trabalho ──
+        { keywords: ['holerite','contracheque','folha de pagamento','folha pagamento','salario','salário','vencimentos','descontos','liquido','líquido','inss','cbo','competencia','competência'], category: 'contracheque', label: 'Contracheque / Holerite' },
+        { keywords: ['declaracao de ajuste anual','declaração de ajuste anual','dirpf','imposto de renda','irpf','ajuste anual','rendimentos tributaveis','rendimentos tributáveis'], category: 'imposto_renda', label: 'Imposto de Renda' },
+        { keywords: ['extrato bancario','extrato bancário','extrato','saldo','movimentacao','movimentação','deposito','depósito','saque','transferencia','transferência','agencia','agência','conta corrente','poupanca','poupança','nubank','bradesco','itau','itaú','santander','caixa economica','banco do brasil','inter','sicoob'], category: 'extrato_bancario', label: 'Extrato Bancário' },
+        { keywords: ['fgts','fundo de garantia','pis','pasep','caixa fgts','depositos mensais','depósitos mensais','fins rescisórios','fins rescisorios'], category: 'fgts', label: 'FGTS' },
+        // CTPS deve vir ANTES de certidão de nascimento para evitar confusão
+        { keywords: ['carteira de trabalho','ctps','carteira profissional','previdencia social','previdência social','ctps digital','numero ctps','número ctps','ministerio do trabalho','ministério do trabalho'], category: 'ctps', label: 'Carteira de Trabalho (CTPS)' },
+
+        // ── Certidões de estado civil ──
+        { keywords: ['certidao de casamento','certidão de casamento','casamento','contraentes','registro de casamento'], category: 'certidao_casamento', label: 'Certidão de Casamento' },
+        // certidao_nascimento deve vir DEPOIS de ctps para não confundir
+        { keywords: ['certidao de nascimento','certidão de nascimento','registro de nascimento'], category: 'certidao_nascimento', label: 'Certidão de Nascimento' },
+        { keywords: ['certidao de obito','certidão de óbito','obito','óbito','falecimento'], category: 'certidao_obito', label: 'Certidão de Óbito' },
+
+        // ── CPF ──
+        { keywords: ['cadastro de pessoas fisicas','cadastro de pessoas físicas','cpf','receita federal do brasil'], category: 'cpf', label: 'CPF' },
+
+        // ── Documentos de identidade (todos equivalem ao RG) ──
+        { keywords: ['carteira nacional de habilitacao','carteira nacional de habilitação','cnh','detran','habilitacao','habilitação','registro nacional'], category: 'cnh', label: 'CNH' },
+        { keywords: ['ordem dos advogados','oab','advogado'], category: 'oab', label: 'OAB' },
+        { keywords: ['conselho regional de corretores','creci','corretor de imoveis','corretor de imóveis'], category: 'creci', label: 'CRECI' },
+        { keywords: ['registro geral','identidade','instituto de identificacao','instituto de identificação','filiacao','filiação','naturalidade'], category: 'rg', label: 'RG / Identidade' },
+        // "rg" como palavra sozinha vem por último para não capturar palavras que contenham "rg"
+        { keywords: [' rg ','_rg_','-rg-'], category: 'rg', label: 'RG / Identidade' },
+
+        // ── Comprovante de residência — qualquer conta serve ──
+        { keywords: [
+            'comprovante de residencia','comprovante de residência','residencia','residência',
+            'endereco','endereço','cep','codigo de barras','código de barras',
+            // contas de consumo
+            'conta de luz','energia eletrica','energia elétrica','eletrobras','amazonas energia','cemig','copel','light ',
+            'conta de agua','água tratada','saneamento','cosama','saae',
+            'conta de gas','gas encanado','gás encanado','comgas','cegás',
+            // telecomunicações
+            'fatura','conta de telefone','fatura telefone','celular','tim ','vivo ','claro ','oi ','net ','sky ','amazon fibra','brisanet',
+            'internet','banda larga','tv por assinatura','tv a cabo',
+            // genérico
+            'vencimento','valor a pagar'
+        ], category: 'residencia', label: 'Comprovante de Residência' },
+    ];
+
+    const matchKeywords = (text) => {
+        const normalized = text.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+        for (const entry of KEYWORD_MAP) {
+            if (entry.keywords.some(kw => normalized.includes(kw.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()))) {
+                return { category: entry.category, order: ORDER_MAP[entry.category] ?? 99, label: entry.label };
+            }
+        }
+        return null;
+    };
+
+    // =========================================================
+    // ARMA 1 — Nome do arquivo (0ms, sem API)
+    // =========================================================
+    const classifyByFilename = (filename) => {
+        const name = filename.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[_\-\.]/g, ' ');
+        const result = matchKeywords(name);
+        if (result) {
+            console.log(`🏷️ Arma 1 (nome) → ${result.label}`);
+            return result;
+        }
+        return null;
+    };
+
+    // =========================================================
+    // ARMA 5 — Metadados do PDF: Title, Subject, Keywords (~0ms)
+    // =========================================================
+    const classifyByPdfMetadata = async (arrayBuffer) => {
+        try {
+            if (!window.pdfjsLib) return null;
+            const copy = arrayBuffer.slice(0);
+            const pdfDoc = await window.pdfjsLib.getDocument({ data: new Uint8Array(copy), password: '', disableRange: true, disableStream: true }).promise;
+            const meta = await pdfDoc.getMetadata().catch(() => null);
+            if (!meta) return null;
+            const info = meta.info || {};
+            const combined = [info.Title, info.Subject, info.Keywords, info.Author].filter(Boolean).join(' ');
+            if (!combined.trim()) return null;
+            const result = matchKeywords(combined);
+            if (result) {
+                console.log(`📋 Arma 5 (metadados) → ${result.label}`);
+                return result;
+            }
+        } catch {}
+        return null;
+    };
+
+    // =========================================================
+    // ARMA 6 — Producer/Creator do PDF (~0ms)
+    // =========================================================
+    const classifyByPdfProducer = async (arrayBuffer) => {
+        try {
+            if (!window.pdfjsLib) return null;
+            const copy = arrayBuffer.slice(0);
+            const pdfDoc = await window.pdfjsLib.getDocument({ data: new Uint8Array(copy), password: '', disableRange: true, disableStream: true }).promise;
+            const meta = await pdfDoc.getMetadata().catch(() => null);
+            if (!meta) return null;
+            const info = meta.info || {};
+            const combined = [info.Producer, info.Creator].filter(Boolean).join(' ').toLowerCase();
+            if (!combined.trim()) return null;
+            // Regras específicas por produtor/criador
+            if (/serpro|receita federal|dirpf|rfb/.test(combined)) return { category: 'imposto_renda', order: ORDER_MAP['imposto_renda'] ?? 99, label: 'Imposto de Renda' };
+            if (/detran/.test(combined)) return { category: 'cnh', order: ORDER_MAP['cnh'] ?? 99, label: 'CNH' };
+            if (/caixa|cef|fgts/.test(combined)) return { category: 'fgts', order: ORDER_MAP['fgts'] ?? 99, label: 'FGTS' };
+            if (/esocial|ministerio do trabalho|mte/.test(combined)) return { category: 'ctps', order: ORDER_MAP['ctps'] ?? 99, label: 'Carteira de Trabalho (CTPS)' };
+            // Fallback: tenta o dicionário geral
+            const result = matchKeywords(combined);
+            if (result) {
+                console.log(`🏭 Arma 6 (producer) → ${result.label}`);
+                return result;
+            }
+        } catch {}
+        return null;
+    };
+
+    // =========================================================
+    // ARMA 2 — Texto embutido do PDF (~100ms, sem API)
+    // =========================================================
+    const classifyByPdfText = async (arrayBuffer) => {
+        try {
+            if (!window.pdfjsLib) return null;
+            const copy = arrayBuffer.slice(0);
+            const pdfDoc = await window.pdfjsLib.getDocument({ data: new Uint8Array(copy), password: '', disableRange: true, disableStream: true }).promise;
+            const numPages = Math.min(pdfDoc.numPages, 3);
+            let fullText = '';
+            for (let p = 1; p <= numPages; p++) {
+                const page = await pdfDoc.getPage(p);
+                const content = await page.getTextContent();
+                fullText += content.items.map(i => i.str).join(' ') + ' ';
+                page.cleanup();
+            }
+            if (fullText.trim().length < 20) return null; // PDF escaneado — sem texto
+            const result = matchKeywords(fullText);
+            if (result) {
+                console.log(`📄 Arma 2 (texto PDF) → ${result.label}`);
+                return result;
+            }
+        } catch {}
+        return null;
+    };
+
+    // =========================================================
+    // ARMA 4 — Tesseract OCR (1-4s, sem API)
+    // =========================================================
+    const loadTesseract = () => new Promise((resolve, reject) => {
+        if (window.Tesseract) { resolve(window.Tesseract); return; }
+        const existing = document.getElementById('tesseract-script');
+        if (existing) { existing.addEventListener('load', () => resolve(window.Tesseract)); return; }
+        const s = document.createElement('script');
+        s.id = 'tesseract-script';
+        s.src = 'https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js';
+        s.onload = () => resolve(window.Tesseract);
+        s.onerror = reject;
+        document.body.appendChild(s);
+    });
+
+    const classifyByOCR = async (arrayBuffer, mime) => {
+        try {
+            const Tesseract = await loadTesseract();
+            let imageData;
+            if (mime === 'image/jpeg') {
+                // É o resultado do pdfFirstPageToBase64 — já é base64 JPEG
+                imageData = `data:image/jpeg;base64,${arrayBuffer}`;
+            } else {
+                const blob = new Blob([arrayBuffer], { type: mime });
+                imageData = URL.createObjectURL(blob);
+            }
+            const { data: { text } } = await Tesseract.recognize(imageData, 'por', { logger: () => {} });
+            if (imageData.startsWith('blob:')) URL.revokeObjectURL(imageData);
+            if (!text || text.trim().length < 15) return null;
+            const result = matchKeywords(text);
+            if (result) {
+                console.log(`🔬 Arma 4 (OCR) → ${result.label}`);
+                return result;
+            }
+        } catch {}
+        return null;
+    };
+
+    // =========================================================
+    // classifyDoc — Ordem: 1 → 5 → 6 → 2 → 4 → IA
+    // =========================================================
     const classifyDoc = async (file) => {
         try {
-            const arrayBuffer = await file.arrayBuffer();
+            // ── Arma 1: Nome do arquivo ──
+            const arm1 = classifyByFilename(file.name);
+            if (arm1) return arm1;
+
+            // Lê o buffer UMA vez e faz cópias para cada uso
+            const masterBuffer = await file.arrayBuffer();
             let b64, mime;
+
             if (file.type === 'application/pdf') {
-                b64 = await pdfFirstPageToBase64(arrayBuffer);
+                // ── Arma 5: Metadados (Title/Subject/Keywords/Author) ──
+                const arm5 = await classifyByPdfMetadata(masterBuffer.slice(0));
+                if (arm5) return arm5;
+
+                // ── Arma 6: Producer/Creator ──
+                const arm6 = await classifyByPdfProducer(masterBuffer.slice(0));
+                if (arm6) return arm6;
+
+                // ── Arma 2: Texto embutido ──
+                const arm2 = await classifyByPdfText(masterBuffer.slice(0));
+                if (arm2) return arm2;
+
+                // Prepara imagem para Arma 4 e IA (usa cópia fresca)
+                b64 = await pdfFirstPageToBase64(masterBuffer.slice(0));
                 mime = 'image/jpeg';
+
+                // ── Arma 4: OCR (recebe b64 já pronto, não consome buffer) ──
+                const arm4 = await classifyByOCR(b64, 'image/jpeg');
+                if (arm4) return arm4;
+
             } else if (file.type.startsWith('image/')) {
-                b64 = fileToBase64(arrayBuffer);
                 mime = ['image/jpeg','image/png','image/webp','image/gif'].includes(file.type) ? file.type : 'image/jpeg';
+                b64 = fileToBase64(masterBuffer.slice(0));
+
+                // ── Arma 4: OCR em imagens (usa cópia fresca do buffer) ──
+                const arm4img = await classifyByOCR(masterBuffer.slice(0), mime);
+                if (arm4img) return arm4img;
             } else {
                 return { category: 'outros', order: 99, label: 'Outro Documento' };
             }
 
+            // ── IA (último recurso) ──
             // ✅ OTIMIZAÇÃO: delay entre modelos reduzido (era 1000ms, agora 300ms)
             for (const model of VISION_MODELS) {
                 const result = await tryModel(model, b64, mime);

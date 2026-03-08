@@ -1104,6 +1104,24 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
         <div className={`min-h-screen font-sans pb-12 relative transition-colors duration-500 ${modoNoturno ? 'bg-[#0B1120] text-slate-100' : 'bg-slate-50 text-slate-800'}`}
             onMouseMove={handleGlobalDragOver}
         >
+            {/* ── SAFE AREA / NOTCH – iOS PWA standalone ─────────────────────
+                A div fixa cobre exatamente a área do notch com a cor do header.
+                env(safe-area-inset-top) retorna 0px no browser normal/desktop,
+                então ela some automaticamente. Só fica visível no modo PWA
+                standalone do iPhone, onde o valor é ~47px (notch real). ──── */}
+            <div
+                aria-hidden="true"
+                className="fixed top-0 left-0 w-full z-[9999] pointer-events-none"
+                style={{
+                    height: 'env(safe-area-inset-top, 0px)',
+                    background: modoNoturno ? 'rgba(15,23,42,0.97)' : 'rgba(255,255,255,0.97)',
+                    backdropFilter: 'blur(20px)',
+                    WebkitBackdropFilter: 'blur(20px)',
+                    transition: 'background 0.5s ease',
+                }}
+            />
+            {/* Spacer: empurra o conteúdo para baixo do notch */}
+            <div style={{ height: 'env(safe-area-inset-top, 0px)' }} aria-hidden="true" />
             <header className={`sticky top-0 z-30 transition-all duration-500 backdrop-blur-xl border-b ${modoNoturno ? 'bg-slate-900/70 border-slate-800/60 shadow-black/20 shadow-sm' : 'bg-white/75 border-slate-200/60 shadow-slate-200/40 shadow-sm'}`}>
                 <div className="max-w-5xl mx-auto px-4 py-4 sm:px-6 lg:px-8">
                     <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
@@ -1751,8 +1769,15 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
                                 👤 {clientName}
                             </span>
                         )}
+                        {/* DEV: reset contador pasta rápida — remova em produção */}
+                        <button
+                            onClick={() => { pastaRapidaClicksRef.current = 0; localStorage.setItem('dst_pr_clicks', '0'); }}
+                            title="DEV: resetar contador pasta rápida"
+                            className="shrink-0 text-[9px] font-bold px-2 py-1 rounded-full border border-dashed border-slate-300 text-slate-300 hover:border-orange-400 hover:text-orange-400 transition-all">
+                            ↺ PR
+                        </button>
                     </div>
-                    <div className="px-3 pb-3">
+                    <div className="px-3 pb-3" style={{ paddingBottom: 'max(12px, calc(env(safe-area-inset-bottom) + 8px))' }}>
                         <div className="relative flex items-center">
                             <input type="file" ref={fileInputRef} onChange={handleFileUpload} multiple accept="image/*,application/pdf" className="hidden" />
                             <input 
@@ -1978,24 +2003,31 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
                             </div>
                         </div>
                         {/* Barra de progresso + botão */}
-                        <div className="px-5 pb-5 pt-3">
+                        <div className="px-5 pb-5 pt-3 flex flex-col gap-3">
+                            {/* Barra de progresso animada */}
+                            {pastaRapidaCountdown > 0 && (
+                                <div className="flex flex-col gap-1.5">
+                                    <div className={`w-full h-1.5 rounded-full overflow-hidden ${modoNoturno ? 'bg-slate-700' : 'bg-slate-200'}`}>
+                                        <div
+                                            className="h-full rounded-full bg-gradient-to-r from-orange-400 to-red-500 transition-all duration-1000 ease-linear"
+                                            style={{ width: `${((10 - pastaRapidaCountdown) / 10) * 100}%` }}
+                                        />
+                                    </div>
+                                    <p className={`text-center text-[10px] font-black uppercase tracking-widest ${modoNoturno ? 'text-slate-500' : 'text-slate-400'}`}>
+                                        leia antes de continuar — {pastaRapidaCountdown}s
+                                    </p>
+                                </div>
+                            )}
                             <button
                                 disabled={pastaRapidaCountdown > 0}
                                 onClick={() => { setShowPastaRapidaInfo(false); setTimeout(() => quickFolderInputRef.current?.click(), 150); }}
                                 className={`w-full font-black text-sm uppercase tracking-widest py-3.5 rounded-2xl transition-all flex items-center justify-center gap-2 relative overflow-hidden ${
                                     pastaRapidaCountdown > 0
-                                    ? (modoNoturno ? 'bg-slate-700 text-slate-500 cursor-not-allowed' : 'bg-slate-200 text-slate-400 cursor-not-allowed')
+                                    ? (modoNoturno ? 'bg-slate-700 text-slate-600 cursor-not-allowed' : 'bg-slate-100 text-slate-300 cursor-not-allowed')
                                     : 'bg-orange-500 hover:bg-orange-600 text-white shadow-lg shadow-orange-300/30 hover:-translate-y-0.5 pasta-rapida-btn'
                                 }`}>
                                 {pastaRapidaCountdown > 0 ? (
-                                    <span className="flex items-center gap-2">
-                                        <span className="flex gap-1 items-center">
-                                            <span className="w-1.5 h-1.5 rounded-full bg-slate-400 animate-bounce" style={{animationDelay:'0s'}}></span>
-                                            <span className="w-1.5 h-1.5 rounded-full bg-slate-400 animate-bounce" style={{animationDelay:'0.2s'}}></span>
-                                            <span className="w-1.5 h-1.5 rounded-full bg-slate-400 animate-bounce" style={{animationDelay:'0.4s'}}></span>
-                                        </span>
-                                        Aguarde para continuar...
-                                    </span>
+                                    <span className={modoNoturno ? 'text-slate-600' : 'text-slate-300'}>Aguarde...</span>
                                 ) : (
                                     <><Sparkles size={15} /> Entendi, vamos lá!</>
                                 )}

@@ -150,6 +150,38 @@ export default function App() {
 
     const [activeZone, setActiveZone] = useState(null);
     const [clientName, setClientName] = useState(() => localStorage.getItem('dst_client') || '');
+    const [showPastaRapidaInfo, setShowPastaRapidaInfo] = useState(false);
+    const [pastaRapidaCountdown, setPastaRapidaCountdown] = useState(10);
+    const pastaRapidaClicksRef = useRef(parseInt(localStorage.getItem('dst_pr_clicks') || '0'));
+
+    // Trava scroll do body quando modais/chat estão abertos
+    useEffect(() => {
+        const shouldLock = isChatOpen || !!selectedPois || showPastaRapidaInfo;
+        if (shouldLock) {
+            document.body.style.overflow = 'hidden';
+            document.body.style.touchAction = 'none';
+        } else {
+            document.body.style.overflow = '';
+            document.body.style.touchAction = '';
+        }
+        return () => {
+            document.body.style.overflow = '';
+            document.body.style.touchAction = '';
+        };
+    }, [isChatOpen, selectedPois, showPastaRapidaInfo]);
+
+    // Countdown de 10s para o botão "Entendi" do modal Pasta Rápida
+    useEffect(() => {
+        if (!showPastaRapidaInfo) { setPastaRapidaCountdown(10); return; }
+        setPastaRapidaCountdown(10);
+        const interval = setInterval(() => {
+            setPastaRapidaCountdown(prev => {
+                if (prev <= 1) { clearInterval(interval); return 0; }
+                return prev - 1;
+            });
+        }, 1000);
+        return () => clearInterval(interval);
+    }, [showPastaRapidaInfo]);
 
     // ESTADO PARA AS FRASES AMIGÁVEIS DO ROBÔ E CONTROLE DE SCROLL
     const [robotPhraseIndex, setRobotPhraseIndex] = useState(0);
@@ -177,7 +209,7 @@ export default function App() {
             if (scrollTimeoutRef.current) clearTimeout(scrollTimeoutRef.current);
             scrollTimeoutRef.current = setTimeout(() => {
                 setIsScrolling(false);
-            }, 600); // Balão reaparece 600ms após parar o scroll
+            }, 600);
         };
 
         window.addEventListener('scroll', handleScroll, { passive: true });
@@ -206,9 +238,13 @@ export default function App() {
 
     // === ESTADOS PARA CRIAÇÃO DE PASTA DO CLIENTE ===
     const fileInputRef = useRef(null);
+    const quickFolderInputRef = useRef(null);
+    const [isOrganizingDocs, setIsOrganizingDocs] = useState(false);
+    const [organizeProgress, setOrganizeProgress] = useState({ current: 0, total: 0, label: '' });
     const [isCreatingFolder, setIsCreatingFolder] = useState(false);
     const [isFinalizingFolder, setIsFinalizingFolder] = useState(false);
     const [showThumbsUp, setShowThumbsUp] = useState(false);
+    const [showLightning, setShowLightning] = useState(false);
     const [pendingDocs, setPendingDocs] = useState([]);
     const [pdfFileName, setPdfFileName] = useState("Pasta_do_Cliente");
     const [draggedItemIndex, setDraggedItemIndex] = useState(null);
@@ -234,7 +270,6 @@ export default function App() {
             script.onload = () => {
                 if (window.pdfjsLib) {
                     window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-                    // Pré-carrega o worker para que esteja pronto quando o usuário clicar
                     const workerScript = document.createElement('script');
                     workerScript.src = window.pdfjsLib.GlobalWorkerOptions.workerSrc;
                     workerScript.async = true;
@@ -253,10 +288,8 @@ export default function App() {
     const input = normalizeString(inputMsg);
     let matchedProperties = [];
 
-    // --- NOVA LÓGICA: CONSULTA AO ARQUIVO JSON (DADOS DE FINANCIAMENTO) ---
     const docs = dadosFinanciamento.documentos;
     
-    // Busca por Documentação (Baseado nas fotos da Direcional)
     if (input.includes("documento") || input.includes("precisa") || input.includes("papel")) {
       if (input.includes("autonomo")) {
         return `Para **Autônomos**, os documentos são: ${docs.autonomo.join(", ")}. \n\n⚠️ **Importante:** Solteiros devem apresentar Certidão de Nascimento. Se tiver filhos, envie a Certidão do dependente.`;
@@ -267,16 +300,13 @@ export default function App() {
       return `Para **CLT (Carteira Assinada)**, separe: ${docs.clt.join(", ")}. \n\n💡 Dica: A Carteira de Trabalho pode ser a Digital (PDF).`;
     }
 
-    // Busca por Tabelas de Financiamento
     if (input.includes("investidor")) {
       return "Na **Tabela Investidor**, o ato é facilitado e o saldo é parcelado em até 28x sem juros ou correção durante a obra! 🚀";
     }
     if (input.includes("financiamento direto") || (input.includes("direto") && input.includes("construtora"))) {
       return "Temos a opção de **Financiamento Direto** com a construtora em até 120 meses após a entrega das chaves! Quer que eu verifique as taxas para você?";
     }
-    // --- FIM DA NOVA LÓGICA ---
 
-    // Lógica original de busca de empreendimentos (mantida)
     revistasData.forEach(prop => {
         if (prop.aliases.some(alias => input.includes(normalizeString(alias)))) {
             if (!matchedProperties.some(p => p.id === prop.id)) {
@@ -345,7 +375,6 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
         setChatMessages(novasMensagens);
         setIsChatLoading(true);
 
-        // Verifica se é comando de pasta (mantém offline)
         if (userMessage.toLowerCase().includes('criar pasta') || userMessage.toLowerCase().includes('pasta do cliente') || userMessage.toLowerCase().includes('subir pasta')) {
             setIsCreatingFolder(true);
             setChatMessages(prev => [...prev, { role: 'bot', content: "Com certeza! Modo **Criar Pasta do Cliente** ativado! 📂✨\n\nÉ só clicar no botão de anexo ou arrastar os documentos pra cá. Vou te ajudar a organizar tudo na ordem certinha para o seu PDF sair perfeito!" }]);
@@ -354,7 +383,7 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
         }
 
         try {
-            const historico = novasMensagens.slice(-4); // últimas 4 mensagens (evita 413 Content Too Large na Groq)
+            const historico = novasMensagens.slice(-4);
             const responseText = await buscarRespostaGemini(userMessage, historico.slice(0, -1));
             setChatMessages(prev => [...prev, { role: 'bot', content: responseText }]);
         } catch (e) {
@@ -377,6 +406,7 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
             canvas.height = viewport.height;
             const ctx = canvas.getContext('2d');
             await page.render({ canvasContext: ctx, viewport }).promise;
+            page.cleanup();
             return canvas.toDataURL('image/jpeg', 0.8);
         } catch (e) {
             return null;
@@ -408,11 +438,253 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
         if (fileInputRef.current) fileInputRef.current.value = '';
     };
 
+    // =========================================================
+    // PASTA RÁPIDA — OpenRouter com roteador automático
+    // =========================================================
+    const OPENROUTER_KEY = process.env.REACT_APP_OPENROUTER_KEY;
+
+    // Modelos tentados em ordem — openrouter/auto primeiro (escolhe o melhor disponível)
+    const VISION_MODELS = [
+        'openrouter/auto',
+        'meta-llama/llama-3.2-11b-vision-instruct:free',
+        'google/gemma-3-27b-it:free',
+    ];
+
+    const ORDER_MAP = {
+        rg: 1, cnh: 2, oab: 3, creci: 4, cpf: 5,
+        residencia: 6,
+        certidao_casamento: 7, certidao_nascimento: 8, certidao_obito: 9,
+        ctps: 10, contracheque: 11, imposto_renda: 12, extrato_bancario: 13, fgts: 14,
+        outros: 99
+    };
+
+    const CLASSIFY_PROMPT = `Você é especialista em classificar documentos brasileiros. Analise esta imagem com atenção — pode ser foto de celular, com ângulo ou parcialmente visível.
+
+Responda APENAS com JSON válido, sem texto adicional: {"category":"CATEGORIA","label":"NOME DO DOCUMENTO"}
+
+CATEGORIAS POSSÍVEIS:
+- "rg" → RG ou Identidade: tem foto 3x4, impressão digital, número de RG, campos Nome/Filiação/Naturalidade
+- "cnh" → CNH: tem foto do motorista, logo DETRAN, letras de categoria (A B C D E), validade
+- "cpf" → CPF: tem número no formato XXX.XXX.XXX-XX, texto "Cadastro de Pessoas Físicas" ou "Receita Federal"
+- "oab" → OAB: tem logo da OAB, texto "Ordem dos Advogados do Brasil"
+- "creci" → CRECI: tem logo CRECI, texto "Conselho Regional de Corretores de Imóveis"
+- "residencia" → Comprovante de Residência: conta de luz, água, gás ou internet. Tem endereço completo com CEP, código de barras, data de vencimento, valor a pagar
+- "certidao_casamento" → Certidão de Casamento: tem texto "CERTIDÃO DE CASAMENTO", nome do cartório, nomes dos cônjuges
+- "certidao_nascimento" → Certidão de Nascimento: tem texto "CERTIDÃO DE NASCIMENTO", nome do cartório
+- "certidao_obito" → Certidão de Óbito: tem texto "CERTIDÃO DE ÓBITO", data de falecimento
+- "ctps" → Carteira de Trabalho: tem texto "CARTEIRA DE TRABALHO E PREVIDÊNCIA SOCIAL" ou "CTPS Digital", logo Governo Federal
+- "contracheque" → Contracheque ou Holerite: tem tabela com colunas Vencimentos e Descontos, valores de INSS, FGTS, salário base, total líquido
+- "imposto_renda" → Imposto de Renda: tem texto "DECLARAÇÃO DE AJUSTE ANUAL" ou "DIRPF", logo Receita Federal
+- "extrato_bancario" → Extrato Bancário: tem logo de banco (Caixa, Bradesco, Itaú, Nubank, Banco do Brasil, Santander, Inter), lista de transações, saldo, agência e conta
+- "fgts" → FGTS: tem logo "CAIXA" junto com "FGTS", número PIS/PASEP, tabela de depósitos mensais, "Valor para Fins Rescisórios"
+- "outros" → use apenas se não se encaixar em nenhuma categoria acima
+
+IMPORTANTE: Seja generoso na classificação. Se há qualquer indicação visual de uma categoria, classifique nela. Só use "outros" se realmente não der para identificar.
+
+Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
+
+    const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+
+    const pdfFirstPageToBase64 = async (arrayBuffer) => {
+        await waitForPdfJs();
+        const copy = arrayBuffer.slice(0);
+        const pdfDoc = await window.pdfjsLib.getDocument({ data: new Uint8Array(copy), password: '', disableRange: true, disableStream: true }).promise;
+        const page = await pdfDoc.getPage(1);
+        // Escala 2.0 original — necessária para a IA identificar o documento corretamente
+        const viewport = page.getViewport({ scale: 2.0 });
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.floor(viewport.width);
+        canvas.height = Math.floor(viewport.height);
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        await page.render({ canvasContext: ctx, viewport }).promise;
+        page.cleanup();
+        // Qualidade 0.85 original — necessária para a IA ler o texto do documento
+        return canvas.toDataURL('image/jpeg', 0.85).split(',')[1];
+    };
+
+    const fileToBase64 = (arrayBuffer) => {
+        const bytes = new Uint8Array(arrayBuffer);
+        let binary = '';
+        for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i]);
+        return btoa(binary);
+    };
+
+    // ✅ OTIMIZAÇÃO: timeout de 12s por modelo para não travar indefinidamente
+    const tryModel = async (model, b64, mime) => {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 12000);
+
+        try {
+            const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+                method: 'POST',
+                signal: controller.signal,
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${OPENROUTER_KEY}`,
+                    'HTTP-Referer': window.location.origin,
+                    'X-Title': 'Destemidos Imoveis'
+                },
+                body: JSON.stringify({
+                    model,
+                    max_tokens: 100,
+                    temperature: 0.1,
+                    messages: [{
+                        role: 'user',
+                        content: [
+                            { type: 'image_url', image_url: { url: `data:${mime};base64,${b64}` } },
+                            { type: 'text', text: CLASSIFY_PROMPT }
+                        ]
+                    }]
+                })
+            });
+
+            clearTimeout(timeoutId);
+
+            if (res.status === 429) {
+                // ✅ OTIMIZAÇÃO: aguarda apenas 2s em rate limit (era 8s)
+                console.warn(`Rate limit no modelo ${model}, aguardando 2s...`);
+                await sleep(2000);
+                return null;
+            }
+            if (!res.ok) {
+                const err = await res.text();
+                console.warn(`Modelo ${model} falhou (${res.status}):`, err.substring(0, 80));
+                return null;
+            }
+
+            const json = await res.json();
+            const text = json.choices?.[0]?.message?.content || '';
+            const match = text.match(/\{[^}]+\}/);
+            if (!match) { console.warn('Sem JSON na resposta:', text.substring(0, 80)); return null; }
+
+            const parsed = JSON.parse(match[0]);
+            const cat = parsed.category || 'outros';
+            return { category: cat, order: ORDER_MAP[cat] ?? 99, label: parsed.label || 'Outro Documento' };
+        } catch (err) {
+            clearTimeout(timeoutId);
+            if (err.name === 'AbortError') {
+                console.warn(`Modelo ${model} ultrapassou timeout de 12s`);
+            } else {
+                console.warn(`Modelo ${model} erro:`, err.message);
+            }
+            return null;
+        }
+    };
+
+    const classifyDoc = async (file) => {
+        try {
+            const arrayBuffer = await file.arrayBuffer();
+            let b64, mime;
+            if (file.type === 'application/pdf') {
+                b64 = await pdfFirstPageToBase64(arrayBuffer);
+                mime = 'image/jpeg';
+            } else if (file.type.startsWith('image/')) {
+                b64 = fileToBase64(arrayBuffer);
+                mime = ['image/jpeg','image/png','image/webp','image/gif'].includes(file.type) ? file.type : 'image/jpeg';
+            } else {
+                return { category: 'outros', order: 99, label: 'Outro Documento' };
+            }
+
+            // ✅ OTIMIZAÇÃO: delay entre modelos reduzido (era 1000ms, agora 300ms)
+            for (const model of VISION_MODELS) {
+                const result = await tryModel(model, b64, mime);
+                if (result) {
+                    console.log(`✅ Modelo usado: ${model} → ${result.label}`);
+                    return result;
+                }
+                await sleep(300);
+            }
+
+            return { category: 'outros', order: 99, label: 'Outro Documento' };
+        } catch (err) {
+            console.error('Classify error:', err);
+            return { category: 'outros', order: 99, label: 'Outro Documento' };
+        }
+    };
+
+    // ✅ OTIMIZAÇÃO PRINCIPAL: processa em lotes de 3 em paralelo
+    // Muito mais rápido que sequencial, sem sobrecarregar a API
+    const classifyInBatches = async (docs, batchSize = 3) => {
+        const results = new Array(docs.length);
+        for (let i = 0; i < docs.length; i += batchSize) {
+            const batch = docs.slice(i, i + batchSize);
+            const batchResults = await Promise.all(
+                batch.map(async (doc, batchIdx) => {
+                    const globalIdx = i + batchIdx;
+                    setPendingDocs(prev => prev.map((d, idx) => idx === globalIdx ? { ...d, aiLabel: '🔍' } : d));
+                    setOrganizeProgress(prev => ({ ...prev, current: globalIdx + 1, label: doc.name.length > 22 ? doc.name.substring(0, 22) + '…' : doc.name }));
+                    const result = await classifyDoc(doc.file);
+                    const done = { ...doc, aiLabel: result.label, aiOrder: result.order };
+                    setPendingDocs(prev => prev.map((d, idx) => idx === globalIdx ? done : d));
+                    return done;
+                })
+            );
+            batchResults.forEach((r, batchIdx) => { results[i + batchIdx] = r; });
+            // ✅ Pequena pausa entre lotes para não saturar a API
+            if (i + batchSize < docs.length) await sleep(500);
+        }
+        return results;
+    };
+
+    const handleQuickFolderUpload = async (e) => {
+        const files = Array.from(e.target.files);
+        if (files.length === 0) return;
+        if (quickFolderInputRef.current) quickFolderInputRef.current.value = '';
+
+        if (!OPENROUTER_KEY) {
+            setIsChatOpen(true);
+            setChatMessages(prev => [...prev, {
+                role: 'bot',
+                content: '⚠️ **Pasta Rápida precisa da chave do OpenRouter.**\n\n1. Acesse: https://openrouter.ai\n2. Crie conta gratuita (sem cartão)\n3. Vá em **Settings → Keys** e crie uma chave\n4. Adicione no `.env`:\n```\nREACT_APP_OPENROUTER_KEY=sk-or-...\n```\n5. Reinicie com `npm start` 🔑'
+            }]);
+            return;
+        }
+
+        setIsCreatingFolder(true);
+        setIsOrganizingDocs(true);
+        setOrganizeProgress({ current: 0, total: files.length, label: 'Preparando...' });
+        setChatMessages(prev => [...prev, {
+            role: 'bot',
+            content: `🧠 **Pasta Rápida ativada!** ${files.length} documento${files.length > 1 ? 's' : ''} recebido${files.length > 1 ? 's' : ''}.\n\nAnalisando com IA... ✨`
+        }]);
+
+        // Gera previews dos NOVOS arquivos
+        const newDocsBase = await Promise.all(files.map(async (file) => {
+            let previewUrl = null;
+            if (file.type.startsWith('image/')) previewUrl = URL.createObjectURL(file);
+            else if (file.type === 'application/pdf') previewUrl = await generatePdfPreview(file);
+            return { id: Math.random().toString(36).substring(7), file, name: file.name, previewUrl, aiLabel: '⏳', aiOrder: 99 };
+        }));
+
+        // Adiciona os novos ao final dos existentes (sem apagar os já organizados)
+        setPendingDocs(prev => [...prev, ...newDocsBase]);
+
+        // Classifica SOMENTE os novos documentos
+        const classified = await classifyInBatches(newDocsBase, 3);
+
+        // Mescla os já existentes (organizados) com os novos classificados, depois re-ordena tudo
+        setPendingDocs(prev => {
+            const existingOrganized = prev.filter(d => d.aiLabel !== '⏳' && d.aiLabel !== '🔍' && !newDocsBase.some(n => n.id === d.id));
+            const merged = [...existingOrganized, ...classified];
+            return merged.sort((a, b) => (a.aiOrder ?? 99) - (b.aiOrder ?? 99));
+        });
+
+        setIsOrganizingDocs(false);
+        setOrganizeProgress({ current: 0, total: 0, label: '' });
+
+        const resumo = classified.map((d, i) => `${i + 1}. ${d.aiLabel}`).join('\n');
+        setChatMessages(prev => [...prev, {
+            role: 'bot',
+            content: `✅ **Novos documentos adicionados e organizados:**\n\n${resumo}\n\nAjuste arrastando se precisar e clique em **Finalizar PDF**! 📄`
+        }]);
+    };
+
     const handleDragStart = (e, index) => {
         setDraggedItemIndex(index);
         setIsDraggingActive(true);
         e.dataTransfer.effectAllowed = "move";
-        // Ghost customizado transparente
         const ghost = document.createElement('div');
         ghost.style.position = 'absolute';
         ghost.style.top = '-9999px';
@@ -490,7 +762,6 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
         setDragGhostPos({ x: 0, y: 0 });
     };
 
-    // Garante que o pdf.js está pronto (worker configurado) antes de usar
     const waitForPdfJs = () => new Promise((resolve, reject) => {
         if (window.pdfjsLib && window.pdfjsLib.GlobalWorkerOptions.workerSrc) return resolve();
         let tries = 0;
@@ -498,18 +769,15 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
             if (window.pdfjsLib && window.pdfjsLib.GlobalWorkerOptions.workerSrc) {
                 clearInterval(interval);
                 resolve();
-            } else if (++tries > 40) { // 4 segundos
+            } else if (++tries > 40) {
                 clearInterval(interval);
                 reject(new Error('pdf.js não carregou'));
             }
         }, 100);
     });
 
-    // Renderiza TODAS as páginas de qualquer PDF via pdf.js → canvas offscreen → PNG bytes
-    // Funciona com PDFs normais, encriptados, assinados digitalmente (CTPS, Dataprev, etc.)
     const pdfToImageBytes = async (arrayBuffer) => {
         await waitForPdfJs();
-        // Copia o buffer pois pdf.js pode consumi-lo
         const dataCopy = arrayBuffer.slice(0);
         const loadingTask = window.pdfjsLib.getDocument({
             data: new Uint8Array(dataCopy),
@@ -521,23 +789,19 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
         const pages = [];
         for (let pageNum = 1; pageNum <= pdfDoc.numPages; pageNum++) {
             const page = await pdfDoc.getPage(pageNum);
-            // Escala 2.0 = ~144 DPI, boa qualidade sem arquivo enorme
             const viewport = page.getViewport({ scale: 2.0 });
             const canvas = document.createElement('canvas');
             canvas.width  = Math.floor(viewport.width);
             canvas.height = Math.floor(viewport.height);
             const ctx = canvas.getContext('2d');
-            // Fundo branco (evita transparência virar preto no PDF final)
             ctx.fillStyle = '#ffffff';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
             await page.render({ canvasContext: ctx, viewport }).promise;
-            // canvas → PNG → Uint8Array
             const dataUrl = canvas.toDataURL('image/png');
             const base64  = dataUrl.split(',')[1];
             const binaryStr = atob(base64);
             const bytes = new Uint8Array(binaryStr.length);
             for (let i = 0; i < binaryStr.length; i++) bytes[i] = binaryStr.charCodeAt(i);
-            // Dimensões em pontos PDF (72 DPI) = pixels / 2 (escala 2x)
             pages.push({ bytes, widthPt: canvas.width / 2, heightPt: canvas.height / 2 });
             page.cleanup();
         }
@@ -558,8 +822,6 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
                 const arrayBuffer = await doc.file.arrayBuffer();
 
                 if (doc.file.type === 'application/pdf') {
-                    // Todo PDF passa pelo pdf.js → canvas → PNG para suportar
-                    // PDFs encriptados/assinados (CTPS Dataprev, holerites, etc.)
                     const pages = await pdfToImageBytes(arrayBuffer);
                     for (const pg of pages) {
                         const embedded = await mergedPdf.embedPng(pg.bytes);
@@ -609,6 +871,8 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
             setIsFinalizingFolder(false);
             setShowThumbsUp(true);
             setTimeout(() => setShowThumbsUp(false), 2800);
+            setShowLightning(true);
+            setTimeout(() => setShowLightning(false), 2800);
         } catch (error) {
             console.error('Erro ao gerar PDF:', error);
             setChatMessages(prev => [...prev, { role: 'bot', content: `Ops, algo não deu certo ao gerar o arquivo. 😕\n\nDetalhe: ${error.message || 'erro desconhecido'}` }]);
@@ -782,7 +1046,7 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
                     </nav>
                 </div>
 
-                {/* FILTROS DE ZONA — abaixo das abas, só quando Direcional/Riva */}
+                {/* FILTROS DE ZONA */}
                 {(activeBrand === 'Direcional' || activeBrand === 'Riva') && (
                     <div className="flex items-center gap-1.5 flex-wrap py-3 mb-5">
                         {ZONES.map(z => {
@@ -994,7 +1258,7 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
                 </div>
             )}
 
-            {/* --- ÍCONE DO ROBÔ E BALÃO AMIGÁVEL COM LÓGICA DE RECOLHER NO SCROLL --- */}
+            {/* --- ÍCONE DO ROBÔ E BALÃO AMIGÁVEL --- */}
             <div className={`fixed bottom-8 right-8 z-40 flex flex-row items-end gap-3 transition-all duration-500 ${isChatOpen ? 'scale-0 opacity-0 pointer-events-none' : 'scale-100 opacity-100'}`}>
                 <div 
                     className={`px-5 py-3 rounded-2xl shadow-xl border relative flex items-center gap-2 group cursor-pointer transition-all duration-500 origin-bottom-right ${
@@ -1035,6 +1299,15 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
                     .animate-slide-up { animation: slide-up 0.3s cubic-bezier(0.34,1.2,0.64,1) both; }
                     @keyframes thumbsup { 0% { transform: scale(0) rotate(-20deg); opacity: 0; } 30% { transform: scale(1.3) rotate(8deg); opacity: 1; } 60% { transform: scale(1.1) rotate(-4deg); } 80% { transform: scale(1.15) rotate(2deg); opacity: 1; } 100% { transform: scale(1) rotate(0deg) translateY(-40px); opacity: 0; } }
                     .animate-thumbsup { animation: thumbsup 2.6s cubic-bezier(0.34,1.2,0.64,1) forwards; }
+                    @keyframes lightning-bolt { 0% { transform: scale(0) rotate(-15deg); opacity: 0; filter: brightness(1); } 15% { transform: scale(1.4) rotate(5deg); opacity: 1; filter: brightness(2.5) drop-shadow(0 0 30px #fbbf24) drop-shadow(0 0 60px #f97316); } 35% { transform: scale(1.1) rotate(-3deg); opacity: 1; filter: brightness(3) drop-shadow(0 0 40px #fbbf24) drop-shadow(0 0 80px #ef4444); } 55% { transform: scale(1.25) rotate(8deg); opacity: 1; filter: brightness(2) drop-shadow(0 0 50px #f59e0b); } 80% { transform: scale(1.15) rotate(0deg); opacity: 0.9; filter: brightness(2.5) drop-shadow(0 0 60px #fbbf24); } 100% { transform: scale(0.8) rotate(-5deg) translateY(-60px); opacity: 0; filter: brightness(1); } }
+                    .animate-lightning { animation: lightning-bolt 2.4s cubic-bezier(0.34,1.2,0.64,1) forwards; }
+                    @keyframes flash-bg { 0%, 100% { opacity: 0; } 10% { opacity: 0.35; } 20% { opacity: 0; } 30% { opacity: 0.25; } 45% { opacity: 0; } 60% { opacity: 0.15; } 75% { opacity: 0; } }
+                    .animate-flash { animation: flash-bg 2.4s ease-out forwards; }
+                    @keyframes light-sweep { 0% { left: -60%; opacity: 0; } 10% { opacity: 1; } 60% { left: 130%; opacity: 0.7; } 100% { left: 130%; opacity: 0; } }
+                    .pasta-rapida-btn::after { content: ''; position: absolute; top: 0; left: -60%; width: 40%; height: 100%; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.55), transparent); transform: skewX(-20deg); animation: light-sweep 1.4s ease-in-out infinite; pointer-events: none; border-radius: inherit; }
+                    @keyframes pr-pulse { 0%, 100% { box-shadow: 0 0 0 3px rgba(249,115,22,0.35), 0 0 20px 6px rgba(249,115,22,0.45), 0 2px 8px rgba(0,0,0,0.2); transform: scale(1); } 50% { box-shadow: 0 0 0 5px rgba(249,115,22,0.2), 0 0 28px 10px rgba(249,115,22,0.6), 0 2px 8px rgba(0,0,0,0.2); transform: scale(1.04); } }
+                    @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+                    @keyframes pr-pulse { 0%, 100% { box-shadow: 0 0 0 2px rgba(249,115,22,0.4), 0 0 12px rgba(249,115,22,0.5); transform: scale(1); } 50% { box-shadow: 0 0 0 4px rgba(249,115,22,0.25), 0 0 22px rgba(249,115,22,0.7); transform: scale(1.04); } }
                 `}} />
             </div>
 
@@ -1097,18 +1370,17 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
                 {isCreatingFolder && (
                     <div className={`flex-1 overflow-hidden flex flex-col transition-colors ${modoNoturno ? 'bg-slate-900' : 'bg-slate-50'}`}>
 
-                        {/* HEADER — fora do scroll, nunca some */}
                         <div className={`shrink-0 border-b transition-colors ${modoNoturno ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-100'}`}>
                             <div className={`flex items-center justify-between px-3 py-2 border-b ${modoNoturno ? 'border-slate-700' : 'border-slate-100'}`}>
                                 <h3 className={`font-black text-sm flex items-center gap-2 ${modoNoturno ? 'text-white' : 'text-slate-800'}`}>
-                                    <FolderPlus className="text-indigo-600" size={16} />
+                                    <FolderPlus className="text-orange-500" size={16} />
                                     Criar Pasta do Cliente
                                 </h3>
-                                <button onClick={() => { haptic(); setIsCreatingFolder(false); }} className={`text-[10px] font-black uppercase tracking-wider px-3 py-1.5 rounded-lg border transition-all flex items-center gap-1 ${modoNoturno ? 'bg-slate-700 border-slate-600 text-indigo-300 hover:bg-slate-600' : 'bg-indigo-50 text-indigo-600 border-indigo-100 hover:bg-indigo-100'}`}>
+                                <button onClick={() => { haptic(); setIsCreatingFolder(false); }} className={`text-[10px] font-black uppercase tracking-wider px-3 py-1.5 rounded-lg border transition-all flex items-center gap-1 ${modoNoturno ? 'bg-slate-700 border-slate-600 text-orange-300 hover:bg-slate-600' : 'bg-orange-50 text-orange-600 border-orange-100 hover:bg-orange-100'}`}>
                                     ← Chat
                                 </button>
                             </div>
-                            <div className={`px-3 py-1.5 text-[9px] flex flex-wrap gap-x-2 gap-y-0.5 ${modoNoturno ? 'text-slate-400' : 'text-indigo-700'}`}>
+                            <div className={`px-3 py-1.5 text-[9px] flex flex-wrap gap-x-2 gap-y-0.5 ${modoNoturno ? 'text-slate-400' : 'text-orange-700'}`}>
                                 <span className="font-black">📋 Ordem:</span>
                                 <span><b>1º</b> RG · CPF · Certidão · Residência</span>
                                 <span><b>2º</b> CTPS · Contracheque · Extrato · FGTS</span>
@@ -1116,8 +1388,27 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
                             </div>
                         </div>
 
-                        {/* DOCUMENTOS — área scrollável */}
                         <div className="flex-1 overflow-y-auto custom-scrollbar p-3">
+                            {isOrganizingDocs && (
+                                <div className="flex flex-col items-center justify-center gap-3 py-6">
+                                    <div className="relative w-14 h-14">
+                                        <div className="w-14 h-14 rounded-full border-4 border-orange-100 border-t-orange-500 animate-spin"></div>
+                                        <Sparkles size={20} className="absolute inset-0 m-auto text-orange-500" />
+                                    </div>
+                                    <p className="font-black text-sm text-orange-500 uppercase tracking-wider">IA analisando...</p>
+                                    {organizeProgress.total > 0 && (
+                                        <div className="w-56 flex flex-col items-center gap-2">
+                                            <div className={`w-full h-2 rounded-full overflow-hidden ${modoNoturno ? 'bg-slate-700' : 'bg-orange-100'}`}>
+                                                <div className="h-2 rounded-full bg-orange-500 transition-all duration-500"
+                                                    style={{ width: `${(organizeProgress.current / organizeProgress.total) * 100}%` }} />
+                                            </div>
+                                            <p className={`text-[10px] font-bold text-center ${modoNoturno ? 'text-slate-400' : 'text-slate-500'}`}>
+                                                {organizeProgress.current}/{organizeProgress.total} — {organizeProgress.label}
+                                            </p>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
                             <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-2.5">
                                 {pendingDocs.map((doc, index) => (
                                     <div
@@ -1132,8 +1423,8 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
                                         onTouchMove={handleTouchMove}
                                         onTouchEnd={handleTouchEnd}
                                         onClick={() => { if (!isDraggingActive) { haptic('light'); setFullscreenDoc(doc); } }}
-                                        className={`relative group border-2 border-dashed ${draggedItemIndex === index ? 'border-indigo-400 scale-90 opacity-30 rotate-3' : (modoNoturno ? 'border-transparent bg-slate-800 hover:border-indigo-500' : 'border-transparent bg-white hover:border-indigo-300')} rounded-xl overflow-hidden shadow-sm hover:shadow-lg transition-all aspect-[3/4] flex flex-col cursor-move`}>
-                                        <div className="absolute top-1 left-1 bg-indigo-900/80 text-white text-[9px] font-black w-5 h-5 flex items-center justify-center rounded-md z-10 backdrop-blur-sm">{index + 1}</div>
+                                        className={`relative group border-2 border-dashed ${draggedItemIndex === index ? 'border-orange-400 scale-90 opacity-30 rotate-3' : (modoNoturno ? 'border-transparent bg-slate-800 hover:border-orange-500' : 'border-transparent bg-white hover:border-orange-300')} rounded-xl overflow-hidden shadow-sm hover:shadow-lg transition-all aspect-[3/4] flex flex-col cursor-move`}>
+                                        <div className="absolute top-1 left-1 bg-orange-900/80 text-white text-[9px] font-black w-5 h-5 flex items-center justify-center rounded-md z-10 backdrop-blur-sm">{index + 1}</div>
                                         <button onClick={(e) => { e.stopPropagation(); haptic('heavy'); removeDoc(doc.id); }} className="absolute top-1 right-1 bg-red-500 text-white p-1 rounded-lg opacity-0 group-hover:opacity-100 active:opacity-100 transition-all z-10 hover:bg-red-600 shadow-lg"><Trash2 size={11} /></button>
                                         <div className={`flex-1 flex items-center justify-center overflow-hidden relative ${modoNoturno ? 'bg-slate-950' : 'bg-slate-100'}`}>
                                             {doc.previewUrl ? (
@@ -1150,20 +1441,21 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
                                                 </div>
                                             )}
                                         </div>
-                                        <div className={`p-1.5 border-t text-[8px] font-bold truncate text-center uppercase tracking-tight ${modoNoturno ? 'bg-slate-800 border-slate-700 text-slate-400' : 'bg-white border-slate-50 text-slate-500'}`}>{doc.name}</div>
+                                        <div className={`p-1.5 border-t text-[8px] font-bold truncate text-center uppercase tracking-tight ${modoNoturno ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-50'} ${doc.aiLabel && doc.aiLabel !== 'Outro Documento' && doc.aiLabel !== '⏳' && doc.aiLabel !== '🔍' ? 'text-orange-500' : (modoNoturno ? 'text-slate-400' : 'text-slate-500')}`}>
+                                            {doc.aiLabel || doc.name}
+                                        </div>
                                     </div>
                                 ))}
-                                <button onClick={() => { haptic(); fileInputRef.current?.click(); }} className={`aspect-[3/4] rounded-xl border-2 border-dashed flex flex-col items-center justify-center cursor-pointer transition-all shadow-sm ${modoNoturno ? 'bg-slate-800 border-slate-700 text-slate-500 hover:border-indigo-500 hover:bg-slate-700 hover:text-indigo-400' : 'bg-white border-indigo-200 text-indigo-400 hover:border-indigo-500 hover:bg-indigo-50/50'}`}>
+                                <button onClick={() => { haptic(); fileInputRef.current?.click(); }} className={`aspect-[3/4] rounded-xl border-2 border-dashed flex flex-col items-center justify-center cursor-pointer transition-all shadow-sm ${modoNoturno ? 'bg-slate-800 border-slate-700 text-slate-500 hover:border-orange-500 hover:bg-slate-700 hover:text-orange-400' : 'bg-white border-orange-200 text-orange-400 hover:border-orange-500 hover:bg-orange-50/50'}`}>
                                     <Plus size={20} className="mb-1" />
                                     <span className="text-[9px] font-black text-center leading-tight uppercase tracking-widest">Adicionar<br/>Arquivo</span>
                                 </button>
                             </div>
                         </div>
 
-                        {/* BOTÃO FINALIZAR — fora do scroll, nunca some */}
                         {pendingDocs.length > 0 && (
                             <div className={`shrink-0 px-3 py-2.5 border-t flex justify-end ${modoNoturno ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-100'}`}>
-                                <button onClick={() => { haptic('medium'); setIsFinalizingFolder(true); }} className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2.5 rounded-2xl font-black text-xs uppercase tracking-widest shadow-lg hover:-translate-y-0.5 transition-all flex items-center gap-2">
+                                <button onClick={() => { haptic('medium'); setIsFinalizingFolder(true); }} className="bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white px-6 py-2.5 rounded-2xl font-black text-xs uppercase tracking-widest shadow-lg shadow-orange-400/30 hover:-translate-y-0.5 transition-all flex items-center gap-2 pasta-rapida-btn relative overflow-hidden">
                                     <Wand2 size={16} /> Finalizar PDF
                                 </button>
                             </div>
@@ -1173,14 +1465,36 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
 
                 <div className={`border-t rounded-b-3xl shrink-0 flex flex-col transition-colors ${isCreatingFolder ? 'hidden' : ''} ${modoNoturno ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-50'}`}>
                     <div className="px-3 pt-2.5 pb-2 flex gap-1.5 items-center overflow-x-auto custom-scrollbar">
-                        {/* Botão Subir Pasta — destaque */}
                         <button onClick={() => { haptic(); setIsCreatingFolder(true); fileInputRef.current?.click(); }}
                             className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider transition-all bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm shadow-indigo-300/40">
                             <FolderPlus size={12} /> Pasta
                         </button>
-                        {/* Separador */}
+                        <button
+                            onClick={(e) => {
+                                haptic('medium');
+                                const clicks = pastaRapidaClicksRef.current;
+                                if (clicks < 5) {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    pastaRapidaClicksRef.current = clicks + 1;
+                                    localStorage.setItem('dst_pr_clicks', String(clicks + 1));
+                                    setShowPastaRapidaInfo(true);
+                                } else {
+                                    quickFolderInputRef.current?.click();
+                                }
+                            }}
+                            className="shrink-0 flex items-center gap-1.5 px-4 py-2 rounded-full text-[11px] font-black uppercase tracking-wider transition-all text-white relative overflow-hidden"
+                            style={{
+                                background: 'linear-gradient(135deg, #f97316 0%, #ef4444 50%, #f59e0b 100%)',
+                                boxShadow: '0 0 0 3px rgba(249,115,22,0.35), 0 0 20px 6px rgba(249,115,22,0.45), 0 2px 8px rgba(0,0,0,0.2)',
+                                animation: 'pr-pulse 1.6s ease-in-out infinite',
+                            }}>
+                            <span className="absolute inset-0 pasta-rapida-btn pointer-events-none" style={{borderRadius:'9999px'}}></span>
+                            <Sparkles size={13} className="shrink-0 relative z-10" style={{filter:'drop-shadow(0 0 5px rgba(255,255,255,0.9))', animation:'spin 3s linear infinite'}} />
+                            <span className="relative z-10" style={{textShadow:'0 1px 6px rgba(0,0,0,0.35)', letterSpacing:'0.08em'}}>Pasta Rápida IA</span>
+                        </button>
+                        <input type="file" ref={quickFolderInputRef} onChange={handleQuickFolderUpload} multiple accept="image/*,application/pdf" className="hidden" />
                         <div className={`shrink-0 w-px h-4 ${modoNoturno ? 'bg-slate-600' : 'bg-slate-200'}`}></div>
-                        {/* Sugestões rápidas na mesma linha */}
                         {[
                             { label: 'Docs CLT', msg: 'Documentos para CLT' },
                             { label: 'Autônomo', msg: 'Documentos para autônomo' },
@@ -1211,7 +1525,7 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
                                 onChange={(e) => setChatInput(e.target.value)} 
                                 onKeyDown={(e) => e.key === 'Enter' && handleSendChatMessage()} 
                                 placeholder="Posso te ajudar com algo?" 
-                                className={`w-full rounded-2xl px-5 py-3 text-base focus:outline-none focus:ring-2 focus:ring-indigo-600/20 transition-all ${modoNoturno ? 'bg-slate-900 text-white border border-slate-700 placeholder-slate-500' : 'bg-slate-100 text-slate-800 placeholder-slate-400 border-transparent'}`} 
+                                className={`w-full rounded-2xl px-5 py-3 pr-14 text-base focus:outline-none focus:ring-2 focus:ring-indigo-600/20 transition-all ${modoNoturno ? 'bg-slate-900 text-white border border-slate-700 placeholder-slate-500' : 'bg-slate-100 text-slate-800 placeholder-slate-400 border-transparent'}`} 
                                 disabled={isChatLoading} 
                             />
                             <button onClick={() => { haptic('medium'); handleSendChatMessage(); }} disabled={!chatInput.trim() || isChatLoading} className="absolute right-2 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-200 text-white p-2.5 rounded-xl transition-all flex items-center justify-center shadow-md"><Send className="w-4 h-4" /></button>
@@ -1226,7 +1540,7 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
                     <div className={`rounded-3xl w-full max-w-sm overflow-hidden shadow-2xl p-7 relative flex flex-col gap-5 transform transition-all ${modoNoturno ? 'bg-slate-800' : 'bg-white'}`} onClick={e => e.stopPropagation()}>
                         <button onClick={() => setIsFinalizingFolder(false)} className={`absolute top-5 right-5 p-1.5 rounded-xl transition-all ${modoNoturno ? 'text-slate-500 hover:text-white hover:bg-slate-700' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-50'}`}><X size={20} /></button>
                         <div className={`flex items-center gap-4 mb-2 border-b pb-5 ${modoNoturno ? 'border-slate-700' : 'border-slate-50'}`}>
-                            <div className="bg-indigo-100 p-3 rounded-2xl"><FileIcon className="text-indigo-600" size={24} /></div>
+                            <div className="bg-orange-100 p-3 rounded-2xl"><FileIcon className="text-orange-600" size={24} /></div>
                             <div>
                                 <h3 className={`font-black text-lg leading-tight uppercase tracking-tight ${modoNoturno ? 'text-white' : 'text-slate-800'}`}>Salvar Pasta</h3>
                                 <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Dê um nome ao seu PDF</p>
@@ -1240,27 +1554,48 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
                                 onChange={(e) => setPdfFileName(e.target.value)} 
                                 className={`w-full text-base border-2 rounded-2xl px-5 py-4 font-bold transition-all focus:outline-none focus:ring-8 focus:ring-indigo-500/5 ${
                                     modoNoturno 
-                                    ? 'bg-slate-900 border-slate-700 text-white focus:border-indigo-500' 
-                                    : 'bg-slate-50 border-slate-100 text-slate-800 focus:border-indigo-500'
+                                    ? 'bg-slate-900 border-slate-700 text-white focus:border-orange-500' 
+                                    : 'bg-slate-50 border-slate-100 text-slate-800 focus:border-orange-500'
                                 }`} 
                                 placeholder="Ex: Pasta_Joao_Silva" 
                                 autoFocus 
                             />
                         </div>
-                        <button onClick={() => { haptic('success'); generateClientPDF(); }} disabled={isChatLoading} className="w-full mt-2 text-xs bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-4 rounded-2xl font-black uppercase tracking-widest transition-all shadow-xl hover:shadow-indigo-200/50 hover:-translate-y-1 disabled:opacity-50 flex items-center justify-center gap-3">
+                        <button onClick={() => { haptic('success'); generateClientPDF(); }} disabled={isChatLoading} className="w-full mt-2 text-xs bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white px-6 py-4 rounded-2xl font-black uppercase tracking-widest transition-all shadow-xl shadow-orange-300/40 hover:-translate-y-1 disabled:opacity-50 flex items-center justify-center gap-3 pasta-rapida-btn relative overflow-hidden">
                             {isChatLoading ? <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div> : <><Wand2 size={20} /> Baixar PDF Unificado</>}
                         </button>
                     </div>
                 </div>
             )}
 
-
-
-
-            {/* ANIMAÇÃO 👍 PÓS-DOWNLOAD */}
-            {showThumbsUp && (
+            {/* ANIMAÇÃO ⚡ RELÂMPAGO PÓS-DOWNLOAD */}
+            {showLightning && (
                 <div className="fixed inset-0 z-[80] flex items-center justify-center pointer-events-none">
-                    <div className="animate-thumbsup text-[120px] select-none drop-shadow-2xl">👍</div>
+                    {/* Flash de fundo laranja */}
+                    <div className="absolute inset-0 bg-gradient-to-br from-yellow-400/40 via-orange-500/30 to-red-500/20 animate-flash"></div>
+                    {/* Raios de luz espalhados */}
+                    <div className="absolute inset-0 flex items-center justify-center">
+                        {[0,45,90,135,180,225,270,315].map((deg, i) => (
+                            <div key={i} className="absolute w-1 rounded-full animate-flash"
+                                style={{
+                                    height: `${60 + (i % 3) * 30}px`,
+                                    background: 'linear-gradient(to bottom, #fbbf24, transparent)',
+                                    transform: `rotate(${deg}deg) translateY(-80px)`,
+                                    animationDelay: `${i * 0.05}s`,
+                                    opacity: 0.7,
+                                    filter: 'blur(1px)',
+                                }}
+                            />
+                        ))}
+                    </div>
+                    {/* Círculo de brilho */}
+                    <div className="absolute w-64 h-64 rounded-full animate-flash"
+                        style={{background: 'radial-gradient(circle, rgba(251,191,36,0.4) 0%, rgba(249,115,22,0.2) 50%, transparent 70%)'}}
+                    />
+                    {/* Relâmpago principal */}
+                    <div className="animate-lightning select-none" style={{fontSize: '140px', filter: 'drop-shadow(0 0 20px #fbbf24) drop-shadow(0 0 40px #f97316) drop-shadow(0 0 80px #ef4444)'}}>
+                        ⚡
+                    </div>
                 </div>
             )}
 
@@ -1275,8 +1610,8 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
                         transition: 'transform 0.1s ease',
                     }}
                 >
-                    <div className="w-16 h-20 rounded-xl overflow-hidden shadow-2xl border-2 border-indigo-400 bg-white"
-                        style={{ boxShadow: '0 12px 40px rgba(99,102,241,0.45), 0 2px 8px rgba(0,0,0,0.25)' }}
+                    <div className="w-16 h-20 rounded-xl overflow-hidden shadow-2xl border-2 border-orange-400 bg-white"
+                        style={{ boxShadow: '0 12px 40px rgba(249,115,22,0.45), 0 2px 8px rgba(0,0,0,0.25)' }}
                     >
                         {pendingDocs[draggedItemIndex].previewUrl ? (
                             <img src={pendingDocs[draggedItemIndex].previewUrl} alt="drag" className="w-full h-full object-cover" />
@@ -1287,8 +1622,7 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
                             </div>
                         )}
                     </div>
-                    {/* Sombra pulsante */}
-                    <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 w-10 h-3 rounded-full bg-indigo-500/30 blur-md animate-pulse"></div>
+                    <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 w-10 h-3 rounded-full bg-orange-500/30 blur-md animate-pulse"></div>
                 </div>
             )}
 
@@ -1302,10 +1636,9 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
                         className="relative w-full h-full flex flex-col items-center justify-center p-4"
                         onClick={e => e.stopPropagation()}
                     >
-                        {/* Header */}
                         <div className="absolute top-0 left-0 right-0 flex items-center justify-between px-5 py-4 bg-gradient-to-b from-black/80 to-transparent z-10">
                             <div className="flex items-center gap-3">
-                                <div className="bg-indigo-600 p-2 rounded-xl">
+                                <div className="bg-orange-600 p-2 rounded-xl">
                                     <FileIcon size={16} className="text-white" />
                                 </div>
                                 <div>
@@ -1324,7 +1657,6 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
                             </button>
                         </div>
 
-                        {/* Conteúdo */}
                         <div className="w-full h-full flex items-center justify-center pt-16 pb-4">
                             {fullscreenDoc.previewUrl ? (
                                 <img
@@ -1346,8 +1678,62 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
                             )}
                         </div>
 
-                        {/* Fechar tocando fora */}
                         <p className="absolute bottom-5 left-0 right-0 text-center text-white/30 text-xs font-bold uppercase tracking-widest pointer-events-none">Toque fora para fechar</p>
+                    </div>
+                </div>
+            )}
+
+            {/* MODAL PASTA RÁPIDA — ATENÇÃO, LEIA! (5 primeiros cliques) */}
+            {showPastaRapidaInfo && (
+                <div className="fixed inset-0 bg-slate-900/75 backdrop-blur-sm z-[70] flex items-center justify-center p-4">
+                    <div className={`rounded-3xl w-full max-w-xs shadow-2xl overflow-hidden transform animate-slide-up ${modoNoturno ? 'bg-slate-800' : 'bg-white'}`}
+                        onClick={e => e.stopPropagation()}>
+                        {/* Header com shimmer */}
+                        <div className="bg-gradient-to-r from-orange-500 to-red-500 px-5 pt-5 pb-4 relative overflow-hidden">
+                            <span className="absolute inset-0 pasta-rapida-btn pointer-events-none" style={{borderRadius:0}}></span>
+                            <div className="relative z-10 text-center">
+                                <h2 className="text-white font-black text-2xl drop-shadow">⚠️ Atenção, leia!</h2>
+                            </div>
+                        </div>
+                        {/* Conteúdo resumido */}
+                        <div className="px-5 pt-4 pb-2">
+                            <div className={`rounded-2xl p-4 ${modoNoturno ? 'bg-slate-700/70' : 'bg-orange-50 border border-orange-100'}`}>
+                                <p className={`font-black text-sm mb-2 ${modoNoturno ? 'text-orange-300' : 'text-orange-600'}`}>O que é a Pasta Rápida?</p>
+                                <p className={`text-sm leading-relaxed ${modoNoturno ? 'text-slate-300' : 'text-slate-700'}`}>
+                                    Envie os documentos em <strong>qualquer formato</strong> e a IA <strong>identifica e organiza</strong> tudo automaticamente na ordem certa.
+                                </p>
+                                <p className={`text-sm leading-relaxed mt-2 ${modoNoturno ? 'text-slate-400' : 'text-slate-500'}`}>
+                                    Precisa mover algo? Só <strong>arrastar</strong> antes de gerar o PDF.
+                                </p>
+                            </div>
+                        </div>
+                        {/* Barra de progresso + botão */}
+                        <div className="px-5 pb-5 pt-3">
+                            {/* Barra de carregamento */}
+                            <div className={`w-full h-2 rounded-full mb-3 overflow-hidden ${modoNoturno ? 'bg-slate-700' : 'bg-slate-200'}`}>
+                                <div
+                                    className="h-2 rounded-full bg-gradient-to-r from-orange-500 to-amber-400 transition-all duration-1000 ease-linear"
+                                    style={{ width: `${((10 - pastaRapidaCountdown) / 10) * 100}%` }}
+                                />
+                            </div>
+                            <button
+                                disabled={pastaRapidaCountdown > 0}
+                                onClick={() => { setShowPastaRapidaInfo(false); setTimeout(() => quickFolderInputRef.current?.click(), 150); }}
+                                className={`w-full font-black text-sm uppercase tracking-widest py-3.5 rounded-2xl transition-all flex items-center justify-center gap-2 relative overflow-hidden ${
+                                    pastaRapidaCountdown > 0
+                                    ? (modoNoturno ? 'bg-slate-700 text-slate-500 cursor-not-allowed' : 'bg-slate-200 text-slate-400 cursor-not-allowed')
+                                    : 'bg-orange-500 hover:bg-orange-600 text-white shadow-lg shadow-orange-300/30 hover:-translate-y-0.5 pasta-rapida-btn'
+                                }`}>
+                                {pastaRapidaCountdown > 0 ? (
+                                    <span className="flex items-center gap-2">
+                                        <span className={`w-6 h-6 rounded-full text-xs font-black flex items-center justify-center shrink-0 ${modoNoturno ? 'bg-slate-600 text-slate-300' : 'bg-slate-300 text-slate-600'}`}>{pastaRapidaCountdown}</span>
+                                        Aguarde para continuar...
+                                    </span>
+                                ) : (
+                                    <><Sparkles size={15} /> Entendi, vamos lá!</>
+                                )}
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}

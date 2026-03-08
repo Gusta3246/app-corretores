@@ -1104,73 +1104,77 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
         <div className={`min-h-screen font-sans pb-12 relative transition-colors duration-500 ${modoNoturno ? 'bg-[#0B1120] text-slate-100' : 'bg-slate-50 text-slate-800'}`}
             onMouseMove={handleGlobalDragOver}
         >
-            {/* ── SAFE AREA UNIFICADA COM O HEADER ──────────────────────────
-                Uma única div fixed cobre do topo absoluto (notch) até onde
-                o header termina. Assim o backdrop-filter é UMA camada só,
-                sem emenda visível entre notch e header. ──────────────────── */}
+            {/* ── SAFE AREA NOTCH — faixa fina acima do header ── */}
             <div
                 aria-hidden="true"
-                className="fixed top-0 left-0 w-full z-[29] pointer-events-none"
+                className="fixed top-0 left-0 w-full z-[31] pointer-events-none"
                 style={{
-                    height: 'calc(env(safe-area-inset-top, 0px) + 65px)',
+                    height: 'env(safe-area-inset-top, 0px)',
                     background: modoNoturno ? 'rgba(15,23,42,0.70)' : 'rgba(255,255,255,0.75)',
                     backdropFilter: 'blur(24px) saturate(180%)',
                     WebkitBackdropFilter: 'blur(24px) saturate(180%)',
-                    transition: 'background 0.5s ease',
-                    borderBottom: modoNoturno ? '1px solid rgba(51,65,85,0.6)' : '1px solid rgba(226,232,240,0.6)',
-                    boxShadow: modoNoturno ? '0 1px 3px rgba(0,0,0,0.2)' : '0 1px 3px rgba(148,163,184,0.4)',
                 }}
             />
-            <header className="sticky z-30 transition-all duration-500 bg-transparent border-none shadow-none"
-                style={{ top: 'env(safe-area-inset-top, 0px)' }}>
-                <div className="max-w-5xl mx-auto px-4 py-3 sm:px-6 lg:px-8">
-                    <div className="flex flex-row items-center gap-3">
-                        {/* Logo + título */}
-                        <div className="flex items-center gap-3 shrink-0">
-                            <img src="https://i.postimg.cc/XpWRf9pj/logo.png" alt="Logo" className="h-9 w-auto object-contain rounded shrink-0" />
-                            <div className="hidden sm:block">
-                                <h1 className={`text-2xl font-black tracking-widest uppercase ${modoNoturno ? 'text-white' : 'text-slate-800'}`}>Destemidos</h1>
-                                <p className={`text-[10px] font-bold tracking-widest uppercase ${modoNoturno ? 'text-slate-400' : 'text-slate-400'}`}>A sorte favorece os ousados</p>
-                            </div>
-                            {/* Título compacto mobile */}
-                            <div className="sm:hidden">
-                                <h1 className={`text-lg font-black tracking-widest uppercase leading-tight ${modoNoturno ? 'text-white' : 'text-slate-800'}`}>Destemidos</h1>
+            <header
+                className="sticky z-30 transition-colors duration-500"
+                style={{
+                    top: 'env(safe-area-inset-top, 0px)',
+                    background: modoNoturno ? 'rgba(15,23,42,0.70)' : 'rgba(255,255,255,0.75)',
+                    backdropFilter: 'blur(24px) saturate(180%)',
+                    WebkitBackdropFilter: 'blur(24px) saturate(180%)',
+                    borderBottom: modoNoturno ? '1px solid rgba(51,65,85,0.6)' : '1px solid rgba(226,232,240,0.6)',
+                    boxShadow: modoNoturno ? '0 1px 8px rgba(0,0,0,0.25)' : '0 1px 8px rgba(148,163,184,0.3)',
+                }}>
+                <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+
+                    {/* MOBILE: logo+título centrado na linha 1, busca+noturno na linha 2
+                        DESKTOP: tudo em uma linha só */}
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:gap-4 sm:py-3">
+
+                        {/* Linha 1 mobile — Logo + Título centralizado */}
+                        <div className="flex items-center justify-center sm:justify-start gap-3 shrink-0 pt-3 pb-2 sm:py-0">
+                            <img src="https://i.postimg.cc/XpWRf9pj/logo.png" alt="Logo" className="h-10 w-auto object-contain rounded shrink-0" />
+                            <div>
+                                <h1 className={`text-xl font-black tracking-widest uppercase leading-tight ${modoNoturno ? 'text-white' : 'text-slate-800'}`}>Destemidos</h1>
                                 <p className={`text-[9px] font-bold tracking-widest uppercase ${modoNoturno ? 'text-slate-400' : 'text-slate-400'}`}>A sorte favorece os ousados</p>
                             </div>
                         </div>
-                        {/* Barra de pesquisa — sempre visível, expande no meio */}
-                        <div className={`flex-1 transition-all duration-300 ease-in-out ${searchBarVisible ? 'opacity-100' : 'opacity-0 pointer-events-none sm:opacity-100 sm:pointer-events-auto'}`}>
-                            <div className="relative">
+
+                        {/* Linha 2 mobile — Busca + Botão noturno ocupando largura total */}
+                        <div className={`flex items-center gap-2 pb-3 sm:pb-0 sm:flex-1 transition-all duration-300 ${
+                            searchBarVisible
+                            ? 'opacity-100 max-h-20'
+                            : 'opacity-0 max-h-0 overflow-hidden pointer-events-none sm:opacity-100 sm:max-h-none sm:pointer-events-auto'
+                        }`}>
+                            <div className="relative flex-1">
                                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                                     <Search className="h-4 w-4 text-gray-400" />
                                 </div>
                                 <input
                                     type="text"
                                     placeholder="Buscar por nome ou bairro..."
-                                    className={`block w-full pl-9 pr-3 py-2 border rounded-xl leading-5 transition-all text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/40 ${
+                                    className={`block w-full pl-9 pr-3 py-2.5 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 transition-all ${
                                         modoNoturno
-                                        ? 'bg-white/10 border-white/15 text-white placeholder-white/40 focus:bg-white/15'
-                                        : 'bg-black/5 border-black/8 text-slate-800 placeholder-slate-400 focus:bg-white/80'
+                                        ? 'bg-white/10 border border-white/15 text-white placeholder-white/40 focus:bg-white/15'
+                                        : 'bg-black/6 border border-black/8 text-slate-800 placeholder-slate-400 focus:bg-white/90'
                                     }`}
-                                    style={{ backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)' }}
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}
                                 />
                             </div>
+                            <button
+                                onClick={() => { haptic('medium'); const novo = !modoNoturno; setModoNoturno(novo); localStorage.setItem('modoNoturno', novo); }}
+                                className={`shrink-0 p-2.5 rounded-2xl border transition-all duration-300 hover:scale-105 ${
+                                    modoNoturno
+                                    ? 'bg-white/10 border-white/15 text-amber-300 hover:bg-white/20'
+                                    : 'bg-black/6 border-black/8 text-slate-600 hover:bg-black/10'
+                                }`}
+                                title={modoNoturno ? "Ativar Modo Claro" : "Ativar Modo Noturno"}
+                            >
+                                {modoNoturno ? <Sun size={20} /> : <Moon size={20} />}
+                            </button>
                         </div>
-                        {/* Botão modo noturno */}
-                        <button
-                            onClick={() => { haptic('medium'); const novo = !modoNoturno; setModoNoturno(novo); localStorage.setItem('modoNoturno', novo); }}
-                            className={`shrink-0 p-2 rounded-xl border transition-all duration-300 hover:scale-105 ${
-                                modoNoturno
-                                ? 'bg-white/10 border-white/15 text-amber-300 hover:bg-white/20'
-                                : 'bg-black/5 border-black/8 text-slate-600 hover:bg-black/10'
-                            }`}
-                            style={{ backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)' }}
-                            title={modoNoturno ? "Ativar Modo Claro" : "Ativar Modo Noturno"}
-                        >
-                            {modoNoturno ? <Sun size={18} /> : <Moon size={18} />}
-                        </button>
+
                     </div>
                 </div>
             </header>

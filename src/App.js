@@ -204,7 +204,7 @@ export default function App() {
     const [isChatLoading, setIsChatLoading] = useState(false);
     const messagesEndRef = useRef(null);
     const chatInputRef = useRef(null);
-
+    const headerRef = useRef(null);
     const [activeZone, setActiveZone] = useState(null);
     const [clientName, setClientName] = useState(() => localStorage.getItem('dst_client') || '');
     const [showPastaRapidaInfo, setShowPastaRapidaInfo] = useState(false);
@@ -214,6 +214,7 @@ export default function App() {
     // Hide search bar on mobile scroll down, show on scroll up
     const [searchBarVisible, setSearchBarVisible] = useState(true);
     const lastScrollY = useRef(0);
+
     useEffect(() => {
         const isMobile = () => window.innerWidth < 768;
         const onScroll = () => {
@@ -1104,21 +1105,16 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
         <div className={`min-h-screen font-sans pb-12 relative transition-colors duration-500 ${modoNoturno ? 'bg-[#0B1120] text-slate-100' : 'bg-slate-50 text-slate-800'}`}
             onMouseMove={handleGlobalDragOver}
         >
-            {/* ── SAFE AREA NOTCH — faixa fina acima do header ── */}
-            <div
-                aria-hidden="true"
-                className="fixed top-0 left-0 w-full z-[31] pointer-events-none"
-                style={{
-                    height: 'env(safe-area-inset-top, 0px)',
-                    background: modoNoturno ? 'rgba(15,23,42,0.70)' : 'rgba(255,255,255,0.75)',
-                    backdropFilter: 'blur(24px) saturate(180%)',
-                    WebkitBackdropFilter: 'blur(24px) saturate(180%)',
-                }}
-            />
+            {/* ── SAFE AREA + HEADER — camada única de vidro ────────────────
+                Um único elemento fixed parte do top:0 (cobre o notch) e tem
+                padding-top = env(safe-area-inset-top) para o conteúdo começar
+                abaixo do notch. Assim backdrop-filter é UMA camada só. ───── */}
             <header
-                className="sticky z-30 transition-colors duration-500"
+                ref={headerRef}
+                className="fixed left-0 right-0 z-30 transition-colors duration-500"
                 style={{
-                    top: 'env(safe-area-inset-top, 0px)',
+                    top: 0,
+                    paddingTop: 'env(safe-area-inset-top, 0px)',
                     background: modoNoturno ? 'rgba(15,23,42,0.70)' : 'rgba(255,255,255,0.75)',
                     backdropFilter: 'blur(24px) saturate(180%)',
                     WebkitBackdropFilter: 'blur(24px) saturate(180%)',
@@ -1126,9 +1122,6 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
                     boxShadow: modoNoturno ? '0 1px 8px rgba(0,0,0,0.25)' : '0 1px 8px rgba(148,163,184,0.3)',
                 }}>
                 <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-
-                    {/* MOBILE: logo+título centrado na linha 1, busca+noturno na linha 2
-                        DESKTOP: tudo em uma linha só */}
                     <div className="flex flex-col sm:flex-row sm:items-center sm:gap-4 sm:py-3">
 
                         {/* Linha 1 mobile — Logo + Título centralizado */}
@@ -1140,7 +1133,7 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
                             </div>
                         </div>
 
-                        {/* Linha 2 mobile — Busca + Botão noturno ocupando largura total */}
+                        {/* Linha 2 mobile — Busca + Botão noturno */}
                         <div className={`flex items-center gap-2 pb-3 sm:pb-0 sm:flex-1 transition-all duration-300 ${
                             searchBarVisible
                             ? 'opacity-100 max-h-20'
@@ -1179,7 +1172,7 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
                 </div>
             </header>
 
-            <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 mt-8">
+            <main className="main-content max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
                 {/* BANNER INSPIRAÇÃO DIÁRIA */}
                 <div className="mb-8 relative rounded-2xl overflow-hidden shadow-lg group">
                     <img src={imagemDoDia} onError={(e) => { e.target.src = '' }} alt="Equipe Destemidos" className="w-full h-64 sm:h-80 object-cover group-hover:scale-105 transition-transform duration-1000 bg-slate-200" style={{ objectPosition: `center ${bannerFocusY}` }} />
@@ -1542,6 +1535,9 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
                         .chat-mobile-full { top: auto !important; height: auto !important; }
                         .chat-folder-full { top: 12px !important; left: 12px !important; right: 12px !important; bottom: 12px !important; height: auto !important; border-radius: 1.5rem !important; }
                     }
+                    /* Padding do main para compensar o header fixed */
+                    .main-content { padding-top: 136px; }
+                    @media (min-width: 640px) { .main-content { padding-top: 80px; } }
                     /* Folder → Chat collapse/expand */
                     @keyframes folder-collapse-kf { 0% { opacity:1; transform: scaleY(1) translateY(0); } 40% { opacity:0.6; transform: scaleY(0.85) translateY(8px); } 100% { opacity:0; transform: scaleY(0.55) translateY(20px); } }
                     @keyframes folder-expand-kf  { 0% { opacity:0; transform: scaleY(0.55) translateY(20px); } 60% { opacity:1; transform: scaleY(1.03) translateY(-3px); } 100% { opacity:1; transform: scaleY(1) translateY(0); } }

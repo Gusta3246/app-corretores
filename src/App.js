@@ -1104,23 +1104,24 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
         <div className={`min-h-screen font-sans pb-12 relative transition-colors duration-500 ${modoNoturno ? 'bg-[#0B1120] text-slate-100' : 'bg-slate-50 text-slate-800'}`}
             onMouseMove={handleGlobalDragOver}
         >
-            {/* ── SAFE AREA / NOTCH – iOS PWA standalone ─────────────────────
-                Estende visualmente o header para cima, cobrindo o notch com
-                o mesmo glassmorphism. env() retorna 0px fora do PWA standalone,
-                então some automaticamente em browser normal e desktop. ──── */}
+            {/* ── SAFE AREA UNIFICADA COM O HEADER ──────────────────────────
+                Uma única div fixed cobre do topo absoluto (notch) até onde
+                o header termina. Assim o backdrop-filter é UMA camada só,
+                sem emenda visível entre notch e header. ──────────────────── */}
             <div
                 aria-hidden="true"
-                className="fixed top-0 left-0 w-full z-[9999] pointer-events-none"
+                className="fixed top-0 left-0 w-full z-[29] pointer-events-none"
                 style={{
-                    height: 'env(safe-area-inset-top, 0px)',
+                    height: 'calc(env(safe-area-inset-top, 0px) + 73px)',
                     background: modoNoturno ? 'rgba(15,23,42,0.70)' : 'rgba(255,255,255,0.75)',
-                    backdropFilter: 'blur(20px) saturate(180%)',
-                    WebkitBackdropFilter: 'blur(20px) saturate(180%)',
-                    borderBottom: 'none',
+                    backdropFilter: 'blur(24px) saturate(180%)',
+                    WebkitBackdropFilter: 'blur(24px) saturate(180%)',
                     transition: 'background 0.5s ease',
+                    borderBottom: modoNoturno ? '1px solid rgba(51,65,85,0.6)' : '1px solid rgba(226,232,240,0.6)',
+                    boxShadow: modoNoturno ? '0 1px 3px rgba(0,0,0,0.2)' : '0 1px 3px rgba(148,163,184,0.4)',
                 }}
             />
-            <header className={`sticky z-30 transition-all duration-500 backdrop-blur-xl border-b ${modoNoturno ? 'bg-slate-900/70 border-slate-800/60 shadow-black/20 shadow-sm' : 'bg-white/75 border-slate-200/60 shadow-slate-200/40 shadow-sm'}`}
+            <header className="sticky z-30 transition-all duration-500 bg-transparent border-none shadow-none"
                 style={{ top: 'env(safe-area-inset-top, 0px)' }}>
                 <div className="max-w-5xl mx-auto px-4 py-4 sm:px-6 lg:px-8">
                     <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
@@ -1709,7 +1710,8 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
                         </div>
 
                         {pendingDocs.length > 0 && (
-                            <div className={`shrink-0 px-3 py-2.5 border-t flex justify-end ${modoNoturno ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-100'}`}>
+                            <div className={`shrink-0 border-t flex justify-end ${modoNoturno ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-100'}`}
+                                style={{ padding: '10px 12px', paddingBottom: 'max(10px, calc(env(safe-area-inset-bottom) + 6px))' }}>
                                 <button onClick={() => { haptic('medium'); setIsFinalizingFolder(true); }} className="bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white px-6 py-2.5 rounded-2xl font-black text-xs uppercase tracking-widest shadow-lg shadow-orange-400/30 hover:-translate-y-0.5 transition-all flex items-center gap-2 pasta-rapida-btn relative overflow-hidden">
                                     <Wand2 size={16} /> Finalizar PDF
                                 </button>

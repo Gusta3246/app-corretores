@@ -1112,7 +1112,7 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
                 aria-hidden="true"
                 className="fixed top-0 left-0 w-full z-[29] pointer-events-none"
                 style={{
-                    height: 'calc(env(safe-area-inset-top, 0px) + 73px)',
+                    height: 'calc(env(safe-area-inset-top, 0px) + 65px)',
                     background: modoNoturno ? 'rgba(15,23,42,0.70)' : 'rgba(255,255,255,0.75)',
                     backdropFilter: 'blur(24px) saturate(180%)',
                     WebkitBackdropFilter: 'blur(24px) saturate(180%)',
@@ -1123,48 +1123,54 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
             />
             <header className="sticky z-30 transition-all duration-500 bg-transparent border-none shadow-none"
                 style={{ top: 'env(safe-area-inset-top, 0px)' }}>
-                <div className="max-w-5xl mx-auto px-4 py-4 sm:px-6 lg:px-8">
-                    <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
-                        <div className="flex items-center gap-3">
-                            <img src="https://i.postimg.cc/XpWRf9pj/logo.png" alt="Logo" className="h-10 w-auto object-contain rounded shrink-0" />
-                            <div>
-                                <h1 className={`text-2xl font-black tracking-widest uppercase -mt-0 ${modoNoturno ? 'text-white' : 'text-slate-800'}`}>Destemidos</h1>
-                                <p className={`text-[10px] font-bold tracking-widest uppercase -mt-0.10 ${modoNoturno ? 'text-slate-400' : 'text-slate-400'}`}>
-    A sorte favorece os ousados
-</p>
+                <div className="max-w-5xl mx-auto px-4 py-3 sm:px-6 lg:px-8">
+                    <div className="flex flex-row items-center gap-3">
+                        {/* Logo + título */}
+                        <div className="flex items-center gap-3 shrink-0">
+                            <img src="https://i.postimg.cc/XpWRf9pj/logo.png" alt="Logo" className="h-9 w-auto object-contain rounded shrink-0" />
+                            <div className="hidden sm:block">
+                                <h1 className={`text-2xl font-black tracking-widest uppercase ${modoNoturno ? 'text-white' : 'text-slate-800'}`}>Destemidos</h1>
+                                <p className={`text-[10px] font-bold tracking-widest uppercase ${modoNoturno ? 'text-slate-400' : 'text-slate-400'}`}>A sorte favorece os ousados</p>
+                            </div>
+                            {/* Título compacto mobile */}
+                            <div className="sm:hidden">
+                                <h1 className={`text-lg font-black tracking-widest uppercase leading-tight ${modoNoturno ? 'text-white' : 'text-slate-800'}`}>Destemidos</h1>
+                                <p className={`text-[9px] font-bold tracking-widest uppercase ${modoNoturno ? 'text-slate-400' : 'text-slate-400'}`}>A sorte favorece os ousados</p>
                             </div>
                         </div>
-                        {(activeBrand === 'Direcional' || activeBrand === 'Riva') && (
-                            <div className={`w-full sm:w-auto flex items-center gap-2 sm:overflow-visible overflow-hidden transition-all duration-300 ease-in-out ${searchBarVisible ? 'max-h-20 opacity-100 mt-0' : 'max-h-0 opacity-0 -mt-1 pointer-events-none sm:max-h-20 sm:opacity-100 sm:mt-0 sm:pointer-events-auto'}`}>
-                                <div className="relative flex-1 sm:w-80">
-                                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                        <Search className="h-5 w-5 text-gray-400" />
-                                    </div>
-                                    <input 
-                                        type="text" 
-                                        placeholder="Buscar por nome ou bairro..." 
-                                        className={`block w-full pl-10 pr-3 py-2.5 border rounded-xl leading-5 transition-all text-base focus:outline-none focus:ring-2 focus:ring-blue-600 ${
-                                            modoNoturno 
-                                            ? 'bg-slate-800 border-slate-700 text-white placeholder-slate-500 focus:bg-slate-900' 
-                                            : 'bg-slate-50 border-gray-200 text-slate-800 placeholder-gray-400 focus:bg-white'
-                                        }`} 
-                                        value={searchTerm} 
-                                        onChange={(e) => setSearchTerm(e.target.value)} 
-                                    />
+                        {/* Barra de pesquisa — sempre visível, expande no meio */}
+                        <div className={`flex-1 transition-all duration-300 ease-in-out ${searchBarVisible ? 'opacity-100' : 'opacity-0 pointer-events-none sm:opacity-100 sm:pointer-events-auto'}`}>
+                            <div className="relative">
+                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <Search className="h-4 w-4 text-gray-400" />
                                 </div>
-                                <button 
-                                    onClick={() => { haptic('medium'); const novo = !modoNoturno; setModoNoturno(novo); localStorage.setItem('modoNoturno', novo); }} 
-                                    className={`p-2.5 rounded-xl border transition-all duration-300 hover:scale-105 ${
-                                        modoNoturno 
-                                        ? 'bg-slate-800 border-slate-700 text-amber-400 hover:bg-slate-700 shadow-lg shadow-black/20' 
-                                        : 'bg-white border-gray-200 text-slate-600 hover:bg-slate-50 shadow-sm'
+                                <input
+                                    type="text"
+                                    placeholder="Buscar por nome ou bairro..."
+                                    className={`block w-full pl-9 pr-3 py-2 border rounded-xl leading-5 transition-all text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/40 ${
+                                        modoNoturno
+                                        ? 'bg-white/10 border-white/15 text-white placeholder-white/40 focus:bg-white/15'
+                                        : 'bg-black/5 border-black/8 text-slate-800 placeholder-slate-400 focus:bg-white/80'
                                     }`}
-                                    title={modoNoturno ? "Ativar Modo Claro" : "Ativar Modo Noturno"}
-                                >
-                                    {modoNoturno ? <Sun size={20} /> : <Moon size={20} />}
-                                </button>
+                                    style={{ backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)' }}
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                />
                             </div>
-                        )}
+                        </div>
+                        {/* Botão modo noturno */}
+                        <button
+                            onClick={() => { haptic('medium'); const novo = !modoNoturno; setModoNoturno(novo); localStorage.setItem('modoNoturno', novo); }}
+                            className={`shrink-0 p-2 rounded-xl border transition-all duration-300 hover:scale-105 ${
+                                modoNoturno
+                                ? 'bg-white/10 border-white/15 text-amber-300 hover:bg-white/20'
+                                : 'bg-black/5 border-black/8 text-slate-600 hover:bg-black/10'
+                            }`}
+                            style={{ backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)' }}
+                            title={modoNoturno ? "Ativar Modo Claro" : "Ativar Modo Noturno"}
+                        >
+                            {modoNoturno ? <Sun size={18} /> : <Moon size={18} />}
+                        </button>
                     </div>
                 </div>
             </header>
@@ -1520,6 +1526,18 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
                     @keyframes chat-close-kf { 0% { opacity:1; transform: scale(1) translateY(0); } 40% { opacity:1; transform: scale(1.01) translateY(-2px); } 100% { opacity:0; transform: scale(0.88) translateY(20px); } }
                     .chat-opening { animation: chat-open-kf  0.38s cubic-bezier(0.34,1.3,0.64,1) both; }
                     .chat-closing { animation: chat-close-kf 0.32s cubic-bezier(0.4,0,0.6,1) both; }
+                    /* Mobile: chat ocupa tela cheia abaixo do notch */
+                    @media (max-width: 767px) {
+                        .chat-mobile-full {
+                            top: env(safe-area-inset-top, 0px) !important;
+                            height: calc(100dvh - env(safe-area-inset-top, 0px)) !important;
+                        }
+                    }
+                    /* Desktop chat flutuante: reseta top e height */
+                    @media (min-width: 768px) {
+                        .chat-mobile-full { top: auto !important; height: auto !important; }
+                        .chat-folder-full { top: 12px !important; left: 12px !important; right: 12px !important; bottom: 12px !important; height: auto !important; border-radius: 1.5rem !important; }
+                    }
                     /* Folder → Chat collapse/expand */
                     @keyframes folder-collapse-kf { 0% { opacity:1; transform: scaleY(1) translateY(0); } 40% { opacity:0.6; transform: scaleY(0.85) translateY(8px); } 100% { opacity:0; transform: scaleY(0.55) translateY(20px); } }
                     @keyframes folder-expand-kf  { 0% { opacity:0; transform: scaleY(0.55) translateY(20px); } 60% { opacity:1; transform: scaleY(1.03) translateY(-3px); } 100% { opacity:1; transform: scaleY(1) translateY(0); } }
@@ -1542,12 +1560,12 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
 
             {/* CHATBOT CONTAINER */}
             <div className={`fixed z-50 overflow-hidden flex flex-col shadow-2xl
+                ${isCreatingFolder ? 'chat-folder-full' : 'chat-mobile-full'}
                 ${isChatOpen ? (closingChat ? 'chat-closing' : 'chat-opening') : 'scale-0 opacity-0 pointer-events-none'}
                 ${isCreatingFolder
-                    ? 'inset-0 rounded-none md:inset-3 md:rounded-3xl'
-                    : 'inset-0 rounded-none md:bottom-6 md:right-6 md:inset-auto md:rounded-3xl md:w-[350px] lg:w-[420px] md:h-[600px] md:max-h-[85vh] origin-bottom-right'}
-                ${modoNoturno ? 'bg-slate-800' : 'bg-white'}`}
-                style={{ top: 'env(safe-area-inset-top, 0px)' }}>
+                    ? 'left-0 right-0 bottom-0 rounded-none'
+                    : 'left-0 right-0 bottom-0 rounded-none md:bottom-6 md:right-6 md:left-auto md:rounded-3xl md:w-[350px] lg:w-[420px] md:h-[600px] md:max-h-[85vh] origin-bottom-right'}
+                ${modoNoturno ? 'bg-slate-800' : 'bg-white'}`}>
                 <div className={`p-5 flex items-center justify-between shrink-0 shadow-lg backdrop-blur-xl border-b ${isCreatingFolder ? 'bg-gradient-to-r from-orange-600 to-red-500 border-orange-700/40' : 'bg-gradient-to-r from-orange-500 to-red-500'}`}>
                     <div className="flex items-center gap-3">
                         <div className="bg-white/10 p-2.5 rounded-2xl backdrop-blur-md border border-white/20">

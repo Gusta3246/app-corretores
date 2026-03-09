@@ -512,3 +512,4 @@ export async function buscarRespostaGemini(mensagemDoUsuario, historicoMensagens
     return buscarRespostaDoRobo(mensagemDoUsuario);
   }
 }
+

@@ -190,8 +190,24 @@ export const BaseConhecimento = {
   "diferenciais prime": "🌟 *Diferenciais Amazon Boulevard Prime:*\n\n✅ Padrão Riva de acabamento\n✅ 1, 2 e 3 quartos com suíte\n✅ Varanda com ponto grill em todos os aptos\n✅ 3 piscinas (adulto, infantil e topo)\n✅ Quadra, crossfit, churrasqueira, salão de festas\n✅ Garden privativo nos aptos do térreo\n✅ Hall de entrada sofisticado\n✅ Vizinho do Amazon Boulevard Classic\n✅ Localização privilegiada na Torquato Tapajós\n✅ Próximo à Arena da Amazônia e Carrefour",
 
   // ==========================================
-  // 👑 PERFIS DE CLIENTES — ANÁLISE INTERNA
+  // 🧮 NEGOCIAÇÃO DIRECIONAL — PRÓ-SOLUTO, REGRAS E CÁLCULOS
   // ==========================================
+  "pro soluto": "O Pró-Soluto (PS) é a diferença entre o valor do imóvel e o que o banco financia. Ele é parcelado em até 84x com correção de 0,5%/mês durante a obra e 1,5%/mês após a entrega. O limite depende do perfil do cliente (12% a 25% do valor do imóvel).",
+  "pro-soluto": "O Pró-Soluto (PS) parcela a entrada em até 84x. Correção: 0,5%/mês na obra e 1,5%/mês após entrega. O perfil do cliente define o limite máximo (12% Aço até 25% Diamante).",
+  "pró-soluto": "O Pró-Soluto (PS) parcela a entrada em até 84x. Correção: 0,5%/mês na obra e 1,5%/mês após entrega. O perfil do cliente define o limite máximo (12% Aço até 25% Diamante).",
+  "regras de aprovacao": "São 3 regras simultâneas:\n1️⃣ PS ≤ limite % do perfil sobre o valor do imóvel\n2️⃣ (Parcela financiamento + Maior valor PS) ≤ % condição da renda do perfil\n3️⃣ Maior valor PS ≤ % comprometimento da renda\n⚠️ Todas precisam ser aprovadas ao mesmo tempo!",
+  "regras aprovacao": "São 3 regras simultâneas:\n1️⃣ PS ≤ limite % do perfil sobre o valor do imóvel\n2️⃣ (Parcela financiamento + Maior valor PS) ≤ % condição da renda do perfil\n3️⃣ Maior valor PS ≤ % comprometimento da renda\n⚠️ Todas precisam ser aprovadas ao mesmo tempo!",
+  "calculo ps": "Para calcular o PS máximo:\n1. Regra 3: (% comprometimento × renda) ÷ fator × 84\n2. Regra 2: (% condição × renda − parcela financiamento) ÷ fator × 84\n3. Usar o menor dos dois como PS máximo real\n4. Ato = Valor imóvel − Financiamento − Subsídio − PS máximo",
+  "cálculo ps": "Para calcular o PS máximo:\n1. Regra 3: (% comprometimento × renda) ÷ fator × 84\n2. Regra 2: (% condição × renda − parcela financiamento) ÷ fator × 84\n3. Usar o menor dos dois como PS máximo real\n4. Ato = Valor imóvel − Financiamento − Subsídio − PS máximo",
+  "fator correcao": "O fator de correção varia por empreendimento conforme o prazo de entrega:\n• Mais meses de obra restantes → fator menor (mais meses a 0,5%)\n• Mais próximo da entrega → fator maior (mais meses a 1,5%)\nExemplos: Bosque das Torres ~1,4579 | Village Torres ~1,6033",
+  "fator de correção": "O fator de correção varia por empreendimento conforme o prazo de entrega:\n• Mais meses de obra restantes → fator menor\n• Mais próximo da entrega → fator maior\nExemplos: Bosque das Torres ~1,4579 | Village Torres ~1,6033",
+  "anual negociacao": "A anual cai todo dezembro até a entrega do apartamento.\nValor = 50% da renda do cliente (fixo).\nAbate o saldo do PS, reduzindo a parcela mensal.\n⚠️ Usar apenas quando a negociação está apertada — é a 'carta na manga'.",
+  "ato negociacao": "O ato é o que sobra após: Financiamento + Subsídio + PS = 100% do imóvel.\nNormalmente o cliente entra com R$ 1.000 de ato + até 3 sinais mensais.\nSe houver margem nas 3 regras, o restante do ato vai para o PS (reduz parcela).",
+  "sinais": "Os sinais são parcelas mensais do ato, sem juros, pagas mês a mês após o ato.\nSão permitidos até 3 sinais (1 por mês).\nVantagem: não colidem com outras parcelas, diferente da anual.",
+  "100 por cento imovel": "100% do imóvel = Financiamento banco + Subsídio + Pró-Soluto (PS) + Ato.\nO subsídio é desconto do governo — não é parcela do cliente, mas entra na conta.\nO FGTS soma ao financiamento do banco.",
+  "como funciona negociacao": "A negociação Direcional funciona assim:\n1. Banco financia ~80% + Subsídio do governo\n2. PS parcela a entrada em até 84x\n3. Ato = o restante (cliente paga entrada)\nTudo precisa passar pelas 3 regras de aprovação do perfil do cliente.",
+
+
   "cliente aco": "⚙️ *Cliente Aço* (nível de entrada)\n• Benefício Pró-Soluto (PS) na entrada: 12%\n• Parcelamento pós habite-se: 84x de 40% da renda\n• Comprometimento de renda: até 10%\n\nPerfil: cliente sem histórico diferenciado, sem score elevado. É o nível base da análise interna.",
 
   "cliente bronze": "🥉 *Cliente Bronze*\n• Benefício Pró-Soluto (PS) na entrada: 15%\n• Parcelamento pós habite-se: 84x de 45% da renda\n• Comprometimento de renda: até 15%\n\nPerfil: histórico simples com algum diferencial, análise padrão no Financiamento Direto.",
@@ -303,6 +319,105 @@ RIVA: Classic ~R$301-397k | Prime ~R$341-583k | Azzure ~R$387-452k | Zenith ~R$3
 
 // DETALHES EXTRAS — carregados apenas quando pergunta é específica (~1200 tokens)
 const DETALHES_EMPREENDIMENTOS = `
+========================================
+NEGOCIAÇÃO DIRECIONAL — REGRAS COMPLETAS
+========================================
+
+ESTRUTURA DO 100% DO IMÓVEL:
+100% = Financiamento banco + Subsídio + Pró-Soluto (PS) + Ato
+• Banco financia até ~80% (varia pelo score)
+• Subsídio = desconto do governo, entra no 100% mas NÃO é parcela do cliente
+• PS cobre a diferença até o limite do perfil (não precisa usar o máximo)
+• Ato = o que sobra após Financiamento + Subsídio + PS
+• FGTS soma ao financiamento do banco
+
+AS 3 REGRAS DE APROVAÇÃO (todas precisam passar):
+Regra 1 — PS: PS utilizado ≤ limite % do perfil sobre o valor do imóvel
+Regra 2 — Condição Financiamento: (Parcela financiamento + Maior valor PS) ≤ % condição da renda
+Regra 3 — Comprometimento: Maior valor PS ≤ % comprometimento da renda
+⚠️ O sistema usa o "Maior valor pró-soluto" (parcela com correção de juros), NÃO o valor base ÷ 84.
+
+CÁLCULO DO PS MÁXIMO (passo a passo):
+1. Calcular pelo limite da Regra 3:
+   Parcela base R3 = (% comprometimento × renda) ÷ fator do empreendimento
+   PS máximo R3 = Parcela base R3 × 84
+2. Calcular pelo limite da Regra 2:
+   Parcela base R2 = (% condição × renda − parcela financiamento) ÷ fator do empreendimento
+   PS máximo R2 = Parcela base R2 × 84
+3. PS máximo real = min(PS máximo R3, PS máximo R2)  ← usar SEMPRE o menor dos dois
+4. Ato = Valor imóvel − Financiamento − Subsídio − PS máximo real
+
+PRÓ-SOLUTO — CORREÇÃO DE JUROS:
+• Prazo máximo: 84x | Parcela mínima: R$ 200
+• Correção durante obra: 0,5% ao mês
+• Correção pós entrega: 1,5% ao mês
+• Parcela real > valor base por causa da correção acumulada
+• O sistema calcula automaticamente o "Maior valor pró-soluto"
+
+FATOR DE CORREÇÃO POR EMPREENDIMENTO:
+O fator depende de quantos meses restam de obra vs pós-obra (mais obra = fator menor):
+• Conquista Topázio (entrega 30/04/2026): fator ~1,85
+• Conquista Jardim Botânico (entrega 30/11/2026): fator ~1,72
+• Village Torres (entrega 30/04/2027): fator ~1,6033
+• Parque Ville Orquídea (entrega 30/04/2027): fator ~1,6033
+• Conquista Jardim Norte (entrega 30/06/2027): fator ~1,58
+• Viva Vida Rio Tapajós (entrega 31/08/2027): fator ~1,56
+• Viva Vida Coral (entrega 31/03/2028): fator ~1,50
+• Conquista Marinas (entrega 31/03/2028): fator ~1,50
+• Bosque das Torres (entrega 30/06/2028): fator ~1,4579
+• Brisas do Horizonte (entrega 31/08/2028): fator ~1,44
+• Parque Ville Lírio Azul (entrega 30/11/2028): fator ~1,41
+• Conquista Rio Negro II (entrega 30/12/2030): fator ~1,25
+⚠️ Fator é estimativa — valor exato sempre confirmar no sistema.
+
+ANUAIS DISPONÍVEIS POR EMPREENDIMENTO (base março/2026):
+• Conquista Topázio: 0 anuais
+• Conquista Jardim Botânico: 1 anual (dez/2026)
+• Village Torres: 1 anual (dez/2026)
+• Parque Ville Orquídea: 1 anual (dez/2026)
+• Conquista Jardim Norte: 1 anual (dez/2026)
+• Viva Vida Rio Tapajós: 1 anual (dez/2026)
+• Viva Vida Coral: 2 anuais (dez/2026 e dez/2027)
+• Conquista Marinas: 2 anuais (dez/2026 e dez/2027)
+• Bosque das Torres: 2 anuais (dez/2026 e dez/2027)
+• Brisas do Horizonte: 2 anuais (dez/2026 e dez/2027)
+• Parque Ville Lírio Azul: 2 anuais (dez/2026 e dez/2027)
+• Conquista Rio Negro II: 4 anuais (dez/2026, 2027, 2028, 2029)
+
+ATO E SINAIS:
+• Cliente normalmente entra com R$ 1.000 (ato) + até 3 sinais mensais (1 por mês)
+• Se as 3 regras tiverem margem: restante do ato vai para o PS (engorda parcela menor)
+• Se apertado: manter saldo no ato/sinais
+• Sinais não têm juros e não colidem com outras parcelas (vantagem sobre anual)
+
+ANUAL (carta na manga — usar só quando negociação está apertada):
+• Cai todo dezembro até a entrega do apartamento
+• Valor fixo = 50% da renda do cliente
+• Abate o saldo do PS → reduz parcela mensal → afrouxa a Regra 2
+• É pagamento ADICIONAL à parcela mensal
+
+ORDEM DE TENTATIVA NUMA NEGOCIAÇÃO APERTADA:
+1. Encaixar nas 3 regras normalmente
+2. Usar sinais para reduzir o PS
+3. Usar anual (se houver dezembros disponíveis)
+4. Aumentar o ato
+
+ERROS A NUNCA COMETER:
+❌ Usar fator fixo para todos os empreendimentos → cada um tem seu fator
+❌ Calcular só a Regra 3 e ignorar a Regra 2 → SEMPRE calcular as duas e usar o menor PS
+❌ Esquecer o subsídio no 100% → subsídio reduz o ato necessário
+❌ Confundir % dos perfis (ex: usar 48% Prata para cliente Ouro)
+❌ Usar "Maior valor PS" como valor base ÷ 84 → o sistema aplica correção de juros
+
+CASO VALIDADO NO SISTEMA — Bosque das Torres | Perfil Ouro:
+Imóvel R$200.000 | Renda R$3.000 | Financiamento R$160.000 (80%) | Parcela fin.: R$876,47
+Fator: 1,4579
+Regra 3: R$600 ÷ 1,4579 = R$411,55 × 84 = PS máx R$34.570
+Regra 2: R$623,53 ÷ 1,4579 = R$427,70 × 84 = PS máx R$35.927
+Regra 3 mais restritiva → PS = R$34.570 | Ato = R$5.430
+Resultado aprovado: Ato R$5.430 + Mensal PS 84x R$411,55 ✅
+========================================
+
 LAZER/INFRAESTRUTURA DETALHADA:
 Bosque Torres: 22 itens — piscinas adulto+infantil, Multi Wash, food truck, playbaby, playground, churrasqueira, salão festas, quadra, redário, pet place, bicicletário, guarita delivery, controle acesso, medição individual água e gás.
 Lírio Azul: 30 torres 600 unidades (18 PCD, 102 garden) | vagas 188 carros+356 motos | piscinas+solarium, yoga, gourmet, churrasqueira, quadra, fitness, playground, playbaby, jogos, redário, pet place, piquenique, bicicletário.
@@ -326,7 +441,7 @@ MODALIDADES:
 
 // Detecta se a pergunta pede detalhes específicos que precisam do contexto extra
 const precisaDetalhes = (msg) => {
-  return /lazer|infraestrutura|vaga|bloco|pavimento|torre|unidade|document|rg|cpf|renda|extrato|modalidade|vista|investidor|direto|financiamento|piso|acabamento|metragem|planta/i.test(msg);
+  return /lazer|infraestrutura|vaga|bloco|pavimento|torre|unidade|document|rg|cpf|renda|extrato|modalidade|vista|investidor|direto|financiamento|piso|acabamento|metragem|planta|pro.?soluto|ps |ato|sinal|anual|perfil|regra|fator|parcela|comprometimento|negoci|aprovacao|aprovação|calculo|cálculo|simul/i.test(msg);
 };
 
 // =========================================================================

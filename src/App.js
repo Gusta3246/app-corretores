@@ -1917,7 +1917,7 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
                             </div>
                             <iframe
                                 key={pdfLeitor.url}
-                                src={pdfLeitor.url}
+                                src={pdfLeitor.url.includes('?') ? pdfLeitor.url + '&rm=minimal' : pdfLeitor.url + '?rm=minimal'}
                                 title={pdfLeitor.title}
                                 allow="autoplay"
                                 className="border-0"

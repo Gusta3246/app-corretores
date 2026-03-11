@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, Building, ExternalLink, MapPin, BookOpen, Maximize, Bed, LayoutGrid, Rocket, Quote, Sparkles, ChevronDown, ChevronUp, FileText, TableProperties, BookMarked, HelpCircle, Calculator, Bot, X, Send, Wand2, Paperclip, File as FileIcon, Trash2, FolderPlus, GripVertical, Plus, MessageCircle, Moon, Sun, AlertTriangle, Book } from 'lucide-react';
+import { Search, Building, ExternalLink, MapPin, BookOpen, Maximize, Bed, LayoutGrid, Rocket, Quote, Sparkles, ChevronDown, ChevronUp, ChevronLeft, FileText, TableProperties, BookMarked, HelpCircle, Calculator, Bot, X, Send, Wand2, Paperclip, File as FileIcon, Trash2, FolderPlus, GripVertical, Plus, MessageCircle, Moon, Sun, AlertTriangle, Book } from 'lucide-react';
 import { buscarRespostaDoRobo, buscarRespostaGemini } from './bot/dadosFinanciamento.js';
 // === DADOS DAS REVISTAS E BASE DE CONHECIMENTO DO CHATBOT ===
 const revistasData = [
@@ -33,7 +33,7 @@ const utilitariosData = [
     { title: "AMML - DECLA. PROPRIETÁRIO DE RESIDÊNCIA", link: "https://drive.google.com/file/d/1Qp19k2BaqiR6kuWqmju3qd_GMlUYuxrX/view?usp=sharing" },
     { title: "AMML- DECLA. TEMPO DE RESIDÊNCIA", link: "https://drive.google.com/file/d/1sJdAyDwVBvOauW9EK0XBJIHoIHL6nhAX/view?usp=sharing" },
     { title: "AMML - DECLA. ESTADO CIVIL", link: "https://drive.google.com/file/d/1f5aC4XStNfCKuu6NK2_EetP2DHpbF_0p/view?usp=sharing" },
-    { title: "FICHA DE CADASTRO INFORMAL", link: "https://drive.google.com/file/d/1Y5h9B3oe8HdoU7EGJwkcEerQACIaGAAG/view?usp=sharing" }
+    { title: "FICHA CADASTRO PF - CLIENTE INFORMAL", link: "https://drive.google.com/file/d/1Y5h9B3oe8HdoU7EGJwkcEerQACIaGAAG/view?usp=drive_link" }
 ];
 
 // === FRASES MOTIVACIONAIS DIÁRIAS ===
@@ -209,8 +209,35 @@ export default function App() {
     const [activeZone, setActiveZone] = useState(null);
     const [clientName, setClientName] = useState(() => localStorage.getItem('dst_client') || '');
     const [showPastaRapidaInfo, setShowPastaRapidaInfo] = useState(false);
+    const [showCotacaoModal, setShowCotacaoModal] = useState(false);
+    const [showCotacaoGate, setShowCotacaoGate] = useState(false);
+    const [showCotacaoSenha, setShowCotacaoSenha] = useState(false);
+    const [cotacaoSenhaInput, setCotacaoSenhaInput] = useState('');
+    const [cotacaoSenhaErro, setCotacaoSenhaErro] = useState(false);
+    const isCotacaoUnlocked = () => {
+        const ts = parseInt(localStorage.getItem('dst_cot_unlock') || '0');
+        return Date.now() - ts < 60 * 60 * 1000; // 1 hora
+    };
+
+    // Modal boas vindas — mostra 1x por sessão
+    const [showBemVindo, setShowBemVindo] = useState(() => !sessionStorage.getItem('dst_bv'));
+    const [cotacaoGateSenha, setCotacaoGateSenha] = useState("");
+    const [cotacaoGateErro, setCotacaoGateErro] = useState(false);
+    const cotacaoUnlockedAtRef = useRef(null);
+    const [cotacaoData, setCotacaoData] = useState({ perfil: '', empreendimento: '', valorImovel: '', renda: '', financiamentoBanco: '', subsidio: '', fgts: '', atoCliente: '', parcelaFinanciamento: '', entrega: '', mesesCorrecao: '' });
+    const [cotacaoFile, setCotacaoFile] = useState(null);
+    const [cotacaoLoading, setCotacaoLoading] = useState(false);
+    const [cotacaoResult, setCotacaoResult] = useState(null);
+    const [openRegra, setOpenRegra] = useState(null); // 'planIdx-regraIdx'
+    const cotacaoFileRef = useRef(null);
+    const [perfilSelecionado, setPerfilSelecionado] = useState(null); // 'diamante'|'ouro'|'prata'|'bronze'|'aco'
+    const [perfilExpandido, setPerfilExpandido] = useState(null);
     const [pastaRapidaCountdown, setPastaRapidaCountdown] = useState(10);
     const pastaRapidaClicksRef = useRef(parseInt(localStorage.getItem('dst_pr_clicks') || '0'));
+    const [showCotacaoInfo, setShowCotacaoInfo] = useState(false);
+    const [pdfLeitor, setPdfLeitor] = useState(null); // { title, url, brand } — leitor de revista in-app
+    const [cotacaoInfoCountdown, setCotacaoInfoCountdown] = useState(10);
+    const cotacaoClicksRef = useRef(parseInt(localStorage.getItem('dst_cot_clicks') || '0'));
 
     // Hide search bar on mobile scroll down, show on scroll up
     const [searchBarVisible, setSearchBarVisible] = useState(true);
@@ -234,7 +261,7 @@ export default function App() {
 
     // Trava scroll do body quando modais/chat estão abertos
     useEffect(() => {
-        const shouldLock = isChatOpen || !!selectedPois || showPastaRapidaInfo;
+        const shouldLock = isChatOpen || !!selectedPois || showPastaRapidaInfo || showCotacaoModal || !!pdfLeitor;
         if (shouldLock) {
             document.body.style.overflow = 'hidden';
             document.body.style.touchAction = 'none';
@@ -246,7 +273,7 @@ export default function App() {
             document.body.style.overflow = '';
             document.body.style.touchAction = '';
         };
-    }, [isChatOpen, selectedPois, showPastaRapidaInfo]);
+    }, [isChatOpen, selectedPois, showPastaRapidaInfo, showCotacaoModal, pdfLeitor]);
 
     // Countdown de 10s para o botão "Entendi" do modal Pasta Rápida
     useEffect(() => {
@@ -260,6 +287,19 @@ export default function App() {
         }, 1000);
         return () => clearInterval(interval);
     }, [showPastaRapidaInfo]);
+
+    // Countdown de 10s para o botão "Entendi" do modal Cotação
+    useEffect(() => {
+        if (!showCotacaoInfo) { setCotacaoInfoCountdown(10); return; }
+        setCotacaoInfoCountdown(10);
+        const interval = setInterval(() => {
+            setCotacaoInfoCountdown(prev => {
+                if (prev <= 1) { clearInterval(interval); return 0; }
+                return prev - 1;
+            });
+        }, 1000);
+        return () => clearInterval(interval);
+    }, [showCotacaoInfo]);
 
     // ESTADO PARA AS FRASES AMIGÁVEIS DO ROBÔ E CONTROLE DE SCROLL
     const [robotPhraseIndex, setRobotPhraseIndex] = useState(0);
@@ -302,6 +342,24 @@ export default function App() {
         try { localStorage.setItem('dst_chat', JSON.stringify(chatMessages.slice(-40))); } catch {}
     }, [chatMessages]);
 
+    // Saudação animada no logo
+    const [logoPhase, setLogoPhase] = useState('logo'); // 'logo' | 'saudacao'
+    const [logoSlideOut, setLogoSlideOut] = useState(false);
+
+    const triggerLogoGreeting = () => {
+        if (logoPhase !== 'logo') return;
+        setLogoSlideOut(false);
+        setLogoPhase('saudacao');
+        setTimeout(() => setLogoSlideOut(true), 2000);
+        setTimeout(() => { setLogoSlideOut(false); setLogoPhase('logo'); }, 2450);
+    };
+
+    useEffect(() => {
+        const t = setTimeout(triggerLogoGreeting, 800);
+        const interval = setInterval(triggerLogoGreeting, 5 * 60 * 1000);
+        return () => { clearTimeout(t); clearInterval(interval); };
+    }, []);
+
     useEffect(() => {
         const last = [...chatMessages].reverse().find(m => m.role === 'user');
         if (!last) return;
@@ -327,6 +385,7 @@ export default function App() {
     const [isOrganizingDocs, setIsOrganizingDocs] = useState(false);
     const [organizeProgress, setOrganizeProgress] = useState({ current: 0, total: 0, label: '' });
     const [isCreatingFolder, setIsCreatingFolder] = useState(false);
+    const [folderSource, setFolderSource] = useState('manual'); // 'manual' | 'rapida'
     const [isFinalizingFolder, setIsFinalizingFolder] = useState(false);
     const [showThumbsUp, setShowThumbsUp] = useState(false);
     const [showLightning, setShowLightning] = useState(false);
@@ -493,6 +552,45 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
             await page.render({ canvasContext: ctx, viewport }).promise;
             page.cleanup();
             return canvas.toDataURL('image/jpeg', 0.8);
+        } catch (e) {
+            return null;
+        }
+    };
+
+    // Versão para cotação: renderiza TODAS as páginas empilhadas num único canvas
+    // para a IA ver o documento inteiro (parcela, entrega costumam ficar em pág 2+)
+    const generatePdfAllPages = async (file) => {
+        try {
+            if (!window.pdfjsLib) return null;
+            const arrayBuffer = await file.arrayBuffer();
+            const pdf = await window.pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+            const numPages = Math.min(pdf.numPages, 6); // máx 6 páginas
+            const scale = 1.2;
+            // Renderiza todas as páginas e coleta os canvases
+            const canvases = [];
+            let totalHeight = 0;
+            let maxWidth = 0;
+            for (let i = 1; i <= numPages; i++) {
+                const page = await pdf.getPage(i);
+                const vp = page.getViewport({ scale });
+                const c = document.createElement('canvas');
+                c.width = vp.width; c.height = vp.height;
+                await page.render({ canvasContext: c.getContext('2d'), viewport: vp }).promise;
+                page.cleanup();
+                canvases.push(c);
+                totalHeight += vp.height + 4;
+                if (vp.width > maxWidth) maxWidth = vp.width;
+            }
+            // Junta tudo num canvas único
+            const merged = document.createElement('canvas');
+            merged.width = maxWidth;
+            merged.height = totalHeight;
+            const ctx = merged.getContext('2d');
+            ctx.fillStyle = '#fff';
+            ctx.fillRect(0, 0, maxWidth, totalHeight);
+            let y = 0;
+            for (const c of canvases) { ctx.drawImage(c, 0, y); y += c.height + 4; }
+            return merged.toDataURL('image/jpeg', 0.82);
         } catch (e) {
             return null;
         }
@@ -973,6 +1071,7 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
         }
 
         setIsCreatingFolder(true);
+        setFolderSource('rapida');
         setIsOrganizingDocs(true);
         setOrganizeProgress({ current: 0, total: files.length, label: 'Preparando...' });
         setCardAnimPhase('pulse');
@@ -1309,6 +1408,34 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }, [chatMessages]);
 
+    // Ctrl+V no modal de cotação — captura imagem da área de transferência
+    useEffect(() => {
+        if (!showCotacaoModal) return;
+        const handlePaste = async (e) => {
+            const items = e.clipboardData?.items;
+            if (!items) return;
+            for (const item of items) {
+                if (item.type.startsWith('image/')) {
+                    const blob = item.getAsFile();
+                    if (!blob) continue;
+                    const file = new File([blob], 'print_colado.png', { type: item.type });
+                    const dt = new DataTransfer();
+                    dt.items.add(file);
+                    if (cotacaoFileRef.current) {
+                        cotacaoFileRef.current.files = dt.files;
+                        cotacaoFileRef.current.dispatchEvent(new Event('change', { bubbles: true }));
+                    }
+                    return;
+                }
+            }
+        };
+        document.addEventListener('paste', handlePaste);
+        return () => document.removeEventListener('paste', handlePaste);
+    }, [showCotacaoModal]);
+
+    // Reset do resultado é feito diretamente no onClick do botão calcular
+    // (useEffect foi removido pois causava reset após o cálculo)
+
     const [chatBtnIcon, setChatBtnIcon] = useState('chat'); // 'chat' | 'folder'
     const [chatBtnIconVisible, setChatBtnIconVisible] = useState(true);
     useEffect(() => {
@@ -1373,14 +1500,57 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
                 <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="flex flex-col sm:flex-row sm:items-center sm:gap-4 sm:py-3">
 
-                        {/* Linha 1 mobile — Logo + Título centralizado */}
-                        <div className="flex items-center justify-center sm:justify-start gap-3 shrink-0 pt-3 pb-2 sm:py-0">
-                            <img src="https://i.postimg.cc/XpWRf9pj/logo.png" alt="Logo" className="h-10 w-auto object-contain rounded shrink-0" />
-                            <div>
-                                <h1 className={`text-xl font-black tracking-widest uppercase leading-tight ${modoNoturno ? 'text-white' : 'text-slate-800'}`}>Destemidos</h1>
-                                <p className={`text-[9px] font-bold tracking-widest uppercase ${modoNoturno ? 'text-slate-400' : 'text-slate-400'}`}>A sorte favorece os ousados</p>
-                            </div>
-                        </div>
+                        {/* Linha 1 mobile — Logo + saudação animada */}
+                        {(() => {
+                            const h = new Date().getHours();
+                            const saudacao =
+                                h < 5  ? 'BOA MADRUGADA!' :
+                                h < 12 ? 'BOM DIA!'       :
+                                h < 18 ? 'BOA TARDE!'    :
+                                         'BOA NOITE!';
+                            const isSaud = logoPhase === 'saudacao';
+                            return (
+                                <div
+                                    className="flex items-center justify-center sm:justify-start gap-3 shrink-0 pt-3 pb-2 sm:py-0 cursor-pointer select-none"
+                                    onClick={triggerLogoGreeting}
+                                >
+                                    <img
+                                            src="https://i.postimg.cc/XpWRf9pj/logo.png"
+                                            alt="Logo"
+                                            className="h-10 w-auto object-contain rounded shrink-0"
+                            style={{
+                                                animation: isSaud ? 'logo-flip 2s ease-in-out' : 'none',
+                                            }}
+                                        />
+
+                                    {/* Texto deslizante */}
+                                    <div className="relative overflow-hidden" style={{minWidth: 0, flex: 1, maxWidth: 200, height: 36}}>
+                                        {/* FASE logo */}
+                                        <div style={{
+                                            position: 'relative',
+                                            transform: logoPhase === 'logo' ? (logoSlideOut ? 'translateX(-110%)' : 'translateX(0)') : 'translateX(-110%)',
+                                            transition: 'transform 0.45s cubic-bezier(0.4,0,0.2,1)',
+                                            whiteSpace: 'nowrap',
+                                        }}>
+                                            <h1 className={`text-xl font-black tracking-widest uppercase leading-tight ${modoNoturno ? 'text-white' : 'text-slate-800'}`}>Destemidos</h1>
+                                            <p className="text-[9px] font-bold tracking-widest uppercase text-slate-400">A sorte favorece os ousados</p>
+                                        </div>
+
+                                        {/* FASE saudação */}
+                                        <div style={{
+                                            position: 'absolute',
+                                            top: 0, left: 0, right: 0,
+                                            transform: logoPhase === 'saudacao' ? (logoSlideOut ? 'translateX(-110%)' : 'translateX(0)') : 'translateX(110%)',
+                                            transition: 'transform 0.45s cubic-bezier(0.4,0,0.2,1)',
+                                            whiteSpace: 'nowrap',
+                                        }}>
+                                            <h1 className={`text-sm font-black tracking-widest uppercase leading-tight ${modoNoturno ? 'text-white' : 'text-slate-800'}`}>{saudacao}</h1>
+                                            <p className="text-[9px] font-bold tracking-widest uppercase text-slate-400">Equipe Destemidos</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            );
+                        })()}
 
                         {/* Linha 2 mobile — Busca + Botão noturno */}
                         <div className={`flex items-center gap-2 pb-3 sm:pb-0 sm:flex-1 transition-all duration-300 ${
@@ -1527,9 +1697,16 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
                                                 </div>
                                             </div>
                                             <div className="mt-auto flex flex-col gap-2">
-                                                <a href={revista.link} target="_blank" rel="noopener noreferrer" className={`w-full flex items-center justify-center gap-2 py-3 rounded-lg font-semibold transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg ${revista.brand === 'Direcional' ? 'bg-gradient-to-r from-orange-500 via-red-500 to-orange-600 hover:from-orange-600 hover:to-red-600 shadow-orange-300/30 text-white' : 'bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 hover:from-blue-700 hover:to-indigo-700 shadow-blue-300/30 text-white'}`}>
-                                                    Acessar Revista (PDF) <ExternalLink size={18} />
-                                                </a>
+                                                <button
+                                                    onClick={() => {
+                                                        haptic('medium');
+                                                        const previewUrl = revista.link
+                                                            .replace(/\/view(\?.*)?$/, '/preview');
+                                                        setPdfLeitor({ title: revista.title, url: previewUrl, brand: revista.brand });
+                                                    }}
+                                                    className={`w-full flex items-center justify-center gap-2 py-3 rounded-lg font-semibold transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg ${revista.brand === 'Direcional' ? 'bg-gradient-to-r from-orange-500 via-red-500 to-orange-600 hover:from-orange-600 hover:to-red-600 shadow-orange-300/30 text-white' : 'bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 hover:from-blue-700 hover:to-indigo-700 shadow-blue-300/30 text-white'}`}>
+                                                    <BookOpen size={18} /> Ver Revista
+                                                </button>
                                                 <button onClick={() => { haptic(); setSelectedPois(revista); }} className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-lg font-semibold transition-colors duration-200 border text-sm ${modoNoturno ? 'bg-slate-700 border-slate-600 text-slate-200 hover:bg-slate-600' : 'bg-slate-100 border-slate-200 text-slate-700 hover:bg-slate-200'}`}>
                                                     <MapPin size={16} className="text-rose-500" /> Ver Pontos de Referência
                                                 </button>
@@ -1662,29 +1839,296 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
                 )}
             </main>
 
-            {/* MODAL PONTOS DE REFERÊNCIA */}
-            {selectedPois && (
-                <div className={`fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 ${closingPoi ? 'poi-backdrop-out' : 'poi-backdrop'}`} onClick={closePoi}>
-                    <div className={`rounded-2xl w-full max-w-md overflow-hidden shadow-2xl border ${closingPoi ? 'poi-modal-close' : 'poi-modal-open'} ${modoNoturno ? 'bg-slate-800/80 border-slate-700/60 backdrop-blur-xl' : 'bg-white/80 border-slate-200/60 backdrop-blur-xl'}`} onClick={e => e.stopPropagation()}>
-                        <div className={`p-4 border-b flex justify-between items-center ${modoNoturno ? 'bg-slate-900/40 border-slate-700/60' : 'bg-white/60 border-slate-200/60'}`}>
-                            <h3 className={`font-bold flex items-center gap-2 ${modoNoturno ? 'text-white' : 'text-slate-800'}`}><MapPin className="text-rose-500" size={20} /> Pontos de Referência</h3>
-                            <button onClick={closePoi} className="text-slate-400 hover:text-slate-600 p-1 rounded-full hover:bg-slate-200 transition-colors"><X size={20} /></button>
+            {/* MODAL LEITOR DE REVISTA (PDF via Google Drive preview) */}
+            {pdfLeitor && (() => {
+                const isDir = pdfLeitor.brand === 'Direcional';
+                const driveViewUrl = pdfLeitor.url.replace('/preview', '/view');
+                const whatsappMsg = `Olá!\nSegue a Revista Digital do ${pdfLeitor.title} para você conhecer melhor o empreendimento:\n${driveViewUrl}\nQualquer dúvida, estou à disposição!`;
+                const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(whatsappMsg)}`;
+                return (
+                    <div className="fixed inset-0 z-[60] flex flex-col" style={{background:'#0f0f0f'}}>
+
+                        {/* 3 botões flutuantes no topo */}
+                        <div className="absolute top-0 left-0 right-0 z-20 flex items-center justify-between px-3 pt-3 pb-2 pointer-events-none"
+                            style={{background:'linear-gradient(to bottom, rgba(0,0,0,0.55) 0%, transparent 100%)'}}>
+                            {/* X — fechar */}
+                            <button
+                                onClick={() => setPdfLeitor(null)}
+                                className="pointer-events-auto w-9 h-9 flex items-center justify-center rounded-full bg-black/50 backdrop-blur-sm text-white hover:bg-black/70 active:scale-95 transition-all"
+                            >
+                                <X size={18} />
+                            </button>
+                            {/* Drive + WhatsApp */}
+                            <div className="flex items-center gap-2 pointer-events-auto">
+                                <a
+                                    href={driveViewUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="w-9 h-9 flex items-center justify-center rounded-full bg-black/50 backdrop-blur-sm text-white hover:bg-black/70 active:scale-95 transition-all"
+                                    title="Abrir no Drive"
+                                >
+                                    <ExternalLink size={16} />
+                                </a>
+                                <a
+                                    href={whatsappUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="w-9 h-9 flex items-center justify-center rounded-full bg-black/50 backdrop-blur-sm text-white hover:bg-black/70 active:scale-95 transition-all"
+                                    title="Compartilhar no WhatsApp"
+                                >
+                                    {/* ícone WhatsApp SVG */}
+                                    <svg viewBox="0 0 24 24" width="17" height="17" fill="currentColor">
+                                        <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+                                    </svg>
+                                </a>
+                            </div>
                         </div>
-                        <div className="p-6">
-                            <h4 className={`font-bold text-lg mb-4 border-b pb-2 ${modoNoturno ? 'text-white border-slate-700' : 'text-slate-800 border-slate-100'}`}>{selectedPois.title}</h4>
-                            <ul className="space-y-3">
-                                {selectedPois.pois.map((poi, idx) => (
-                                    <li key={idx} style={{animationDelay:`${idx * 0.055}s`}} className={`flex items-start gap-3 text-sm leading-relaxed poi-item-in ${modoNoturno ? 'text-slate-300' : 'text-slate-600'}`}>
-                                        <div className="w-2 h-2 rounded-full bg-rose-500 mt-1.5 shrink-0 shadow-sm"></div>
-                                        <span className="font-medium">{poi}</span>
-                                    </li>
-                                ))}
-                            </ul>
-                            <button onClick={() => { haptic(); closePoi(); }} className={`w-full mt-6 py-2.5 font-semibold rounded-lg transition-colors text-sm ${modoNoturno ? 'bg-slate-700 text-white hover:bg-slate-600' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'}`}>Fechar</button>
+
+                        {/* iFrame tela cheia */}
+                        <div className="flex-1 relative" style={{overflow:'hidden', background:'#0f0f0f'}}>
+                            {/* Placeholder de loading */}
+                            <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 z-0" style={{background:'#0f0f0f'}}>
+                                <div className={`w-16 h-16 rounded-2xl flex items-center justify-center ${isDir ? 'bg-orange-500/20' : 'bg-blue-500/20'}`}>
+                                    <BookOpen size={32} className={isDir ? 'text-orange-400' : 'text-blue-400'} />
+                                </div>
+                                <div className="text-center">
+                                    <p className="text-white/70 text-sm font-medium">Carregando revista...</p>
+                                    <p className="text-white/40 text-xs mt-1">{pdfLeitor.title}</p>
+                                </div>
+                                <div className="flex gap-1.5 mt-2">
+                                    {[0,1,2].map(i => (
+                                        <div key={i} className={`w-2 h-2 rounded-full ${isDir ? 'bg-orange-400' : 'bg-blue-400'}`}
+                                            style={{animation:`bounce 1s ease-in-out ${i*0.15}s infinite alternate`}} />
+                                    ))}
+                                </div>
+                            </div>
+                            <iframe
+                                key={pdfLeitor.url}
+                                src={pdfLeitor.url}
+                                className="border-0 relative z-10"
+                                allow="autoplay"
+                                title={pdfLeitor.title}
+                                style={{
+                                    position: 'absolute',
+                                    top: 0,
+                                    left: '-20%',
+                                    width: '140%',
+                                    height: '100%',
+                                    background: '#0f0f0f',
+                                }}
+                            />
+                        </div>
+
+                        <style>{`
+                            @keyframes bounce {
+                                from { transform: translateY(0); opacity: 0.5; }
+                                to   { transform: translateY(-6px); opacity: 1; }
+                            }
+                        `}</style>
+                    </div>
+                );
+            })()}
+
+            {/* MODAL PONTOS DE REFERÊNCIA */}
+            {selectedPois && (() => {
+                // Endereços reais dos empreendimentos (confirmados nas fontes oficiais Direcional/Riva)
+                // Usado como ORIGEM na rota do Maps — garante que a rota parte do local correto
+                const EMPREEND_COORDS = {
+                    'Brisas do Horizonte':         'Rua Ivailândia, 485, Coroado, Manaus, AM',
+                    'Parque Ville Orquídea':        'Av. Comendador José Cruz, 1026, Jardim Manaus, Manaus, AM',
+                    'Village Torres':               'Rua Dona Debla Henriques, 400, Lago Azul, Manaus, AM',
+                    'Conquista Jardim Botânico':    'Av. Monsenhor Amâncio de Miranda, 200, Nova Cidade, Manaus, AM',
+                    'Viva Vida Coral':              'Av. Tude Moutinho, 1053, Colônia Terra Nova, Manaus, AM',
+                    'Conquista Jardim Norte':       'Rua Vicente Martins, 900, Santa Etelvina, Manaus, AM',
+                    'Viva Vida Rio Amazonas':       'Av. do Turismo, 12686, Tarumã, Manaus, AM',
+                    'Bosque das Torres':            'Rua Dona Debla Henriques, 450, Lago Azul, Manaus, AM',
+                    'Parque Ville Lírio Azul':      'Av. Santa Tereza D\'Avila, 1096, Lago Azul, Manaus, AM',
+                    'Amazon Boulevard Classic':     'Av. Torquato Tapajós, 1357, Bairro da Paz, Manaus, AM',
+                    'Amazon Boulevard Prime':       'Av. Torquato Tapajós, 1357, Bairro da Paz, Manaus, AM',
+                    'Città Oasis Azzure':           'Rua Santa Bárbara, 200, Flores, Manaus, AM',
+                    'Zenith Condomínio Clube':      'Rua Rio Amazonas, 409, São Francisco, Manaus, AM',
+                    'Conquista Topázio':            'Av. Tude Moutinho, 945, Colônia Terra Nova, Manaus, AM',
+                    'Conquista Rio Negro':          'Rua Frederico Baird, 2990, Ponta Negra, Manaus, AM',
+                    'Viva Vida Rio Tapajós':        'Av. do Turismo, 12850, Tarumã, Manaus, AM',
+                };
+
+                // Mapa de POIs com endereço exato para evitar o Maps abrir a unidade errada
+                const POI_ENDERECOS = {
+                    // Brisas do Horizonte — Coroado
+                    'Supermercado Vitória':                    'Av. Cosme Ferreira, 1620, Coroado, Manaus',
+                    'Escola Mun. Profª Maria Rodrigues Tapajós': 'Escola Municipal Profª Maria Rodrigues Tapajós, Coroado, Manaus',
+                    'SPA Coroado':                             'SPA Coroado, Manaus',
+                    'Estádio Carlos Zamith':                   'Estádio Carlos Zamith, Coroado, Manaus',
+                    'Park Mall Ephigênio Salles':              'Park Mall Ephigênio Salles, Av. Ephigênio Salles, Manaus',
+                    'UFAM - Universidade Federal do Amazonas': 'UFAM Universidade Federal do Amazonas, Av. Rodrigo Octávio, Coroado, Manaus',
+                    'Hospital Dr. João Lúcio':                 'Hospital Dr. João Lúcio, Av. Cosme Ferreira, Manaus',
+                    'Samel São José Medical Center':           'Samel São José Medical Center, Manaus',
+                    'Sesi Clube do Trabalhador':               'Sesi Clube do Trabalhador, Manaus',
+                    'Manauara Shopping':                       'Manauara Shopping, Av. Mario Ypiranga, Manaus',
+                    // Lago Azul — Orquídea / Village / Bosque / Lírio
+                    'Escola Mun. Viviane Estrela':             'Escola Municipal Viviane Estrela, Lago Azul, Manaus',
+                    'Clínica da Família C. Nicolau':           'Clínica da Família Coronel Nicolau, Lago Azul, Manaus',
+                    'Veneza Express':                          'Supermercado Veneza Express, Lago Azul, Manaus',
+                    'Nova Era Supermercado':                   'Super Nova Era Torres, Av. Gov. José Lindoso, 230, Lago Azul, Manaus',
+                    'Terminal 6':                              'Terminal 6 de Ônibus, Lago Azul, Manaus',
+                    'Colégio Militar da PM VI':                'Colégio Militar da PM VI, Lago Azul, Manaus',
+                    'Shopping Via Norte':                      'Shopping Via Norte, Av. Torquato Tapajós, Manaus',
+                    'Hospital Delphina Aziz':                  'Hospital Delphina Aziz, Av. Torquato Tapajós, Manaus',
+                    'Sumaúma Park Shopping':                   'Sumaúma Park Shopping, Av. Noel Nutels, Manaus',
+                    'Supermercado Nova Era (Torres)':          'Super Nova Era Torres, Av. Gov. José Lindoso, 230, Lago Azul, Manaus',
+                    'Parque do Mindu':                         'Parque Estadual do Mindu, Manaus',
+                    'Faculdade Estácio (polo próximo)':        'Faculdade Estácio, Manaus',
+                    'Escola Integral João S. Braga':           'Escola de Tempo Integral João S. Braga, Lago Azul, Manaus',
+                    'Colégio Militar da PM VI':                'Colégio Militar da PM VI, Lago Azul, Manaus',
+                    'Escola Est. Eliana Braga':                'Escola Estadual Eliana Braga, Lago Azul, Manaus',
+                    'Clínica da Família C. Gracie':            'Clínica da Família Coronel Gracie, Lago Azul, Manaus',
+                    'UBS José Fligliuolo':                     'UBS José Fligliuolo, Lago Azul, Manaus',
+                    'Terminal 6 e 7':                          'Terminal 6, Lago Azul, Manaus',
+                    'Shopping Via Norte / Havan / Fun Park':   'Shopping Via Norte, Av. Torquato Tapajós, Manaus',
+                    // Nova Cidade — Jardim Botânico
+                    'MUSA (Museu da Amazônia / Jardim Botânico)': 'MUSA Museu da Amazônia, Av. Margarita, Nova Cidade, Manaus',
+                    'Supermercado DB Nova Cidade':             'Supermercado DB Nova Cidade, Manaus',
+                    'SPA Galiléia':                            'SPA Galiléia, Nova Cidade, Manaus',
+                    // Colônia Terra Nova — Coral / Topázio
+                    'Loja Havan':                              'Havan Manaus, Av. Torquato Tapajós, Manaus',
+                    'Atacadão':                                'Atacadão, Av. Torquato Tapajós, Manaus',
+                    'Posto Atem (famoso na entrada do bairro)': 'Posto Atem, Colônia Terra Nova, Manaus',
+                    'Allegro Mall (vizinho)':                  'Allegro Mall, Colônia Terra Nova, Manaus',
+                    'SPA da Colônia Terra Nova':               'SPA Colônia Terra Nova, Manaus',
+                    // Santa Etelvina — Jardim Norte
+                    'Shopping Via Norte (1 min)':              'Shopping Via Norte, Av. Torquato Tapajós, Manaus',
+                    'Havan (1 min)':                           'Havan Manaus, Av. Torquato Tapajós, Manaus',
+                    'Fun Park (1 min)':                        'Fun Park Manaus, Av. Torquato Tapajós, Manaus',
+                    'Nova Era Supermercado (1 min)':           'Nova Era Santa Etelvina, Av. Torquato Tapajós, 11559, Santa Etelvina, Manaus',
+                    'UBS Sálvio Belota':                       'UBS Sálvio Belota, Santa Etelvina, Manaus',
+                    'Feira do Santa Etelvina':                 'Feira Santa Etelvina, Manaus',
+                    'Terminal 06 (5 min)':                     'Terminal 6, Lago Azul, Manaus',
+                    '15º Distrito Policial':                   '15 Distrito Policial, Manaus',
+                    'Hiper DB (5-7 min)':                      'Hiper DB, Manaus',
+                    'Escola Dra. Viviane Estrela':             'Escola Viviane Estrela, Manaus',
+                    // Tarumã — Rio Amazonas / Rio Tapajós
+                    'Aeroporto Internacional Eduardo Gomes':   'Aeroporto Internacional Eduardo Gomes, Manaus',
+                    'Aeroporto Internacional de Manaus':       'Aeroporto Internacional Eduardo Gomes, Manaus',
+                    'Orla da Ponta Negra':                     'Orla da Ponta Negra, Manaus',
+                    'Sivam (Sistema de Vigilância da Amazônia)': 'Sivam, Av. Torquato Tapajós, Manaus',
+                    'Sivam':                                   'Sivam, Av. Torquato Tapajós, Manaus',
+                    'Sipam':                                   'Sipam, Manaus',
+                    'Supermercado Veneza':                     'Supermercado Veneza, Av. Coronel Teixeira, Manaus',
+                    'Tarumã (área de balneários famosos)':     'Balneários Tarumã, Manaus',
+                    'proximidade com a entrada da Ponta Negra': 'Ponta Negra, Manaus',
+                    // Bairro da Paz — Boulevard Classic / Prime
+                    'Arena da Amazônia':                       'Arena da Amazônia, Av. Constantino Nery, Manaus',
+                    'Amazonas Shopping':                       'Amazonas Shopping, Av. Djalma Batista, Manaus',
+                    'Carrefour Hipermercado':                  'Carrefour, Av. Constantino Nery, Manaus',
+                    'Hipermercado Carrefour':                  'Carrefour, Av. Constantino Nery, Manaus',
+                    'UNIP (Universidade Paulista)':            'UNIP Universidade Paulista, Manaus',
+                    'Terminal Rodoviário de Manaus':           'Terminal Rodoviário de Manaus, Manaus',
+                    'Hospital Tropical (Fundação de Medicina Tropical)': 'Hospital Tropical FMT, Av. Pedro Teixeira, Manaus',
+                    'Sambódromo':                              'Sambódromo de Manaus, Manaus',
+                    'La Parilla Restaurante':                  'La Parilla Restaurante, Manaus',
+                    'Aeroclub':                                'Aeroclub de Manaus, Manaus',
+                    'Petz':                                    'Petz Manaus, Manaus',
+                    'Clube Municipal (ao lado)':               'Clube Municipal de Manaus, Manaus',
+                    'Vila Olímpica':                           'Vila Olímpica, Manaus',
+                    'Drogaria Bom Preço':                      'Drogaria Bom Preço, Manaus',
+                    'Drogaria Santo Remédio':                  'Drogaria Santo Remédio, Manaus',
+                    // Flores — Città Oasis Azzure
+                    'Universidade Nilton Lins':                'Universidade Nilton Lins, Av. Prof. Nilton Lins, Manaus',
+                    'Laranjeiras Restaurante (polo gastronômico)': 'Polo Gastronômico Laranjeiras, Av. Coronel Teixeira, Manaus',
+                    'Sushi Ponta Negra':                       'Sushi Ponta Negra, Av. Coronel Teixeira, Manaus',
+                    'Domes Burgers':                           'Domes Burgers, Manaus',
+                    'Di Fiori - Casa de Massas e Pizzas':      'Di Fiori Casa de Massas, Av. Coronel Teixeira, Manaus',
+                    'Na Lenha Pizzaria':                       'Na Lenha Pizzaria, Av. Coronel Teixeira, Manaus',
+                    'Supermercado Atack (Laranjeiras)':        'Supermercado Atack, Av. Coronel Teixeira, Flores, Manaus',
+                    'Sollarium Mall':                          'Sollarium Mall, Manaus',
+                    // São Francisco — Zenith
+                    'Fórum Ministro Henoch Reis':              'Fórum Ministro Henoch Reis, Manaus',
+                    'Tribunal de Justiça (TJ-AM)':             'Tribunal de Justiça do Amazonas, Manaus',
+                    'Hospital Check Up':                       'Hospital Check Up, Manaus',
+                    'Colégio Martha Falcão':                   'Colégio Martha Falcão, Manaus',
+                    'Faculdade Martha Falcão':                 'Faculdade Martha Falcão, Manaus',
+                    // Ponta Negra — Rio Negro
+                    'Shopping Ponta Negra':                    'Shopping Ponta Negra, Av. N.S. do Carmo, Manaus',
+                    'DB Ponta Negra':                          'Supermercado DB Ponta Negra, Manaus',
+                    'Orla 92 Mall':                            'Orla 92 Mall, Ponta Negra, Manaus',
+                    'Orla da Ponta Negra':                     'Orla da Ponta Negra, Manaus',
+                    'Praia Dourada':                           'Praia Dourada, Ponta Negra, Manaus',
+                    'Marina Tauá':                             'Marina Tauá, Ponta Negra, Manaus',
+                    'Balneário do SESC':                       'SESC Balneário, Manaus',
+                    'Aeroporto Eduardo Gomes':                 'Aeroporto Internacional Eduardo Gomes, Manaus',
+                    'Policlínica José Lins':                   'Policlínica José Lins, Manaus',
+                    'Colégio Século':                          'Colégio Século, Manaus',
+                };
+
+                const origemEndereco = EMPREEND_COORDS[selectedPois.title] || (selectedPois.title + ', Manaus, AM');
+
+                const abrirMapa = (poi) => {
+                    haptic('light');
+                    // Remove o "(X min)" para usar como chave de lookup
+                    const nomePoi = poi.replace(/\s*\([\d\-\s]+\s*min\)$/i, '').trim();
+                    // Busca endereço exato no mapa de POIs; se não tiver, usa nome + Manaus
+                    const destino = POI_ENDERECOS[nomePoi] || POI_ENDERECOS[poi] || `${nomePoi}, Manaus, AM`;
+                    const origemEncoded = encodeURIComponent(origemEndereco);
+                    const destinoEncoded = encodeURIComponent(destino);
+                    const url = `https://www.google.com/maps/dir/${origemEncoded}/${destinoEncoded}`;
+                    window.open(url, '_blank');
+                };
+                return (
+                    <div className={`fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 ${closingPoi ? 'poi-backdrop-out' : 'poi-backdrop'}`} onClick={closePoi}>
+                        <div className={`rounded-2xl w-full max-w-md overflow-hidden shadow-2xl border ${closingPoi ? 'poi-modal-close' : 'poi-modal-open'} ${modoNoturno ? 'bg-slate-800/80 border-slate-700/60 backdrop-blur-xl' : 'bg-white/80 border-slate-200/60 backdrop-blur-xl'}`} onClick={e => e.stopPropagation()}>
+                            {/* Header */}
+                            <div className={`p-4 border-b flex justify-between items-center ${modoNoturno ? 'bg-slate-900/40 border-slate-700/60' : 'bg-white/60 border-slate-200/60'}`}>
+                                <h3 className={`font-bold flex items-center gap-2 ${modoNoturno ? 'text-white' : 'text-slate-800'}`}>
+                                    <MapPin className="text-rose-500" size={20} /> Pontos de Referência
+                                </h3>
+                                <button onClick={closePoi} className="text-slate-400 hover:text-slate-600 p-1 rounded-full hover:bg-slate-200 transition-colors"><X size={20} /></button>
+                            </div>
+                            <div className="p-5">
+                                <h4 className={`font-bold text-lg mb-1 ${modoNoturno ? 'text-white' : 'text-slate-800'}`}>{selectedPois.title}</h4>
+                                {/* Dica de toque */}
+                                <p className={`text-[10px] font-semibold mb-4 flex items-center gap-1.5 ${modoNoturno ? 'text-slate-500' : 'text-slate-400'}`}>
+                                    <span>👆</span> Toque em qualquer ponto para ver o caminho no mapa
+                                </p>
+                                <div className={`rounded-xl overflow-hidden border divide-y ${modoNoturno ? 'border-slate-700/60 divide-slate-700/60' : 'border-slate-100 divide-slate-100'}`}>
+                                    {selectedPois.pois.map((poi, idx) => (
+                                        <button
+                                            key={idx}
+                                            onClick={() => abrirMapa(poi)}
+                                            style={{animationDelay:`${idx * 0.05}s`}}
+                                            className={`w-full flex items-center gap-3 px-4 py-3 text-left transition-all active:scale-[0.98] poi-item-in group
+                                                ${modoNoturno
+                                                    ? 'hover:bg-rose-500/10 active:bg-rose-500/15'
+                                                    : 'hover:bg-rose-50 active:bg-rose-100'
+                                                }`}
+                                        >
+                                            {/* Ícone de pin */}
+                                            <div className={`shrink-0 w-7 h-7 rounded-full flex items-center justify-center transition-all group-hover:scale-110
+                                                ${modoNoturno ? 'bg-rose-500/15' : 'bg-rose-50'}`}>
+                                                <MapPin size={13} className="text-rose-500" />
+                                            </div>
+                                            {/* Nome do POI */}
+                                            <span className={`flex-1 text-sm font-medium leading-snug transition-colors
+                                                ${modoNoturno
+                                                    ? 'text-slate-300 group-hover:text-white'
+                                                    : 'text-slate-600 group-hover:text-slate-900'
+                                                }`}>
+                                                {poi}
+                                            </span>
+                                            {/* Seta de rota */}
+                                            <div className={`shrink-0 flex items-center gap-1 text-[9px] font-black uppercase tracking-wider transition-all opacity-0 group-hover:opacity-100 -translate-x-1 group-hover:translate-x-0
+                                                ${modoNoturno ? 'text-rose-400' : 'text-rose-500'}`}>
+                                                <span>Ver rota</span>
+                                                <ExternalLink size={10} />
+                                            </div>
+                                        </button>
+                                    ))}
+                                </div>
+                                <button onClick={() => { haptic(); closePoi(); }} className={`w-full mt-4 py-2.5 font-semibold rounded-xl transition-colors text-sm ${modoNoturno ? 'bg-slate-700 text-white hover:bg-slate-600' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'}`}>Fechar</button>
+                            </div>
                         </div>
                     </div>
-                </div>
-            )}
+                );
+            })()}
 
             {/* --- ÍCONE DO ROBÔ E BALÃO AMIGÁVEL --- */}
             <div className={`fixed bottom-8 right-8 z-40 flex flex-row items-end gap-3 transition-all duration-500 ${isChatOpen ? 'scale-0 opacity-0 pointer-events-none' : 'scale-100 opacity-100'}`}>
@@ -1732,6 +2176,13 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
                 <style dangerouslySetInnerHTML={{ __html: `
                     @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
                     .animate-float { animation: float 4s ease-in-out infinite; }
+                    @keyframes logo-flip {
+                        0%   { transform: rotateY(0deg);   }
+                        25%  { transform: rotateY(180deg); }
+                        50%  { transform: rotateY(360deg); }
+                        75%  { transform: rotateY(360deg); }
+                        100% { transform: rotateY(360deg); }
+                    }
                     @keyframes btn-glow-pulse { 0%,100% { box-shadow: 0 0 0 0 rgba(99,102,241,0), 0 8px 32px rgba(59,130,246,0.45); transform: scale(1); } 50% { box-shadow: 0 0 0 8px rgba(99,102,241,0.18), 0 8px 40px rgba(59,130,246,0.7); transform: scale(1.03); } }
                     @keyframes btn-shine-sweep { 0% { transform: translateX(-180%) skewX(-18deg); opacity:0; } 10% { opacity:1; } 55% { transform: translateX(280%) skewX(-18deg); opacity:0.8; } 100% { transform: translateX(280%) skewX(-18deg); opacity:0; } }
                     .btn-shine-layer { position:absolute; inset:0; overflow:hidden; border-radius:inherit; pointer-events:none; }
@@ -1767,6 +2218,16 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
                     @keyframes pr-pulse { 0%, 100% { box-shadow: 0 0 0 3px rgba(249,115,22,0.35), 0 0 20px 6px rgba(249,115,22,0.45), 0 2px 8px rgba(0,0,0,0.2); transform: scale(1); } 50% { box-shadow: 0 0 0 5px rgba(249,115,22,0.2), 0 0 28px 10px rgba(249,115,22,0.6), 0 2px 8px rgba(0,0,0,0.2); transform: scale(1.04); } }
                     @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
                     @keyframes pr-pulse { 0%, 100% { box-shadow: 0 0 0 2px rgba(249,115,22,0.4), 0 0 12px rgba(249,115,22,0.5); transform: scale(1); } 50% { box-shadow: 0 0 0 4px rgba(249,115,22,0.25), 0 0 22px rgba(249,115,22,0.7); transform: scale(1.04); } }
+                    @keyframes cotacao-glow { 0%, 100% { box-shadow: 0 0 0 2px rgba(99,102,241,0.4), 0 0 12px rgba(99,102,241,0.5); } 50% { box-shadow: 0 0 0 4px rgba(99,102,241,0.2), 0 0 22px rgba(99,102,241,0.7); } }
+                    .cotacao-btn { animation: cotacao-glow 2.2s ease-in-out infinite; }
+                    @keyframes cotacao-shine { 0% { transform: translateX(-180%) skewX(-18deg); opacity:0; } 10% { opacity:1; } 55% { transform: translateX(280%) skewX(-18deg); opacity:0.8; } 100% { transform: translateX(280%) skewX(-18deg); opacity:0; } }
+                    .cotacao-btn-shine { position:absolute; inset:0; overflow:hidden; border-radius:inherit; pointer-events:none; }
+                    .cotacao-btn-shine::after { content:''; position:absolute; top:-20%; left:0; width:60%; height:140%; background: linear-gradient(105deg, transparent 10%, rgba(255,255,255,0.28) 50%, transparent 90%); animation: cotacao-shine 3.2s ease-in-out infinite; }
+                    @keyframes cotacao-modal-in { 0% { opacity:0; transform: translateY(100%); } 60% { opacity:1; transform: translateY(-4px); } 100% { opacity:1; transform: translateY(0); } }
+                    @keyframes cotacao-modal-out { 0% { opacity:1; transform: translateY(0); } 100% { opacity:0; transform: translateY(100%); } }
+                    .cotacao-modal-open { animation: cotacao-modal-in 0.45s cubic-bezier(0.34,1.2,0.64,1) both; }
+                    @keyframes field-in { 0% { opacity:0; transform: translateY(10px); } 100% { opacity:1; transform: translateY(0); } }
+                    .field-animate { animation: field-in 0.3s ease both; }
                     /* Chat panel open / close */
                     @keyframes chat-open-kf  { 0% { opacity:0; transform: scale(0.88) translateY(20px); } 60% { opacity:1; transform: scale(1.01) translateY(-2px); } 100% { opacity:1; transform: scale(1) translateY(0); } }
                     @keyframes chat-close-kf { 0% { opacity:1; transform: scale(1) translateY(0); } 40% { opacity:1; transform: scale(1.01) translateY(-2px); } 100% { opacity:0; transform: scale(0.88) translateY(20px); } }
@@ -1777,6 +2238,22 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
                         .chat-mobile-full {
                             top: env(safe-area-inset-top, 0px) !important;
                             height: calc(100dvh - env(safe-area-inset-top, 0px)) !important;
+                        }
+                        .chat-folder-full {
+                            top: 0px !important;
+                            left: 0px !important;
+                            right: 0px !important;
+                            bottom: 0px !important;
+                            height: 100dvh !important;
+                            border-radius: 0 !important;
+                        }
+                        /* Pasta: começa em top:0, então o header precisa compensar o notch */
+                        .chat-folder-full .pasta-header-safe {
+                            padding-top: calc(1.25rem + env(safe-area-inset-top, 0px)) !important;
+                        }
+                        /* Chat normal: começa após o notch, padding normal */
+                        .chat-mobile-full .pasta-header-safe {
+                            padding-top: 1.25rem !important;
                         }
                     }
                     /* Desktop chat flutuante: reseta top e height */
@@ -1814,49 +2291,89 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
                 ${isCreatingFolder
                     ? 'left-0 right-0 bottom-0 rounded-none'
                     : 'left-0 right-0 bottom-0 rounded-none md:bottom-6 md:right-6 md:left-auto md:rounded-3xl md:w-[350px] lg:w-[420px] md:h-[600px] md:max-h-[85vh] origin-bottom-right'}
-                ${modoNoturno ? 'bg-slate-800' : 'bg-white'}`}>
-                <div className={`p-5 flex items-center justify-between shrink-0 shadow-lg backdrop-blur-xl border-b ${isCreatingFolder ? 'bg-gradient-to-r from-orange-600 to-red-500 border-orange-700/40' : 'bg-gradient-to-r from-orange-500 to-red-500'}`}>
-                    <div className="flex items-center gap-3">
-                        <div className="bg-white/10 p-2.5 rounded-2xl backdrop-blur-md border border-white/20">
-                            <svg viewBox="0 0 24 24" fill="none" className="w-6 h-6" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M12 2C6.477 2 2 6.254 2 11.5c0 2.576 1.086 4.91 2.857 6.614L4 22l4.23-1.394A10.456 10.456 0 0012 21c5.523 0 10-4.254 10-9.5S17.523 2 12 2z" fill="white" fillOpacity="0.95"/>
-                                <circle cx="8.5" cy="11.5" r="1.2" fill="#f97316"/>
-                                <circle cx="12" cy="11.5" r="1.2" fill="#f97316"/>
-                                <circle cx="15.5" cy="11.5" r="1.2" fill="#f97316"/>
-                            </svg>
-                        </div>
-                        <div>
-                            <h3 className="font-bold text-white tracking-tight">IA Destemidos {isCreatingFolder && "✨"}</h3>
-                            <p className="text-blue-100 text-[10px] font-medium flex items-center gap-1.5 uppercase tracking-widest">
-                                <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse"></span>
-                                Online para te apoiar
-                            </p>
-                        </div>
+                ${modoNoturno ? 'bg-[#0B1120]' : 'bg-slate-50'}`}>
+
+                {/* ── HEADER CHATBOT ── */}
+                <div className="relative overflow-hidden shrink-0"
+                    style={{
+                        background: isCreatingFolder && folderSource === 'rapida'
+                            ? 'linear-gradient(135deg, #f97316 0%, #ef4444 45%, #f59e0b 100%)'
+                            : 'linear-gradient(135deg, #6366f1 0%, #4f46e5 40%, #7c3aed 100%)',
+                        boxShadow: isCreatingFolder && folderSource === 'rapida'
+                            ? '0 4px 32px rgba(249,115,22,0.45)'
+                            : '0 4px 32px rgba(99,102,241,0.45)',
+                    }}>
+                    {/* shimmer sweep */}
+                    <div className="absolute inset-0 pointer-events-none overflow-hidden">
+                        <div style={{ position:'absolute', top:'-20%', left:0, width:'60%', height:'140%', background:'linear-gradient(105deg, transparent 10%, rgba(255,255,255,0.16) 50%, transparent 90%)', animation: isCreatingFolder && folderSource === 'rapida' ? 'light-sweep 1.8s ease-in-out infinite' : 'cotacao-shine 3.5s ease-in-out infinite', transform:'skewX(-18deg)' }}></div>
                     </div>
-                    <button onClick={() => { haptic(); closeChat(); }} className="text-white/60 hover:text-white hover:bg-white/10 p-2 rounded-xl transition-all">
-                        <X className="w-5 h-5" />
-                    </button>
+                    <div className="relative z-10 px-5 pt-5 pb-4 flex items-center justify-between pasta-header-safe">
+                        <div className="flex items-center gap-3">
+                            <div className="bg-white/15 backdrop-blur-md p-2.5 rounded-2xl border border-white/20 shadow-inner">
+                                {isCreatingFolder && folderSource === 'rapida' ? (
+                                    <Sparkles size={20} className="text-white" style={{filter:'drop-shadow(0 0 6px rgba(255,255,255,0.8))', animation:'spin 3s linear infinite'}} />
+                                ) : isCreatingFolder ? (
+                                    <FolderPlus size={20} className="text-white" />
+                                ) : (
+                                    <svg viewBox="0 0 24 24" fill="none" className="w-5 h-5" xmlns="http://www.w3.org/2000/svg">
+                                        <path d="M12 2C6.477 2 2 6.254 2 11.5c0 2.576 1.086 4.91 2.857 6.614L4 22l4.23-1.394A10.456 10.456 0 0012 21c5.523 0 10-4.254 10-9.5S17.523 2 12 2z" fill="white" fillOpacity="0.95"/>
+                                        <circle cx="8.5" cy="11.5" r="1.2" fill="#a5b4fc"/>
+                                        <circle cx="12" cy="11.5" r="1.2" fill="#a5b4fc"/>
+                                        <circle cx="15.5" cy="11.5" r="1.2" fill="#a5b4fc"/>
+                                    </svg>
+                                )}
+                            </div>
+                            <div>
+                                <h3 className="font-black text-white text-lg uppercase tracking-widest drop-shadow-md">
+                                    {isCreatingFolder && folderSource === 'rapida' ? 'Pasta Rápida IA' : isCreatingFolder ? 'Pasta do Cliente' : 'IA Destemidos'}
+                                </h3>
+                                <p className="text-white/70 text-[10px] font-black uppercase tracking-[0.15em] flex items-center gap-1.5">
+                                    {isCreatingFolder && folderSource === 'rapida' ? (
+                                        <><span className="w-1.5 h-1.5 rounded-full bg-yellow-300 animate-pulse"></span>IA Organizando Documentos</>
+                                    ) : isCreatingFolder ? (
+                                        <><span className="w-1.5 h-1.5 rounded-full bg-indigo-300 animate-pulse"></span>Organizar · PDF · Arrastar</>
+                                    ) : (
+                                        <><span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse"></span>Online para te apoiar</>
+                                    )}
+                                </p>
+                            </div>
+                        </div>
+                        <button onClick={() => { haptic(); closeChat(); }} className="bg-white/10 hover:bg-white/25 active:scale-95 text-white p-2.5 rounded-2xl border border-white/20 transition-all backdrop-blur-sm">
+                            <X className="w-5 h-5" />
+                        </button>
+                    </div>
                 </div>
 
                 {!isCreatingFolder && (
-                    <div ref={chatScrollRef} className={`overflow-y-auto p-5 space-y-5 custom-scrollbar flex-1 transition-colors ${modoNoturno ? 'bg-slate-900/50' : 'bg-slate-50/50'}`}>
+                    <div ref={chatScrollRef} className={`overflow-y-auto px-4 py-5 space-y-4 custom-scrollbar flex-1 transition-colors ${modoNoturno ? 'bg-[#0B1120]' : 'bg-slate-50'}`}>
                         {chatMessages.map((msg, idx) => (
                             <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                                <div className={`max-w-[88%] rounded-2xl px-4 py-3 shadow-sm text-sm leading-relaxed ${
-                                    msg.role === 'user' 
-                                    ? 'bg-indigo-600 text-white rounded-tr-none' 
-                                    : (modoNoturno ? 'bg-slate-800 border border-slate-700 text-slate-200 rounded-tl-none' : 'bg-white border border-slate-100 text-slate-700 rounded-tl-none')
-                                }`}>
+                                {msg.role === 'bot' && (
+                                    <div className="w-7 h-7 rounded-2xl shrink-0 mr-2 mt-0.5 flex items-center justify-center"
+                                        style={{ background: 'linear-gradient(135deg, #6366f1 0%, #7c3aed 100%)', boxShadow: '0 2px 8px rgba(99,102,241,0.4)' }}>
+                                        <Sparkles size={12} className="text-white" />
+                                    </div>
+                                )}
+                                <div className={`max-w-[80%] rounded-2xl px-4 py-3 text-sm leading-relaxed ${
+                                    msg.role === 'user'
+                                    ? 'rounded-tr-sm text-white'
+                                    : (modoNoturno ? 'bg-slate-800/80 border border-slate-700/60 text-slate-200 rounded-tl-sm shadow-sm' : 'bg-white border border-slate-100 text-slate-700 rounded-tl-sm shadow-sm')
+                                }`}
+                                style={msg.role === 'user' ? { background: 'linear-gradient(135deg, #6366f1 0%, #4f46e5 60%, #7c3aed 100%)', boxShadow: '0 2px 12px rgba(99,102,241,0.35)' } : {}}>
                                     {msg.role === 'bot' ? renderChatMessage(msg.content) : msg.content}
                                 </div>
                             </div>
                         ))}
                         {isChatLoading && (
-                            <div className="flex justify-start">
-                                <div className={`border rounded-2xl rounded-tl-none px-4 py-3 shadow-sm flex gap-1.5 items-center ${modoNoturno ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-100'}`}>
-                                    <div className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-bounce"></div>
-                                    <div className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
-                                    <div className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-bounce" style={{animationDelay: '0.4s'}}></div>
+                            <div className="flex justify-start items-end gap-2">
+                                <div className="w-7 h-7 rounded-2xl shrink-0 flex items-center justify-center"
+                                    style={{ background: 'linear-gradient(135deg, #6366f1 0%, #7c3aed 100%)', boxShadow: '0 2px 8px rgba(99,102,241,0.4)' }}>
+                                    <Sparkles size={12} className="text-white" style={{animation:'spin 2s linear infinite'}} />
+                                </div>
+                                <div className={`border rounded-2xl rounded-tl-sm px-4 py-3 shadow-sm flex gap-1.5 items-center ${modoNoturno ? 'bg-slate-800/80 border-slate-700/60' : 'bg-white border-slate-100'}`}>
+                                    <div className="w-1.5 h-1.5 rounded-full animate-bounce" style={{background:'#818cf8'}}></div>
+                                    <div className="w-1.5 h-1.5 rounded-full animate-bounce" style={{background:'#818cf8', animationDelay:'0.2s'}}></div>
+                                    <div className="w-1.5 h-1.5 rounded-full animate-bounce" style={{background:'#818cf8', animationDelay:'0.4s'}}></div>
                                 </div>
                             </div>
                         )}
@@ -1865,29 +2382,37 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
                 )}
 
                 {isCreatingFolder && (
-                    <div className={`flex-1 overflow-hidden flex flex-col transition-colors ${closingFolder ? 'folder-collapsing' : 'folder-expanding'} ${modoNoturno ? 'bg-slate-900' : 'bg-slate-50'}`}>
+                    <div className={`flex-1 overflow-hidden flex flex-col transition-colors ${closingFolder ? 'folder-collapsing' : 'folder-expanding'} ${modoNoturno ? 'bg-[#0B1120]' : 'bg-slate-50'}`}>
 
-                        <div className={`shrink-0 border-b backdrop-blur-xl transition-colors ${modoNoturno ? 'bg-slate-800/70 border-slate-700/60' : 'bg-white/70 border-slate-100/80'}`}>
-                            <div className={`flex items-center justify-between px-3 py-2 border-b ${modoNoturno ? 'border-slate-700/60' : 'border-slate-100/80'}`}>
-                                <h3 className={`font-black text-sm flex items-center gap-2 ${modoNoturno ? 'text-white' : 'text-slate-800'}`}>
-                                    <FolderPlus className="text-orange-500" size={16} />
-                                    Criar Pasta do Cliente
-                                </h3>
+                        {/* Subheader da pasta */}
+                        <div className={`shrink-0 border-b backdrop-blur-xl transition-colors ${modoNoturno ? 'bg-slate-900/60 border-slate-800' : 'bg-white/80 border-slate-100'}`}>
+                            <div className={`flex items-center justify-between px-4 py-2.5 border-b ${modoNoturno ? 'border-slate-800' : 'border-slate-100/80'}`}>
                                 <div className="flex items-center gap-2">
                                     {pendingDocs.length > 0 && !isOrganizingDocs && (
                                         <button
                                             onClick={() => { haptic('medium'); handleOrganizeAll(); }}
-                                            className={`text-[10px] font-black uppercase tracking-wider px-3 py-1.5 rounded-lg border transition-all flex items-center gap-1 ${modoNoturno ? 'bg-orange-500/20 border-orange-500/40 text-orange-300 hover:bg-orange-500/30' : 'bg-orange-500 text-white border-orange-500 hover:bg-orange-600'}`}>
-                                            <Sparkles size={11} /> Organizar
+                                            className="text-[10px] font-black uppercase tracking-wider px-3 py-1.5 rounded-xl border transition-all flex items-center gap-1 text-white relative overflow-hidden"
+                                            style={folderSource === 'rapida'
+                                                ? { background: 'linear-gradient(135deg, #f97316 0%, #ef4444 100%)', borderColor: 'transparent', boxShadow: '0 2px 8px rgba(249,115,22,0.4)' }
+                                                : { background: 'linear-gradient(135deg, #6366f1 0%, #7c3aed 100%)', borderColor: 'transparent', boxShadow: '0 2px 8px rgba(99,102,241,0.4)' }
+                                            }>
+                                            {folderSource === 'rapida' && <span className="absolute inset-0 pasta-rapida-btn pointer-events-none" style={{borderRadius:'0.75rem'}}></span>}
+                                            <Sparkles size={11} className="relative z-10" style={folderSource === 'rapida' ? {filter:'drop-shadow(0 0 4px rgba(255,255,255,0.8))'} : {}} />
+                                            <span className="relative z-10">Organizar IA</span>
                                         </button>
                                     )}
-                                    <button onClick={() => { haptic(); backToChat(); }} className={`text-[10px] font-black uppercase tracking-wider px-3 py-1.5 rounded-lg border transition-all flex items-center gap-1 ${modoNoturno ? 'bg-slate-700 border-slate-600 text-orange-300 hover:bg-slate-600' : 'bg-orange-50 text-orange-600 border-orange-100 hover:bg-orange-100'}`}>
+                                    <button onClick={() => { haptic(); backToChat(); }}
+                                        className={`text-[10px] font-black uppercase tracking-wider px-3 py-1.5 rounded-xl border transition-all flex items-center gap-1 ${
+                                            folderSource === 'rapida'
+                                                ? (modoNoturno ? 'bg-slate-800 border-slate-700 text-orange-300 hover:bg-slate-700' : 'bg-orange-50 text-orange-600 border-orange-100 hover:bg-orange-100')
+                                                : (modoNoturno ? 'bg-slate-800 border-slate-700 text-indigo-300 hover:bg-slate-700' : 'bg-indigo-50 text-indigo-600 border-indigo-100 hover:bg-indigo-100')
+                                        }`}>
                                         ← Chat
                                     </button>
                                 </div>
                             </div>
-                            <div className={`px-3 py-1.5 text-[9px] flex flex-wrap gap-x-2 gap-y-0.5 ${modoNoturno ? 'text-slate-400' : 'text-orange-700'}`}>
-                                <span className="font-black">📋 Ordem:</span>
+                            <div className={`px-4 py-1.5 text-[9px] flex flex-wrap gap-x-2 gap-y-0.5 ${modoNoturno ? 'text-slate-500' : 'text-slate-400'}`}>
+                                <span className="font-black uppercase tracking-widest">📋 Ordem:</span>
                                 <span><b>1º</b> RG · CPF · Certidão · Residência</span>
                                 <span><b>2º</b> CTPS · Contracheque · Extrato · FGTS</span>
                                 <span className="opacity-60">💡 Arraste para reordenar</span>
@@ -1898,15 +2423,18 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
                             {isOrganizingDocs && (
                                 <div className="flex flex-col items-center justify-center gap-3 py-6">
                                     <div className="relative w-14 h-14">
-                                        <div className="w-14 h-14 rounded-full border-4 border-orange-100 border-t-orange-500 animate-spin"></div>
-                                        <Sparkles size={20} className="absolute inset-0 m-auto text-orange-500" />
+                                        <div className="w-14 h-14 rounded-full border-4 animate-spin"
+                                            style={{ borderColor: folderSource === 'rapida' ? 'rgba(249,115,22,0.15)' : 'rgba(99,102,241,0.15)', borderTopColor: folderSource === 'rapida' ? '#f97316' : '#6366f1' }}></div>
+                                        <Sparkles size={20} className="absolute inset-0 m-auto"
+                                            style={{ color: folderSource === 'rapida' ? '#f97316' : '#6366f1' }} />
                                     </div>
-                                    <p className="font-black text-sm text-orange-500 uppercase tracking-wider">IA analisando...</p>
+                                    <p className="font-black text-sm uppercase tracking-wider"
+                                        style={{ color: folderSource === 'rapida' ? '#f97316' : '#6366f1' }}>IA analisando...</p>
                                     {organizeProgress.total > 0 && (
                                         <div className="w-56 flex flex-col items-center gap-2">
-                                            <div className={`w-full h-2 rounded-full overflow-hidden ${modoNoturno ? 'bg-slate-700' : 'bg-orange-100'}`}>
-                                                <div className="h-2 rounded-full bg-orange-500 transition-all duration-500"
-                                                    style={{ width: `${(organizeProgress.current / organizeProgress.total) * 100}%` }} />
+                                            <div className={`w-full h-2 rounded-full overflow-hidden ${modoNoturno ? 'bg-slate-700' : 'bg-slate-100'}`}>
+                                                <div className="h-2 rounded-full transition-all duration-500"
+                                                    style={{ width: `${(organizeProgress.current / organizeProgress.total) * 100}%`, background: folderSource === 'rapida' ? '#f97316' : '#6366f1' }} />
                                             </div>
                                             <p className={`text-[10px] font-bold text-center ${modoNoturno ? 'text-slate-400' : 'text-slate-500'}`}>
                                                 {organizeProgress.current}/{organizeProgress.total} — {organizeProgress.label}
@@ -1945,8 +2473,9 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
                                         onTouchEnd={handleTouchEnd}
                                         onClick={() => { if (!isDraggingActive) { haptic('light'); setFullscreenDoc(doc); } }}
                                         style={cardStyle}
-                                        className={`relative group border-2 border-dashed ${extraClass} ${draggedItemIndex === index ? 'border-orange-400 scale-90 opacity-30 rotate-3' : (modoNoturno ? 'border-transparent bg-slate-800 hover:border-orange-500' : 'border-transparent bg-white hover:border-orange-300')} rounded-xl overflow-hidden shadow-sm hover:shadow-lg transition-colors aspect-[3/4] flex flex-col cursor-move`}>
-                                        <div className="absolute top-1 left-1 bg-orange-900/80 text-white text-[9px] font-black w-5 h-5 flex items-center justify-center rounded-md z-10 backdrop-blur-sm">{index + 1}</div>
+                                        className={`relative group border-2 border-dashed ${extraClass} ${draggedItemIndex === index ? 'border-orange-400 scale-90 opacity-30 rotate-3' : (modoNoturno ? `border-transparent bg-slate-800 ${folderSource === 'rapida' ? 'hover:border-orange-500' : 'hover:border-indigo-500'}` : `border-transparent bg-white ${folderSource === 'rapida' ? 'hover:border-orange-300' : 'hover:border-indigo-300'}`)} rounded-xl overflow-hidden shadow-sm hover:shadow-lg transition-colors aspect-[3/4] flex flex-col cursor-move`}>
+                                        <div className="absolute top-1 left-1 text-white text-[9px] font-black w-5 h-5 flex items-center justify-center rounded-md z-10 backdrop-blur-sm"
+                                            style={{ background: folderSource === 'rapida' ? 'rgba(124,58,27,0.85)' : 'rgba(67,56,202,0.85)' }}>{index + 1}</div>
                                         <button onClick={(e) => { e.stopPropagation(); haptic('heavy'); removeDoc(doc.id); }} className="absolute top-1 right-1 bg-red-500 text-white p-1 rounded-lg opacity-0 group-hover:opacity-100 active:opacity-100 transition-all z-10 hover:bg-red-600 shadow-lg"><Trash2 size={11} /></button>
                                         <div className={`flex-1 flex items-center justify-center overflow-hidden relative ${modoNoturno ? 'bg-slate-950' : 'bg-slate-100'}`}>
                                             {doc.previewUrl ? (
@@ -1963,13 +2492,18 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
                                                 </div>
                                             )}
                                         </div>
-                                        <div className={`p-1.5 border-t text-[8px] font-bold truncate text-center uppercase tracking-tight ${modoNoturno ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-50'} ${doc.aiLabel && doc.aiLabel !== 'Outro Documento' && doc.aiLabel !== '⏳' && doc.aiLabel !== '🔍' ? 'text-orange-500' : (modoNoturno ? 'text-slate-400' : 'text-slate-500')}`}>
+                                        <div className={`p-1.5 border-t text-[8px] font-bold truncate text-center uppercase tracking-tight ${modoNoturno ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-50'} ${doc.aiLabel && doc.aiLabel !== 'Outro Documento' && doc.aiLabel !== '⏳' && doc.aiLabel !== '🔍' ? (folderSource === 'rapida' ? 'text-orange-500' : 'text-indigo-500') : (modoNoturno ? 'text-slate-400' : 'text-slate-500')}`}>
                                             {doc.aiLabel || doc.name}
                                         </div>
                                     </div>
                                     );
                                 })}
-                                <button onClick={() => { haptic(); fileInputRef.current?.click(); }} className={`aspect-[3/4] rounded-xl border-2 border-dashed flex flex-col items-center justify-center cursor-pointer transition-all shadow-sm ${modoNoturno ? 'bg-slate-800 border-slate-700 text-slate-500 hover:border-orange-500 hover:bg-slate-700 hover:text-orange-400' : 'bg-white border-orange-200 text-orange-400 hover:border-orange-500 hover:bg-orange-50/50'}`}>
+                                <button onClick={() => { haptic(); fileInputRef.current?.click(); }}
+                                    className={`aspect-[3/4] rounded-xl border-2 border-dashed flex flex-col items-center justify-center cursor-pointer transition-all shadow-sm ${
+                                        folderSource === 'rapida'
+                                            ? (modoNoturno ? 'bg-slate-800 border-slate-700 text-slate-500 hover:border-orange-500 hover:bg-slate-700 hover:text-orange-400' : 'bg-white border-orange-200 text-orange-400 hover:border-orange-500 hover:bg-orange-50/50')
+                                            : (modoNoturno ? 'bg-slate-800 border-slate-700 text-slate-500 hover:border-indigo-500 hover:bg-slate-700 hover:text-indigo-400' : 'bg-white border-indigo-200 text-indigo-400 hover:border-indigo-500 hover:bg-indigo-50/50')
+                                    }`}>
                                     <Plus size={20} className="mb-1" />
                                     <span className="text-[9px] font-black text-center leading-tight uppercase tracking-widest">Adicionar<br/>Arquivo</span>
                                 </button>
@@ -1977,21 +2511,31 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
                         </div>
 
                         {pendingDocs.length > 0 && (
-                            <div className={`shrink-0 border-t flex justify-end ${modoNoturno ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-100'}`}
+                            <div className={`shrink-0 border-t flex justify-end transition-colors ${modoNoturno ? 'bg-[#0B1120] border-slate-800' : 'bg-white border-slate-100'}`}
                                 style={{ padding: '10px 12px', paddingBottom: 'max(10px, calc(env(safe-area-inset-bottom) + 6px))' }}>
-                                <button onClick={() => { haptic('medium'); setIsFinalizingFolder(true); }} className="bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white px-6 py-2.5 rounded-2xl font-black text-xs uppercase tracking-widest shadow-lg shadow-orange-400/30 hover:-translate-y-0.5 transition-all flex items-center gap-2 pasta-rapida-btn relative overflow-hidden">
-                                    <Wand2 size={16} /> Finalizar PDF
+                                <button onClick={() => { haptic('medium'); setIsFinalizingFolder(true); }}
+                                    className="text-white px-6 py-2.5 rounded-2xl font-black text-xs uppercase tracking-widest shadow-lg transition-all flex items-center gap-2 relative overflow-hidden active:scale-95"
+                                    style={folderSource === 'rapida'
+                                        ? { background: 'linear-gradient(135deg, #f97316 0%, #ef4444 50%, #f59e0b 100%)', boxShadow: '0 4px 20px rgba(249,115,22,0.4)' }
+                                        : { background: 'linear-gradient(135deg, #6366f1 0%, #4f46e5 40%, #7c3aed 100%)', boxShadow: '0 4px 20px rgba(99,102,241,0.4)' }
+                                    }>
+                                    {folderSource === 'rapida' && <span className="absolute inset-0 pasta-rapida-btn pointer-events-none" style={{borderRadius:'1rem'}}></span>}
+                                    {folderSource !== 'rapida' && <span className="absolute inset-0 cotacao-btn-shine pointer-events-none" style={{borderRadius:'1rem'}}></span>}
+                                    <Wand2 size={16} className="relative z-10" />
+                                    <span className="relative z-10">Finalizar PDF</span>
                                 </button>
                             </div>
                         )}
                     </div>
                 )}
 
-                <div className={`border-t rounded-b-3xl shrink-0 flex flex-col transition-colors ${isCreatingFolder ? 'hidden' : ''} ${modoNoturno ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-50'}`}>
+                <div className={`border-t rounded-b-3xl shrink-0 flex flex-col transition-colors ${isCreatingFolder ? 'hidden' : ''} ${modoNoturno ? 'bg-[#0B1120] border-slate-800' : 'bg-white border-slate-100'}`}>
                     <div className="px-3 pt-2.5 pb-2 flex gap-1.5 items-center overflow-x-auto custom-scrollbar">
-                        <button onClick={() => { haptic(); setIsCreatingFolder(true); fileInputRef.current?.click(); }}
-                            className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider transition-all bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm shadow-indigo-300/40">
-                            <FolderPlus size={12} /> Pasta
+                        <button onClick={() => { haptic(); setFolderSource('manual'); setIsCreatingFolder(true); fileInputRef.current?.click(); }}
+                            className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider transition-all text-white relative overflow-hidden"
+                            style={{ background: 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)', boxShadow: '0 2px 8px rgba(99,102,241,0.4)' }}>
+                            <FolderPlus size={12} className="relative z-10" />
+                            <span className="relative z-10">Pasta</span>
                         </button>
                         <button
                             onClick={(e) => {
@@ -2004,6 +2548,7 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
                                     localStorage.setItem('dst_pr_clicks', String(clicks + 1));
                                     setShowPastaRapidaInfo(true);
                                 } else {
+                                    setFolderSource('rapida');
                                     quickFolderInputRef.current?.click();
                                 }
                             }}
@@ -2019,20 +2564,26 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
                         </button>
                         <input type="file" ref={quickFolderInputRef} onChange={handleQuickFolderUpload} multiple accept="image/*,application/pdf" className="hidden" />
                         <div className={`shrink-0 w-px h-4 ${modoNoturno ? 'bg-slate-600' : 'bg-slate-200'}`}></div>
-                        {[
-                            { label: 'Docs CLT', msg: 'Documentos para CLT' },
-                            { label: 'Autônomo', msg: 'Documentos para autônomo' },
-                            { label: 'Zona Norte', msg: 'Empreendimentos na Zona Norte' },
-                            { label: 'Menor apê', msg: 'Qual o menor apartamento?' },
-                            { label: 'Brisas', msg: 'Me mostra o Brisas do Horizonte' },
-                            { label: 'Investidor', msg: 'Como funciona a tabela investidor?' },
-                        ].map(s => (
-                            <button key={s.label}
-                                onClick={() => { haptic(); setChatInput(s.msg); setTimeout(() => chatInputRef.current?.focus(), 50); }}
-                                className={`shrink-0 text-[10px] font-bold px-3 py-1.5 rounded-full border transition-all whitespace-nowrap ${modoNoturno ? 'bg-slate-700 border-slate-600 text-slate-300 hover:bg-slate-600 hover:border-indigo-500 hover:text-indigo-300' : 'bg-slate-100 border-transparent text-slate-500 hover:bg-indigo-50 hover:border-indigo-200 hover:text-indigo-600'}`}>
-                                {s.label}
-                            </button>
-                        ))}
+                        <button
+                            onClick={() => {
+                                haptic('medium');
+                                if (isCotacaoUnlocked()) {
+                                    setShowCotacaoModal(true);
+                                } else {
+                                    setCotacaoSenhaInput('');
+                                    setCotacaoSenhaErro(false);
+                                    setShowCotacaoSenha(true);
+                                }
+                            }}
+                            className="shrink-0 flex items-center gap-1.5 px-4 py-2 rounded-full text-[11px] font-black uppercase tracking-wider transition-all text-white relative overflow-hidden cotacao-btn"
+                            style={{
+                                background: 'linear-gradient(135deg, #6366f1 0%, #4f46e5 45%, #7c3aed 100%)',
+                                boxShadow: '0 0 0 2px rgba(99,102,241,0.4), 0 0 18px 4px rgba(99,102,241,0.45), 0 2px 8px rgba(0,0,0,0.2)',
+                            }}>
+                            <span className="absolute inset-0 cotacao-btn-shine pointer-events-none" style={{borderRadius:'9999px'}}></span>
+                            <Calculator size={12} className="shrink-0 relative z-10" />
+                            <span className="relative z-10" style={{textShadow:'0 1px 6px rgba(0,0,0,0.3)', letterSpacing:'0.08em'}}>$ Cotação</span>
+                        </button>
                         {clientName && (
                             <span className={`shrink-0 flex items-center gap-1 text-[10px] font-bold px-2.5 py-1.5 rounded-full border ${modoNoturno ? 'bg-slate-700 border-slate-600 text-emerald-400' : 'bg-emerald-50 border-emerald-100 text-emerald-600'}`}>
                                 👤 {clientName}
@@ -2045,6 +2596,13 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
                             className="shrink-0 text-[9px] font-bold px-2 py-1 rounded-full border border-dashed border-slate-300 text-slate-300 hover:border-orange-400 hover:text-orange-400 transition-all">
                             ↺ PR
                         </button>
+                        {/* DEV: reset contador cotação — remova em produção */}
+                        <button
+                            onClick={() => { cotacaoClicksRef.current = 0; localStorage.setItem('dst_cot_clicks', '0'); }}
+                            title="DEV: resetar contador cotação"
+                            className="shrink-0 text-[9px] font-bold px-2 py-1 rounded-full border border-dashed border-slate-300 text-slate-300 hover:border-indigo-400 hover:text-indigo-400 transition-all">
+                            ↺ COT
+                        </button>
                     </div>
                     <div className="px-3 pb-3" style={{ paddingBottom: 'max(12px, calc(env(safe-area-inset-bottom) + 8px))' }}>
                         <div className="relative flex items-center">
@@ -2056,10 +2614,14 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
                                 onChange={(e) => setChatInput(e.target.value)} 
                                 onKeyDown={(e) => e.key === 'Enter' && handleSendChatMessage()} 
                                 placeholder="Posso te ajudar com algo?" 
-                                className={`w-full rounded-2xl px-5 py-3 pr-14 text-base focus:outline-none focus:ring-2 focus:ring-indigo-600/20 transition-all ${modoNoturno ? 'bg-slate-900 text-white border border-slate-700 placeholder-slate-500' : 'bg-slate-100 text-slate-800 placeholder-slate-400 border-transparent'}`} 
+                                className={`w-full rounded-2xl px-5 py-3 pr-14 text-base focus:outline-none focus:ring-2 focus:ring-indigo-500/25 transition-all ${modoNoturno ? 'bg-slate-800/80 text-white border border-slate-700/60 placeholder-slate-500' : 'bg-slate-100/80 text-slate-800 placeholder-slate-400 border border-slate-200/60'}`} 
                                 disabled={isChatLoading} 
                             />
-                            <button onClick={() => { haptic('medium'); handleSendChatMessage(); }} disabled={!chatInput.trim() || isChatLoading} className="absolute right-2 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-200 text-white p-2.5 rounded-xl transition-all flex items-center justify-center shadow-md"><Send className="w-4 h-4" /></button>
+                            <button onClick={() => { haptic('medium'); handleSendChatMessage(); }} disabled={!chatInput.trim() || isChatLoading}
+                                className="absolute right-2 text-white p-2.5 rounded-xl transition-all flex items-center justify-center shadow-md active:scale-95 disabled:opacity-30"
+                                style={{ background: !chatInput.trim() || isChatLoading ? undefined : 'linear-gradient(135deg, #6366f1 0%, #7c3aed 100%)', backgroundColor: !chatInput.trim() || isChatLoading ? (modoNoturno ? '#334155' : '#e2e8f0') : undefined }}>
+                                <Send className="w-4 h-4" />
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -2067,67 +2629,101 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
             
             {/* MODAL PARA FINALIZAR */}
             {isFinalizingFolder && (
-                <div className="fixed inset-0 z-[60] flex items-center justify-center p-4"
-                    style={{ background: 'rgba(200,210,225,0.28)', backdropFilter: 'blur(8px) saturate(140%)', WebkitBackdropFilter: 'blur(8px) saturate(140%)' }}
+                <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center p-0 sm:p-4"
+                    style={{ background: 'rgba(7,11,22,0.65)', backdropFilter: 'blur(20px) saturate(180%)', WebkitBackdropFilter: 'blur(20px) saturate(180%)' }}
                     onClick={() => setIsFinalizingFolder(false)}>
                     <div
-                        className={`rounded-3xl w-full max-w-sm overflow-hidden shadow-2xl p-7 relative flex flex-col gap-5 transform transition-all`}
+                        className="animate-slide-up w-full sm:max-w-sm rounded-t-3xl sm:rounded-3xl overflow-hidden shadow-2xl flex flex-col"
                         style={modoNoturno ? {
-                            background: 'rgba(30,41,59,0.88)',
+                            background: 'rgba(15,23,42,0.95)',
                             backdropFilter: 'blur(28px) saturate(180%)',
                             WebkitBackdropFilter: 'blur(28px) saturate(180%)',
-                            border: '1px solid rgba(255,255,255,0.10)',
-                            boxShadow: '0 24px 64px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.08)',
+                            border: '1px solid rgba(249,115,22,0.2)',
+                            boxShadow: '0 -8px 48px rgba(249,115,22,0.15), 0 24px 64px rgba(0,0,0,0.5)',
                         } : {
-                            background: 'rgba(255,255,255,0.88)',
+                            background: 'rgba(255,255,255,0.97)',
                             backdropFilter: 'blur(28px) saturate(200%)',
                             WebkitBackdropFilter: 'blur(28px) saturate(200%)',
                             border: '1px solid rgba(255,255,255,0.95)',
-                            boxShadow: '0 24px 64px rgba(0,0,0,0.12), inset 0 1px 0 rgba(255,255,255,1)',
+                            boxShadow: '0 -8px 48px rgba(249,115,22,0.12), 0 24px 64px rgba(0,0,0,0.1)',
                         }}
                         onClick={e => e.stopPropagation()}>
-                        <button onClick={() => setIsFinalizingFolder(false)} className={`absolute top-5 right-5 p-1.5 rounded-xl transition-all ${modoNoturno ? 'text-slate-400 hover:text-white hover:bg-white/10' : 'text-slate-400 hover:text-slate-600 hover:bg-black/5'}`}><X size={20} /></button>
-                        <div className={`flex items-center gap-4 mb-2 border-b pb-5 ${modoNoturno ? 'border-white/10' : 'border-black/8'}`}>
-                            <div className="bg-orange-100/80 p-3 rounded-2xl" style={{backdropFilter:'blur(8px)'}}><FileIcon className="text-orange-600" size={24} /></div>
-                            <div>
-                                <h3 className={`font-black text-lg leading-tight uppercase tracking-tight ${modoNoturno ? 'text-white' : 'text-slate-800'}`}>Salvar Pasta</h3>
-                                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Dê um nome ao seu PDF</p>
+
+                        {/* Header */}
+                        <div className="relative overflow-hidden px-5 pt-5 pb-4"
+                            style={folderSource === 'rapida'
+                                ? { background: 'linear-gradient(135deg, #f97316 0%, #ef4444 50%, #f59e0b 100%)', boxShadow: '0 4px 24px rgba(249,115,22,0.4)' }
+                                : { background: 'linear-gradient(135deg, #6366f1 0%, #4f46e5 40%, #7c3aed 100%)', boxShadow: '0 4px 24px rgba(99,102,241,0.4)' }
+                            }>
+                            <div className="absolute inset-0 pointer-events-none overflow-hidden">
+                                <div style={{ position:'absolute', top:'-20%', left:0, width:'60%', height:'140%', background:'linear-gradient(105deg, transparent 10%, rgba(255,255,255,0.22) 50%, transparent 90%)', animation: folderSource === 'rapida' ? 'light-sweep 1.6s ease-in-out infinite' : 'cotacao-shine 3.5s ease-in-out infinite', transform:'skewX(-18deg)' }}></div>
+                            </div>
+                            <div className="relative z-10 flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                    <div className="bg-white/15 p-2.5 rounded-2xl border border-white/25 backdrop-blur-md">
+                                        <FileIcon size={20} className="text-white" />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-white font-black text-xl uppercase tracking-widest drop-shadow-md">Salvar Pasta</h3>
+                                        <p className="text-orange-200 text-[10px] font-black uppercase tracking-[0.15em]">Dê um nome ao seu PDF</p>
+                                    </div>
+                                </div>
+                                <button onClick={() => setIsFinalizingFolder(false)} className="bg-white/10 hover:bg-white/25 text-white p-2.5 rounded-2xl border border-white/20 transition-all backdrop-blur-sm">
+                                    <X size={20} />
+                                </button>
                             </div>
                         </div>
-                        <div>
-                            <label className="text-[10px] font-black text-slate-400 mb-2 block uppercase tracking-widest">Nome do Arquivo:</label>
-                            <input 
-                                type="text" 
-                                value={pdfFileName} 
-                                onChange={(e) => setPdfFileName(e.target.value)} 
-                                className={`w-full text-base rounded-2xl px-5 py-4 font-bold transition-all focus:outline-none focus:ring-4 focus:ring-orange-400/20 ${
-                                    modoNoturno 
-                                    ? 'bg-white/10 border border-white/15 text-white placeholder-white/30 focus:border-orange-400/60 focus:bg-white/15' 
-                                    : 'bg-white/60 border border-black/8 text-slate-800 focus:border-orange-400 focus:bg-white/90'
-                                }`}
-                                style={{backdropFilter:'blur(8px)', WebkitBackdropFilter:'blur(8px)'}}
-                                placeholder="Ex: Pasta_Joao_Silva" 
-                                autoFocus 
-                            />
+
+                        {/* Drag pill (mobile) */}
+                        <div className="sm:hidden flex justify-center pt-2">
+                            <div className={`w-10 h-1 rounded-full ${modoNoturno ? 'bg-slate-700' : 'bg-slate-200'}`}></div>
                         </div>
-                        <button onClick={() => { haptic('success'); generateClientPDF(); }} disabled={isChatLoading} className="w-full mt-2 text-xs bg-gradient-to-r from-orange-500 to-red-500 text-white px-6 py-4 rounded-2xl font-black uppercase tracking-widest transition-all shadow-xl shadow-orange-300/40 disabled:cursor-not-allowed flex items-center justify-center gap-3 relative overflow-hidden pasta-rapida-btn">
-                            {isChatLoading ? (
-                                <div className="absolute inset-0 flex items-center justify-center">
-                                    <div className="absolute inset-0 bg-gradient-to-r from-orange-400 to-red-400 opacity-80"></div>
-                                    <div className="absolute inset-0 pdf-loading-bar"></div>
-                                    <span className="relative z-10 font-black text-xs uppercase tracking-widest text-white/90 flex items-center gap-2">
-                                        <span className="flex gap-1">
-                                            <span className="w-1.5 h-1.5 rounded-full bg-white animate-bounce" style={{animationDelay:'0s'}}></span>
-                                            <span className="w-1.5 h-1.5 rounded-full bg-white animate-bounce" style={{animationDelay:'0.15s'}}></span>
-                                            <span className="w-1.5 h-1.5 rounded-full bg-white animate-bounce" style={{animationDelay:'0.3s'}}></span>
+
+                        {/* Body */}
+                        <div className="px-5 pt-4 pb-2">
+                            <label className={`text-[9px] font-black uppercase tracking-[0.18em] mb-2 block ${modoNoturno ? 'text-slate-500' : 'text-slate-400'}`}>Nome do Arquivo</label>
+                            <div className={`rounded-2xl overflow-hidden border ${modoNoturno ? 'bg-slate-800/80 border-slate-700/60' : 'bg-white border-slate-100 shadow-sm'}`}>
+                                <input 
+                                    type="text" 
+                                    value={pdfFileName} 
+                                    onChange={(e) => setPdfFileName(e.target.value)} 
+                                    className={`w-full text-base px-5 py-4 font-bold bg-transparent border-none outline-none transition-all ${modoNoturno ? 'text-white placeholder-slate-500' : 'text-slate-800 placeholder-slate-400'}`}
+                                    placeholder="Ex: Pasta_Joao_Silva" 
+                                    autoFocus 
+                                />
+                            </div>
+                        </div>
+
+                        {/* Footer */}
+                        <div className="px-5 pb-6 pt-3" style={{ paddingBottom: 'max(24px, calc(env(safe-area-inset-bottom) + 16px))' }}>
+                            <button onClick={() => { haptic('success'); generateClientPDF(); }} disabled={isChatLoading}
+                                className="w-full text-xs text-white px-6 py-4 rounded-2xl font-black uppercase tracking-widest transition-all disabled:cursor-not-allowed flex items-center justify-center gap-3 relative overflow-hidden active:scale-[0.98]"
+                                style={folderSource === 'rapida'
+                                    ? { background: 'linear-gradient(135deg, #f97316 0%, #ef4444 50%, #f59e0b 100%)', boxShadow: '0 4px 24px rgba(249,115,22,0.45)' }
+                                    : { background: 'linear-gradient(135deg, #6366f1 0%, #4f46e5 40%, #7c3aed 100%)', boxShadow: '0 4px 24px rgba(99,102,241,0.45)' }
+                                }>
+                                {folderSource === 'rapida'
+                                    ? <span className="absolute inset-0 pasta-rapida-btn pointer-events-none" style={{borderRadius:'1rem'}}></span>
+                                    : <span className="absolute inset-0 cotacao-btn-shine pointer-events-none" style={{borderRadius:'1rem'}}></span>
+                                }
+                                {isChatLoading ? (
+                                    <div className="absolute inset-0 flex items-center justify-center">
+                                        <div className="absolute inset-0 bg-gradient-to-r from-orange-400 to-red-400 opacity-80"></div>
+                                        <div className="absolute inset-0 pdf-loading-bar"></div>
+                                        <span className="relative z-10 font-black text-xs uppercase tracking-widest text-white/90 flex items-center gap-2">
+                                            <span className="flex gap-1">
+                                                <span className="w-1.5 h-1.5 rounded-full bg-white animate-bounce" style={{animationDelay:'0s'}}></span>
+                                                <span className="w-1.5 h-1.5 rounded-full bg-white animate-bounce" style={{animationDelay:'0.15s'}}></span>
+                                                <span className="w-1.5 h-1.5 rounded-full bg-white animate-bounce" style={{animationDelay:'0.3s'}}></span>
+                                            </span>
+                                            Gerando PDF...
                                         </span>
-                                        Gerando PDF...
-                                    </span>
-                                </div>
-                            ) : (
-                                <><Wand2 size={20} /> Baixar PDF Unificado</>
-                            )}
-                        </button>
+                                    </div>
+                                ) : (
+                                    <><Wand2 size={20} className="relative z-10" style={{filter:'drop-shadow(0 0 6px rgba(255,255,255,0.8))'}} /><span className="relative z-10" style={{textShadow:'0 1px 6px rgba(0,0,0,0.3)'}}>Baixar PDF Unificado</span></>
+                                )}
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}
@@ -2249,20 +2845,50 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
 
             {/* MODAL PASTA RÁPIDA — ATENÇÃO, LEIA! (5 primeiros cliques) */}
             {showPastaRapidaInfo && (
-                <div className="fixed inset-0 bg-slate-900/75 backdrop-blur-sm z-[70] flex items-center justify-center p-4">
-                    <div className={`rounded-3xl w-full max-w-xs shadow-2xl overflow-hidden transform animate-slide-up ${modoNoturno ? 'bg-slate-800' : 'bg-white'}`}
+                <div className="fixed inset-0 z-[70] flex items-end sm:items-center justify-center p-0 sm:p-4"
+                    style={{ background: 'rgba(7,11,22,0.65)', backdropFilter: 'blur(16px) saturate(180%)', WebkitBackdropFilter: 'blur(16px) saturate(180%)' }}>
+                    <div className={`animate-slide-up w-full sm:max-w-sm rounded-t-3xl sm:rounded-3xl overflow-hidden shadow-2xl`}
+                        style={modoNoturno ? {
+                            background: 'rgba(15,23,42,0.95)',
+                            backdropFilter: 'blur(28px) saturate(180%)',
+                            WebkitBackdropFilter: 'blur(28px) saturate(180%)',
+                            border: '1px solid rgba(99,102,241,0.2)',
+                            boxShadow: '0 -8px 48px rgba(99,102,241,0.2), 0 24px 64px rgba(0,0,0,0.5)',
+                        } : {
+                            background: 'rgba(255,255,255,0.96)',
+                            backdropFilter: 'blur(28px) saturate(200%)',
+                            WebkitBackdropFilter: 'blur(28px) saturate(200%)',
+                            border: '1px solid rgba(255,255,255,0.95)',
+                            boxShadow: '0 -8px 48px rgba(99,102,241,0.15), 0 24px 64px rgba(0,0,0,0.1)',
+                        }}
                         onClick={e => e.stopPropagation()}>
+
                         {/* Header com shimmer */}
-                        <div className="bg-gradient-to-r from-orange-500 to-red-500 px-5 pt-5 pb-4 relative overflow-hidden">
-                            <span className="absolute inset-0 pasta-rapida-btn pointer-events-none" style={{borderRadius:0}}></span>
-                            <div className="relative z-10 text-center">
-                                <h2 className="text-white font-black text-2xl drop-shadow">⚠️ Atenção, leia!</h2>
+                        <div className="relative overflow-hidden px-5 pt-5 pb-4"
+                            style={{ background: 'linear-gradient(135deg, #f97316 0%, #ef4444 45%, #f59e0b 100%)', boxShadow: '0 4px 24px rgba(249,115,22,0.4)' }}>
+                            <div className="absolute inset-0 pointer-events-none overflow-hidden">
+                                <div style={{ position:'absolute', top:'-20%', left:0, width:'60%', height:'140%', background:'linear-gradient(105deg, transparent 10%, rgba(255,255,255,0.22) 50%, transparent 90%)', animation:'light-sweep 1.6s ease-in-out infinite', transform:'skewX(-18deg)' }}></div>
+                            </div>
+                            <div className="relative z-10 flex items-center gap-3">
+                                <div className="bg-white/15 p-2.5 rounded-2xl border border-white/25 backdrop-blur-md">
+                                    <Sparkles size={20} className="text-white" style={{filter:'drop-shadow(0 0 8px rgba(255,255,255,0.8))', animation:'spin 3s linear infinite'}} />
+                                </div>
+                                <div>
+                                    <h2 className="text-white font-black text-xl uppercase tracking-widest drop-shadow-md">Pasta Rápida IA</h2>
+                                    <p className="text-orange-200 text-[10px] font-black uppercase tracking-[0.15em]">Leia antes de continuar</p>
+                                </div>
                             </div>
                         </div>
-                        {/* Conteúdo resumido */}
+
+                        {/* Drag pill (mobile) */}
+                        <div className="sm:hidden flex justify-center pt-2">
+                            <div className={`w-10 h-1 rounded-full ${modoNoturno ? 'bg-slate-700' : 'bg-slate-200'}`}></div>
+                        </div>
+
+                        {/* Conteúdo */}
                         <div className="px-5 pt-4 pb-2">
-                            <div className={`rounded-2xl p-4 ${modoNoturno ? 'bg-slate-700/70' : 'bg-orange-50 border border-orange-100'}`}>
-                                <p className={`font-black text-sm mb-2 ${modoNoturno ? 'text-orange-300' : 'text-orange-600'}`}>O que é a Pasta Rápida?</p>
+                            <div className={`rounded-2xl p-4 border ${modoNoturno ? 'bg-slate-800/60 border-orange-500/20' : 'bg-orange-50 border-orange-100'}`}>
+                                <p className={`font-black text-sm mb-2 uppercase tracking-widest ${modoNoturno ? 'text-orange-400' : 'text-orange-600'}`}>O que é a Pasta Rápida?</p>
                                 <p className={`text-sm leading-relaxed ${modoNoturno ? 'text-slate-300' : 'text-slate-700'}`}>
                                     Envie os documentos em <strong>qualquer formato</strong> e a IA <strong>identifica e organiza</strong> tudo automaticamente na ordem certa.
                                 </p>
@@ -2271,40 +2897,1499 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
                                 </p>
                             </div>
                         </div>
+
                         {/* Barra de progresso + botão */}
-                        <div className="px-5 pb-5 pt-3 flex flex-col gap-3">
-                            {/* Barra de progresso animada */}
+                        <div className="px-5 pb-6 pt-3 flex flex-col gap-3" style={{ paddingBottom: 'max(24px, calc(env(safe-area-inset-bottom) + 16px))' }}>
                             {pastaRapidaCountdown > 0 && (
                                 <div className="flex flex-col gap-1.5">
-                                    <div className={`w-full h-1.5 rounded-full overflow-hidden ${modoNoturno ? 'bg-slate-700' : 'bg-slate-200'}`}>
-                                        <div
-                                            className="h-full rounded-full bg-gradient-to-r from-orange-400 to-red-500 transition-all duration-1000 ease-linear"
-                                            style={{ width: `${((10 - pastaRapidaCountdown) / 10) * 100}%` }}
-                                        />
+                                    <div className={`w-full h-1.5 rounded-full overflow-hidden ${modoNoturno ? 'bg-slate-800' : 'bg-slate-200'}`}>
+                                        <div className="h-full rounded-full transition-all duration-1000 ease-linear"
+                                            style={{ width: `${((10 - pastaRapidaCountdown) / 10) * 100}%`, background: 'linear-gradient(90deg, #f97316, #ef4444)' }} />
                                     </div>
-                                    <p className={`text-center text-[10px] font-black uppercase tracking-widest ${modoNoturno ? 'text-slate-500' : 'text-slate-400'}`}>
+                                    <p className={`text-center text-[10px] font-black uppercase tracking-widest ${modoNoturno ? 'text-slate-600' : 'text-slate-400'}`}>
                                         leia antes de continuar — {pastaRapidaCountdown}s
                                     </p>
                                 </div>
                             )}
                             <button
                                 disabled={pastaRapidaCountdown > 0}
-                                onClick={() => { setShowPastaRapidaInfo(false); setTimeout(() => quickFolderInputRef.current?.click(), 150); }}
-                                className={`w-full font-black text-sm uppercase tracking-widest py-3.5 rounded-2xl transition-all flex items-center justify-center gap-2 relative overflow-hidden ${
-                                    pastaRapidaCountdown > 0
-                                    ? (modoNoturno ? 'bg-slate-700 text-slate-600 cursor-not-allowed' : 'bg-slate-100 text-slate-300 cursor-not-allowed')
-                                    : 'bg-orange-500 hover:bg-orange-600 text-white shadow-lg shadow-orange-300/30 hover:-translate-y-0.5 pasta-rapida-btn'
-                                }`}>
+                                onClick={() => { setShowPastaRapidaInfo(false); setFolderSource('rapida'); setTimeout(() => quickFolderInputRef.current?.click(), 150); }}
+                                className={`w-full font-black text-sm uppercase tracking-widest py-4 rounded-2xl transition-all flex items-center justify-center gap-2 relative overflow-hidden active:scale-[0.98] ${pastaRapidaCountdown > 0 ? (modoNoturno ? 'bg-slate-800 text-slate-600 cursor-not-allowed' : 'bg-slate-100 text-slate-300 cursor-not-allowed') : 'text-white'}`}
+                                style={pastaRapidaCountdown > 0 ? {} : { background: 'linear-gradient(135deg, #f97316 0%, #ef4444 50%, #f59e0b 100%)', boxShadow: '0 4px 20px rgba(249,115,22,0.45)' }}>
                                 {pastaRapidaCountdown > 0 ? (
-                                    <span className={modoNoturno ? 'text-slate-600' : 'text-slate-300'}>Aguarde...</span>
+                                    <span>Aguarde...</span>
                                 ) : (
-                                    <><Sparkles size={15} /> Entendi, vamos lá!</>
+                                    <>
+                                        <span className="absolute inset-0 pasta-rapida-btn pointer-events-none" style={{borderRadius:'1rem'}}></span>
+                                        <Sparkles size={15} className="relative z-10" style={{filter:'drop-shadow(0 0 6px rgba(255,255,255,0.9))', animation:'spin 3s linear infinite'}} />
+                                        <span className="relative z-10" style={{textShadow:'0 1px 6px rgba(0,0,0,0.3)'}}>Entendi, vamos lá!</span>
+                                    </>
                                 )}
                             </button>
                         </div>
                     </div>
                 </div>
             )}
+
+            {/* MODAL INFO COTAÇÃO — exibido nas 5 primeiras vezes */}
+            {showCotacaoInfo && (
+                <div className="fixed inset-0 z-[70] flex items-end sm:items-center justify-center p-0 sm:p-4"
+                    style={{ background: 'rgba(7,11,22,0.72)', backdropFilter: 'blur(18px) saturate(180%)', WebkitBackdropFilter: 'blur(18px) saturate(180%)' }}>
+                    <div className={`animate-slide-up w-full sm:max-w-md flex flex-col rounded-t-3xl sm:rounded-3xl shadow-2xl`}
+                        style={{
+                            maxHeight: '92dvh',
+                            ...(modoNoturno ? {
+                                background: 'rgba(13,18,36,0.97)',
+                                backdropFilter: 'blur(28px) saturate(180%)',
+                                WebkitBackdropFilter: 'blur(28px) saturate(180%)',
+                                border: '1px solid rgba(99,102,241,0.25)',
+                                boxShadow: '0 -8px 48px rgba(99,102,241,0.25), 0 24px 64px rgba(0,0,0,0.6)',
+                            } : {
+                                background: 'rgba(255,255,255,0.97)',
+                                backdropFilter: 'blur(28px) saturate(200%)',
+                                WebkitBackdropFilter: 'blur(28px) saturate(200%)',
+                                border: '1px solid rgba(255,255,255,0.95)',
+                                boxShadow: '0 -8px 48px rgba(99,102,241,0.18), 0 24px 64px rgba(0,0,0,0.12)',
+                            })
+                        }}
+                        onClick={e => e.stopPropagation()}>
+
+                        {/* Header fixo com shimmer */}
+                        <div className="shrink-0 relative overflow-hidden rounded-t-3xl sm:rounded-t-3xl"
+                            style={{ background: 'linear-gradient(135deg, #6366f1 0%, #4f46e5 45%, #7c3aed 100%)', boxShadow: '0 4px 24px rgba(99,102,241,0.45)' }}>
+                            <div className="absolute inset-0 pointer-events-none overflow-hidden">
+                                <div style={{ position:'absolute', top:'-20%', left:0, width:'60%', height:'140%', background:'linear-gradient(105deg, transparent 10%, rgba(255,255,255,0.22) 50%, transparent 90%)', animation:'cotacao-shine 3.5s ease-in-out infinite', transform:'skewX(-18deg)' }}></div>
+                            </div>
+                            <div className="relative z-10 px-5 pt-5 pb-4 flex items-start justify-between gap-3">
+                                <div className="flex items-center gap-3">
+                                    <div className="bg-white/15 p-2.5 rounded-2xl border border-white/25 backdrop-blur-md">
+                                        <Calculator size={22} className="text-white" style={{filter:'drop-shadow(0 0 8px rgba(255,255,255,0.8))'}} />
+                                    </div>
+                                    <div>
+                                        <h2 className="text-white font-black text-xl uppercase tracking-widest drop-shadow-md">$ Cotação</h2>
+                                        <p className="text-indigo-200 text-[10px] font-black uppercase tracking-[0.15em]">Como funciona · Leia antes de usar</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Drag pill (mobile) */}
+                        <div className="sm:hidden shrink-0 flex justify-center pt-2.5 pb-0.5">
+                            <div className={`w-10 h-1 rounded-full ${modoNoturno ? 'bg-slate-700' : 'bg-slate-200'}`}></div>
+                        </div>
+
+                        {/* Conteúdo scrollável */}
+                        <div className="flex-1 overflow-y-auto custom-scrollbar px-5 pt-4 pb-3 flex flex-col gap-3">
+
+                            {/* O que é */}
+                            <div className={`rounded-2xl p-4 border ${modoNoturno ? 'bg-indigo-950/50 border-indigo-500/25' : 'bg-indigo-50 border-indigo-100'}`}>
+                                <p className={`font-black text-[11px] mb-2 uppercase tracking-widest flex items-center gap-1.5 ${modoNoturno ? 'text-indigo-400' : 'text-indigo-600'}`}>
+                                    💡 O que é a Cotação?
+                                </p>
+                                <p className={`text-[12.5px] leading-relaxed ${modoNoturno ? 'text-slate-300' : 'text-slate-700'}`}>
+                                    A <strong>Cotação</strong> é o <strong>plano de parcelamento da entrada</strong> do imóvel — mostra ao cliente o <strong>ato, os sinais e as mensais</strong> que ele vai pagar durante as obras, respeitando as regras do perfil comercial escolhido.
+                                </p>
+                            </div>
+
+                            {/* Passo a passo */}
+                            <div className={`rounded-2xl p-4 border ${modoNoturno ? 'bg-slate-800/60 border-slate-700/50' : 'bg-white border-slate-100'}`}>
+                                <p className={`font-black text-[11px] mb-3 uppercase tracking-widest ${modoNoturno ? 'text-slate-300' : 'text-slate-600'}`}>📋 Como fazer</p>
+                                <div className="flex flex-col gap-3.5">
+                                    {[
+                                        {
+                                            n: '1', icon: '📎',
+                                            label: 'Anexe a aprovação bancária (opcional)',
+                                            desc: 'Cole prints ou PDF da aprovação — a IA lê e preenche automaticamente: valor do imóvel, parcela de financiamento, prazo e data de entrega.'
+                                        },
+                                        {
+                                            n: '2', icon: '👤',
+                                            label: 'Escolha o perfil comercial do cliente',
+                                            desc: 'Selecione Diamante, Ouro, Prata, Bronze ou Aço. O perfil define as condições de PS, parcelas e comprometimento — não é baseado na renda do cliente.'
+                                        },
+                                        {
+                                            n: '3', icon: '💰',
+                                            label: 'Preencha os dados financeiros',
+                                            desc: 'Informe o valor do imóvel, renda familiar, FGTS disponível, ato e parcela de financiamento. Se a aprovação foi anexada, os campos já estarão preenchidos.'
+                                        },
+                                        {
+                                            n: '4', icon: '📊',
+                                            label: 'Clique em "Calcular Cotação"',
+                                            desc: 'A ferramenta gera 2 planos completos mostrando ato, sinais e mensais — tudo calculado dentro das regras do perfil selecionado.'
+                                        },
+                                    ].map(({ n, icon, label, desc }) => (
+                                        <div key={n} className="flex items-start gap-3">
+                                            <div className="shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black text-white mt-0.5"
+                                                style={{ background: 'linear-gradient(135deg, #6366f1, #7c3aed)' }}>
+                                                {n}
+                                            </div>
+                                            <div>
+                                                <p className={`text-[12px] font-black leading-tight ${modoNoturno ? 'text-slate-200' : 'text-slate-800'}`}>{icon} {label}</p>
+                                                <p className={`text-[11.5px] leading-snug mt-0.5 ${modoNoturno ? 'text-slate-400' : 'text-slate-500'}`}>{desc}</p>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Dica extra */}
+                            <div className={`rounded-2xl px-4 py-3 border flex items-start gap-3 ${modoNoturno ? 'bg-emerald-950/40 border-emerald-500/25' : 'bg-emerald-50 border-emerald-100'}`}>
+                                <span className="text-base leading-none mt-0.5">✅</span>
+                                <p className={`text-[11.5px] leading-snug ${modoNoturno ? 'text-emerald-300' : 'text-emerald-800'}`}>
+                                    Pode calcular <strong>sem anexar</strong> nenhum documento — basta preencher os campos manualmente direto na tela de cotação.
+                                </p>
+                            </div>
+
+                            {/* Aviso Bora Vender */}
+                            <div className={`rounded-2xl px-4 py-3.5 border flex items-start gap-3 ${modoNoturno ? 'bg-amber-950/40 border-amber-500/30' : 'bg-amber-50 border-amber-200'}`}>
+                                <span className="text-lg leading-none mt-0.5 shrink-0">⚠️</span>
+                                <div>
+                                    <p className={`font-black text-[11px] uppercase tracking-widest mb-1 ${modoNoturno ? 'text-amber-400' : 'text-amber-600'}`}>Sempre confirme no Bora Vender</p>
+                                    <p className={`text-[11.5px] leading-snug ${modoNoturno ? 'text-amber-200/80' : 'text-amber-800'}`}>
+                                        Os valores gerados aqui são uma <strong>estimativa de apoio à venda</strong>. Antes de apresentar ao cliente, <strong>confira os valores finais no Bora Vender</strong> — tabelas, subsídios e regras do MCMV podem variar por empreendimento.
+                                    </p>
+                                </div>
+                            </div>
+
+                        </div>
+
+                        {/* Barra de progresso + botão — fixo no rodapé */}
+                        <div className="shrink-0 px-5 pb-6 pt-3 flex flex-col gap-3 border-t"
+                            style={{
+                                paddingBottom: 'max(24px, calc(env(safe-area-inset-bottom) + 16px))',
+                                borderColor: modoNoturno ? 'rgba(99,102,241,0.12)' : 'rgba(226,232,240,1)',
+                            }}>
+                            {cotacaoInfoCountdown > 0 && (
+                                <div className="flex flex-col gap-1.5">
+                                    <div className={`w-full h-1.5 rounded-full overflow-hidden ${modoNoturno ? 'bg-slate-800' : 'bg-slate-200'}`}>
+                                        <div className="h-full rounded-full transition-all duration-1000 ease-linear"
+                                            style={{ width: `${((10 - cotacaoInfoCountdown) / 10) * 100}%`, background: 'linear-gradient(90deg, #6366f1, #7c3aed)' }} />
+                                    </div>
+                                    <p className={`text-center text-[10px] font-black uppercase tracking-widest ${modoNoturno ? 'text-slate-600' : 'text-slate-400'}`}>
+                                        leia antes de continuar — {cotacaoInfoCountdown}s
+                                    </p>
+                                </div>
+                            )}
+                            <button
+                                disabled={cotacaoInfoCountdown > 0}
+                                onClick={() => { setShowCotacaoInfo(false); setTimeout(() => setShowCotacaoModal(true), 150); }}
+                                className={`w-full font-black text-sm uppercase tracking-widest py-4 rounded-2xl transition-all flex items-center justify-center gap-2 relative overflow-hidden active:scale-[0.98] ${cotacaoInfoCountdown > 0 ? (modoNoturno ? 'bg-slate-800 text-slate-600 cursor-not-allowed' : 'bg-slate-100 text-slate-300 cursor-not-allowed') : 'text-white'}`}
+                                style={cotacaoInfoCountdown > 0 ? {} : { background: 'linear-gradient(135deg, #6366f1 0%, #4f46e5 45%, #7c3aed 100%)', boxShadow: '0 4px 20px rgba(99,102,241,0.45)' }}>
+                                {cotacaoInfoCountdown > 0 ? (
+                                    <span>Aguarde...</span>
+                                ) : (
+                                    <>
+                                        <span className="absolute inset-0 cotacao-btn-shine pointer-events-none" style={{borderRadius:'1rem'}}></span>
+                                        <Calculator size={15} className="relative z-10" style={{filter:'drop-shadow(0 0 6px rgba(255,255,255,0.9))'}} />
+                                        <span className="relative z-10" style={{textShadow:'0 1px 6px rgba(0,0,0,0.3)'}}>Entendi, vamos calcular!</span>
+                                    </>
+                                )}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* MODAL SENHA COTAÇÃO */}
+            {showCotacaoSenha && (
+                <div className="fixed inset-0 z-[80] flex items-center justify-center p-5"
+                    style={{ background: 'rgba(7,11,22,0.75)', backdropFilter: 'blur(18px)', WebkitBackdropFilter: 'blur(18px)' }}
+                    onClick={(e) => { if (e.target === e.currentTarget) { setShowCotacaoSenha(false); setCotacaoSenhaInput(''); setCotacaoSenhaErro(false); } }}>
+                    <div className={`w-full max-w-xs rounded-3xl p-7 flex flex-col gap-5 shadow-2xl ${modoNoturno ? 'bg-[#0f1829] border border-slate-700/50' : 'bg-white border border-slate-200'}`}
+                        style={{ animation: 'poi-modal-in 0.35s cubic-bezier(0.34,1.3,0.64,1) both' }}>
+                        {/* Ícone */}
+                        <div className="flex flex-col items-center gap-2">
+                            <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-1"
+                                style={{ background: 'linear-gradient(135deg,#6366f1,#7c3aed)', boxShadow: '0 4px 20px rgba(99,102,241,0.4)' }}>
+                                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                                    <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                                </svg>
+                            </div>
+                            <h2 className={`text-base font-black tracking-wide text-center ${modoNoturno ? 'text-white' : 'text-slate-900'}`}>ACESSO RESTRITO</h2>
+                            <p className={`text-xs text-center leading-relaxed ${modoNoturno ? 'text-slate-400' : 'text-slate-500'}`}>
+                                O gerador de cotação está em fase de testes e disponível apenas para administradores.
+                            </p>
+                        </div>
+                        {/* Input senha */}
+                        <div className="flex flex-col gap-2">
+                            <input
+                                type="password"
+                                maxLength={6}
+                                placeholder="Digite a senha"
+                                value={cotacaoSenhaInput}
+                                onChange={e => { setCotacaoSenhaInput(e.target.value); setCotacaoSenhaErro(false); }}
+                                onKeyDown={e => {
+                                    if (e.key === 'Enter') {
+                                        if (cotacaoSenhaInput === '6658') {
+                                            localStorage.setItem('dst_cot_unlock', String(Date.now()));
+                                            setShowCotacaoSenha(false);
+                                            setCotacaoSenhaInput('');
+                                            setTimeout(() => setShowCotacaoModal(true), 200);
+                                        } else {
+                                            setCotacaoSenhaErro(true);
+                                        }
+                                    }
+                                }}
+                                className={`w-full text-center text-xl font-black tracking-[0.4em] rounded-2xl px-4 py-4 outline-none border-2 transition-all ${
+                                    cotacaoSenhaErro
+                                        ? 'border-red-500 bg-red-50 text-red-600'
+                                        : modoNoturno
+                                            ? 'border-slate-600 bg-slate-800 text-white focus:border-indigo-500'
+                                            : 'border-slate-200 bg-slate-50 text-slate-900 focus:border-indigo-400'
+                                }`}
+                                autoFocus
+                            />
+                            {cotacaoSenhaErro && (
+                                <p className="text-xs text-red-500 text-center font-bold animate-pulse">Senha incorreta. Tente novamente.</p>
+                            )}
+                        </div>
+                        {/* Botões */}
+                        <div className="flex gap-3">
+                            <button
+                                onClick={() => { setShowCotacaoSenha(false); setCotacaoSenhaInput(''); setCotacaoSenhaErro(false); }}
+                                className={`flex-1 py-3 rounded-2xl text-xs font-black uppercase tracking-widest transition-all ${modoNoturno ? 'bg-slate-800 text-slate-400 hover:bg-slate-700' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}>
+                                Cancelar
+                            </button>
+                            <button
+                                onClick={() => {
+                                    if (cotacaoSenhaInput === '6658') {
+                                        localStorage.setItem('dst_cot_unlock', String(Date.now()));
+                                        setShowCotacaoSenha(false);
+                                        setCotacaoSenhaInput('');
+                                        setTimeout(() => setShowCotacaoModal(true), 200);
+                                    } else {
+                                        setCotacaoSenhaErro(true);
+                                    }
+                                }}
+                                className="flex-1 py-3 rounded-2xl text-xs font-black uppercase tracking-widest text-white transition-all active:scale-95"
+                                style={{ background: 'linear-gradient(135deg,#6366f1,#7c3aed)', boxShadow: '0 4px 16px rgba(99,102,241,0.4)' }}>
+                                Entrar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* MODAL BOAS VINDAS */}
+            {showBemVindo && (
+                <div className="fixed inset-0 z-[90] flex items-end sm:items-center justify-center p-4 sm:p-6"
+                    style={{ background: 'rgba(7,11,22,0.8)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)' }}>
+                    <div className={`w-full max-w-sm rounded-3xl overflow-hidden shadow-2xl ${modoNoturno ? 'bg-[#0f1829] border border-slate-700/60' : 'bg-white border border-slate-200'}`}
+                        style={{ animation: 'poi-modal-in 0.4s cubic-bezier(0.34,1.2,0.64,1) both' }}>
+                        {/* Header gradiente */}
+                        <div className="relative overflow-hidden px-6 pt-7 pb-5"
+                            style={{ background: 'linear-gradient(135deg, #1e3a5f 0%, #1e2d4f 50%, #2d1b69 100%)' }}>
+                            <div className="absolute inset-0 pointer-events-none" style={{ background: 'radial-gradient(ellipse at top right, rgba(99,102,241,0.3) 0%, transparent 60%)' }}/>
+                            <div className="relative z-10 flex flex-col items-center gap-2 text-center">
+                                <img src="https://i.postimg.cc/XpWRf9pj/logo.png" alt="Logo" className="w-12 h-12 object-contain rounded-xl mb-1"/>
+                                <h2 className="text-white text-lg font-black tracking-widest uppercase">Bem-vindo!</h2>
+                                <p className="text-slate-300 text-xs leading-relaxed">Confira as novidades da plataforma</p>
+                            </div>
+                        </div>
+                        {/* Novidades */}
+                        <div className="px-5 py-5 flex flex-col gap-3">
+                            {/* Item 1 */}
+                            <div className={`flex items-start gap-3 p-3.5 rounded-2xl ${modoNoturno ? 'bg-slate-800/70' : 'bg-slate-50'}`}>
+                                <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ background: 'linear-gradient(135deg,#0ea5e9,#0284c7)' }}>
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                                </div>
+                                <div>
+                                    <p className={`text-xs font-black uppercase tracking-wide ${modoNoturno ? 'text-white' : 'text-slate-800'}`}>Pontos de Referência</p>
+                                    <p className={`text-[11px] leading-relaxed mt-0.5 ${modoNoturno ? 'text-slate-400' : 'text-slate-500'}`}>Clique e veja a rota do ponto de referência em relação ao local do emprendimento no Google Maps.</p>
+                                </div>
+                            </div>
+                            {/* Item 2 */}
+                            <div className={`flex items-start gap-3 p-3.5 rounded-2xl ${modoNoturno ? 'bg-slate-800/70' : 'bg-slate-50'}`}>
+                                <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ background: 'linear-gradient(135deg,#f59e0b,#d97706)' }}>
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+                                </div>
+                                <div>
+                                    <p className={`text-xs font-black uppercase tracking-wide ${modoNoturno ? 'text-white' : 'text-slate-800'}`}>Pasta Rápida</p>
+                                    <p className={`text-[11px] leading-relaxed mt-0.5 ${modoNoturno ? 'text-slate-400' : 'text-slate-500'}`}>Coloque os documentos em qualquer formato e a IA irá organizar para você na ordem correta para o CCA. </p>
+                                </div>
+                            </div>
+                            {/* Item 3 */}
+                            <div className={`flex items-start gap-3 p-3.5 rounded-2xl ${modoNoturno ? 'bg-slate-800/70' : 'bg-slate-50'}`}>
+                                <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ background: 'linear-gradient(135deg,#10b981,#059669)' }}>
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                                </div>
+                                <div>
+                                    <p className={`text-xs font-black uppercase tracking-wide ${modoNoturno ? 'text-white' : 'text-slate-800'}`}>Chatbot Destemidos</p>
+                                    <p className={`text-[11px] leading-relaxed mt-0.5 ${modoNoturno ? 'text-slate-400' : 'text-slate-500'}`}>Tire dúvidas sobre os empreendimentos com nosso assistente de IA treinado para te ajudar a vender mais.</p>
+                                </div>
+                            </div>
+                            {/* Item 4 — Em breve */}
+                            <div className={`flex items-start gap-3 p-3.5 rounded-2xl border-2 border-dashed ${modoNoturno ? 'bg-indigo-950/40 border-indigo-700/50' : 'bg-indigo-50/60 border-indigo-200'}`}>
+                                <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ background: 'linear-gradient(135deg,#6366f1,#7c3aed)' }}>
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+                                </div>
+                                <div>
+                                    <div className="flex items-center gap-2">
+                                        <p className={`text-xs font-black uppercase tracking-wide ${modoNoturno ? 'text-indigo-300' : 'text-indigo-700'}`}>Cotação com IA</p>
+                                        <span className="text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full text-white" style={{ background: 'linear-gradient(135deg,#6366f1,#7c3aed)' }}>Em breve</span>
+                                    </div>
+                                    <p className={`text-[11px] leading-relaxed mt-0.5 ${modoNoturno ? 'text-slate-400' : 'text-slate-500'}`}>Em breve você só vai precisar colar um <strong>print da sua aprovação</strong> e a cotação será gerada em segundos pela IA. 🚀</p>
+                                </div>
+                            </div>
+                        </div>
+                        {/* Botão fechar */}
+                        <div className="px-5 pb-6">
+                            <button
+                                onClick={() => { setShowBemVindo(false); sessionStorage.setItem('dst_bv', '1'); }}
+                                className="w-full py-4 rounded-2xl text-sm font-black uppercase tracking-widest text-white active:scale-95 transition-all"
+                                style={{ background: 'linear-gradient(135deg,#6366f1 0%,#4f46e5 45%,#7c3aed 100%)', boxShadow: '0 4px 20px rgba(99,102,241,0.45)' }}>
+                                Entendido, vamos vender! 🔥
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* MODAL COTAÇÃO */}
+            {showCotacaoModal && (
+                <div className="fixed inset-0 z-[70] flex flex-col"
+                    style={{ background: modoNoturno ? 'rgba(7,11,22,0.82)' : 'rgba(15,23,42,0.55)', backdropFilter: 'blur(20px) saturate(180%)', WebkitBackdropFilter: 'blur(20px) saturate(180%)' }}>
+                    <div className={`cotacao-modal-open flex flex-col h-full w-full ${modoNoturno ? 'bg-[#0B1120]' : 'bg-slate-50'}`}
+                        style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}>
+
+                        {/* ── HEADER ── */}
+                        <div className="shrink-0 relative overflow-hidden"
+                            style={{
+                                background: 'linear-gradient(135deg, #6366f1 0%, #4f46e5 40%, #7c3aed 100%)',
+                                boxShadow: '0 4px 32px rgba(99,102,241,0.45)',
+                            }}>
+                            {/* shimmer sweep */}
+                            <div className="absolute inset-0 pointer-events-none overflow-hidden">
+                                <div style={{ position:'absolute', top:'-20%', left:0, width:'60%', height:'140%', background:'linear-gradient(105deg, transparent 10%, rgba(255,255,255,0.18) 50%, transparent 90%)', animation:'cotacao-shine 3.5s ease-in-out infinite', transform:'skewX(-18deg)' }}></div>
+                            </div>
+                            <div className="relative z-10 px-5 pt-5 pb-4 flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                    <div className="bg-white/15 backdrop-blur-md p-2.5 rounded-2xl border border-white/20 shadow-inner">
+                                        <Calculator size={20} className="text-white" />
+                                    </div>
+                                    <div>
+                                        <h2 className="text-white font-black text-xl uppercase tracking-widest drop-shadow-md">$ Cotação</h2>
+                                        <p className="text-indigo-200 text-[10px] font-black uppercase tracking-[0.15em]">Plano de Entrada · IA</p>
+                                    </div>
+                                </div>
+                                <button
+                                    onClick={() => { haptic(); setShowCotacaoModal(false); setCotacaoResult(null); setCotacaoFile(null); setPerfilSelecionado(null); setPerfilExpandido(null); setCotacaoData({ perfil:'', empreendimento:'', valorImovel:'', renda:'', financiamentoBanco:'', subsidio:'', fgts:'', atoCliente:'', parcelaFinanciamento:'', entrega:'' }); }}
+                                    className="bg-white/10 hover:bg-white/25 active:scale-95 text-white p-2.5 rounded-2xl border border-white/20 transition-all backdrop-blur-sm">
+                                    <X size={20} />
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* ── BODY ── */}
+                        <div className="flex-1 overflow-y-auto custom-scrollbar px-4 py-5 space-y-3">
+
+                            {/* CARD: Anexar aprovação */}
+                            <div
+                                className={`rounded-3xl overflow-hidden transition-all duration-300 cursor-pointer active:scale-[0.98] ${
+                                    cotacaoFile
+                                    ? (modoNoturno ? 'bg-indigo-900/30 border border-indigo-500/40 shadow-lg shadow-indigo-900/30' : 'bg-indigo-50 border border-indigo-200 shadow-lg shadow-indigo-100')
+                                    : (modoNoturno ? 'bg-slate-800/80 border border-slate-700/60 hover:border-indigo-500/50' : 'bg-white border border-slate-100 hover:border-indigo-200 shadow-sm hover:shadow-md')
+                                }`}
+                                onClick={() => cotacaoFileRef.current?.click()}>
+                                <input ref={cotacaoFileRef} type="file" accept="image/*,application/pdf" className="hidden" onChange={async (e) => {
+                                    const file = e.target.files?.[0];
+                                    if (!file) return;
+                                    setCotacaoFile(file);
+                                    setCotacaoLoading(true);
+                                    setCotacaoResult(null);
+                                    try {
+                                        // Converte para base64
+                                        const toBase64 = (f) => new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result.split(',')[1]); r.onerror = rej; r.readAsDataURL(f); });
+                                        const b64 = await toBase64(file);
+                                        // PDFs: converte para imagem via canvas (mesmo truque da Pasta Rápida)
+                                        let mime = file.type.startsWith('image/') ? file.type : 'image/jpeg';
+                                        let imgB64 = b64;
+                                        if (file.type === 'application/pdf') {
+                                            try {
+                                                // Usa todas as páginas empilhadas — entrega/parcela costumam estar em pág 2+
+                                                const preview = await generatePdfAllPages(file);
+                                                if (preview) { imgB64 = preview.split(',')[1]; mime = 'image/jpeg'; }
+                                                else {
+                                                    const pg1 = await generatePdfPreview(file);
+                                                    if (pg1) { imgB64 = pg1.split(',')[1]; mime = 'image/jpeg'; }
+                                                }
+                                            } catch { /* usa b64 original */ }
+                                        }
+
+                                        const PROMPT_COTACAO = `Você é um extrator de dados de documentos imobiliários brasileiros (Caixa Econômica Federal, Direcional, Riva). Analise TODO o documento visível e extraia os campos abaixo com máxima precisão.
+
+CAMPO "parcelaFinanciamento" — ATENÇÃO: este é o campo mais difícil, leia com cuidado:
+- É o valor MENSAL da prestação do financiamento bancário
+- Nos documentos da CAIXA ECONÔMICA aparece como:
+  • "Prestação" (coluna em tabela de amortização, use o valor do mês 1)
+  • "Prestação Aprovada" ou "Prestação Máxima"
+  • "Valor da Prestação" ou "Prestação do Financiamento"
+  • "SIRIC" (sistema de análise de crédito — é o valor da prestação aprovada)
+  • "1ª Prestação" ou "Primeira Prestação"
+  • "Encargo Mensal" ou "Parcela Mensal"
+  • "Comprometimento de Renda" — NÃO é isso, mas a prestação aparece próxima
+- O valor geralmente está entre R$ 300 e R$ 5.000
+- Se aparecer numa tabela com colunas, pegue o valor da linha do MÊS 1 ou PERÍODO 1
+- Exemplo: "R$ 1.240,56" ou "1240,56"
+
+CAMPO "entrega":
+- Data prevista de conclusão/entrega do imóvel ao comprador
+- Procure por: "previsão de entrega", "prazo de entrega", "conclusão prevista", "habite-se previsto", "data prevista de entrega", "entrega prevista"
+- Pode estar no rodapé, notas de rodapé, ou corpo do documento
+- Formato desejado: "Dez/2026", "Mar/2027", "06/2027"
+
+CAMPO "empreendimento":
+- Apenas o nome do condomínio/empreendimento (SEM endereço, SEM número)
+- Procure no título, cabeçalho, logo, nome da unidade
+- Exemplos: "Brisas do Horizonte", "Village Torres", "Parque Ville Lírio Azul"
+
+DEMAIS CAMPOS:
+- "valorImovel": "Valor final com desconto" > "Valor da unidade" > "Valor do imóvel" (número sem R$)
+- "financiamentoBanco": valor TOTAL financiado pelo banco (não a parcela mensal)
+- "renda": renda bruta familiar mensal
+- "subsidio": subsídio MCMV / Governo Federal
+- "fgts": FGTS a ser utilizado
+- Campos não encontrados: ""
+
+Responda SOMENTE com JSON puro (sem markdown, sem texto antes ou depois):
+{"empreendimento":"","valorImovel":"","renda":"","financiamentoBanco":"","subsidio":"","fgts":"","parcelaFinanciamento":"","entrega":""}`;
+
+                                        // Tenta modelos gratuitos com visão em cascata (igual Pasta Rápida)
+                                        const modelos = [
+                                            'google/gemini-2.0-flash-001',
+                                            'google/gemini-flash-1.5',
+                                            'meta-llama/llama-3.2-90b-vision-instruct',
+                                        ];
+
+                                        let parsed = null;
+                                        for (const modelo of modelos) {
+                                            try {
+                                                const controller = new AbortController();
+                                                const tid = setTimeout(() => controller.abort(), 20000);
+                                                const resp = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+                                                    method: 'POST',
+                                                    signal: controller.signal,
+                                                    headers: {
+                                                        'Content-Type': 'application/json',
+                                                        'Authorization': `Bearer ${OPENROUTER_KEY}`,
+                                                        'HTTP-Referer': window.location.origin,
+                                                        'X-Title': 'Destemidos Imoveis'
+                                                    },
+                                                    body: JSON.stringify({
+                                                        model: modelo,
+                                                        max_tokens: 600,
+                                                        temperature: 0.0,
+                                                        messages: [{ role: 'user', content: [
+                                                            { type: 'image_url', image_url: { url: `data:${mime};base64,${imgB64}` } },
+                                                            { type: 'text', text: PROMPT_COTACAO }
+                                                        ]}]
+                                                    })
+                                                });
+                                                clearTimeout(tid);
+                                                if (!resp.ok) { console.warn(`Cotação: modelo ${modelo} retornou ${resp.status}`); continue; }
+                                                const data = await resp.json();
+                                                const text = data.choices?.[0]?.message?.content || '';
+                                                console.log(`📄 Cotação raw [${modelo}]:`, text);
+                                                const clean = text.replace(/```json|```/g, '').trim();
+                                                const match = clean.match(/\{[\s\S]*\}/);
+                                                if (!match) { console.warn(`Cotação: sem JSON em ${modelo}`); continue; }
+                                                parsed = JSON.parse(match[0]);
+                                                console.log(`✅ Cotação extraída [${modelo}]:`, parsed);
+                                                break;
+                                            } catch (err) {
+                                                console.warn(`Cotação: erro em ${modelo}:`, err.message);
+                                            }
+                                        }
+
+                                        if (parsed) {
+                                            // perfil NÃO é definido pelo documento — só o usuário clica
+                                            const { perfil: _ignorado, ...dadosSemPerfil } = parsed;
+
+                                            // Se a IA não trouxe entrega mas trouxe empreendimento,
+                                            // busca a data no mapa interno
+                                            if (!dadosSemPerfil.entrega && dadosSemPerfil.empreendimento) {
+                                                const nomeDoc = dadosSemPerfil.empreendimento.toLowerCase();
+                                                const EMPREEND_ENTREGA = {
+                                                    'topazio':'Abr/2026','jardim botanico':'Nov/2026','jardim botânico':'Nov/2026',
+                                                    'village':'Abr/2027','orquidea':'Abr/2027','orquídea':'Abr/2027',
+                                                    'jardim norte':'Jun/2027','tapajos':'Ago/2027','tapajós':'Ago/2027',
+                                                    'coral':'Mar/2028','marinas':'Mar/2028','bosque':'Jun/2028',
+                                                    'brisas':'Ago/2028','lirio':'Nov/2028','lírio':'Nov/2028',
+                                                    'rio negro':'Dez/2030',
+                                                };
+                                                for (const [chave, data] of Object.entries(EMPREEND_ENTREGA)) {
+                                                    if (nomeDoc.includes(chave)) { dadosSemPerfil.entrega = data; break; }
+                                                }
+                                            }
+
+                                            // Formata campos monetários vindos da IA
+                                            const CAMPOS_BRL = ['valorImovel','renda','financiamentoBanco','subsidio','fgts','atoCliente','parcelaFinanciamento'];
+                                            const formatBRL = (v) => {
+                                                if (!v) return '';
+                                                const digits = String(v).replace(/\D/g, '');
+                                                if (!digits) return String(v);
+                                                const num = parseInt(digits, 10);
+                                                return (num / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+                                            };
+                                            const dadosFormatados = { ...dadosSemPerfil };
+                                            CAMPOS_BRL.forEach(campo => {
+                                                if (dadosFormatados[campo]) dadosFormatados[campo] = formatBRL(dadosFormatados[campo]);
+                                            });
+                                            setCotacaoData(prev => ({ ...prev, ...dadosFormatados }));
+                                        }
+                                    } catch (err) { console.error('Cotação IA error:', err); }
+                                    finally { setCotacaoLoading(false); }
+                                }} />
+                                <div className="p-4 flex items-center gap-3.5">
+                                    <div className={`p-3 rounded-2xl shrink-0 ${cotacaoFile ? 'bg-indigo-500/20' : (modoNoturno ? 'bg-slate-700' : 'bg-slate-100')}`}>
+                                        {cotacaoLoading
+                                            ? <div className="w-5 h-5 border-2 border-indigo-500 border-t-transparent rounded-full" style={{animation:'spin 0.8s linear infinite'}}></div>
+                                            : <Paperclip size={20} className={cotacaoFile ? 'text-indigo-400' : 'text-slate-400'} />
+                                        }
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        {cotacaoLoading ? (
+                                            <div>
+                                                <p className={`font-black text-sm ${modoNoturno ? 'text-indigo-300' : 'text-indigo-600'}`}>IA lendo documento...</p>
+                                                <p className={`text-[10px] font-bold mt-0.5 ${modoNoturno ? 'text-slate-500' : 'text-slate-400'}`}>Extraindo dados automaticamente</p>
+                                            </div>
+                                        ) : cotacaoFile ? (
+                                            <div>
+                                                <p className={`font-black text-sm truncate ${modoNoturno ? 'text-indigo-300' : 'text-indigo-700'}`}>✓ {cotacaoFile.name}</p>
+                                                <p className={`text-[10px] font-bold mt-0.5 ${modoNoturno ? 'text-slate-500' : 'text-slate-400'}`}>Toque para trocar o arquivo</p>
+                                            </div>
+                                        ) : (
+                                            <div>
+                                                <p className={`font-black text-sm ${modoNoturno ? 'text-white' : 'text-slate-800'}`}>Anexar Aprovação do Cliente</p>
+                                                <p className={`text-[10px] font-bold mt-0.5 ${modoNoturno ? 'text-slate-400' : 'text-slate-500'}`}>Cole prints ou PDF da aprovação · IA extrai os dados</p>
+                                            </div>
+                                        )}
+                                    </div>
+                                    {/* Botão Colar (Ctrl+V) */}
+                                    <button
+                                        onClick={async (ev) => {
+                                            ev.stopPropagation();
+                                            haptic('light');
+                                            try {
+                                                const items = await navigator.clipboard.read();
+                                                for (const item of items) {
+                                                    const imgType = item.types.find(t => t.startsWith('image/'));
+                                                    if (imgType) {
+                                                        const blob = await item.getType(imgType);
+                                                        const file = new File([blob], 'print_colado.png', { type: imgType });
+                                                        // Dispara o mesmo handler do input file
+                                                        const dt = new DataTransfer();
+                                                        dt.items.add(file);
+                                                        cotacaoFileRef.current.files = dt.files;
+                                                        cotacaoFileRef.current.dispatchEvent(new Event('change', { bubbles: true }));
+                                                        return;
+                                                    }
+                                                }
+                                                alert('Nenhuma imagem encontrada na área de transferência.');
+                                            } catch { alert('Permissão negada ou área de transferência vazia.'); }
+                                        }}
+                                        className={`shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all active:scale-95 ${modoNoturno ? 'bg-slate-700 text-slate-300 hover:bg-indigo-500/20 hover:text-indigo-300' : 'bg-slate-100 text-slate-500 hover:bg-indigo-100 hover:text-indigo-600'}`}
+                                        title="Colar print (Ctrl+V)">
+                                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                            <rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                                        </svg>
+                                        Colar
+                                    </button>
+                                    <div className={`shrink-0 text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full ${modoNoturno ? 'bg-indigo-500/20 text-indigo-300' : 'bg-indigo-100 text-indigo-600'}`}>IA</div>
+                                </div>
+                            </div>
+
+                            {/* DIVIDER */}
+                            <div className={`flex items-center gap-3 py-1`}>
+                                <div className={`flex-1 h-px ${modoNoturno ? 'bg-slate-800' : 'bg-slate-200'}`}></div>
+                                <span className={`text-[9px] font-black uppercase tracking-[0.18em] ${modoNoturno ? 'text-slate-600' : 'text-slate-400'}`}>ou preencha manualmente</span>
+                                <div className={`flex-1 h-px ${modoNoturno ? 'bg-slate-800' : 'bg-slate-200'}`}></div>
+                            </div>
+
+                            {/* CAMPOS — agrupados em cards iOS */}
+
+                            {/* LINHA 1: Perfil do Cliente */}
+                            {(() => {
+                                const PERFIS = [
+                                    { id: 'diamante', label: 'Diamante', emoji: '💎', ativo: { bg: 'linear-gradient(135deg, #bae6fd 0%, #38bdf8 40%, #0284c7 100%)', shadow: '0 4px 16px rgba(56,189,248,0.5)' }, porcentagens: [{ l: 'PS', v: '25%' }, { l: 'Parcelas', v: '84x' }, { l: 'Fin.+PS', v: '≤50%' }, { l: 'PS solo', v: '≤20%' }] },
+                                    { id: 'ouro',     label: 'Ouro',     emoji: '🥇', ativo: { bg: 'linear-gradient(135deg, #fef08a 0%, #fbbf24 40%, #b45309 100%)', shadow: '0 4px 16px rgba(251,191,36,0.5)' },  porcentagens: [{ l: 'PS', v: '20%' }, { l: 'Parcelas', v: '84x' }, { l: 'Fin.+PS', v: '≤50%' }, { l: 'PS solo', v: '≤20%' }] },
+                                    { id: 'prata',    label: 'Prata',    emoji: '🥈', ativo: { bg: 'linear-gradient(135deg, #f1f5f9 0%, #94a3b8 40%, #475569 100%)', shadow: '0 4px 16px rgba(148,163,184,0.5)' }, porcentagens: [{ l: 'PS', v: '18%' }, { l: 'Parcelas', v: '84x' }, { l: 'Fin.+PS', v: '≤48%' }, { l: 'PS solo', v: '≤18%' }] },
+                                    { id: 'bronze',   label: 'Bronze',   emoji: '🥉', ativo: { bg: 'linear-gradient(135deg, #fcd9b6 0%, #b87333 40%, #7c3a1e 100%)', shadow: '0 4px 16px rgba(184,115,51,0.5)' },  porcentagens: [{ l: 'PS', v: '15%' }, { l: 'Parcelas', v: '84x' }, { l: 'Fin.+PS', v: '≤45%' }, { l: 'PS solo', v: '≤15%' }] },
+                                    { id: 'aco',      label: 'Aço',      emoji: '⚙️', ativo: { bg: 'linear-gradient(135deg, #e2e8f0 0%, #4b5563 40%, #111827 100%)', shadow: '0 4px 16px rgba(75,85,99,0.5)' },    porcentagens: [{ l: 'PS', v: '12%' }, { l: 'Parcelas', v: '84x' }, { l: 'Fin.+PS', v: '≤40%' }, { l: 'PS solo', v: '≤10%' }] },
+                                ];
+                                return (
+                                    <div>
+
+                                        {/* Card Perfil */}
+                                        <div className="flex flex-col">
+                                            <p className={`text-[9px] font-black uppercase tracking-[0.18em] mb-2 ml-1 ${modoNoturno ? 'text-slate-500' : 'text-slate-400'}`}>Perfil Comercial</p>
+                                            <div className={`flex-1 rounded-3xl border transition-colors flex flex-col justify-center px-4 py-4 ${modoNoturno ? 'bg-slate-800/80 border-slate-700/60' : 'bg-white border-slate-100 shadow-sm'}`}>
+                                                <label className={`block text-[9px] font-black uppercase tracking-widest mb-1 ${modoNoturno ? 'text-slate-500' : 'text-slate-400'}`}>👤 Perfil Comercial do Cliente</label>
+                                                <p className={`text-[9px] mb-3 ${modoNoturno ? 'text-slate-600' : 'text-slate-400'}`}>Define as condições de PS e comprometimento — não é baseado na renda</p>
+                                                {/* Pílulas de perfil — overflow:hidden no container, cada pílula cresce/encolhe */}
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', minWidth: 0, overflow: 'hidden' }}>
+                                                    {PERFIS.map(p => {
+                                                        const sel = perfilSelecionado === p.id;
+                                                        const empurrado = perfilSelecionado !== null && !sel;
+                                                        return (
+                                                            <div key={p.id}
+                                                                onClick={() => { haptic('light'); setPerfilSelecionado(sel ? null : p.id); }}
+                                                                style={{
+                                                                    display: 'flex', alignItems: 'center',
+                                                                    flexShrink: empurrado ? 1 : 0,
+                                                                    flexGrow: sel ? 1 : 0,
+                                                                    flexBasis: empurrado ? '0px' : '40px',
+                                                                    minWidth: empurrado ? '0px' : '40px',
+                                                                    maxWidth: empurrado ? '0px' : sel ? '9999px' : '40px',
+                                                                    height: '40px',
+                                                                    borderRadius: '999px',
+                                                                    overflow: 'clip',
+                                                                    opacity: empurrado ? 0 : 1,
+                                                                    cursor: 'pointer',
+                                                                    transition: 'all 0.42s cubic-bezier(0.34,1.05,0.64,1)',
+                                                                    background: sel ? p.ativo.bg : (modoNoturno ? '#1e293b' : '#f1f5f9'),
+                                                                    boxShadow: sel ? p.ativo.shadow : 'none',
+                                                                    border: `2px solid ${sel ? 'transparent' : (modoNoturno ? '#334155' : '#e2e8f0')}`,
+                                                                    paddingLeft: sel ? '10px' : '0',
+                                                                    paddingRight: sel ? '12px' : '0',
+                                                                    gap: sel ? '8px' : '0',
+                                                                    whiteSpace: 'nowrap',
+                                                                    backgroundSize: '200% 100%',
+                                                                    backgroundPosition: 'left center',
+                                                                }}>
+                                                                {/* Emoji — sempre centrado quando fechado, à esquerda quando aberto */}
+                                                                <span style={{
+                                                                    fontSize: '18px', lineHeight: 1,
+                                                                    width: sel ? 'auto' : '40px',
+                                                                    flexShrink: 0,
+                                                                    textAlign: 'center',
+                                                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                                                    filter: sel ? 'drop-shadow(0 1px 3px rgba(0,0,0,0.3))' : 'none',
+                                                                    transition: 'filter 0.3s, width 0.42s cubic-bezier(0.34,1.05,0.64,1)',
+                                                                }}>{p.emoji}</span>
+
+                                                                {/* Conteúdo expandido */}
+                                                                <div style={{
+                                                                    display: 'flex', alignItems: 'center', gap: '6px',
+                                                                    overflow: 'hidden',
+                                                                    opacity: sel ? 1 : 0,
+                                                                    maxWidth: sel ? '600px' : '0px',
+                                                                    transition: `opacity ${sel ? '0.18s ease 0.22s' : '0.1s'}, max-width ${sel ? '0.42s cubic-bezier(0.34,1.05,0.64,1)' : '0.2s'}`,
+                                                                    pointerEvents: 'none',
+                                                                }}>
+                                                                    <span style={{ fontSize: '10px', fontWeight: 900, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.95)', textShadow: '0 1px 3px rgba(0,0,0,0.3)', whiteSpace: 'nowrap' }}>{p.label}</span>
+                                                                    <div style={{ width: '1px', height: '18px', background: 'rgba(255,255,255,0.2)', flexShrink: 0 }} />
+                                                                    <div style={{ display: 'flex', gap: '3px' }}>
+                                                                        {p.porcentagens.map((pc, i) => (
+                                                                            <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '2px 5px', borderRadius: '6px', background: 'rgba(0,0,0,0.25)', flexShrink: 0 }}>
+                                                                                <span style={{ fontSize: '6px', fontWeight: 900, textTransform: 'uppercase', color: 'rgba(255,255,255,0.5)', lineHeight: 1.3, whiteSpace: 'nowrap' }}>{pc.l}</span>
+                                                                                <span style={{ fontSize: '9px', fontWeight: 900, color: '#fff', lineHeight: 1.3, whiteSpace: 'nowrap' }}>{pc.v}</span>
+                                                                            </div>
+                                                                        ))}
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </div>
+                                        </div>
+
+
+                                    </div>
+                                );
+                            })()}
+
+                            {/* CARD EMPREENDIMENTO */}
+                            <div>
+                                <p className={`text-[9px] font-black uppercase tracking-[0.18em] mb-2 ml-1 ${modoNoturno ? 'text-slate-500' : 'text-slate-400'}`}>Empreendimento</p>
+                                <div className={`rounded-3xl overflow-hidden border ${modoNoturno ? 'bg-slate-800/80 border-slate-700/60' : 'bg-white border-slate-100 shadow-sm'}`}>
+                                    <div className="px-4 pt-3.5 pb-2 flex items-center gap-3">
+                                        <span className="text-base shrink-0 w-6 text-center">🏗️</span>
+                                        <div className="flex-1 min-w-0">
+                                            <label className={`block text-[9px] font-black uppercase tracking-widest mb-0.5 ${modoNoturno ? 'text-slate-500' : 'text-slate-400'}`}>Nome do Empreendimento</label>
+                                            <input
+                                                type="text"
+                                                value={cotacaoData.empreendimento || ''}
+                                                onChange={e => {
+                                                    const val = e.target.value;
+                                                    setCotacaoData(p => ({ ...p, empreendimento: val }));
+                                                    // Auto-preenche entrega ao digitar
+                                                    const low = val.toLowerCase();
+                                                    const EMAP = {
+                                                        'topazio':{'entrega':'04/2026'},'jardim botanico':{'entrega':'11/2026'},'jardim botânico':{'entrega':'11/2026'},
+                                                        'village':{'entrega':'04/2027'},'orquidea':{'entrega':'04/2027'},'orquídea':{'entrega':'04/2027'},
+                                                        'jardim norte':{'entrega':'06/2027'},'tapajos':{'entrega':'08/2027'},'tapajós':{'entrega':'08/2027'},
+                                                        'coral':{'entrega':'03/2028'},'marinas':{'entrega':'03/2028'},'bosque':{'entrega':'06/2028'},
+                                                        'brisas':{'entrega':'08/2028'},'lirio':{'entrega':'11/2028'},'lírio':{'entrega':'11/2028'},
+                                                        'rio negro':{'entrega':'12/2030'},
+                                                    };
+                                                    for (const [chave, dados] of Object.entries(EMAP)) {
+                                                        if (low.includes(chave)) {
+                                                            setCotacaoData(p => ({ ...p, empreendimento: val, entrega: dados.entrega }));
+                                                            break;
+                                                        }
+                                                    }
+                                                }}
+                                                placeholder="Ex: Brisas do Horizonte"
+                                                className={`w-full text-sm font-semibold bg-transparent border-none outline-none placeholder-slate-400/60 ${modoNoturno ? 'text-white' : 'text-slate-800'}`}
+                                            />
+                                        </div>
+                                        {cotacaoData.empreendimento ? (
+                                            <button onClick={() => setCotacaoData(p => ({ ...p, empreendimento: '', entrega: '' }))}
+                                                className={`shrink-0 p-1.5 rounded-full transition-all ${modoNoturno ? 'text-slate-500 hover:text-red-400' : 'text-slate-300 hover:text-red-400'}`}>
+                                                <X size={13} />
+                                            </button>
+                                        ) : null}
+                                    </div>
+                                    {/* Chips de seleção rápida */}
+                                    <div className="px-4 pb-3.5 flex flex-wrap gap-1.5">
+                                        {[
+                                            { label: 'Topázio',        nome: 'Conquista Topázio',        entrega: '04/2026' },
+                                            { label: 'Jd. Botânico',   nome: 'Conquista Jardim Botânico', entrega: '11/2026' },
+                                            { label: 'Village Torres', nome: 'Village Torres',            entrega: '04/2027' },
+                                            { label: 'Orquídea',       nome: 'Parque Ville Orquídea',     entrega: '04/2027' },
+                                            { label: 'Jd. Norte',      nome: 'Conquista Jardim Norte',    entrega: '06/2027' },
+                                            { label: 'Tapajós',        nome: 'Viva Vida Rio Tapajós',     entrega: '08/2027' },
+                                            { label: 'Coral',          nome: 'Viva Vida Coral',           entrega: '03/2028' },
+                                            { label: 'Bosque Torres',  nome: 'Bosque das Torres',         entrega: '06/2028' },
+                                            { label: 'Brisas',         nome: 'Brisas do Horizonte',       entrega: '08/2028' },
+                                            { label: 'Lírio Azul',     nome: 'Parque Ville Lírio Azul',   entrega: '11/2028' },
+                                            { label: 'Rio Negro',      nome: 'Conquista Rio Negro',       entrega: '12/2030' },
+                                        ].map(ape => {
+                                            const sel = cotacaoData.empreendimento === ape.nome;
+                                            return (
+                                                <button
+                                                    key={ape.label}
+                                                    onClick={() => {
+                                                        haptic('light');
+                                                        if (sel) {
+                                                            setCotacaoData(p => ({ ...p, empreendimento: '', entrega: '' }));
+                                                        } else {
+                                                            setCotacaoData(p => ({ ...p, empreendimento: ape.nome, entrega: ape.entrega }));
+                                                        }
+                                                    }}
+                                                    className="text-[10px] font-black px-2.5 py-1 rounded-full transition-all active:scale-95"
+                                                    style={sel ? {
+                                                        background: 'linear-gradient(135deg, #6366f1 0%, #7c3aed 100%)',
+                                                        color: 'white',
+                                                        boxShadow: '0 2px 8px rgba(99,102,241,0.4)',
+                                                    } : {
+                                                        background: modoNoturno ? '#1e293b' : '#f1f5f9',
+                                                        color: modoNoturno ? '#94a3b8' : '#64748b',
+                                                        border: `1px solid ${modoNoturno ? '#334155' : '#e2e8f0'}`,
+                                                    }}>
+                                                    {sel ? '✓ ' : ''}{ape.label}
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                    {/* Indicador de entrega auto-preenchida */}
+                                    {cotacaoData.empreendimento && cotacaoData.entrega && (
+                                        <div className={`mx-4 mb-3.5 px-3 py-2 rounded-xl flex items-center gap-2 ${modoNoturno ? 'bg-indigo-950/60 border border-indigo-700/40' : 'bg-indigo-50 border border-indigo-100'}`}>
+                                            <span className="text-sm">🔑</span>
+                                            <p className={`text-[11px] font-bold ${modoNoturno ? 'text-indigo-300' : 'text-indigo-600'}`}>
+                                                Entrega preenchida automaticamente: <strong>{cotacaoData.entrega}</strong>
+                                            </p>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* LINHA 2: Financeiro e Benefícios lado a lado */}
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 260px), 1fr))', gap: '12px', alignItems: 'start' }}>
+                                    {/* GRUPO: FINANCEIRO */}
+                                    <div>
+                                        <p className={`text-[9px] font-black uppercase tracking-[0.18em] mb-2 ml-1 ${modoNoturno ? 'text-slate-500' : 'text-slate-400'}`}>Financeiro</p>
+                                        <div className={`rounded-3xl overflow-hidden border ${modoNoturno ? 'bg-slate-800/80 border-slate-700/60' : 'bg-white border-slate-100 shadow-sm'}`}>
+
+                                            {/* ATO DO CLIENTE — destaque no topo */}
+                                            <div className={`px-4 py-3 ${modoNoturno ? 'bg-indigo-950/60 border-b border-indigo-800/40' : 'bg-indigo-50 border-b border-indigo-100'}`}>
+                                                <div className="flex items-center gap-3">
+                                                    <span className="text-base shrink-0 w-6 text-center">💵</span>
+                                                    <div className="flex-1 min-w-0">
+                                                        <div className="flex items-center gap-1.5 mb-0.5">
+                                                            <label className={`text-[9px] font-black uppercase tracking-widest ${modoNoturno ? 'text-indigo-400' : 'text-indigo-500'}`}>Ato do Cliente</label>
+                                                            <span className={`text-[8px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-full ${modoNoturno ? 'bg-indigo-800/60 text-indigo-300' : 'bg-indigo-100 text-indigo-500'}`}>negocia</span>
+                                                        </div>
+                                                        <input type="text" inputMode="numeric" value={cotacaoData.atoCliente || ''} onChange={e => { const maskBRL = (v) => { const d=v.replace(/\D/g,''); if(!d) return ''; return (parseInt(d,10)/100).toLocaleString('pt-BR',{style:'currency',currency:'BRL'}); }; setCotacaoData(p => ({...p, atoCliente: maskBRL(e.target.value)})); }} placeholder="R$ 1.000,00 (padrão)" className={`w-full text-sm font-bold bg-transparent border-none outline-none placeholder-slate-400/60 ${modoNoturno ? 'text-indigo-200' : 'text-indigo-700'}`} />
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {/* Demais campos financeiros */}
+                                            <div className={`divide-y ${modoNoturno ? 'divide-slate-700/60' : 'divide-slate-100'}`}>
+                                                {[
+                                                    { key: 'valorImovel',        label: 'Valor do Imóvel',       placeholder: 'R$ 230.000,00',    icon: '🏠' },
+                                                    { key: 'renda',              label: 'Renda',                 placeholder: 'R$ 3.500,00',      icon: '📊' },
+                                                    { key: 'financiamentoBanco', label: 'Financiamento Banco',   placeholder: 'Caixa, Bradesco...', icon: '🏦' },
+                                                ].map(field => (
+                                                    <div key={field.key} className="flex items-center px-4 py-3 gap-3">
+                                                        <span className="text-base shrink-0 w-6 text-center">{field.icon}</span>
+                                                        <div className="flex-1 min-w-0">
+                                                            <label className={`block text-[9px] font-black uppercase tracking-widest mb-0.5 ${modoNoturno ? 'text-slate-500' : 'text-slate-400'}`}>{field.label}</label>
+                                                            <input type="text" inputMode={['valorImovel','renda'].includes(field.key)?'numeric':'text'} value={cotacaoData[field.key] || ''} onChange={e => { const mkBRL=(v)=>{const d=v.replace(/\D/g,'');if(!d)return '';return (parseInt(d,10)/100).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});}; const val=['valorImovel','renda'].includes(field.key)?mkBRL(e.target.value):e.target.value; setCotacaoData(p => ({...p, [field.key]: val})); }} placeholder={field.placeholder} className={`w-full text-sm font-semibold bg-transparent border-none outline-none placeholder-slate-400/60 ${modoNoturno ? 'text-white' : 'text-slate-800'}`} />
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* GRUPO: BENEFÍCIOS & PARCELA */}
+                                    <div>
+                                        <p className={`text-[9px] font-black uppercase tracking-[0.18em] mb-2 ml-1 ${modoNoturno ? 'text-slate-500' : 'text-slate-400'}`}>Benefícios & Parcela</p>
+                                        <div className={`rounded-3xl overflow-hidden border divide-y ${modoNoturno ? 'bg-slate-800/80 border-slate-700/60 divide-slate-700/60' : 'bg-white border-slate-100 divide-slate-100 shadow-sm'}`}>
+                                            {[
+                                                { key: 'subsidio',            label: 'Subsídio',                  placeholder: 'R$ 55.000,00',    icon: '🎁' },
+                                                { key: 'fgts',                label: 'FGTS',                      placeholder: 'R$ 12.000,00',    icon: '📋' },
+                                                { key: 'parcelaFinanciamento', label: 'Prestação Financiamento',   placeholder: 'R$ 780,00/mês',   icon: '📅' },
+                                                { key: 'entrega',             label: 'Entrega',                   placeholder: 'Dezembro/2026',   icon: '🔑' },
+
+                                            ].map(field => (
+                                                <div key={field.key} className="flex items-center px-4 py-3 gap-3">
+                                                    <span className="text-base shrink-0 w-6 text-center">{field.icon}</span>
+                                                    <div className="flex-1 min-w-0">
+                                                        <label className={`block text-[9px] font-black uppercase tracking-widest mb-0.5 ${modoNoturno ? 'text-slate-500' : 'text-slate-400'}`}>{field.label}</label>
+                                                        <input type="text" inputMode={['subsidio','fgts','parcelaFinanciamento'].includes(field.key)?'numeric':'text'} value={cotacaoData[field.key] || ''} onChange={e => { const mkBRL=(v)=>{const d=v.replace(/\D/g,'');if(!d)return '';return (parseInt(d,10)/100).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});}; const val=['subsidio','fgts','parcelaFinanciamento'].includes(field.key)?mkBRL(e.target.value):e.target.value; setCotacaoData(p => ({...p, [field.key]: val})); }} placeholder={field.placeholder} className={`w-full text-sm font-semibold bg-transparent border-none outline-none placeholder-slate-400/60 ${modoNoturno ? 'text-white' : 'text-slate-800'}`} />
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                </div>{/* fim grid formulário */}
+
+                            {/* RESULTADO — 3 PLANOS EM CARDS */}
+                            {Array.isArray(cotacaoResult) && (() => {
+                                const CORES = [
+                                    { bg: 'linear-gradient(135deg, #6366f1 0%, #4f46e5 40%, #7c3aed 100%)', shadow: '0 8px 28px rgba(99,102,241,0.30)' },
+                                    { bg: 'linear-gradient(135deg, #0ea5e9 0%, #0284c7 40%, #0369a1 100%)', shadow: '0 8px 28px rgba(14,165,233,0.30)' },
+                                    { bg: 'linear-gradient(135deg, #10b981 0%, #059669 40%, #047857 100%)', shadow: '0 8px 28px rgba(16,185,129,0.30)' },
+                                ];
+                                const planos = cotacaoResult.slice(0, 2); // 2 cards: + Anuais e Ato à Vista
+                                const meta   = cotacaoResult[2] || {};
+                                const todosReprovados = planos.every(pl => !pl.aprovado);
+                                return (
+                                    <div>
+                                        <p className={`text-[9px] font-black uppercase tracking-[0.18em] mb-3 ml-1 ${modoNoturno ? 'text-slate-500' : 'text-slate-400'}`}>Planos de Pagamento</p>
+                                        {/* Banner renda mínima quando todos reprovam */}
+                                        {todosReprovados && meta.rendaMinima && (
+                                            <div className="mb-4 rounded-2xl px-4 py-3 flex items-center gap-3" style={{background: modoNoturno ? 'rgba(239,68,68,0.12)' : 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.25)'}}>
+                                                <span className="text-xl shrink-0">📊</span>
+                                                <div>
+                                                    <p className="text-xs font-black text-red-500 uppercase tracking-wide mb-0.5">Renda insuficiente para este perfil</p>
+                                                    <p className={`text-xs font-semibold ${modoNoturno ? 'text-slate-300' : 'text-slate-600'}`}>
+                                                        Renda mínima necessária: <span className="font-black text-red-400">{meta.rendaMinima.toLocaleString('pt-BR', {style:'currency',currency:'BRL'})}</span>
+                                                        <span className={`ml-1 ${modoNoturno ? 'text-slate-500' : 'text-slate-400'}`}>(renda informada: {meta.renda.toLocaleString('pt-BR',{style:'currency',currency:'BRL'})})</span>
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        )}
+                                        {/* Análise da IA */}
+                                        {meta.analiseIA ? (
+                                            <div className="mb-4 rounded-2xl px-4 py-3 flex items-start gap-3" style={{background: modoNoturno ? 'rgba(99,102,241,0.10)' : 'rgba(99,102,241,0.06)', border: '1px solid rgba(99,102,241,0.20)'}}>
+                                                <span className="text-lg shrink-0 mt-0.5">🤖</span>
+                                                <div>
+                                                    <p className="text-[10px] font-black uppercase tracking-wide mb-1" style={{color:'#818cf8'}}>Análise da IA</p>
+                                                    <p className={`text-xs leading-relaxed ${modoNoturno ? 'text-slate-300' : 'text-slate-600'}`}>{meta.analiseIA}</p>
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <div className="mb-4 rounded-2xl px-4 py-2 flex items-center gap-2" style={{background: modoNoturno ? 'rgba(99,102,241,0.06)' : 'rgba(99,102,241,0.04)', border: '1px solid rgba(99,102,241,0.12)'}}>
+                                                <span className="text-sm shrink-0">🤖</span>
+                                                <p className={`text-[10px] ${modoNoturno ? 'text-slate-500' : 'text-slate-400'}`}>Analisando cotação com IA…</p>
+                                            </div>
+                                        )}
+                                        {/* Grid: 1 col mobile, 3 col desktop */}
+                                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 260px), 1fr))', gap: '12px' }}>
+                                            {planos.map((plano, idx) => {
+                                                const cor = CORES[plano.cor ?? idx] ?? CORES[2];
+                                                return (
+                                                    <div key={idx} className="rounded-3xl overflow-hidden flex flex-col"
+                                                        style={{ boxShadow: cor.shadow, background: modoNoturno ? '#1e293b' : '#fff', border: modoNoturno ? '1px solid rgba(255,255,255,0.06)' : '1px solid rgba(0,0,0,0.06)' }}>
+
+                                                        {/* Header */}
+                                                        <div className="px-4 py-3 flex items-center justify-between" style={{ background: cor.bg }}>
+                                                            <span className="text-white font-black text-sm tracking-wide">{plano.label}</span>
+                                                            <span className={`text-xs font-black px-2.5 py-1 rounded-full ${plano.aprovado ? 'bg-white/25 text-white' : 'bg-black/20 text-white/80'}`}>
+                                                                {plano.aprovado ? '✅ Aprovado' : '❌ Reprovado'}
+                                                            </span>
+                                                        </div>
+
+                                                        <div className="p-4 flex flex-col gap-3 flex-1">
+                                                            {/* Composição */}
+                                                            <div>
+                                                                <p className={`text-[9px] font-black uppercase tracking-widest mb-1.5 ${modoNoturno ? 'text-slate-500' : 'text-slate-400'}`}>🏠 Composição</p>
+                                                                <div className={`rounded-2xl px-3 py-2 text-xs space-y-1 ${modoNoturno ? 'bg-slate-800' : 'bg-slate-50'}`}>
+                                                                    <div className="flex justify-between"><span className={modoNoturno?'text-slate-400':'text-slate-500'}>Imóvel</span><span className={`font-bold ${modoNoturno?'text-white':'text-slate-800'}`}>{plano.valorImovel}</span></div>
+                                                                    {plano.financBanco && <div className="flex justify-between"><span className={modoNoturno?'text-slate-400':'text-slate-500'}>Financiamento banco</span><span className={`font-bold ${modoNoturno?'text-white':'text-slate-800'}`}>{plano.financBanco}</span></div>}
+                                                                    {plano.subsidio && <div className="flex justify-between"><span className={modoNoturno?'text-slate-400':'text-slate-500'}>Subsídio</span><span className="font-bold text-emerald-500">{plano.subsidio}</span></div>}
+                                                                    {plano.fgts && <div className="flex justify-between"><span className={modoNoturno?'text-slate-400':'text-slate-500'}>FGTS</span><span className="font-bold text-emerald-500">{plano.fgts}</span></div>}
+                                                                    <div className="flex justify-between pt-1 border-t" style={{borderColor:modoNoturno?'#334155':'#e2e8f0'}}>
+                                                                        <span className={modoNoturno?'text-slate-400':'text-slate-500'}>Entrada bruta</span>
+                                                                        <span className={`font-bold ${modoNoturno?'text-white':'text-slate-800'}`}>{plano.entradaBruta}</span>
+                                                                    </div>
+                                                                    <div className="flex justify-between">
+                                                                        <span className={`font-medium ${modoNoturno?'text-indigo-300':'text-indigo-600'}`}>Benefício PS (Direcional parcela)</span>
+                                                                        <span className={`font-bold ${modoNoturno?'text-indigo-300':'text-indigo-600'}`}>{plano.benePS}</span>
+                                                                    </div>
+                                                                    {plano.excessoAto && (
+                                                                        <div className="flex justify-between">
+                                                                            <span className={`text-[10px] ${modoNoturno?'text-emerald-400':'text-emerald-600'}`}>↳ ato abateu PS em</span>
+                                                                            <span className={`text-[10px] font-bold ${modoNoturno?'text-emerald-300':'text-emerald-600'}`}>−{plano.excessoAto}</span>
+                                                                        </div>
+                                                                    )}
+                                                                    <div className="flex justify-between pt-1 border-t" style={{borderColor:modoNoturno?'#334155':'#e2e8f0'}}>
+                                                                        <span className={`font-bold ${modoNoturno?'text-amber-300':'text-amber-600'}`}>
+                                                                            {plano.sinais ? 'Ato + Sinais (cliente paga)' : 'Ato paga entrada'}
+                                                                        </span>
+                                                                        <span className={`font-bold ${modoNoturno?'text-amber-300':'text-amber-600'}`}>{plano.atoSinaisTotal}</span>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+
+                                                            {/* Como o cliente paga */}
+                                                            <div>
+                                                                <p className={`text-[9px] font-black uppercase tracking-widest mb-1.5 ${modoNoturno ? 'text-slate-500' : 'text-slate-400'}`}>💰 Como o cliente paga</p>
+                                                                <div className={`rounded-2xl px-3 py-2 text-xs space-y-1.5 ${modoNoturno ? 'bg-slate-800' : 'bg-slate-50'}`}>
+
+                                                                    {/* Ato */}
+                                                                    <div className="flex justify-between items-center">
+                                                                        <span className={modoNoturno?'text-slate-400':'text-slate-500'}>✍️ Ato <span className={`text-[9px] ${modoNoturno?'text-slate-600':'text-slate-400'}`}>(assinatura)</span></span>
+                                                                        <span className={`font-black ${modoNoturno?'text-white':'text-slate-800'}`}>{plano.ato}</span>
+                                                                    </div>
+
+                                                                    {/* Sinais — só se necessário */}
+                                                                    {plano.sinais && (
+                                                                        <div className="flex justify-between items-center">
+                                                                            <span className={modoNoturno?'text-amber-400':'text-amber-600'}>📅 Sinais <span className="font-black">({plano.sinais.qtd}×)</span></span>
+                                                                            <span className={`font-black ${modoNoturno?'text-amber-300':'text-amber-600'}`}>{plano.sinais.valor}/mês</span>
+                                                                        </div>
+                                                                    )}
+
+                                                                    {/* PS 84x = entrada parcelada */}
+                                                                    <div className="flex justify-between items-center pt-1 border-t" style={{borderColor:modoNoturno?'#334155':'#e2e8f0'}}>
+                                                                        <span style={{color:'#818cf8'}}>🏠 PS <span className="font-black">84×</span> <span className={`text-[9px] font-normal`}>(entrada parcelada)</span></span>
+                                                                        <span className="font-black" style={{color:'#818cf8'}}>{plano.parcelaPS}</span>
+                                                                    </div>
+
+                                                                    {/* Anuais */}
+                                                                    {plano.anuais && (
+                                                                        <div className="flex justify-between items-center">
+                                                                            <span className={modoNoturno?'text-amber-400':'text-amber-600'}>🗓️ Anuais <span className={`text-[9px] font-normal`}>(todo dez)</span></span>
+                                                                            <span className="font-black text-amber-500">{plano.anuais}</span>
+                                                                        </div>
+                                                                    )}
+
+                                                                </div>
+                                                            </div>
+
+                                                            {/* 3 Regras */}
+                                                            <div>
+                                                                <p className={`text-[9px] font-black uppercase tracking-widest mb-1.5 ${modoNoturno ? 'text-slate-500' : 'text-slate-400'}`}>📋 3 Regras</p>
+                                                                <div className="space-y-1.5">
+                                                                    {plano.regras.map((r, ri) => {
+                                                                        const rKey = `${idx}-${ri}`;
+                                                                        const isOpen = openRegra === rKey;
+                                                                        return (
+                                                                        <div key={ri} className={`rounded-xl overflow-hidden ${r.ok ? (modoNoturno?'bg-emerald-900/30':'bg-emerald-50') : (modoNoturno?'bg-red-900/30':'bg-red-50')}`}>
+                                                                            <button onClick={() => setOpenRegra(isOpen ? null : rKey)} className="w-full px-2.5 py-2 text-left">
+                                                                                <div className="flex items-center justify-between gap-2 mb-0.5">
+                                                                                    <span className="text-[10px] font-black">{r.ok ? '✅' : '❌'} {r.rotulo} <span className={`text-[9px] font-normal ${modoNoturno?'text-slate-500':'text-slate-400'}`}>{isOpen ? '▲' : '▼'}</span></span>
+                                                                                    <span className={`text-[11px] font-black px-2 py-0.5 rounded-full ${r.ok ? (modoNoturno?'bg-emerald-700/50 text-emerald-200':'bg-emerald-200 text-emerald-800') : (modoNoturno?'bg-red-700/50 text-red-200':'bg-red-200 text-red-800')}`}>
+                                                                                        {r.pctAtual} / {r.pctLimite}
+                                                                                    </span>
+                                                                                </div>
+                                                                                <span className={`text-[10px] ${r.ok ? (modoNoturno?'text-emerald-400':'text-emerald-600') : (modoNoturno?'text-red-400':'text-red-600')}`}>{r.detalhe}</span>
+                                                                            </button>
+                                                                            {isOpen && (
+                                                                                <div className={`px-2.5 pb-2.5 pt-0 text-[10px] leading-relaxed border-t ${r.ok ? (modoNoturno?'border-emerald-800/40 text-emerald-300':'border-emerald-200 text-emerald-700') : (modoNoturno?'border-red-800/40 text-red-300':'border-red-200 text-red-700')}`}>
+                                                                                    {r.descricao}
+                                                                                </div>
+                                                                            )}
+                                                                        </div>
+                                                                        );
+                                                                    })}
+                                                                </div>
+                                                            </div>
+
+                                                            <p className={`text-[9px] ${modoNoturno?'text-slate-600':'text-slate-400'}`}>📌 Fator comercial 1.47146 × 84 parcelas{plano.fatorLabel ? ` · ${plano.fatorLabel}` : ''}</p>
+                                                            {plano.rebalance && (
+                                                                <div className={`mt-2 p-2 rounded-lg text-[10px] font-semibold ${modoNoturno?'bg-amber-900/30 text-amber-300':'bg-amber-50 text-amber-700'}`}>
+                                                                    ⚖️ {plano.rebalance}
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                );                                            })}
+                                        </div>
+                                    </div>
+                                );
+                            })()}
+
+                            {/* Aviso Bora Vender nos resultados */}
+                            {Array.isArray(cotacaoResult) && (
+                                <div className={`rounded-2xl px-4 py-3.5 border flex items-start gap-3 ${modoNoturno ? 'bg-amber-950/40 border-amber-500/30' : 'bg-amber-50 border-amber-200'}`}>
+                                    <span className="text-lg leading-none mt-0.5 shrink-0">⚠️</span>
+                                    <div>
+                                        <p className={`font-black text-[10px] uppercase tracking-widest mb-1 ${modoNoturno ? 'text-amber-400' : 'text-amber-600'}`}>Confirme no Bora Vender</p>
+                                        <p className={`text-[11px] leading-snug ${modoNoturno ? 'text-amber-200/80' : 'text-amber-800'}`}>
+                                            Estes valores são uma <strong>estimativa de apoio à venda</strong>. Sempre confirme os valores finais no <strong>Bora Vender</strong> antes de apresentar ao cliente.
+                                        </p>
+                                    </div>
+                                </div>
+                            )}
+
+                            <div className="h-2"></div>
+                        </div>
+
+                        {/* ── FOOTER ── */}
+                        <div className={`shrink-0 px-4 pt-3 border-t transition-colors ${modoNoturno ? 'border-slate-800 bg-[#0B1120]' : 'border-slate-100 bg-slate-50'}`}
+                            style={{ paddingBottom: 'max(20px, calc(env(safe-area-inset-bottom) + 12px))' }}>
+                            <button
+                                onClick={() => {
+                                    haptic('medium');
+                                    setCotacaoResult(null);
+                                    try {
+                                        const PARAMS = {
+                                            diamante: { psLimite: 0.25, condicao: 0.50, comprometimento: 0.20 },
+                                            ouro:     { psLimite: 0.20, condicao: 0.50, comprometimento: 0.20 },
+                                            prata:    { psLimite: 0.18, condicao: 0.48, comprometimento: 0.18 },
+                                            bronze:   { psLimite: 0.15, condicao: 0.45, comprometimento: 0.15 },
+                                            aco:      { psLimite: 0.12, condicao: 0.40, comprometimento: 0.10 },
+                                        };
+
+                                        // Mapa de empreendimentos: chave (substring) → { fator, entrega: 'MM/AAAA' }
+                                        // Anuais = quantos dezembros há entre hoje e a entrega (exclusive)
+                                        const EMPREEND_MAP = {
+                                            'topazio':        { fator: 1.85,   entrega: '04/2026' },
+                                            'jardim botanico':{ fator: 1.72,   entrega: '11/2026' },
+                                            'jardim botânico':{ fator: 1.72,   entrega: '11/2026' },
+                                            'village':        { fator: 1.6033, entrega: '04/2027' },
+                                            'orquidea':       { fator: 1.6033, entrega: '04/2027' },
+                                            'orquídea':       { fator: 1.6033, entrega: '04/2027' },
+                                            'jardim norte':   { fator: 1.58,   entrega: '06/2027' },
+                                            'tapajos':        { fator: 1.56,   entrega: '08/2027' },
+                                            'tapajós':        { fator: 1.56,   entrega: '08/2027' },
+                                            'coral':          { fator: 1.50,   entrega: '03/2028' },
+                                            'marinas':        { fator: 1.50,   entrega: '03/2028' },
+                                            'bosque':         { fator: 1.4579, entrega: '06/2028' },
+                                            'brisas':         { fator: 1.44,   entrega: '08/2028' },
+                                            'lirio':          { fator: 1.41,   entrega: '11/2028' },
+                                            'lírio':          { fator: 1.41,   entrega: '11/2028' },
+                                            'rio negro':      { fator: 1.25,   entrega: '12/2030' },
+                                        };
+
+                                        // Calcula quantos dezembros futuros há antes de uma data de entrega (MM/AAAA ou texto)
+                                        const contarAnuais = (dataStr) => {
+                                            if (!dataStr) return 0;
+                                            // Tenta extrair MM/AAAA ou AAAA
+                                            const matchMY = dataStr.match(/(\d{1,2})[\/\-](\d{4})/);
+                                            const matchY  = dataStr.match(/\b(20\d{2})\b/);
+                                            let mesEntrega, anoEntrega;
+                                            if (matchMY) { mesEntrega = parseInt(matchMY[1]); anoEntrega = parseInt(matchMY[2]); }
+                                            else if (matchY) { mesEntrega = 12; anoEntrega = parseInt(matchY[1]); }
+                                            else return 0;
+                                            const hoje = new Date();
+                                            const anoHoje = hoje.getFullYear();
+                                            const mesHoje = hoje.getMonth() + 1; // 1-12
+                                            let count = 0;
+                                            // Conta dezembros de (anoHoje) até (anoEntrega), exclusive o mês de entrega
+                                            for (let ano = anoHoje; ano <= anoEntrega; ano++) {
+                                                // Dezembro desse ano
+                                                const dezMes = 12, dezAno = ano;
+                                                // Já passou? (dezembro já foi esse ano)
+                                                if (dezAno < anoHoje || (dezAno === anoHoje && dezMes <= mesHoje)) continue;
+                                                // Depois da entrega?
+                                                if (dezAno > anoEntrega || (dezAno === anoEntrega && dezMes >= mesEntrega)) continue;
+                                                count++;
+                                            }
+                                            return count;
+                                        };
+
+                                        const toNum = (s) => s ? parseFloat(s.replace(/[R$\s.]/g, '').replace(',', '.')) || 0 : 0;
+                                        const brl = (v) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+                                        const pct = (v) => `${(v * 100).toFixed(0)}%`;
+
+                                        const perfil        = perfilSelecionado;
+                                        const p             = PARAMS[perfil];
+                                        const valorImovel   = toNum(cotacaoData.valorImovel);
+                                        const renda         = toNum(cotacaoData.renda);
+                                        const financBanco   = toNum(cotacaoData.financiamentoBanco);
+                                        const subsidio      = toNum(cotacaoData.subsidio);
+                                        const fgts          = toNum(cotacaoData.fgts);
+                                        // parcelaFinanc: valor digitado (aprovado pela Caixa) ou estimativa de 30% da renda
+                                        const parcelaFinancDigitada = toNum(cotacaoData.parcelaFinanciamento);
+                                        // Nos cálculos dos planos usa-se sempre o valor digitado (ou zero se não informado)
+                                        const parcelaFinanc = parcelaFinancDigitada;
+                                        const atoCliente    = toNum(cotacaoData.atoCliente) || 1000;
+                                        const empreendNome  = (cotacaoData.empreendimento || '').toLowerCase();
+
+                                        if (!perfil || !p)  { setCotacaoResult('⚠️ Selecione o perfil do cliente.'); throw new Error('sem perfil'); }
+                                        if (!valorImovel)   { setCotacaoResult('⚠️ Informe o valor do imóvel.'); throw new Error('sem valor'); }
+                                        if (!renda)         { setCotacaoResult('⚠️ Informe a renda do cliente.'); throw new Error('sem renda'); }
+
+                                        // Detecta empreendimento pelo nome (fator fixo removido — usa Price dinâmico)
+                                        let fatorLabel = null;
+                                        let entregaDetectada = null;
+                                        for (const [chave, dados] of Object.entries(EMPREEND_MAP)) {
+                                            if (empreendNome.includes(chave)) {
+                                                fatorLabel = cotacaoData.empreendimento;
+                                                entregaDetectada = dados.entrega;
+                                                break;
+                                            }
+                                        }
+
+                                        // Anuais: usa data do campo entrega se preenchida, senão usa do mapa
+                                        const dataEntregaFinal = cotacaoData.entrega || entregaDetectada || '';
+                                        const nAnuais = contarAnuais(dataEntregaFinal);
+
+                                        const valorAnual = renda * 0.5; // cada anual = 50% da renda do cliente
+                                        const PARCELA_MIN = 300;
+
+                                        // ══════════════════════════════════════════════════════════
+                                        // FATOR COMERCIAL DINÂMICO (descoberto por engenharia reversa)
+                                        // Fórmula: Parcela = Saldo PS × FATOR(meses) ÷ 84
+                                        // FATOR_BASE = 1.4582 (carência 1 mês)
+                                        // A cada mês extra de carência: fator × 1.01106
+                                        // Exemplos validados:
+                                        //   1 mês:  1.4582 × (1.01106)^0 = 1.4582 → R$ 21.653 → R$ 375,84/mês ✅
+                                        //   4 meses: 1.4582 × (1.01106)^3 = 1.5070 → R$ 22.606 → R$ 405,56/mês ✅
+                                        // ══════════════════════════════════════════════════════════
+                                        const FATOR_BASE  = 1.4582;
+                                        const FATOR_INCR  = 1.01106; // incremento por mês extra de carência
+                                        const PARCELAS_PS = 84;
+                                        const calcFator   = (meses) => FATOR_BASE * Math.pow(FATOR_INCR, meses - 1);
+
+                                        const calcPlano = ({ anuaisUsados = 0, atoExtra = 0, label = '', cor = 0, atoDisplay = null, atoNecessario = null }) => {
+                                            // ══════════════════════════════════════════════════════════
+                                            // CÁLCULO CORRETO — TOP-DOWN (igual ao sistema oficial)
+                                            // NUNCA subtrair o teto do PS da Entrada Bruta
+                                            // Sinais = Ato parcelado em 3x (cliente não tem o ato cheio)
+                                            // ══════════════════════════════════════════════════════════
+
+                                            // PASSO 1: Dívida real
+                                            const entradaBruta = Math.max(0, valorImovel - financBanco - subsidio - fgts);
+
+                                            // PASSO 2: Ato efetivo (o que o cliente realmente vai pagar como entrada total)
+                                            // atoNecessario = ato cheio necessário (ex: R$ 10.000)
+                                            // atoCliente    = o que o cliente tem no dia (ex: R$ 1.000)
+                                            // Se atoNecessario > atoCliente → diferença vai para sinais (3x)
+                                            const atoEfetivo = atoDisplay !== null ? atoDisplay
+                                                             : atoNecessario !== null ? atoNecessario
+                                                             : Math.max(0, atoCliente + atoExtra);
+
+                                            // Sinais = ato parcelado: diferença entre o ato necessário e o que o cliente tem
+                                            const diferencaAto = Math.max(0, atoEfetivo - atoCliente);
+                                            const sinaisQtd    = diferencaAto > 0.01 ? 3 : 0;
+                                            const sinaisValor  = sinaisQtd > 0 ? diferencaAto / 3 : 0;
+
+                                            // PASSO 3: Saldo PS = Entrada Bruta - Ato EFETIVO (NUNCA negativo)
+                                            // Os sinais NÃO abatam o PS — são só o ato sendo pago em parcelas
+                                            const saldoPSbase = Math.max(0, entradaBruta - atoEfetivo);
+
+                                            // Meses de carência: 1 (só ato) + 1 por cada sinal
+                                            const mesesCarencia = 1 + sinaisQtd;
+                                            const fatorPS = calcFator(mesesCarencia);
+
+                                            // PASSO 4: Abate anuais do saldo PS
+                                            const abateAnual = anuaisUsados * valorAnual;
+                                            const saldoPSliq  = Math.max(0, saldoPSbase - abateAnual);
+
+                                            // PASSO 5: Parcela = Saldo PS × fator(carência) ÷ 84
+                                            const parcelaPS = (saldoPSliq * fatorPS) / PARCELAS_PS;
+
+                                            // R1: verificação do teto (NÃO é operação aritmética, só validação)
+                                            const psTetoR1 = p.psLimite * valorImovel;
+                                            const r1ok     = saldoPSbase <= psTetoR1 + 0.01;
+
+                                            // R2: Financ + PS ≤ condicao% × renda
+                                            const r2ok = (parcelaFinanc + parcelaPS) <= p.condicao * renda + 0.01;
+
+                                            // R3: parcelaPS ≤ comprometimento% × renda
+                                            const r3ok = parcelaPS <= p.comprometimento * renda + 0.01;
+
+                                            const aprovado = r1ok && r2ok && r3ok;
+
+                                            // Aviso de reprovação
+                                            let rebalance = null;
+                                            if (!r1ok) {
+                                                rebalance = `❌ Reprovado por R1: Saldo PS (${brl(saldoPSbase)}) ultrapassa ${(p.psLimite*100).toFixed(0)}% do imóvel (máx ${brl(psTetoR1)}).`;
+                                            } else if (!r2ok) {
+                                                rebalance = `❌ Reprovado por R2: Financiamento + PS (${brl(parcelaFinanc + parcelaPS)}/mês) ultrapassa ${(p.condicao*100).toFixed(0)}% da renda (máx ${brl(p.condicao * renda)}/mês).`;
+                                            } else if (!r3ok) {
+                                                rebalance = `❌ Reprovado por R3: Parcela PS (${brl(parcelaPS)}/mês) ultrapassa ${(p.comprometimento*100).toFixed(0)}% da renda (máx ${brl(p.comprometimento * renda)}/mês).`;
+                                            }
+
+                                            // % para exibição
+                                            const pctR2atual = renda > 0 ? ((parcelaFinanc + parcelaPS) / renda) * 100 : 0;
+                                            const pctR3atual = renda > 0 ? (parcelaPS / renda) * 100 : 0;
+                                            const pctR1atual = valorImovel > 0 ? (saldoPSbase / valorImovel) * 100 : 0;
+
+                                            return {
+                                                aprovado,
+                                                label, cor,
+                                                valorImovel:    brl(valorImovel),
+                                                financBanco:    financBanco ? brl(financBanco) : null,
+                                                subsidio:       subsidio    ? brl(subsidio)    : null,
+                                                fgts:           fgts        ? brl(fgts)        : null,
+                                                entradaBruta:   brl(entradaBruta),
+                                                benePS:         brl(psTetoR1),
+                                                benePSTeto:     brl(psTetoR1),
+                                                // atoSinaisTotal = ato na assinatura + total dos sinais (= atoEfetivo completo)
+                                                atoSinaisTotal: brl(atoEfetivo),
+                                                ato:            brl(atoCliente), // o que o cliente paga na assinatura
+                                                excessoAto:     null,
+                                                // Sinais = ato parcelado em 3x (só aparece se cliente não tem o ato cheio)
+                                                sinais: sinaisQtd > 0 ? { qtd: sinaisQtd, valor: brl(sinaisValor) } : null,
+                                                parcelaPS:      `${brl(parcelaPS)}/mês`,
+                                                anuais:         anuaisUsados > 0 ? `${brl(valorAnual)} × ${anuaisUsados}` : null,
+                                                rebalance,
+                                                regras: [
+                                                    {
+                                                        ok: r1ok,
+                                                        rotulo: 'R1 — Benefício PS / Imóvel',
+                                                        pctAtual: pctR1atual.toFixed(1) + '%',
+                                                        pctLimite: pct(p.psLimite),
+                                                        detalhe: `Saldo PS ${brl(saldoPSbase)} · teto do perfil ${brl(psTetoR1)}`,
+                                                        descricao: `R1 verifica se o Saldo PS (${brl(saldoPSbase)}) está dentro do teto permitido pelo perfil: ${pct(p.psLimite)} do valor do imóvel = ${brl(psTetoR1)}. O teto é APENAS verificação — nunca é subtraído da Entrada Bruta.`,
+                                                    },
+                                                    {
+                                                        ok: r2ok,
+                                                        rotulo: 'R2 — Financ.+PS / Renda',
+                                                        pctAtual: pctR2atual.toFixed(1) + '%',
+                                                        pctLimite: pct(p.condicao),
+                                                        detalhe: `${brl(parcelaFinanc + parcelaPS)}/mês · máx ${brl(p.condicao * renda)}`,
+                                                        descricao: `R2 controla o comprometimento total da renda com moradia. A soma da parcela do financiamento bancário (${brl(parcelaFinanc)}/mês) mais a parcela do PS (${brl(parcelaPS)}/mês) não pode ultrapassar ${pct(p.condicao)} da renda bruta do cliente. Limite: ${brl(p.condicao * renda)}/mês.`,
+                                                    },
+                                                    {
+                                                        ok: r3ok,
+                                                        rotulo: 'R3 — PS / Renda',
+                                                        pctAtual: pctR3atual.toFixed(1) + '%',
+                                                        pctLimite: pct(p.comprometimento),
+                                                        detalhe: `${brl(parcelaPS)}/mês · máx ${brl(p.comprometimento * renda)}`,
+                                                        descricao: `R3 controla o comprometimento específico com o PS parcelado. A parcela mensal do PS sozinha não pode ultrapassar ${pct(p.comprometimento)} da renda bruta. Limite: ${brl(p.comprometimento * renda)}/mês.`,
+                                                    },
+                                                ],
+                                                coefEfetivo: `÷ 84 parcelas`,
+                                                fatorLabel,
+                                            };
+                                        };
+
+                                        // ══════════════════════════════════════════════════════════
+                                        // MOTOR DE BUSCA DE APROVAÇÃO — LÓGICA TOP-DOWN CORRETA
+                                        // Saldo PS = Entrada Bruta - Ato (nunca subtrai teto PS)
+                                        // ══════════════════════════════════════════════════════════
+                                        const buscarAprovacao = ({ label = '', cor = 0 }) => {
+                                            const entradaBruta  = Math.max(0, valorImovel - financBanco - subsidio - fgts);
+                                            const saldoPSbase   = Math.max(0, entradaBruta - atoCliente);
+                                            const maxAnuaisDisp = nAnuais;
+
+                                            // Limites REAIS de renda
+                                            const maxParcelaR3 = p.comprometimento * renda;
+                                            const maxParcelaR2 = Math.max(0, p.condicao * renda - parcelaFinanc);
+                                            const maxParcela   = Math.min(maxParcelaR3, maxParcelaR2);
+
+                                            // Sem sinais = 1 mês carência; com sinais = 4 meses
+                                            // Card 1 usa ato do cliente (sem sinais = 1 mês)
+                                            const fatorCard1 = calcFator(1);
+
+                                            // CAMINHO FELIZ: sem anuais, parcela já cabe na renda
+                                            const parcelaSemAnuais = (saldoPSbase * fatorCard1) / PARCELAS_PS;
+                                            if (parcelaSemAnuais <= maxParcela + 0.01) {
+                                                return calcPlano({ anuaisUsados: 0, label, cor });
+                                            }
+
+                                            // Parcela alta: escala anuais até aprovar
+                                            for (let a = 1; a <= maxAnuaisDisp; a++) {
+                                                const saldoComAnuais   = Math.max(0, saldoPSbase - a * valorAnual);
+                                                const parcelaComAnuais = (saldoComAnuais * fatorCard1) / PARCELAS_PS;
+                                                if (parcelaComAnuais <= maxParcela + 0.01) {
+                                                    return calcPlano({ anuaisUsados: a, label, cor });
+                                                }
+                                            }
+
+                                            // Anuais não bastam: retorna reprovado com o melhor resultado possível
+                                            // NÃO marca como aprovado — deixa as regras R2/R3 reprovarem corretamente
+                                            return calcPlano({ anuaisUsados: maxAnuaisDisp, label, cor });
+                                        };
+
+                                        // Card 1: Plano com ato informado pelo corretor
+                                        const plano1 = buscarAprovacao({
+                                            label: nAnuais > 0 ? '+ Anuais' : 'Ato Informado',
+                                            cor: 1,
+                                        });
+
+                                        // Card 2: "Ato à Vista" — ato mínimo necessário para aprovar sem anuais
+                                        // Se o cliente não tiver o ato cheio → mostra sinais (ato parcelado em 3x)
+                                        const calcAtoVista = () => {
+                                            const entradaBrutaV = Math.max(0, valorImovel - financBanco - subsidio - fgts);
+                                            const maxParR3   = p.comprometimento * renda;
+                                            const maxParR2   = Math.max(0, p.condicao * renda - parcelaFinanc);
+                                            const maxParcela = Math.min(maxParR3, maxParR2);
+                                            // Card 2 (Ato à Vista): sem sinais = fator 1 mês; com sinais = fator 4 meses
+                                            // Calculamos primeiro sem sinais para achar o ato necessário
+                                            const fatorVista1 = calcFator(1);  // sem sinais
+                                            const fatorVista4 = calcFator(4);  // com 3 sinais
+                                            // Saldo PS máximo sem sinais
+                                            const saldoPSmaxSemSinais = (maxParcela * PARCELAS_PS) / fatorVista1;
+                                            const atoNecSemSinais = entradaBrutaV - saldoPSmaxSemSinais;
+                                            if (atoNecSemSinais <= atoCliente + 0.01) {
+                                                // Cliente já tem ato suficiente — sem sinais
+                                                return calcPlano({ anuaisUsados: 0, label: 'Ato à Vista', cor: 2, atoNecessario: Math.max(atoCliente, atoNecSemSinais) });
+                                            }
+                                            // Precisa de sinais — recalcula com fator 4 meses
+                                            const saldoPSmaxComSinais = (maxParcela * PARCELAS_PS) / fatorVista4;
+                                            const atoNecComSinais = Math.max(atoCliente, entradaBrutaV - saldoPSmaxComSinais);
+                                            return calcPlano({ anuaisUsados: 0, label: 'Ato à Vista', cor: 2, atoNecessario: atoNecComSinais });
+                                        };
+                                        const plano2 = calcAtoVista();
+                                        const plano3 = plano2; // placeholder — só 2 cards
+
+                                        // Renda mínima para aprovar com o Saldo PS REAL do cliente
+                                        const entradaBrutaCalc = Math.max(0, valorImovel - financBanco - subsidio - fgts);
+                                        const saldoPSrealCalc  = Math.max(0, entradaBrutaCalc - atoCliente);
+                                        const parcelaPSCalc    = (saldoPSrealCalc * calcFator(1)) / PARCELAS_PS;
+                                        const rendaMinR3    = parcelaPSCalc > 0 ? parcelaPSCalc / p.comprometimento : 0;
+                                        let rendaMinR2;
+                                        if (parcelaFinancDigitada > 0) {
+                                            rendaMinR2 = (parcelaFinancDigitada + parcelaPSCalc) / p.condicao;
+                                        } else {
+                                            const margemR2 = p.condicao - 0.30;
+                                            rendaMinR2 = margemR2 > 0.001 ? parcelaPSCalc / margemR2 : Infinity;
+                                        }
+                                        const rendaMinima   = Math.ceil(Math.max(rendaMinR3, rendaMinR2));
+
+                                        // ── Monta resultado provisório e exibe imediatamente ──
+                                        const resultadoProvisorio = [plano1, plano2, { rendaMinima, renda }];
+                                        setCotacaoResult(resultadoProvisorio);
+
+                                        // ── IA analisa os planos e sugere ajustes ──
+                                        // Executa em background para não bloquear a exibição
+                                        (async () => {
+                                            try {
+                                                const resumo = [plano1, plano2, plano3].map((pl, i) => {
+                                                    const status = pl.aprovado ? '✅ Aprovado' : '❌ Reprovado';
+                                                    const regrasStatus = pl.regras.map(r => `${r.rotulo}: ${r.ok ? 'ok' : 'reprovado'} (${r.pctAtual}/${r.pctLimite})`).join('; ');
+                                                    return `Plano ${i+1} (${pl.label}): ${status} | Ato: ${pl.ato} | PS: ${pl.benePS} | Parcela PS: ${pl.parcelaPS} | Anuais: ${pl.anuais || 'nenhum'} | Regras: ${regrasStatus}`;
+                                                }).join('\n');
+
+                                                const prompt = `[MISSÃO DA IA] Você é o "Motor de Cálculo Oficial" para aprovação de financiamentos imobiliários (Padrão Direcional). Sua função é receber os dados de uma cotação e devolver os valores exatos de Ato, Sinais, Mensal PS (Pró-Soluto) e Anuais que fechem a conta da "Entrada Bruta", respeitando rigorosamente as regras de comprometimento de renda (R1, R2 e R3) do perfil do cliente.
+
+[MODO DE EXECUÇÃO: CÁLCULO DETERMINÍSTICO DE COTAÇÃO]
+Você é uma calculadora estrita. Siga EXATAMENTE o algoritmo abaixo. Você está PROIBIDA de usar os limites máximos das regras (R1, R2, R3) como valores de cobrança. O "Benefício PS Máximo" serve APENAS para verificação final, NUNCA para subtração.
+
+PASSO 1 — VARIÁVEIS DE ENTRADA:
+Identifique os valores fornecidos:
+- V_IMOVEL = Valor do Imóvel
+- V_FINAN  = Financiamento Banco
+- V_SUB    = Subsídio MCMV
+- V_FGTS   = FGTS do cliente (entra na Entrada Bruta, reduz o PS igual ao subsídio)
+- V_ATO    = Dinheiro real que o cliente vai dar de Ato (ex: R$ 1.000,00)
+
+PASSO 2 — CÁLCULO DA DÍVIDA REAL:
+ENTRADA_BRUTA = V_IMOVEL - V_FINAN - V_SUB - V_FGTS
+Regra de Ouro: O teto do Benefício PS (ex: R$ 35.712,00) NÃO FAZ PARTE DESTA CONTA.
+Nota: FGTS e Subsídio entram aqui pois reduzem diretamente a dívida, igual ao financiamento banco.
+
+PASSO 3 — CÁLCULO DO SALDO A PARCELAR:
+SALDO_PS_BASE = ENTRADA_BRUTA - ATO_NECESSARIO
+Trava de Segurança: NUNCA gere valores negativos. Se o Ato cobrir tudo, o PS é zero.
+
+SOBRE OS SINAIS (Ato Parcelado):
+Os Sinais NÃO são parcelas do PS. São o ATO sendo parcelado em 3x para o cliente que não tem o valor cheio na hora da assinatura.
+- ATO_NECESSARIO = valor total que precisa entrar como Ato para o PS caber na renda
+- ATO_CLIENTE    = o que o cliente tem disponível no dia da assinatura
+- Se ATO_CLIENTE < ATO_NECESSARIO → SINAIS = (ATO_NECESSARIO - ATO_CLIENTE) ÷ 3
+- Exemplo: Ato necessário R$ 10.000, cliente tem R$ 1.000 → Sinais = 3x de R$ 3.000
+- Os Sinais NÃO alteram o Saldo PS — o PS já foi calculado com o ATO_NECESSARIO completo
+
+PASSO 4 — TENTATIVA 1 (O CAMINHO FELIZ — SEM SINAIS E SEM ANUAIS):
+PARCELA_MENSAL_TESTE = SALDO_PS_BASE ÷ 84
+
+PASSO 5 — VALIDAÇÃO DAS REGRAS R2 E R3:
+Compare a PARCELA_MENSAL_TESTE com o limite máximo permitido pela renda do cliente.
+
+✅ SE PARCELA_MENSAL_TESTE <= Limite da Renda (R3 e R2):
+PARE O CÁLCULO AQUI! A COTAÇÃO ESTÁ APROVADA. Retorne imediatamente:
+- Ato: V_ATO
+- Sinais: 0
+- Anuais: 0
+- Mensal PS: 84x de PARCELA_MENSAL_TESTE
+
+❌ SE PARCELA_MENSAL_TESTE > Limite da Renda:
+APENAS NESTE CASO, inicie a adição de parcelas ANUAIS (valor fixo = 50% da renda bruta, vencimento todo dezembro) para abater o SALDO_PS_BASE até que a divisão por 84 caiba na renda. Escale 1, 2, 3... anuais até aprovar. Se mesmo com todos os anuais disponíveis não couber, adicione SINAIS. Cada Sinal adiciona 1% de juros ao SALDO_PS_BASE no cálculo (1 mês base + 1 mês por sinal).
+
+[AS 3 REGRAS DE OURO (VALIDAÇÃO)] Após calcular a Parcela Mensal PS, valide o perfil do cliente:
+- R1 (Benefício PS / Imóvel): O PS não pode ultrapassar o teto do imóvel (Diamante 25%, Ouro 20%, Prata 18%, Bronze 15%, Aço 12%). Assuma sempre aprovado no limite.
+- R2 (Financ. + PS / Renda): A soma (Parcela do Financiamento + Parcela Mensal PS) NÃO PODE ultrapassar o limite da renda bruta (Diamante/Ouro 50%, Prata 48%, Bronze 45%, Aço 40%).
+- R3 (PS / Renda - A MAIS RESTRITIVA): A Parcela Mensal PS sozinha NÃO PODE ultrapassar o teto da renda bruta (Diamante/Ouro 20%, Prata 18%, Bronze 15%, Aço 10%).
+
+[SISTEMA DE SALVAMENTO (AUTO-ESCALA DE ANUAIS)] Se a Parcela Mensal PS calculada REPROVAR nas regras R2 ou R3, NÃO reprove imediatamente. Use a Válvula de Escape:
+1. Adicione parcelas Anuais (vencimento todo mês de dezembro).
+2. O valor de cada parcela Anual é travado em 50% da renda bruta do cliente.
+3. Subtraia o valor total dessas Anuais do Saldo PS e recalcule a divisão por 84x.
+4. Repita escalando a quantidade de Anuais (1, 2, 3...) até a Parcela Mensal PS ser APROVADA nas regras R2 e R3.
+5. Fator comercial fixo: 1.47146 × 84 parcelas.
+
+[DADOS DO CLIENTE]
+- Perfil: ${perfil}
+- Imóvel: ${brl(valorImovel)}
+- Renda: ${brl(renda)}
+- Financ. banco: ${brl(financBanco)}
+- Parcela financiamento: ${parcelaFinanc ? brl(parcelaFinanc) : 'estimativa 30% da renda'}
+- Subsídio: ${brl(subsidio)}
+- FGTS: ${brl(fgts)}
+- Ato do cliente: ${brl(atoCliente)}
+- Anuais disponíveis: ${nAnuais}
+
+[PLANOS CALCULADOS PELO SISTEMA]
+${resumo}
+
+[SAÍDA ESPERADA] Analise os planos acima e entregue um comentário CURTO e DIRETO (máx 3 linhas) para o corretor, destacando:
+- Qual plano aprovar e por quê
+- Os valores finais: Ato, Sinais (qtd e valor), PS (84x - valor da parcela), Anuais (qtd e valor se usadas)
+- Se reprovado, o que precisa ajustar
+Responda em português, direto ao ponto.`;
+
+                                                const resp = await fetch('https://api.anthropic.com/v1/messages', {
+                                                    method: 'POST',
+                                                    headers: { 'Content-Type': 'application/json' },
+                                                    body: JSON.stringify({
+                                                        model: 'claude-sonnet-4-20250514',
+                                                        max_tokens: 200,
+                                                        messages: [{ role: 'user', content: prompt }]
+                                                    })
+                                                });
+                                                const data = await resp.json();
+                                                const analise = data?.content?.[0]?.text || null;
+                                                if (analise) {
+                                                    setCotacaoResult([plano1, plano2, { rendaMinima, renda, analiseIA: analise }]);
+                                                }
+                                            } catch(err) {
+                                                console.warn('Análise IA falhou:', err);
+                                            }
+                                        })();
+
+                                    } catch(e) { console.error(e); if (!['sem perfil','sem valor','sem renda'].includes(e.message)) setCotacaoResult('⚠️ Erro: ' + e.message); }
+                                }}
+                                disabled={false}
+                                className="w-full py-4 rounded-2xl font-black text-sm uppercase tracking-widest text-white transition-all flex items-center justify-center gap-2 relative overflow-hidden active:scale-[0.98]"
+                                style={{
+                                    background: 'linear-gradient(135deg, #6366f1 0%, #4f46e5 40%, #7c3aed 100%)',
+                                    boxShadow: '0 4px 24px rgba(99,102,241,0.45), 0 0 0 2px rgba(99,102,241,0.2)',
+                                }}>
+                                <span className="absolute inset-0 cotacao-btn-shine pointer-events-none" style={{borderRadius:'1rem'}}></span>
+                                <Calculator size={16} className="relative z-10" style={{filter:'drop-shadow(0 0 6px rgba(255,255,255,0.9))'}} />
+                                <span className="relative z-10" style={{textShadow:'0 1px 6px rgba(0,0,0,0.3)'}}>Gerar Plano</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+
 
         </div>
     );

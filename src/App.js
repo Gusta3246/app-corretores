@@ -219,8 +219,11 @@ export default function App() {
         return Date.now() - ts < 60 * 60 * 1000; // 1 hora
     };
 
-    // Modal boas vindas — mostra 1x por sessão
-    const [showBemVindo, setShowBemVindo] = useState(() => !sessionStorage.getItem('dst_bv'));
+    // Modal boas vindas — mostra no máximo 3x (total, entre sessões)
+    const [showBemVindo, setShowBemVindo] = useState(() => {
+        const views = parseInt(localStorage.getItem('dst_bv_count') || '0');
+        return views < 3;
+    });
     const [cotacaoGateSenha, setCotacaoGateSenha] = useState("");
     const [cotacaoGateErro, setCotacaoGateErro] = useState(false);
     const cotacaoUnlockedAtRef = useRef(null);
@@ -3235,7 +3238,7 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
                         {/* Botão fechar */}
                         <div className="px-5 pb-6">
                             <button
-                                onClick={() => { setShowBemVindo(false); sessionStorage.setItem('dst_bv', '1'); }}
+                                onClick={() => { setShowBemVindo(false); const v = parseInt(localStorage.getItem('dst_bv_count') || '0'); localStorage.setItem('dst_bv_count', String(v + 1)); }}
                                 className="w-full py-4 rounded-2xl text-sm font-black uppercase tracking-widest text-white active:scale-95 transition-all"
                                 style={{ background: 'linear-gradient(135deg,#6366f1 0%,#4f46e5 45%,#7c3aed 100%)', boxShadow: '0 4px 20px rgba(99,102,241,0.45)' }}>
                                 Entendido, vamos vender! 🔥

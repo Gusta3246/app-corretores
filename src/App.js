@@ -1856,7 +1856,7 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
                         {/* Botões flutuantes: X (esquerda) e WhatsApp (direita) — sobre o iframe */}
                         <div
                             className="absolute left-0 right-0 z-20 flex items-center justify-between px-4 pointer-events-none"
-                            style={{top: 'max(env(safe-area-inset-top, 0px) + 8px, 44px)'}}
+                            style={{top: 'calc(env(safe-area-inset-top, 0px) + 56px)'}}
                         >
                             <button
                                 onClick={() => setPdfLeitor(null)}

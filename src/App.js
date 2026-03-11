@@ -1879,8 +1879,9 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
                             </a>
                         </div>
 
-                        {/* iframe tela cheia */}
-                        <div className="absolute inset-0 z-0" style={{background:'#0f0f0f'}}>
+                        {/* iframe — começa abaixo da status bar para o botão nativo do Drive ficar visível */}
+                        <div className="absolute left-0 right-0 bottom-0 z-0"
+                            style={{top:'env(safe-area-inset-top, 0px)', background:'#0f0f0f'}}>
                             {/* Loading atrás do iframe */}
                             <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 pointer-events-none" style={{background:'#0f0f0f', zIndex:0}}>
                                 <div className={`w-16 h-16 rounded-2xl flex items-center justify-center ${isDir ? 'bg-orange-500/20' : 'bg-blue-500/20'}`}>

@@ -1852,8 +1852,8 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
                     <div className="fixed inset-0 z-[60] flex flex-col" style={{background:'#0f0f0f'}}>
 
                         {/* 3 botões flutuantes no topo */}
-                        <div className="absolute top-0 left-0 right-0 z-20 flex items-center justify-between px-3 pt-3 pb-2 pointer-events-none"
-                            style={{background:'linear-gradient(to bottom, rgba(0,0,0,0.55) 0%, transparent 100%)'}}>
+                        <div className="absolute top-0 left-0 right-0 z-20 flex items-center justify-between px-3 pb-2 pointer-events-none"
+                            style={{paddingTop:'calc(env(safe-area-inset-top, 0px) + 48px)', background:'linear-gradient(to bottom, rgba(0,0,0,0.75) 0%, transparent 100%)'}}>
                             {/* X — fechar */}
                             <button
                                 onClick={() => setPdfLeitor(null)}

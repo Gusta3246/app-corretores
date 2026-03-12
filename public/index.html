@@ -60,7 +60,10 @@
     <meta name="apple-mobile-web-app-title" content="Destemidos">
     
     <meta name="mobile-web-app-capable" content="yes" />
+    <!-- Android: theme-color define a cor da status bar no PWA -->
     <meta name="theme-color" content="#ffffff" id="theme-color-meta" />
+    <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#0f172a" media="(prefers-color-scheme: dark)" />
 
     <script src="https://cdn.tailwindcss.com"></script>
 
@@ -71,16 +74,22 @@
             background-color: #ffffff;
             overscroll-behavior-y: none;
         }
-        /* Android: status bar transparente — empurra conteúdo para baixo dela */
-        @supports (padding-top: env(safe-area-inset-top)) {
-            body {
-                padding-top: env(safe-area-inset-top);
-                background-color: transparent;
-            }
-        }
         #root {
             padding-bottom: env(safe-area-inset-bottom);
             min-height: 100vh;
+        }
+        /* Android PWA: preenche a área da status bar com a cor do header */
+        body::before {
+            content: '';
+            display: block;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: env(safe-area-inset-top, 0px);
+            background-color: rgba(255,255,255,0.95);
+            z-index: 9999;
+            pointer-events: none;
         }
         #install-popup {
             transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
@@ -191,19 +200,16 @@
         // === DETECÇÃO iOS ===
         const isIos = /iphone|ipad|ipod/.test(window.navigator.userAgent.toLowerCase());
 
-        // === THEME-COLOR DINÂMICO PARA ANDROID ===
-        // Atualiza a cor da status bar do Android conforme o tema ativo no app
+        // === THEME-COLOR DINÂMICO — ANDROID (cor da status bar) ===
         const themeColorMeta = document.getElementById('theme-color-meta');
+        const notchStyleEl = document.createElement('style');
+        document.head.appendChild(notchStyleEl);
         window.setNotchTheme = function(color) {
             if (themeColorMeta) themeColorMeta.setAttribute('content', color);
+            notchStyleEl.textContent = 'body::before { background-color: ' + color + ' !important; }';
         };
-        // Define cor inicial baseada no tema salvo
-        const savedTheme = localStorage.getItem('theme');
-        if (savedTheme === 'dark') {
-            window.setNotchTheme('#1a1a2e');
-        } else {
-            window.setNotchTheme('#ffffff');
-        }
+        const _savedTheme = localStorage.getItem('theme');
+        window.setNotchTheme(_savedTheme === 'dark' ? '#0f172a' : '#ffffff');
 
         if (isIos && !isStandalone()) {
             txtInstalar.innerHTML = "Toque no ícone de <b>compartilhar</b> <span class='text-xl'>⎋</span> e depois em <b>'Adicionar à Tela de Início'</b>.";

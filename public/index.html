@@ -71,6 +71,13 @@
             background-color: #ffffff;
             overscroll-behavior-y: none;
         }
+        /* Android: status bar transparente — empurra conteúdo para baixo dela */
+        @supports (padding-top: env(safe-area-inset-top)) {
+            body {
+                padding-top: env(safe-area-inset-top);
+                background-color: transparent;
+            }
+        }
         #root {
             padding-bottom: env(safe-area-inset-bottom);
             min-height: 100vh;
@@ -184,8 +191,19 @@
         // === DETECÇÃO iOS ===
         const isIos = /iphone|ipad|ipod/.test(window.navigator.userAgent.toLowerCase());
 
-        // Placeholder global para compatibilidade (não faz mais nada)
-        window.setNotchTheme = function() {};
+        // === THEME-COLOR DINÂMICO PARA ANDROID ===
+        // Atualiza a cor da status bar do Android conforme o tema ativo no app
+        const themeColorMeta = document.getElementById('theme-color-meta');
+        window.setNotchTheme = function(color) {
+            if (themeColorMeta) themeColorMeta.setAttribute('content', color);
+        };
+        // Define cor inicial baseada no tema salvo
+        const savedTheme = localStorage.getItem('theme');
+        if (savedTheme === 'dark') {
+            window.setNotchTheme('#1a1a2e');
+        } else {
+            window.setNotchTheme('#ffffff');
+        }
 
         if (isIos && !isStandalone()) {
             txtInstalar.innerHTML = "Toque no ícone de <b>compartilhar</b> <span class='text-xl'>⎋</span> e depois em <b>'Adicionar à Tela de Início'</b>.";
@@ -213,21 +231,6 @@
         };
 
         overlay.onclick = hidePopup;
-
-        // === FULLSCREEN AUTOMÁTICO — APENAS DESKTOP ===
-        const isMobile = /android|iphone|ipad|ipod|mobile/i.test(navigator.userAgent);
-
-        if (!isMobile && isStandalone()) {
-            const enterFullscreen = () => {
-                if (!document.fullscreenElement) {
-                    document.documentElement.requestFullscreen().catch(() => {});
-                }
-                document.removeEventListener("click", enterFullscreen);
-                document.removeEventListener("keydown", enterFullscreen);
-            };
-            document.addEventListener("click", enterFullscreen);
-            document.addEventListener("keydown", enterFullscreen);
-        }
     </script>
 </body>
 </html>

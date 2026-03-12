@@ -99,7 +99,87 @@ export const BaseConhecimento = {
   // 🌿 BOSQUE DAS TORRES — DETALHES COMPLETOS
   "bosque das torres": "🏠 *Bosque das Torres* — Direcional (MCMV)\n\n📍 Av. das Torres — Lago Azul, Manaus/AM\n\n🏢 *Ficha Técnica:*\n• 26 blocos residenciais\n• Tipologia: 1 e 2 quartos | Área privativa: 36,24 m²\n• Garden (térreo, aptos 101-104): 36,24 m² + 14,35 m² = 50,59 m² total\n\n🛋️ *Acabamentos:*\n• Bancadas em mármore sintético com cuba integrada\n• Tanque em SMC (material compósito de alta resistência), sem coluna\n• Esquadrias em alumínio branco\n• Revestimento cerâmico até 1,50 m nas áreas molhadas\n• Previsão de split nas unidades\n• Bacias dual flush\n\n🎉 *22 itens de lazer (entregue mobiliado e equipado):*\nPiscinas adulto e infantil, Multi Wash (lavagem compartilhada), Espaço Food Truck fixo, Playbaby, Playground, Churrasqueira, Salão de festas, Quadra esportiva, Redário, Pet place, Bicicletário, Guarita com espaço delivery, Controle de acesso automatizado em todos os blocos\n\n🌱 *Sustentabilidade:* Medição individualizada de água e gás, paisagismo com espécies nativas amazônicas\n\n📍 Pertinho do Shopping Via Norte!",
 
-  "bosque": "🏠 *Bosque das Torres* — Av. das Torres, Lago Azul | MCMV\n26 blocos | 1 e 2 quartos | 36,24 m² | Garden 50,59 m².\n22 itens de lazer: piscinas, Multi Wash, food truck, playbaby, quadra, pet place e mais!\nMedição individual de água e gás. Perto do Shopping Via Norte.",
+  "bosque": "🏠 *Bosque das Torres* — Av. das Torres, Lago Azul | MCMV\n26 blocos | 1 e 2 quartos | 36,24 m² | Garden +14,35 m².\n22 itens de lazer: piscinas, Multi Wash, food truck, playbaby, quadra, pet place e mais!\nMedição individual de água. Perto do Shopping Via Norte.",
+
+  // ==========================================
+  // 🌳 BOSQUE DAS TORRES — CONHECIMENTO COMPLETO PARA CORRETORES
+  // ==========================================
+
+  "bosque ficha tecnica": "📋 *Ficha Técnica — Bosque das Torres:*\n\n📍 Rua Dona Debla Henriques, nº 450 — Lago Azul, Manaus/AM\n🏗️ Sistema construtivo: Parede de Concreto\n🏢 26 Blocos | 5 Pavimentos (Térreo + 4)\n🏠 4 unidades por andar\n🔢 520 unidades totais (16 adaptadas a PCD)\n🌿 104 apartamentos com garden (térreo)\n🅿️ 529 vagas: 174 carros moradores + 313 motos moradores + 29 carros visitantes + 4 motos visitantes + 8 extras salão + 1 carga/descarga\n📐 Área privativa: 36,24 m²\n📏 Área total do terreno: 25.304,24 m²",
+
+  "endereco bosque": "📍 *Endereço — Bosque das Torres:*\nRua Dona Debla Henriques, nº 450 — Lago Azul, Manaus/AM\n(Acesso principal pela Avenida das Torres, Zona Norte)",
+
+  "quantas unidades bosque": "O Bosque das Torres tem *520 unidades* no total:\n• 16 unidades adaptadas a PCD\n• 104 apartamentos no térreo com garden privativo\n• 26 blocos | 5 pavimentos (térreo + 4) | 4 aptos por andar",
+
+  "quantos blocos bosque": "O Bosque das Torres tem *26 blocos residenciais*, cada um com 5 pavimentos (térreo + 4 andares) e 4 apartamentos por andar.",
+
+  "vagas bosque": "🅿️ *Vagas — Bosque das Torres:*\n\n529 vagas no total:\n• 174 vagas para carros (moradores)\n• 313 vagas para motos (moradores)\n• 29 vagas para carros (visitantes)\n• 4 vagas para motos (visitantes)\n• 8 vagas extras para salão de festas\n• 1 vaga para carga/descarga de caminhão\n\n⚠️ Tem vaga para moto! Ótimo diferencial.",
+
+  "vaga moto bosque": "✅ Sim! O Bosque das Torres tem *313 vagas para motos* destinadas a moradores — um diferencial importante para quem usa moto no dia a dia.",
+
+  "tipologia bosque": "🏠 *Tipologias disponíveis — Bosque das Torres:*\n\n1️⃣ *Apartamento Tipo* — 1 quarto | 36,24 m² | Blocos 01 a 26\n2️⃣ *Apartamento Térreo Garden* — 2 quartos | 36,24 m² + 14,35 m² garden | Blocos 01/02, 05 a 14 e 21 a 26 (aptos 101 e 104) e todos os blocos (aptos 102 e 103)\n3️⃣ *Apartamento Adaptável Garden (PCD)* — 1 quarto | 36,24 m² + 14,35 m² | Blocos 03, 04 e 15 a 20 (aptos 101 e 104)\n4️⃣ *Apartamento Studio Garden* — 1 quarto | 36,24 m² + 14,35 m² | Blocos 03, 04 e 15 a 20 (aptos 101 e 104)\n\n⚠️ Todos os apartamentos têm 36,24 m² de área privativa. O garden acrescenta 14,35 m².",
+
+  "metragem bosque": "📐 *Metragens — Bosque das Torres:*\n\n• Área privativa (todos os aptos): *36,24 m²*\n• Área garden (térreo): *+ 14,35 m²*\n• Total garden: *50,59 m²*\n\n⚠️ Sala e quartos NÃO têm piso — entregues com laje de concreto sem acabamento. O cliente coloca o piso.",
+
+  "piso bosque": "⚠️ *Atenção ao piso — Bosque das Torres:*\n\n• Sala, jantar e circulação: laje em concreto *SEM acabamento* (cliente coloca)\n• Quartos: laje em concreto *SEM acabamento* (cliente coloca)\n• Banheiro: cerâmica ✅\n• Cozinha e área de serviço: cerâmica ✅\n\nIsso é importante informar ao cliente antes da compra!",
+
+  "acabamento bosque": "✨ *Acabamentos — Bosque das Torres:*\n\n🛋️ *Sala/Jantar/Circulação:*\n• Piso: laje SEM acabamento\n• Paredes e teto: pintura rolada\n\n🛏️ *Quartos:*\n• Piso: laje SEM acabamento\n• Paredes e teto: pintura rolada\n\n🚿 *Banheiro:*\n• Piso e rodapé: cerâmica\n• Box: cerâmica do piso ao teto\n• Parede lavatório: cerâmica até ~1,00 m\n• Demais paredes: pintura rolada\n• Teto: forro de gesso (ou laje no último pav.) com pintura\n• Louças: bacia com caixa acoplada | lavatório sem coluna\n• Metais: torneira e registros cromados\n\n🍳 *Cozinha/Área de Serviço:*\n• Piso e rodapé: cerâmica\n• Parede hidráulica: cerâmica até ~1,50 m\n• Bancada: mármore sintético com cuba integrada\n• Teto: laje com pintura rolada\n• Metais: torneiras cromadas\n• Tanque: SMC (Sheet Molding Compounds) sem coluna",
+
+  "memorial descritivo bosque": "📋 *Memorial Descritivo — Bosque das Torres:*\n\n🛋️ Sala/circulação: Piso SEM acabamento | Pintura rolada\n🛏️ Quartos: Piso SEM acabamento | Pintura rolada\n🚿 Banheiro: Cerâmica piso e box ao teto | Lavatório sem coluna | Bacia c/ caixa acoplada\n🍳 Cozinha/ÁS: Cerâmica | Bancada mármore sintético c/ cuba integrada | Tanque SMC sem coluna\n🪟 Esquadrias: Alumínio branco\n💧 Previsão split | Dual flush | Medição individual de água | LED áreas comuns | Sensor de presença no hall",
+
+  "banheiro bosque": "🚿 *Banheiro — Bosque das Torres:*\n• Piso: cerâmica\n• Rodapé: cerâmica do piso cortada\n• Box: cerâmica do piso ao teto\n• Parede lavatório: revestimento cerâmico ~1,00 m\n• Louças: bacia com caixa acoplada, lavatório sem coluna\n• Metais: torneira e registros cromados\n• Teto: forro de gesso (ou laje no último pavimento)",
+
+  "cozinha bosque": "🍳 *Cozinha/Área de Serviço — Bosque das Torres:*\n• Piso: cerâmica\n• Parede hidráulica: cerâmica até ~1,50 m\n• Bancada: mármore sintético com cuba integrada\n• Metais: torneiras cromadas\n• Tanque: SMC sem coluna (material resistente)\n• Teto: laje com pintura rolada",
+
+  "garden bosque": "🌿 *Garden — Bosque das Torres:*\n\nApartamentos do térreo têm área garden privativa de *14,35 m²* (descoberta).\nTotal do garden: 36,24 m² + 14,35 m² = *50,59 m²*.\n\n• 104 unidades com garden no total\n• Garden é da unidade — uso exclusivo do morador\n• Aptos 101, 102, 103 e 104 de todos os blocos são garden\n• Blocos 03/04 e 15-20: garden PCD (adaptável) ou Studio\n\n⚠️ Unidades garden são as mais procuradas — sinal ágil!",
+
+  "garden bosque bloco": "📌 *Quais blocos têm garden — Bosque das Torres:*\n\n*Térreo garden (aptos 101 e 104):*\n• Blocos 01, 02, 05 a 14 e 21 a 26 → Apartamento 2Q Garden\n• Blocos 03, 04, 15 a 20 → Adaptável PCD ou Studio 1Q Garden\n\n*Térreo garden (aptos 102 e 103):*\n• Todos os blocos 01 a 26 → Garden\n\n✅ Praticamente todo térreo tem garden!",
+
+  "pcd bosque": "♿ *Unidades PCD — Bosque das Torres:*\n\n• 16 unidades adaptadas a PCD no total\n• Ficam nos blocos 03, 04, 15 a 20 (aptos 101 e 104)\n• São 1 quarto | 36,24 m² + 14,35 m² garden\n• Planta adaptável: espaço de manobra para cadeirante, barras de apoio\n\nÓtimo para clientes com necessidades especiais ou família com PCD.",
+
+  "lazer bosque": "🎉 *22 itens de lazer — Bosque das Torres (entregue mobiliado e equipado!):*\n\n🏊 Piscina Adulto\n🏊 Piscina Infantil\n☀️ Solarium\n🍖 Churrasqueira com apoio\n🍽️ Espaço Gourmet + Apoio Gourmet\n🏋️ Fitness Externo\n🛝 Playground\n👶 Playbaby\n🎮 Praça de Jogos\n😴 Redário\n🐾 Pet Place\n🚲 Bicicletário\n🚗 Multi Wash (lavagem de carro compartilhada)\n🚚 Espaço Food Truck\n⛹️ Quadra Esportiva\n🚚 Guarita + Espaço Delivery\n🔒 Controle de acesso automatizado em todos os blocos\n🗑️ Lixeira e ETE\n💼 Apoio Funcionários\n🛒 Reservatórios\n\n⭐ Tudo ENTREGUE mobiliado e equipado!",
+
+  "multi wash bosque": "🚗 *Multi Wash — Bosque das Torres:*\nÉ o espaço compartilhado para *lavagem de veículos* dentro do condomínio!\nO morador usa a área equipada (mangueira, água pressurizada) para lavar o carro ou moto sem sair do condomínio. Um super diferencial!",
+
+  "food truck bosque": "🚚 *Espaço Food Truck — Bosque das Torres:*\nÁrea coberta e aberta com mesas para receber food trucks fixos ou rotativos. Ideal para lanches no final de semana sem sair de casa. Diferencial muito bem recebido pelos clientes!",
+
+  "delivery bosque": "📦 *Espaço Delivery — Bosque das Torres:*\nGuarita com espaço dedicado para recebimento e armazenamento de encomendas. O morador pode receber pacotes, roupas e mantimentos com segurança mesmo quando não está em casa.",
+
+  "quadra bosque": "⛹️ *Quadra Esportiva — Bosque das Torres:*\nQuadra poliesportiva com marcações para futsal, basquete e vôlei. Entregue equipada.",
+
+  "piscina bosque": "🏊 *Piscinas — Bosque das Torres:*\n• Piscina adulto (espaçosa, com solarium e espreguiçadeiras)\n• Piscina infantil\n• Solarium com espreguiçadeiras e guarda-sóis\n\nTudo entregue mobilado e equipado!",
+
+  "vizinhanca bosque": "📍 *Vizinhança — Bosque das Torres (Av. das Torres, Lago Azul):*\n\n🎓 *Educação:*\n• 1 min: E. E. Eliana Braga\n• 2 min: Colégio Militar da P.M. VI\n• 3 min: Escola Mun. Viviane Estrela\n• 4 min: Escola Integral João S. Braga\n• 8 min: E. E. Prof. Sebastião A. L. Filho / E. E. Prof. Samuel Benchimol\n\n🏥 *Saúde:*\n• 2 min: UBS José Figliuolo\n• 4 min: Clínica da Família C. Nicolau\n• 9 min: Clínica da Família C. Gracie\n• 8 min: USF Sálvio Belota\n• 11 min: Hospital Delphina Aziz\n\n🛒 *Compras:*\n• 2 min: Nova Era Av. das Torres\n• 7 min: Hiper DB Nova Cidade\n• 8 min: Shopping Via Norte | Havan | Nova Era Via Norte\n• 13 min: Sumaúma Park Shopping\n\n🚌 *Transporte:*\n• 5 min: Terminal 6 e Terminal 7\n• Linhas 041, 354 e 357",
+
+  "transporte bosque": "🚌 *Transporte — Bosque das Torres:*\n\n• 5 min: Terminal 6\n• 5 min: Terminal 7\n\nLinhas de ônibus:\n• 041 — Viver Melhor / Nova Cidade / Terminal 4\n• 354 — Viver Melhor / Av. Turismo / Ponta Negra\n• 357 — Viver Melhor / Av. das Flores / T3 / T1 / Centro",
+
+  "saude bosque": "🏥 *Saúde próxima ao Bosque das Torres:*\n• 2 min: UBS José Figliuolo\n• 4 min: Clínica da Família C. Nicolau\n• 8 min: USF Sálvio Belota\n• 9 min: Clínica da Família C. Gracie\n• 11 min: Hospital Delphina Aziz",
+
+  "escola bosque": "🎓 *Escolas próximas ao Bosque das Torres:*\n• 1 min: E. E. Eliana Braga\n• 2 min: Colégio Militar da P.M. VI\n• 3 min: Escola Mun. Viviane Estrela\n• 4 min: Escola Integral João S. Braga\n• 8 min: E. E. Prof. Sebastião A. L. Filho\n• 8 min: E. E. Prof. Samuel Benchimol",
+
+  "shopping bosque": "🛍️ *Shoppings próximos ao Bosque das Torres:*\n• 8 min: Shopping Via Norte\n• 8 min: Havan\n• 13 min: Sumaúma Park Shopping",
+
+  "diferenciais bosque": "🌟 *Diferenciais — Bosque das Torres:*\n\n✅ Lazer entregue MOBILIADO e EQUIPADO\n✅ 22 itens de lazer\n✅ Controle de acesso automatizado em todos os blocos\n✅ Portão automático de veículos\n✅ Multi Wash (lavagem de carro no condomínio)\n✅ Espaço Food Truck\n✅ Espaço Delivery na guarita\n✅ Previsão de split nas unidades\n✅ Medição individual de água\n✅ Piscinas adulto e infantil com solarium\n✅ Esquadrias em alumínio branco\n✅ Paisagismo com espécies nativas amazônicas\n✅ LED e sensor de presença nas áreas comuns\n✅ Torneiras com arejadores (economia de água)",
+
+  "sustentabilidade bosque": "🌱 *Sustentabilidade — Bosque das Torres:*\n• Previsão de medição de água individualizada\n• Torneiras com arejadores (aptos e áreas comuns)\n• Coleta seletiva de lixo\n• Iluminação LED nas áreas comuns\n• Luminárias com sensor de presença nos halls\n• Paisagismo com espécies nativas amazônicas\n• Dual flush nas bacias (economia de até 40% de água)",
+
+  "quantos andares bosque": "O Bosque das Torres tem *5 pavimentos* por bloco: térreo + 4 andares.\n\nOs apartamentos são numerados:\n• Térreo: 101, 102, 103, 104\n• 2º andar: 201, 202, 203, 204\n• 3º andar: 301, 302, 303, 304\n• 4º andar: 401, 402, 403, 404\n• 5º andar: 501, 502, 503, 504\n\nTodos com 36,24 m² de área privativa.",
+
+  "apartamento tipo bosque": "🏠 *Apartamento Tipo — Bosque das Torres:*\n• 1 quarto\n• Área privativa: 36,24 m²\n• Sem garden\n• Disponível em todos os blocos (01 a 26)\n• Andares: 201 a 504 (2º ao 5º pavimento)\n• Piso: SEM acabamento em sala e quarto | cerâmica em banheiro e cozinha",
+
+  "apartamento garden bosque": "🌿 *Apartamento Garden — Bosque das Torres:*\n• 2 quartos (aptos 101/104 nos blocos 01/02 e 05-14 e 21-26)\n• 1 quarto adaptável/studio (aptos 101/104 nos blocos 03/04 e 15-20)\n• Todos os aptos 102 e 103 do térreo: garden em todos os 26 blocos\n• Área privativa: 36,24 m²\n• Área garden: + 14,35 m² (descoberta, uso exclusivo)\n• Total: 50,59 m²",
+
+  "1 quarto bosque": "🏠 O Bosque das Torres tem apartamentos de *1 quarto*!\n\nSão os apartamentos Tipo (andares superiores) e alguns do térreo:\n• Apartamento Tipo: 1Q | 36,24 m² | sem garden | blocos 01 a 26\n• Apartamento Studio Garden: 1Q | 36,24 m² + 14,35 m² garden | blocos 03, 04 e 15-20\n• Apartamento Adaptável Garden (PCD): 1Q | 36,24 m² + 14,35 m² garden | blocos 03, 04 e 15-20\n\n⚠️ Renda mínima para 1Q no MCMV: ~R$ 2.401.",
+
+  "2 quartos bosque": "🏠 O Bosque das Torres tem apartamentos de *2 quartos*!\n\nSão os apartamentos do térreo com garden:\n• Aptos 101 e 104 (blocos 01/02 e 05-14 e 21-26): 2Q | 36,24 m² + 14,35 m² garden\n• Aptos 102 e 103 (todos os blocos): 2Q | 36,24 m² + 14,35 m² garden\n\n⚠️ Os 2 quartos estão APENAS no térreo com garden. Andares superiores são todos 1 quarto.",
+
+  "studio bosque": "🏠 *Apartamento Studio Garden — Bosque das Torres:*\n\n• 1 quarto (layout aberto, sem divisória fixa quarto/sala)\n• Área privativa: 36,24 m²\n• Garden: + 14,35 m²\n• Blocos: 03, 04, 15 a 20 | Aptos 101 e 104 (térreo)\n\nIdeal para quem mora sozinho ou casal sem filhos que quer garden!",
+
+  "renda bosque 1q": "Para um apartamento de *1 quarto no Bosque das Torres*:\n• Renda mínima: ~R$ 2.401 (regra MCMV para apto 1Q)\n• Parcela máxima: 30% da renda\n• Faixa recomendada: F1 ou F2 do MCMV\n\n🎯 Cliente com renda de R$ 2.500 a R$ 4.700 se encaixa bem!",
+
+  "qual andar bosque": "No Bosque das Torres, os andares são organizados assim:\n\n• Térreo (101-104): garden privativos\n• 2º ao 5º andar (201-504): apartamentos tipo sem garden\n\nTodos têm 36,24 m². A diferença está em ter ou não garden e se são 1 ou 2 quartos.\n\n💡 Andar mais alto = mais ventilação, mas sem garden. Térreo = garden privativo.",
+
+  "vizinho bosque": "📍 O Bosque das Torres fica na *Av. das Torres, Lago Azul*. Nas proximidades há outros empreendimentos Direcional:\n• Village Torres (ao lado)\n• Solar das Torres (próximo)\n• Vista das Torres (próximo)\n\nToda a região da Av. das Torres está em grande crescimento na Zona Norte!",
   "village torres": "🏠 *Village Torres* — Direcional (MCMV)\n\n📍 Av. das Torres — Lago Azul, Zona Norte\n\n• Tipologia: APENAS 2 quartos | Área: 36m²\n• Piso: cerâmica apenas em cozinha, banheiro e lavatório (sala e quartos SEM piso — por conta do cliente)\n• Lazer: piscinas, espaço fitness, Connect Garden\n\n⚠️ Este empreendimento tem somente 2 quartos. Não tem 1 nem 3 quartos.",
   "village": "🏠 *Village Torres* — Lago Azul | MCMV | 2 quartos | 36m² | Piso só em cozinha/banheiro.\nLazer: piscinas, fitness, Connect Garden.\n⚠️ Somente 2 quartos.",
   "solar das torres": "O *Solar das Torres* está na Avenida das Torres! Lazer completo entregue equipado, piscinas, churrasqueira e guarita de segurança.",
@@ -295,7 +375,7 @@ Tabela Direta: renda ≤R$7k → parcela TD ≤30% | renda >R$7k → parcela TD 
 
 DIRECIONAL — empreendimentos e tipologias:
 • Village Torres: 2Q 36m², piso só coz/bnh/lav
-• Bosque das Torres: 1Q e 2Q 36m², garden térreo 50m²
+• Bosque das Torres: 1Q (tipo e studio) e 2Q (garden térreo) | 36,24m² | garden +14,35m²=50,59m² | 26 blocos | 520 unid | 104 garden | 16 PCD | SEM piso em sala/quartos | cerâmica banheiro+cozinha | 22 itens lazer equipados | Multi Wash | food truck | delivery | T6 e T7 a 5min | 8min Via Norte
 • Lírio Azul: 2Q 40m², garden A(+10m²) ou B(+17m²)
 • Orquídea: 2Q 41m², garden studio 1Q só PCD térreo
 • Brisas: 2Q 43-45m², garden 53-59m², 19 pav, Zona Leste
@@ -419,7 +499,7 @@ Resultado aprovado: Ato R$5.430 + Mensal PS 84x R$411,55 ✅
 ========================================
 
 LAZER/INFRAESTRUTURA DETALHADA:
-Bosque Torres: 22 itens — piscinas adulto+infantil, Multi Wash, food truck, playbaby, playground, churrasqueira, salão festas, quadra, redário, pet place, bicicletário, guarita delivery, controle acesso, medição individual água e gás.
+Bosque Torres: 26 blocos 5 pav (T+4) | 520 unid (16 PCD, 104 garden) | 25.304m² terreno | Rua Dona Debla Henriques 450, Lago Azul | 1Q tipo (36,24m²) todos blocos andares sup | 2Q garden (36,24+14,35=50,59m²) térreo aptos 101/102/103/104 | SEM piso sala/quartos | cerâmica banheiro e cozinha | 22 itens lazer mobiliados: piscina adulto+infantil+solarium, churrasqueira, gourmet, fitness externo, playground, playbaby, praça jogos, redário, pet place, bicicletário, Multi Wash, food truck, quadra, guarita+delivery, controle acesso automatizado | 174 vagas carro+313 motos moradores | Terminal 6 e 7 a 5min | 8min Via Norte | 11min Delphina Aziz
 Lírio Azul: 30 torres 600 unidades (18 PCD, 102 garden) | vagas 188 carros+356 motos | piscinas+solarium, yoga, gourmet, churrasqueira, quadra, fitness, playground, playbaby, jogos, redário, pet place, piquenique, bicicletário.
 Brisas: coworking, espaço beauty, sport bar, game station, gourmet, churrasqueira, redário, playground, playbaby, bicicletário, mini mercado. Ônibus 542/541/540. Terminais T1.
 Jardim Norte: lazer mobiliado — piscinas, salão festas, churrasqueiras, food truck plaza, fitness, crossfit, quadra, playground, playbaby, redário, pet place, piquenique, bicicletário, acesso automatizado. 26 blocos 5 pav 520 unid. 179 vagas carros+308 motos.
@@ -512,4 +592,3 @@ export async function buscarRespostaGemini(mensagemDoUsuario, historicoMensagens
     return buscarRespostaDoRobo(mensagemDoUsuario);
   }
 }
-

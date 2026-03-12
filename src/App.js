@@ -4031,16 +4031,17 @@ Responda SOMENTE com JSON puro (sem markdown, sem texto antes ou depois):
                                         // ══════════════════════════════════════════════════════════
                                         // FATOR COMERCIAL DINÂMICO (descoberto por engenharia reversa)
                                         // Fórmula: Parcela = Saldo PS × FATOR(meses) ÷ 84
-                                        // FATOR_BASE = 1.4582 (carência 1 mês)
-                                        // A cada mês extra de carência: fator × 1.01106
-                                        // Exemplos validados:
-                                        //   1 mês:  1.4582 × (1.01106)^0 = 1.4582 → R$ 21.653 → R$ 375,84/mês ✅
-                                        //   4 meses: 1.4582 × (1.01106)^3 = 1.5070 → R$ 22.606 → R$ 405,56/mês ✅
+                                        // Dois fatores validados contra o sistema oficial:
+                                        //   Sem sinais (m=1): FATOR_BASE=1.471466 → parcela = PS × 1.471466 / 84
+                                        //   Com sinais (m=1+N): FATOR_BASE=1.4582, incr=1.01106 → parcela = PS × 1.4582 × 1.01106^N / 84
                                         // ══════════════════════════════════════════════════════════
-                                        const FATOR_BASE  = 1.4582;
-                                        const FATOR_INCR  = 1.01106; // incremento por mês extra de carência
+                                        const FATOR_BASE_SEM_SINAIS = 1.471466;
+                                        const FATOR_BASE_COM_SINAIS = 1.4582;
+                                        const FATOR_INCR  = 1.01106;
                                         const PARCELAS_PS = 84;
-                                        const calcFator   = (meses) => FATOR_BASE * Math.pow(FATOR_INCR, meses - 1);
+                                        const calcFator   = (sinais) => sinais === 0
+                                            ? FATOR_BASE_SEM_SINAIS
+                                            : FATOR_BASE_COM_SINAIS * Math.pow(FATOR_INCR, sinais);
 
                                         const calcPlano = ({ anuaisUsados = 0, atoExtra = 0, label = '', cor = 0, atoDisplay = null, atoNecessario = null }) => {
                                             // ══════════════════════════════════════════════════════════
@@ -4065,24 +4066,44 @@ Responda SOMENTE com JSON puro (sem markdown, sem texto antes ou depois):
                                             const sinaisQtd    = diferencaAto > 0.01 ? 3 : 0;
                                             const sinaisValor  = sinaisQtd > 0 ? diferencaAto / 3 : 0;
 
-                                            // PASSO 3: Saldo PS = Entrada Bruta - Ato EFETIVO (NUNCA negativo)
-                                            // Os sinais NÃO abatam o PS — são só o ato sendo pago em parcelas
-                                            const saldoPSbase = Math.max(0, entradaBruta - atoEfetivo);
+                                            // PASSO 3: Saldo PS = Entrada Bruta - Ato EFETIVO
+                                            const saldoPSbruto = Math.max(0, entradaBruta - atoEfetivo);
 
-                                            // Meses de carência: 1 (só ato) + 1 por cada sinal
-                                            const mesesCarencia = 1 + sinaisQtd;
-                                            const fatorPS = calcFator(mesesCarencia);
+                                            // Carência: meses = 1 (ato) + sinaisQtd
+                                            const mesesCarenciaR1 = 1 + sinaisQtd;
+                                            const TAXA_CARENCIA   = 0.005; // 0.5% ao mês
+                                            const psComCarencia   = saldoPSbruto * Math.pow(1 + TAXA_CARENCIA, mesesCarenciaR1);
+
+                                            // R1: PS com carência não pode ultrapassar psLimite% do imóvel
+                                            const psTetoR1 = p.psLimite * valorImovel;
+                                            const r1ok     = psComCarencia <= psTetoR1 + 0.01;
+
+                                            // Lógica do fator e PS base (validada contra o site oficial):
+                                            // Se PS com carência >= teto → o site desconta a carência do teto
+                                            //   PS_base = teto / (1.005)^meses → fator = 1.471466 (FATOR_BASE_SEM_SINAIS)
+                                            // Se PS com carência < teto → PS livre
+                                            //   PS_base = PS_bruto → fator = 1.4582 × 1.01106^sinaisQtd
+                                            let saldoPSbase, fatorPS;
+                                            if (sinaisQtd === 0) {
+                                                // Sem sinais: PS bruto direto, fator base sem sinais
+                                                saldoPSbase = Math.min(saldoPSbruto, psTetoR1);
+                                                fatorPS = FATOR_BASE_SEM_SINAIS;
+                                            } else if (psComCarencia >= psTetoR1 - 0.02) {
+                                                // Com sinais, PS toca o teto: desconta a carência do teto
+                                                saldoPSbase = psTetoR1 / Math.pow(1 + TAXA_CARENCIA, mesesCarenciaR1);
+                                                fatorPS = FATOR_BASE_SEM_SINAIS;
+                                            } else {
+                                                // Com sinais, PS abaixo do teto: PS bruto com fator cheio
+                                                saldoPSbase = saldoPSbruto;
+                                                fatorPS = calcFator(sinaisQtd);
+                                            }
 
                                             // PASSO 4: Abate anuais do saldo PS
                                             const abateAnual = anuaisUsados * valorAnual;
                                             const saldoPSliq  = Math.max(0, saldoPSbase - abateAnual);
 
-                                            // PASSO 5: Parcela = Saldo PS × fator(carência) ÷ 84
+                                            // PASSO 5: Parcela = Saldo PS × fator ÷ 84
                                             const parcelaPS = (saldoPSliq * fatorPS) / PARCELAS_PS;
-
-                                            // R1: verificação do teto (NÃO é operação aritmética, só validação)
-                                            const psTetoR1 = p.psLimite * valorImovel;
-                                            const r1ok     = saldoPSbase <= psTetoR1 + 0.01;
 
                                             // R2: Financ + PS ≤ condicao% × renda
                                             const r2ok = (parcelaFinanc + parcelaPS) <= p.condicao * renda + 0.01;
@@ -4095,7 +4116,7 @@ Responda SOMENTE com JSON puro (sem markdown, sem texto antes ou depois):
                                             // Aviso de reprovação
                                             let rebalance = null;
                                             if (!r1ok) {
-                                                rebalance = `❌ Reprovado por R1: Saldo PS (${brl(saldoPSbase)}) ultrapassa ${(p.psLimite*100).toFixed(0)}% do imóvel (máx ${brl(psTetoR1)}).`;
+                                                rebalance = `❌ Reprovado por R1: PS com carência (${brl(psComCarencia)}) ultrapassa o teto de ${(p.psLimite*100).toFixed(0)}% do imóvel (máx ${brl(psTetoR1)}).`;
                                             } else if (!r2ok) {
                                                 rebalance = `❌ Reprovado por R2: Financiamento + PS (${brl(parcelaFinanc + parcelaPS)}/mês) ultrapassa ${(p.condicao*100).toFixed(0)}% da renda (máx ${brl(p.condicao * renda)}/mês).`;
                                             } else if (!r3ok) {
@@ -4105,7 +4126,7 @@ Responda SOMENTE com JSON puro (sem markdown, sem texto antes ou depois):
                                             // % para exibição
                                             const pctR2atual = renda > 0 ? ((parcelaFinanc + parcelaPS) / renda) * 100 : 0;
                                             const pctR3atual = renda > 0 ? (parcelaPS / renda) * 100 : 0;
-                                            const pctR1atual = valorImovel > 0 ? (saldoPSbase / valorImovel) * 100 : 0;
+                                            const pctR1atual = valorImovel > 0 ? (psComCarencia / valorImovel) * 100 : 0;
 
                                             return {
                                                 aprovado,
@@ -4129,11 +4150,11 @@ Responda SOMENTE com JSON puro (sem markdown, sem texto antes ou depois):
                                                 regras: [
                                                     {
                                                         ok: r1ok,
-                                                        rotulo: 'R1 — Benefício PS / Imóvel',
+                                                        rotulo: 'R1 Percentual pró soluto',
                                                         pctAtual: pctR1atual.toFixed(1) + '%',
                                                         pctLimite: pct(p.psLimite),
-                                                        detalhe: `Saldo PS ${brl(saldoPSbase)} · teto do perfil ${brl(psTetoR1)}`,
-                                                        descricao: `R1 verifica se o Saldo PS (${brl(saldoPSbase)}) está dentro do teto permitido pelo perfil: ${pct(p.psLimite)} do valor do imóvel = ${brl(psTetoR1)}. O teto é APENAS verificação — nunca é subtraído da Entrada Bruta.`,
+                                                        detalhe: `PS c/ carência ${brl(psComCarencia)} · teto máximo ${brl(psTetoR1)} — não pode ultrapassar`,
+                                                        descricao: `R1 verifica se o PS com carência (${brl(psComCarencia)}) não ultrapassa ${pct(p.psLimite)} do imóvel = ${brl(psTetoR1)}. O PS base é ${brl(saldoPSbruto)}, acrescido de juros de 0,5%/mês × ${mesesCarenciaR1} meses.`,
                                                     },
                                                     {
                                                         ok: r2ok,
@@ -4163,7 +4184,10 @@ Responda SOMENTE com JSON puro (sem markdown, sem texto antes ou depois):
                                         // ══════════════════════════════════════════════════════════
                                         const buscarAprovacao = ({ label = '', cor = 0 }) => {
                                             const entradaBruta  = Math.max(0, valorImovel - financBanco - subsidio - fgts);
-                                            const saldoPSbase   = Math.max(0, entradaBruta - atoCliente);
+                                            const saldoPSbruto  = Math.max(0, entradaBruta - atoCliente);
+                                            // R1: saldo PS nunca ultrapassa o teto do perfil
+                                            const psTetoR1busca = p.psLimite * valorImovel;
+                                            const saldoPSbase   = Math.min(saldoPSbruto, psTetoR1busca);
                                             const maxAnuaisDisp = nAnuais;
 
                                             // Limites REAIS de renda
@@ -4171,9 +4195,8 @@ Responda SOMENTE com JSON puro (sem markdown, sem texto antes ou depois):
                                             const maxParcelaR2 = Math.max(0, p.condicao * renda - parcelaFinanc);
                                             const maxParcela   = Math.min(maxParcelaR3, maxParcelaR2);
 
-                                            // Sem sinais = 1 mês carência; com sinais = 4 meses
-                                            // Card 1 usa ato do cliente (sem sinais = 1 mês)
-                                            const fatorCard1 = calcFator(1);
+                                            // Card 1: usa fator base sem sinais para estimar se aprova
+                                            const fatorCard1 = FATOR_BASE_SEM_SINAIS;
 
                                             // CAMINHO FELIZ: sem anuais, parcela já cabe na renda
                                             const parcelaSemAnuais = (saldoPSbase * fatorCard1) / PARCELAS_PS;
@@ -4208,29 +4231,40 @@ Responda SOMENTE com JSON puro (sem markdown, sem texto antes ou depois):
                                             const maxParR3   = p.comprometimento * renda;
                                             const maxParR2   = Math.max(0, p.condicao * renda - parcelaFinanc);
                                             const maxParcela = Math.min(maxParR3, maxParR2);
+                                            // R1: teto do PS para este perfil
+                                            const psTetoR1vista = p.psLimite * valorImovel;
                                             // Card 2 (Ato à Vista): sem sinais = fator 1 mês; com sinais = fator 4 meses
                                             // Calculamos primeiro sem sinais para achar o ato necessário
-                                            const fatorVista1 = calcFator(1);  // sem sinais
-                                            const fatorVista4 = calcFator(4);  // com 3 sinais
-                                            // Saldo PS máximo sem sinais
-                                            const saldoPSmaxSemSinais = (maxParcela * PARCELAS_PS) / fatorVista1;
-                                            const atoNecSemSinais = entradaBrutaV - saldoPSmaxSemSinais;
-                                            if (atoNecSemSinais <= atoCliente + 0.01) {
-                                                // Cliente já tem ato suficiente — sem sinais
-                                                return calcPlano({ anuaisUsados: 0, label: 'Ato à Vista', cor: 2, atoNecessario: Math.max(atoCliente, atoNecSemSinais) });
+                                            const TAXA_CAR = 0.005;
+                                            // Sem sinais (m=1): PS_max = teto/(1.005)^1, fator=1.471466
+                                            const psMaxSemS  = psTetoR1vista / Math.pow(1 + TAXA_CAR, 1);
+                                            const saldoPSmaxSemS = Math.min((maxParcela * PARCELAS_PS) / FATOR_BASE_SEM_SINAIS, psMaxSemS);
+                                            const atoNecSemS = entradaBrutaV - saldoPSmaxSemS;
+                                            if (atoNecSemS <= atoCliente + 0.01) {
+                                                return calcPlano({ anuaisUsados: 0, label: 'Ato à Vista', cor: 2, atoNecessario: Math.max(atoCliente, atoNecSemS) });
                                             }
-                                            // Precisa de sinais — recalcula com fator 4 meses
-                                            const saldoPSmaxComSinais = (maxParcela * PARCELAS_PS) / fatorVista4;
-                                            const atoNecComSinais = Math.max(atoCliente, entradaBrutaV - saldoPSmaxComSinais);
-                                            return calcPlano({ anuaisUsados: 0, label: 'Ato à Vista', cor: 2, atoNecessario: atoNecComSinais });
+                                            // Com sinais (m=4): calcular ato necessário
+                                            // Primeiro tentar com PS no teto (fator=1.471466, PS=teto/(1.005)^4)
+                                            const psMaxComS_teto = psTetoR1vista / Math.pow(1 + TAXA_CAR, 4);
+                                            const parcelaComTeto = psMaxComS_teto * FATOR_BASE_SEM_SINAIS / PARCELAS_PS;
+                                            if (parcelaComTeto <= maxParcela + 0.01) {
+                                                // Teto garante aprovação → ato necessário para PS tocar o teto
+                                                const atoNecComTeto = Math.max(atoCliente, entradaBrutaV - psMaxComS_teto);
+                                                return calcPlano({ anuaisUsados: 0, label: 'Ato à Vista', cor: 2, atoNecessario: atoNecComTeto });
+                                            }
+                                            // PS abaixo do teto com fator cheio (m=4)
+                                            const fatorComSinais = calcFator(3);
+                                            const saldoPSmaxComS = (maxParcela * PARCELAS_PS) / fatorComSinais;
+                                            const atoNecessarioVista = Math.max(atoCliente, entradaBrutaV - saldoPSmaxComS);
+                                            return calcPlano({ anuaisUsados: 0, label: 'Ato à Vista', cor: 2, atoNecessario: atoNecessarioVista });
                                         };
                                         const plano2 = calcAtoVista();
                                         const plano3 = plano2; // placeholder — só 2 cards
 
-                                        // Renda mínima para aprovar com o Saldo PS REAL do cliente
+                                        // Renda mínima para aprovar com o Saldo PS REAL do cliente (limitado pelo teto R1)
                                         const entradaBrutaCalc = Math.max(0, valorImovel - financBanco - subsidio - fgts);
-                                        const saldoPSrealCalc  = Math.max(0, entradaBrutaCalc - atoCliente);
-                                        const parcelaPSCalc    = (saldoPSrealCalc * calcFator(1)) / PARCELAS_PS;
+                                        const saldoPSrealCalc  = Math.min(Math.max(0, entradaBrutaCalc - atoCliente), p.psLimite * valorImovel);
+                                        const parcelaPSCalc    = (saldoPSrealCalc * FATOR_BASE_SEM_SINAIS) / PARCELAS_PS;
                                         const rendaMinR3    = parcelaPSCalc > 0 ? parcelaPSCalc / p.comprometimento : 0;
                                         let rendaMinR2;
                                         if (parcelaFinancDigitada > 0) {

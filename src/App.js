@@ -40,7 +40,7 @@ const utilitariosData = [
 const frasesMotivacionais = [
     { texto: "O sucesso é a soma de pequenos esforços repetidos dia após dia.", autor: "Robert Collier" },
     { texto: "Não vendemos apenas imóveis, nós entregamos as chaves para novos sonhos e recomeços.", autor: "Equipe Destemidos" },
-    { texto: "A oportunidade não bate à porta, ela se apresenta quando você a constrói com muito trabalho.", autor: "Chris Grosser" },
+    { texto: "Perdeu a aposta, mas ganhou o melhor uniforme da carreira.", autor: "Equipe Águia" },
     { texto: "Seu limite não é o mercado, é a sua própria mente. Voe alto!", autor: "Motivação Destemidos" },
     { texto: "Um cliente satisfeito é a melhor estratégia de negócios que existe.", autor: "Michael LeBoeuf" },
     { texto: "Não espere por condições perfeitas. O momento de fazer acontecer é agora.", autor: "George Bernard Shaw" },
@@ -83,7 +83,7 @@ const imagensEquipeDiarias = [
     "https://i.postimg.cc/YSW0QrF3/Copia-de-IMG-3049.jpg",
     "https://i.postimg.cc/mgqhczP5/Copia-de-IMG-3054.jpg",
     "https://i.postimg.cc/4xMnK7YP/Copia-de-IMG-3117.jpg",
-    "https://i.postimg.cc/2SJ3qb1V/Copia-de-IMG-5622-(1).jpg",
+    "https://i.postimg.cc/ZqYB27Gf/Chat-GPT-Image-12-de-mar-de-2026-12-31-34-(1).jpg",
     "https://i.postimg.cc/QCxjYhBj/Copia-de-IMG-9585.jpg",
     "https://i.postimg.cc/fWKLcg3X/Copia-de-IMG-9919.avif"
 ];

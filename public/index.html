@@ -213,6 +213,21 @@
         };
 
         overlay.onclick = hidePopup;
+
+        // === FULLSCREEN AUTOMÁTICO — APENAS DESKTOP ===
+        const isMobile = /android|iphone|ipad|ipod|mobile/i.test(navigator.userAgent);
+
+        if (!isMobile && isStandalone()) {
+            const enterFullscreen = () => {
+                if (!document.fullscreenElement) {
+                    document.documentElement.requestFullscreen().catch(() => {});
+                }
+                document.removeEventListener("click", enterFullscreen);
+                document.removeEventListener("keydown", enterFullscreen);
+            };
+            document.addEventListener("click", enterFullscreen);
+            document.addEventListener("keydown", enterFullscreen);
+        }
     </script>
 </body>
 </html>

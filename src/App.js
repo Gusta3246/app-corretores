@@ -3288,16 +3288,7 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
                                     <p className={`text-[11px] leading-relaxed mt-0.5 ${modoNoturno ? 'text-slate-400' : 'text-slate-500'}`}>Coloque os documentos em qualquer formato e a IA irá organizar para você na ordem correta para o CCA. </p>
                                 </div>
                             </div>
-                            {/* Item 3 */}
-                            <div className={`flex items-start gap-3 p-3.5 rounded-2xl ${modoNoturno ? 'bg-slate-800/70' : 'bg-slate-50'}`}>
-                                <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ background: 'linear-gradient(135deg,#10b981,#059669)' }}>
-                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-                                </div>
-                                <div>
-                                    <p className={`text-xs font-black uppercase tracking-wide ${modoNoturno ? 'text-white' : 'text-slate-800'}`}>Chatbot Destemidos</p>
-                                    <p className={`text-[11px] leading-relaxed mt-0.5 ${modoNoturno ? 'text-slate-400' : 'text-slate-500'}`}>Tire dúvidas sobre os empreendimentos com nosso assistente de IA treinado para te ajudar a vender mais.</p>
-                                </div>
-                            </div>
+
                             {/* Item 4 — Taxas Docs */}
                             <div className={`flex items-start gap-3 p-3.5 rounded-2xl ${modoNoturno ? 'bg-slate-800/70' : 'bg-slate-50'}`}>
                                 <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ background: 'linear-gradient(135deg,#0ea5e9,#0369a1)' }}>

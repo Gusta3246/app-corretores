@@ -241,9 +241,9 @@ export default function App() {
     // Modal boas vindas — mostra no máximo 3x (total, entre sessões)
     const [showBemVindo, setShowBemVindo] = useState(() => {
         const views = parseInt(localStorage.getItem('dst_bv_count') || '0');
-        return views < 3;
+        return views < 6;
     });
-    const [cotacaoGateSenha, setCotacaoGateSenha] = useState("");
+    const [bemVindoCountdown, setBemVindoCountdown] = useState(8);    const [cotacaoGateSenha, setCotacaoGateSenha] = useState("");
     const [cotacaoGateErro, setCotacaoGateErro] = useState(false);
     const [showTaxasDocsModal, setShowTaxasDocsModal] = useState(false);
     const TAXAS_BASE_URL = "https://docs.google.com/spreadsheets/d/1PKNdiepf9c6q2MDQjROS62JNpaW77sN1FbyHN4yDD5g/edit?usp=sharing&rm=minimal";
@@ -327,6 +327,21 @@ export default function App() {
         }, 1000);
         return () => clearInterval(interval);
     }, [showCotacaoInfo]);
+
+    // Countdown de 8s para o botão "Entendi" do modal Boas Vindas (apenas nas 3 primeiras vezes)
+    useEffect(() => {
+        if (!showBemVindo) { setBemVindoCountdown(8); return; }
+        const views = parseInt(localStorage.getItem('dst_bv_count') || '0');
+        if (views >= 3) return; // nas vezes 4-6 não tem countdown
+        setBemVindoCountdown(8);
+        const interval = setInterval(() => {
+            setBemVindoCountdown(prev => {
+                if (prev <= 1) { clearInterval(interval); return 0; }
+                return prev - 1;
+            });
+        }, 1000);
+        return () => clearInterval(interval);
+    }, [showBemVindo]);
 
     // ESTADO PARA AS FRASES AMIGÁVEIS DO ROBÔ E CONTROLE DE SCROLL
     const [robotPhraseIndex, setRobotPhraseIndex] = useState(0);
@@ -3283,7 +3298,20 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
                                     <p className={`text-[11px] leading-relaxed mt-0.5 ${modoNoturno ? 'text-slate-400' : 'text-slate-500'}`}>Tire dúvidas sobre os empreendimentos com nosso assistente de IA treinado para te ajudar a vender mais.</p>
                                 </div>
                             </div>
-                            {/* Item 4 — Em breve */}
+                            {/* Item 4 — Taxas Docs */}
+                            <div className={`flex items-start gap-3 p-3.5 rounded-2xl ${modoNoturno ? 'bg-slate-800/70' : 'bg-slate-50'}`}>
+                                <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ background: 'linear-gradient(135deg,#0ea5e9,#0369a1)' }}>
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+                                </div>
+                                <div>
+                                    <div className="flex items-center gap-2">
+                                        <p className={`text-xs font-black uppercase tracking-wide ${modoNoturno ? 'text-white' : 'text-slate-800'}`}>Taxas Docs</p>
+                                        <span className="text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full text-white" style={{ background: 'linear-gradient(135deg,#0ea5e9,#0369a1)' }}>Novo</span>
+                                    </div>
+                                    <p className={`text-[11px] leading-relaxed mt-0.5 ${modoNoturno ? 'text-slate-400' : 'text-slate-500'}`}>Veja a parcela de documentações do seu cliente com o juros embutido.</p>
+                                </div>
+                            </div>
+                            {/* Item 5 — Em breve */}
                             <div className={`flex items-start gap-3 p-3.5 rounded-2xl border-2 border-dashed ${modoNoturno ? 'bg-indigo-950/40 border-indigo-700/50' : 'bg-indigo-50/60 border-indigo-200'}`}>
                                 <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ background: 'linear-gradient(135deg,#6366f1,#7c3aed)' }}>
                                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
@@ -3299,12 +3327,33 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
                         </div>
                         {/* Botão fechar */}
                         <div className="px-5 pb-6">
-                            <button
-                                onClick={() => { setShowBemVindo(false); const v = parseInt(localStorage.getItem('dst_bv_count') || '0'); localStorage.setItem('dst_bv_count', String(v + 1)); }}
-                                className="w-full py-4 rounded-2xl text-sm font-black uppercase tracking-widest text-white active:scale-95 transition-all"
-                                style={{ background: 'linear-gradient(135deg,#6366f1 0%,#4f46e5 45%,#7c3aed 100%)', boxShadow: '0 4px 20px rgba(99,102,241,0.45)' }}>
-                                Entendido, vamos vender! 🔥
-                            </button>
+                            {(() => {
+                                const views = parseInt(localStorage.getItem('dst_bv_count') || '0');
+                                const hasCountdown = views < 3;
+                                const isLocked = hasCountdown && bemVindoCountdown > 0;
+                                const closeBemVindo = () => {
+                                    setShowBemVindo(false);
+                                    const v = parseInt(localStorage.getItem('dst_bv_count') || '0');
+                                    localStorage.setItem('dst_bv_count', String(v + 1));
+                                };
+                                return (
+                                    <>
+                                        {hasCountdown && bemVindoCountdown > 0 && (
+                                            <div className={`mb-3 rounded-2xl overflow-hidden h-1.5 ${modoNoturno ? 'bg-slate-700' : 'bg-slate-200'}`}>
+                                                <div className="h-full transition-all duration-1000"
+                                                    style={{ width: `${((8 - bemVindoCountdown) / 8) * 100}%`, background: 'linear-gradient(90deg, #6366f1, #7c3aed)' }} />
+                                            </div>
+                                        )}
+                                        <button
+                                            onClick={isLocked ? undefined : closeBemVindo}
+                                            disabled={isLocked}
+                                            className={`w-full py-4 rounded-2xl text-sm font-black uppercase tracking-widest transition-all active:scale-95 ${isLocked ? (modoNoturno ? 'bg-slate-800 text-slate-600 cursor-not-allowed' : 'bg-slate-100 text-slate-400 cursor-not-allowed') : 'text-white'}`}
+                                            style={isLocked ? {} : { background: 'linear-gradient(135deg,#6366f1 0%,#4f46e5 45%,#7c3aed 100%)', boxShadow: '0 4px 20px rgba(99,102,241,0.45)' }}>
+                                            {isLocked ? `leia antes de continuar — ${bemVindoCountdown}s` : 'Entendido, vamos vender! 🔥'}
+                                        </button>
+                                    </>
+                                );
+                            })()}
                         </div>
                     </div>
                 </div>

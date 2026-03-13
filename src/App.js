@@ -3254,8 +3254,8 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
             {showBemVindo && (
                 <div className="fixed inset-0 z-[90] flex items-end sm:items-center justify-center p-4 sm:p-6"
                     style={{ background: 'rgba(7,11,22,0.8)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)' }}>
-                    <div className={`w-full max-w-sm rounded-3xl overflow-hidden shadow-2xl ${modoNoturno ? 'bg-[#0f1829] border border-slate-700/60' : 'bg-white border border-slate-200'}`}
-                        style={{ animation: 'poi-modal-in 0.4s cubic-bezier(0.34,1.2,0.64,1) both' }}>
+                    <div className={`w-full max-w-sm rounded-3xl overflow-hidden shadow-2xl flex flex-col ${modoNoturno ? 'bg-[#0f1829] border border-slate-700/60' : 'bg-white border border-slate-200'}`}
+                        style={{ animation: 'poi-modal-in 0.4s cubic-bezier(0.34,1.2,0.64,1) both', maxHeight: '90vh' }}>
                         {/* Header gradiente */}
                         <div className="relative overflow-hidden px-6 pt-7 pb-5"
                             style={{ background: 'linear-gradient(135deg, #1e3a5f 0%, #1e2d4f 50%, #2d1b69 100%)' }}>
@@ -3267,7 +3267,7 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
                             </div>
                         </div>
                         {/* Novidades */}
-                        <div className="px-5 py-5 flex flex-col gap-3">
+                        <div className="px-5 py-5 flex flex-col gap-3 overflow-y-auto flex-1">
                             {/* Item 1 */}
                             <div className={`flex items-start gap-3 p-3.5 rounded-2xl ${modoNoturno ? 'bg-slate-800/70' : 'bg-slate-50'}`}>
                                 <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ background: 'linear-gradient(135deg,#0ea5e9,#0284c7)' }}>

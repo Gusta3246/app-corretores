@@ -245,6 +245,9 @@ export default function App() {
     });
     const [cotacaoGateSenha, setCotacaoGateSenha] = useState("");
     const [cotacaoGateErro, setCotacaoGateErro] = useState(false);
+    const [showTaxasDocsModal, setShowTaxasDocsModal] = useState(false);
+    const TAXAS_BASE_URL = "https://docs.google.com/spreadsheets/d/1PKNdiepf9c6q2MDQjROS62JNpaW77sN1FbyHN4yDD5g/edit?usp=sharing&rm=minimal";
+    const [taxasIframeSrc, setTaxasIframeSrc] = useState(TAXAS_BASE_URL);
     const cotacaoUnlockedAtRef = useRef(null);
     const [cotacaoData, setCotacaoData] = useState({ perfil: '', empreendimento: '', valorImovel: '', renda: '', financiamentoBanco: '', subsidio: '', fgts: '', atoCliente: '', parcelaFinanciamento: '', entrega: '', mesesCorrecao: '' });
     const [cotacaoFile, setCotacaoFile] = useState(null);
@@ -2564,6 +2567,17 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
                         <input type="file" ref={quickFolderInputRef} onChange={handleQuickFolderUpload} multiple accept="image/*,application/pdf" className="hidden" />
                         <div className={`shrink-0 w-px h-4 ${modoNoturno ? 'bg-slate-600' : 'bg-slate-200'}`}></div>
                         <button
+                            onClick={() => { haptic('medium'); setShowTaxasDocsModal(true); }}
+                            className="shrink-0 flex items-center gap-1.5 px-4 py-2 rounded-full text-[11px] font-black uppercase tracking-wider transition-all text-white relative overflow-hidden"
+                            style={{
+                                background: 'linear-gradient(135deg, #0ea5e9 0%, #0284c7 50%, #0369a1 100%)',
+                                boxShadow: '0 0 0 2px rgba(14,165,233,0.4), 0 0 18px 4px rgba(14,165,233,0.4), 0 2px 8px rgba(0,0,0,0.2)',
+                            }}>
+                            <FileText size={12} className="shrink-0 relative z-10" />
+                            <span className="relative z-10" style={{textShadow:'0 1px 6px rgba(0,0,0,0.3)', letterSpacing:'0.08em'}}>Taxas Docs</span>
+                        </button>
+                        <div className={`shrink-0 w-px h-4 ${modoNoturno ? 'bg-slate-600' : 'bg-slate-200'}`}></div>
+                        <button
                             onClick={() => {
                                 haptic('medium');
                                 if (isCotacaoUnlocked()) {
@@ -3165,6 +3179,58 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
                                 Entrar
                             </button>
                         </div>
+                    </div>
+                </div>
+            )}
+
+            {/* MODAL TAXAS DOCS */}
+            {showTaxasDocsModal && (
+                <div className="fixed inset-0 z-[70] flex flex-col"
+                    style={{ background: modoNoturno ? 'rgba(7,11,22,0.82)' : 'rgba(15,23,42,0.55)', backdropFilter: 'blur(20px) saturate(180%)', WebkitBackdropFilter: 'blur(20px) saturate(180%)' }}>
+                    <div className="cotacao-modal-open flex flex-col w-full"
+                        style={{ height: '100%', background: modoNoturno ? '#0B1120' : '#f8fafc' }}>
+
+                        {/* HEADER — azul cobre notch/status bar */}
+                        <div className="shrink-0 relative overflow-hidden"
+                            style={{
+                                background: 'linear-gradient(135deg, #0ea5e9 0%, #0284c7 40%, #0369a1 100%)',
+                                boxShadow: '0 4px 32px rgba(14,165,233,0.45)',
+                                paddingTop: 'env(safe-area-inset-top, 0px)',
+                            }}>
+                            <div className="absolute inset-0 pointer-events-none" style={{ background: 'radial-gradient(ellipse at top right, rgba(255,255,255,0.12) 0%, transparent 60%)' }}/>
+                            <div className="relative z-10 flex items-center gap-3 px-5 pt-4 pb-4">
+                                <button onClick={() => setShowTaxasDocsModal(false)}
+                                    className="w-9 h-9 rounded-2xl flex items-center justify-center transition-all active:scale-90 shrink-0"
+                                    style={{ background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(8px)' }}>
+                                    <ChevronLeft size={20} color="white" />
+                                </button>
+                                <div className="flex-1 min-w-0">
+                                    <h2 className="text-white font-black text-xl uppercase tracking-widest drop-shadow-md truncate">📄 Taxas Docs</h2>
+                                    <p className="text-sky-100 text-xs font-medium mt-0.5">Previsão de despesas de transmissão</p>
+                                </div>
+                                <a
+                                    href="https://drive.google.com/drive/u/1/folders/14mYfQkNaSc9APr6hpOTKKTFQ02oq3uOf"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="shrink-0 flex items-center gap-2 px-4 py-2.5 rounded-2xl transition-all active:scale-90"
+                                    style={{ background: 'rgba(255,255,255,0.22)', backdropFilter: 'blur(8px)', boxShadow: '0 2px 12px rgba(0,0,0,0.15)' }}>
+                                    <FileText size={18} color="white" />
+                                    <span className="text-white text-xs font-black uppercase tracking-wide">Abrir Tabelas</span>
+                                </a>
+                            </div>
+                        </div>
+
+                        {/* IFRAME */}
+                        <div className="flex-1 overflow-hidden relative">
+                            <iframe
+                                src={taxasIframeSrc}
+                                className="w-full h-full border-0"
+                                title="Taxas de Transmissão de Imóvel"
+                                allow="autoplay"
+                            />
+                        </div>
+
+
                     </div>
                 </div>
             )}

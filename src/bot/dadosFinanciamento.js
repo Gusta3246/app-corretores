@@ -321,7 +321,97 @@ export const BaseConhecimento = {
 
   "pro cotista": "O *Pró-Cotista* é uma linha especial para quem tem FGTS:\n• Sem limite de renda\n• Taxa de juros: 8,66%\n• Apenas imóveis *novos*\n• Valor máximo do imóvel: R$ 500 mil\n• Financiamento de até 80% (somente imóveis novos)",
 
-  "sbpe": "O *SBPE* é para quem passa do limite do MCMV (acima de R$ 12 mil de renda ou imóveis acima de R$ 500 mil):\n• Sem limite de renda\n• Taxa de juros: 11,49%\n• Valor máximo do imóvel: R$ 2.250.000\n• NO/NE/CO novo: 90% SAC / 80% PRICE\n• SUL/SE usado: 70% PRICE"
+  "sbpe": "O *SBPE* é para quem passa do limite do MCMV (acima de R$ 12 mil de renda ou imóveis acima de R$ 500 mil):\n• Sem limite de renda\n• Taxa de juros: 11,49%\n• Valor máximo do imóvel: R$ 2.250.000\n• NO/NE/CO novo: 90% SAC / 80% PRICE\n• SUL/SE usado: 70% PRICE",
+
+  // ==========================================
+  // 📋 AMAZON BOULEVARD PRIME — TIPOLOGIAS COMPLETAS
+  // ==========================================
+  "tipologia prime": "🏠 *Tipologias Amazon Boulevard Prime:*\n\n• Garden Meio (1Q): 51,94 m² + 20,47 m² garden\n• Garden Meio (2Q): 60,14 m² + 29,49 m² garden\n• Tipo Meio (2Q): 60,14 m²\n• Tipo Ponta (3Q): 69,94 m²\n• Garden Ponta (3Q): 69,94 m² + 20,04 m² garden\n• Garden Ponta (3Q): 70,26 m² + 20,13 m² garden\n• Garden Ponta (3Q): 69,94 m² + 13,91 m² garden\n\nTodos com varanda, ponto grill, bancada granito, torneira arejador, dual flush.",
+
+  "metragem prime": "📐 *Metragens — Amazon Boulevard Prime:*\n\n• 1Q Garden Meio: 51,94 m² + 20,47 m² garden\n• 2Q Garden Meio: 60,14 m² + 29,49 m² garden\n• 2Q Tipo Meio: 60,14 m²\n• 3Q Tipo Ponta: 69,94 m²\n• 3Q Garden Ponta: 69,94 m² + 20,04 m² garden\n• 3Q Garden Ponta: 70,26 m² + 20,13 m² garden\n• 3Q Garden Ponta: 69,94 m² + 13,91 m² garden\n\nTodos com varanda integrada e ponto grill.",
+
+  // ==========================================
+  // 📋 AMAZON BOULEVARD CLASSIC — COMPLETO
+  // ==========================================
+  "amazon boulevard classic": "🏠 *Amazon Boulevard Classic* — Padrão Riva\n\n📍 Av. Torquato Tapajós, 1.357 — Bairro da Paz, Manaus/AM\n\n🏢 *Ficha Técnica:*\n• 7 blocos | 8 pavimentos\n• 441 unidades (14 adaptáveis)\n• 505 vagas (477 moradores + 28 visitantes)\n\n🛋️ *Tipologias — 2 quartos com suíte e varanda:*\n• 36,07 m² | 43,94 m² | 43,96 m² | 44,23 m² | 48,11 m² | 48,38 m²\n\n✨ Cozinha integrada, bancada granito, torneira arejador, dual flush, previsão split.\n\nVizinho ao Amazon Boulevard Prime!",
+
+  "classic": "🏠 *Amazon Boulevard Classic* — Av. Torquato Tapajós, 1.357 | Bairro da Paz | Riva\n7 blocos | 8 pav | 441 unidades | 2 quartos com suíte e varanda.\nÁreas: 36,07 a 48,38 m² | Granito | dual flush | previsão split.\n505 vagas (477 moradores + 28 visitantes).",
+
+  "tipologia classic": "🏠 *Tipologias Amazon Boulevard Classic — 2 quartos com suíte e varanda:*\n• 36,07 m²\n• 43,94 m²\n• 43,96 m²\n• 44,23 m²\n• 48,11 m²\n• 48,38 m²\n\nCozinha integrada, bancada granito, torneira arejador, dual flush, previsão split.",
+
+  "vagas classic": "🅿️ *Vagas — Amazon Boulevard Classic:*\n• 505 vagas no total\n• 477 vagas para moradores\n• 28 vagas para visitantes",
+
+  // ==========================================
+  // 📋 BOSQUE DAS TORRES — VAGAS CORRIGIDAS (doc. oficial)
+  // ==========================================
+  "vagas bosque": "🅿️ *Vagas — Bosque das Torres:*\n• 520 vagas no total\n• 174 vagas para carros\n• 313 vagas para motos\n\n⚠️ Tem vaga para moto! Ótimo diferencial para quem usa moto no dia a dia.",
+
+  "bosque ficha tecnica": "📋 *Ficha Técnica — Bosque das Torres:*\n\n📍 Rua Dona Debla Henriques, nº 450 — Lago Azul, Manaus/AM\n🏗️ Sistema construtivo: Parede de Concreto\n🏢 26 Blocos | 5 Pavimentos (Térreo + 4)\n🔢 520 unidades totais (16 adaptadas a PCD)\n🌿 104 apartamentos com garden (térreo)\n🅿️ 520 vagas: 174 para carros + 313 para motos\n📐 Área privativa: 36,24 m²",
+
+  // ==========================================
+  // 📋 CONQUISTA JARDIM BOTÂNICO — COMPLETO
+  // ==========================================
+  "conquista jardim botanico ficha": "📋 *Ficha Técnica — Conquista Jardim Botânico:*\n\n📍 Av. Monsenhor Amâncio de Miranda, nº 200 — Bairro Nova Cidade\n🏗️ 33 torres | 5 pavimentos (térreo + 4)\n🔢 660 unidades (20 adaptáveis | 112 com garden)\n🅿️ 660 vagas (227 carros + 391 motos)\n\n🛋️ *Tipologias — 2 quartos:*\n• Tipo: 40,67 m²\n• Garden Meio: 40,67 m² + 17,17 m² garden\n• Garden Ponta: 40,67 m² + 10,37 m² ou 10,51 m² garden\n\n✨ Cozinha integrada, bancada granito, torneira arejador, dual flush.",
+
+  "jardim botanico tipologia": "🏠 *Tipologias Conquista Jardim Botânico:*\n• Tipo (2Q): 40,67 m²\n• Garden Meio (2Q): 40,67 m² + 17,17 m² garden = 57,84 m² total\n• Garden Ponta (2Q): 40,67 m² + 10,37-10,51 m² garden\n\n660 unidades | 112 com garden | 20 adaptáveis | 33 torres | 660 vagas (227 carros + 391 motos).",
+
+  "vagas jardim botanico": "🅿️ *Vagas — Conquista Jardim Botânico:*\n• 660 vagas no total\n• 227 vagas para carros\n• 391 vagas para motos",
+
+  // ==========================================
+  // 📋 CONQUISTA JARDIM NORTE — COMPLETO
+  // ==========================================
+  "conquista jardim norte ficha": "📋 *Ficha Técnica — Conquista Jardim Norte:*\n\n📍 Rua Vicente Martins, nº 900 — Bairro Santa Etelvina\n🏗️ 26 blocos | 5 pavimentos (térreo + 4)\n🔢 520 unidades (16 adaptáveis | 36 com garden)\n🅿️ 520 vagas (179 carros + 308 motos)\n\n🛋️ *Tipologias — 2 quartos:*\n• Tipo: 36,24 m²\n• Garden: 36,24 m² + 12,30 m² garden = 48,54 m² total\n\n✨ Cozinha integrada, bancada granito, torneira arejador, dual flush.",
+
+  "tipologia jardim norte": "🏠 *Tipologias Conquista Jardim Norte:*\n• Tipo (2Q): 36,24 m²\n• Garden (2Q): 36,24 m² + 12,30 m² garden = 48,54 m² total\n\n520 unidades | 36 com garden | 16 adaptáveis | 26 blocos | 520 vagas (179 carros + 308 motos).",
+
+  // ==========================================
+  // 📋 CONQUISTA RIO NEGRO — COMPLETO
+  // ==========================================
+  "conquista rio negro ficha": "📋 *Ficha Técnica — Conquista Rio Negro:*\n\n📍 Rua Frederico Baird, 2990 — Ponta Negra\n🏗️ 14 torres | 5 pavimentos (térreo + 4)\n🔢 560 unidades (17 adaptáveis)\n🅿️ 595 vagas (560 moradores + 35 visitantes)\n\n🛋️ *Tipologias — 2 quartos:*\n• Tipo Meio: 41,51 m²\n• Tipo Ponta: 41,37 m²\n• Garden Meio: 41,51 m² + 4,02 m² garden\n• Garden Ponta: 41,37 m² + 3,95 m² garden\n\n✨ Cozinha integrada, bancada granito, torneira arejador, dual flush.",
+
+  "tipologia rio negro": "🏠 *Tipologias Conquista Rio Negro:*\n• Tipo Meio (2Q): 41,51 m²\n• Tipo Ponta (2Q): 41,37 m²\n• Garden Meio (2Q): 41,51 m² + 4,02 m² garden\n• Garden Ponta (2Q): 41,37 m² + 3,95 m² garden\n\n560 unidades | 17 adaptáveis | 14 torres | 595 vagas (560 moradores + 35 visitantes).",
+
+  "vagas rio negro": "🅿️ *Vagas — Conquista Rio Negro:*\n• 595 vagas no total\n• 560 vagas para moradores\n• 35 vagas para visitantes",
+
+  // ==========================================
+  // 📋 CONQUISTA TOPÁZIO — COMPLETO
+  // ==========================================
+  "conquista topazio ficha": "📋 *Ficha Técnica — Conquista Topázio:*\n\n📍 Av. Tude Moutinho, 945 — Colônia Terra Nova\n🏗️ 7 torres | 5 pavimentos (térreo + 4)\n🔢 400 unidades (12 adaptáveis | 80 com garden)\n🅿️ 432 vagas (400 moradores + 32 visitantes)\n\n🛋️ *Tipologias — 2 quartos:*\n• Tipo Meio: 41,36 m² / 41,51 m² / 41,57 m²\n• Tipo Ponta: 41,37 m²\n• Garden Meio: 41,36-41,57 m² + 15,74 m² garden\n• Garden Ponta: 41,37 m² + 14,25 m² garden\n\n✨ Cozinha integrada, bancada granito, torneira arejador, dual flush.",
+
+  "tipologia topazio": "🏠 *Tipologias Conquista Topázio:*\n• Tipo Meio (2Q): 41,36 / 41,51 / 41,57 m²\n• Tipo Ponta (2Q): 41,37 m²\n• Garden Meio (2Q): 41,36-41,57 m² + 15,74 m² garden\n• Garden Ponta (2Q): 41,37 m² + 14,25 m² garden\n\n400 unidades | 80 com garden | 12 adaptáveis | 7 torres | 432 vagas (400 moradores + 32 visitantes).",
+
+  "vagas topazio": "🅿️ *Vagas — Conquista Topázio:*\n• 432 vagas no total\n• 400 vagas para moradores\n• 32 vagas para visitantes",
+
+  // ==========================================
+  // 📋 OASIS AZZURE — COMPLETO
+  // ==========================================
+  "oasis azzure": "🏠 *Oasis Azzure* — Padrão Riva\n\n📍 Rua Santa Bárbara, nº 200 — Bairro Flores, Manaus/AM\n\n🏢 *Ficha Técnica:*\n• 7 blocos | 8 pavimentos (térreo + 7)\n• 448 unidades (14 adaptáveis | 56 com garden)\n• 448 vagas\n\n🛋️ *Tipologias — 2 quartos com suíte e varanda:*\n• Tipo Meio: 48,26 m²\n• Garden Meio: 49,98 m² + 15,93 m² garden = 65,91 m² total\n• Garden Ponta: 49,53 m² + 24,94 m² garden = 74,47 m² total\n\n✨ Cozinha integrada, bancada granito, torneira arejador, dual flush.",
+
+  "azzure ficha": "📋 *Ficha Técnica — Oasis Azzure:*\n📍 Rua Santa Bárbara, 200 — Bairro Flores\n🏗️ 7 blocos | 8 pav (térreo + 7) | 448 unidades\n14 adaptáveis | 56 com garden | 448 vagas\n\n2Q com suíte e varanda:\n• Tipo Meio: 48,26 m²\n• Garden Meio: 49,98 m² + 15,93 m² garden\n• Garden Ponta: 49,53 m² + 24,94 m² garden",
+
+  "tipologia azzure": "🏠 *Tipologias Oasis Azzure — 2 quartos com suíte:*\n• Tipo Meio: 48,26 m²\n• Garden Meio: 49,98 m² + 15,93 m² garden = 65,91 m² total\n• Garden Ponta: 49,53 m² + 24,94 m² garden = 74,47 m² total\n\n56 unidades com garden | 14 adaptáveis | 7 blocos | 448 vagas | Bairro Flores.",
+
+  "vagas azzure": "🅿️ *Vagas — Oasis Azzure:*\n• 448 vagas para moradores",
+
+  // ==========================================
+  // 📋 PARQUE VILLE LÍRIO AZUL — COMPLETO
+  // ==========================================
+  "parque ville lirio azul ficha": "📋 *Ficha Técnica — Parque Ville Lírio Azul:*\n\n📍 Av. Santa Tereza D'Avila, 1096 — Lago Azul\n🏗️ 30 torres | 5 pavimentos (térreo + 4)\n🔢 600 unidades (18 adaptáveis | 102 com garden)\n🅿️ 600 vagas (188 carros + 356 motos)\n\n🛋️ *Tipologias — 2 quartos:*\n• Tipo: 40,67 m²\n• Garden Meio: 40,67 m² + 17,17 m² garden = 57,84 m² total\n• Garden Ponta: 40,67 m² + 10,51 m² garden = 51,18 m² total\n\n✨ Cozinha integrada, bancada granito, torneira arejador, dual flush.",
+
+  "tipologia lirio azul": "🏠 *Tipologias Parque Ville Lírio Azul:*\n• Tipo (2Q): 40,67 m²\n• Garden Meio (2Q): 40,67 m² + 17,17 m² garden = 57,84 m² total\n• Garden Ponta (2Q): 40,67 m² + 10,51 m² garden = 51,18 m² total\n\n600 unidades | 102 com garden | 18 adaptáveis | 30 torres | 600 vagas (188 carros + 356 motos).",
+
+  "vagas lirio azul": "🅿️ *Vagas — Parque Ville Lírio Azul:*\n• 600 vagas no total\n• 188 vagas para carros\n• 356 vagas para motos",
+
+  // ==========================================
+  // 📋 LUAR PONTA NEGRA — COMPLETO
+  // ==========================================
+  "luar ponta negra ficha": "📋 *Ficha Técnica — Luar Ponta Negra:*\n\n📍 Av. Thales Loureiro, 1.030 — Ponta Negra\n🏗️ 5 blocos | 8 pavimentos (térreo + 7)\n🔢 320 unidades (10 adaptáveis | 40 com garden)\n🅿️ 524 vagas (480 moradores + 40 visitantes)\n\n🛋️ *Tipologias — 2 e 3 quartos com suíte, varanda gourmet e vaga:*\n• Tipo Meio (2Q): 49,90 m²\n• Tipo Ponta (3Q): 60,01 m²\n• Garden Meio (2Q): 49,90 m² + 17,19 m² garden = 67,09 m² total\n• Garden Ponta (3Q): 60,01 m² + 15,74 m² garden = 75,75 m² total\n\n✨ Cozinha integrada, bancada granito, torneira arejador, dual flush.",
+
+  "tipologia luar": "🏠 *Tipologias Luar Ponta Negra:*\n• Tipo Meio (2Q): 49,90 m²\n• Tipo Ponta (3Q com suíte): 60,01 m²\n• Garden Meio (2Q): 49,90 m² + 17,19 m² garden = 67,09 m² total\n• Garden Ponta (3Q): 60,01 m² + 15,74 m² garden = 75,75 m² total\n\n320 unidades | 40 com garden | 10 adaptáveis | 5 blocos | 524 vagas (480 moradores + 40 visitantes).",
+
+  "vagas luar": "🅿️ *Vagas — Luar Ponta Negra:*\n• 524 vagas no total\n• 480 vagas para moradores\n• 40 vagas para visitantes",
+
+  "metragem luar": "📐 *Metragens — Luar Ponta Negra:*\n• 2Q Tipo Meio: 49,90 m²\n• 3Q Tipo Ponta: 60,01 m²\n• 2Q Garden Meio: 49,90 m² + 17,19 m² = 67,09 m² total\n• 3Q Garden Ponta: 60,01 m² + 15,74 m² = 75,75 m² total\n\nTodos com suíte, varanda gourmet e vaga incluída."
 };
 
 // =========================================================================
@@ -447,7 +537,7 @@ O fator depende de quantos meses restam de obra vs pós-obra (mais obra = fator 
 • Bosque das Torres (entrega 30/06/2028): fator ~1,4579
 • Brisas do Horizonte (entrega 31/08/2028): fator ~1,44
 • Parque Ville Lírio Azul (entrega 30/11/2028): fator ~1,41
-• Conquista Rio Negro II : fator ~1,25
+• Conquista Rio Negro II (entrega 30/12/2030): fator ~1,25
 ⚠️ Fator é estimativa — valor exato sempre confirmar no sistema.
 
 ANUAIS DISPONÍVEIS POR EMPREENDIMENTO (base março/2026):

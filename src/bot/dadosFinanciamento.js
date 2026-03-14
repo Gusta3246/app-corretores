@@ -447,7 +447,7 @@ O fator depende de quantos meses restam de obra vs pós-obra (mais obra = fator 
 • Bosque das Torres (entrega 30/06/2028): fator ~1,4579
 • Brisas do Horizonte (entrega 31/08/2028): fator ~1,44
 • Parque Ville Lírio Azul (entrega 30/11/2028): fator ~1,41
-• Conquista Rio Negro II (entrega 30/12/2030): fator ~1,25
+• Conquista Rio Negro II : fator ~1,25
 ⚠️ Fator é estimativa — valor exato sempre confirmar no sistema.
 
 ANUAIS DISPONÍVEIS POR EMPREENDIMENTO (base março/2026):

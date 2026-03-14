@@ -32,7 +32,7 @@ const revistasDataLocal = [
     { id: 12, title: "Città Oasis Azzure", brand: "Riva", region: "Flores - Zona Centro-Sul", size: "48m² a 75m²", bedrooms: "2 e 3 quartos", flooring: "Todo o apê", cover: "https://www.rivaincorporadora.com.br/wp-content/uploads/2025/08/citta-azzure_GUARITA.jpg.webp", link: "https://drive.google.com/file/d/1Y-fT6UbQ-OopqVaV0POgHRIdlayMXMOB/view?usp=sharing", aliases: ["citta", "città", "azzure", "oasis", "oasis azzure"], pois: ["Universidade Nilton Lins", "Laranjeiras Restaurante (polo gastronômico)", "Sushi Ponta Negra", "Domes Burgers", "Di Fiori - Casa de Massas e Pizzas", "Na Lenha Pizzaria", "Drogaria Santo Remédio", "Supermercado Atack (Laranjeiras)", "Sollarium Mall"] },
     { id: 13, title: "Zenith Condomínio Clube", brand: "Riva", region: "São Francisco - Zona Sul", size: "48m² a 49m²", bedrooms: "2 e 3 quartos", flooring: "Todo o apê", cover: "https://www.rivaincorporadora.com.br/wp-content/uploads/2024/08/Perspectiva-Guarita-ZenithCondominioClube.webp", link: "https://drive.google.com/file/d/1wv_v56T2ACEHtPZF-iRBvEWY2VVdUXxu/view?usp=drive_link", aliases: ["zenith", "zenith condominio"], pois: ["Manauara Shopping", "Fórum Ministro Henoch Reis", "Tribunal de Justiça (TJ-AM)", "Hospital Check Up", "Colégio Martha Falcão", "Faculdade Martha Falcão", "Faculdade Estácio"] },
     { id: 14, title: "Conquista Topázio", brand: "Direcional", region: "Colônia Terra Nova - Zona Norte", size: "41m² a 51m²", bedrooms: "1 e 2 quartos", flooring: "Todo o apê", cover: "https://www.direcional.com.br/wp-content/uploads/2023/04/Guarita-Conquista-Topazio-Direcional.jpg.webp", link: "https://drive.google.com/file/d/1SMIfr9HbfLd06UaDLKbMUxxtuh4cPPEM/view?usp=drive_link", aliases: ["topazio", "topázio", "conquista topazio"], pois: ["Allegro Mall (vizinho)", "Shopping Via Norte", "Atacadão", "Loja Havan", "SPA da Colônia Terra Nova"] },
-    { id: 16, title: "Conquista Rio Negro", brand: "Direcional", region: "Ponta Negra - Zona Oeste", size: "41m²", bedrooms: "2 quartos", flooring: "Todo o apê", cover: "https://www.direcional.com.br/wp-content/uploads/2022/11/Guarita-Conquista-Rio-Negro-Direcional.jpg.webp", link: "https://drive.google.com/file/d/1pHLQwUSn6BDMfLo7fFGonyyWlgtXwNmy/view?usp=drive_link", aliases: ["negro", "rio negro", "conquista rio negro"], pois: ["Shopping Ponta Negra", "DB Ponta Negra", "Orla 92 Mall", "Supermercado Veneza", "Orla da Ponta Negra", "Praia Dourada", "Marina Tauá", "Balneário do SESC", "Aeroporto Eduardo Gomes", "Policlínica José Lins", "Colégio Século"] },
+    { id: 16, title: "Conquista Rio Negro", brand: "Direcional", region: "Ponta Negra - Zona Oeste", size: "41m²", bedrooms: "2 quartos", flooring: "Todo o apê", entrega: "Entregue", cover: "https://www.direcional.com.br/wp-content/uploads/2022/11/Guarita-Conquista-Rio-Negro-Direcional.jpg.webp", link: "https://drive.google.com/file/d/1pHLQwUSn6BDMfLo7fFGonyyWlgtXwNmy/view?usp=drive_link", aliases: ["negro", "rio negro", "conquista rio negro"], pois: ["Shopping Ponta Negra", "DB Ponta Negra", "Orla 92 Mall", "Supermercado Veneza", "Orla da Ponta Negra", "Praia Dourada", "Marina Tauá", "Balneário do SESC", "Aeroporto Eduardo Gomes", "Policlínica José Lins", "Colégio Século"] },
     { id: 17, title: "Viva Vida Rio Tapajós", brand: "Direcional", region: "Tarumã - Zona Oeste", size: "36m²", bedrooms: "2 quartos", flooring: "Cozinha, banheiro e lavatório", cover: "https://www.direcional.com.br/wp-content/uploads/2025/02/Perspectiva-Guarita-VivaVidaRioTapajos.jpg.webp", link: "https://drive.google.com/file/d/1k3TOypf5bm_zXPfc-ulb7vY9e7MKxmlk/view?usp=drive_link", aliases: ["tapajos", "tapajós", "rio tapajos", "viva vida rio tapajos"], pois: ["Aeroporto Internacional de Manaus", "Tarumã (área de balneários famosos)", "Sivam", "proximidade com a entrada da Ponta Negra"] }
 ];
 
@@ -149,21 +149,30 @@ export default function App() {
         supabaseFetch('empreendimentos')
             .then(data => {
                 if (data && data.length > 0) {
-                    const mapped = data.map(e => ({
-                        id: e.id,
-                        title: e.nome,
-                        brand: e.brand,
-                        region: e.regiao,
-                        size: e.tamanho,
-                        bedrooms: e.quartos,
-                        flooring: e.piso,
-                        cover: e.cover,
-                        link: e.link_revista,
-                        aliases: e.aliases || [],
-                        pois: e.pois || [],
-                        entrega: e.entrega,
-                        perfis_disponiveis: e.perfis_disponiveis || [],
-                    }));
+                    // Overrides locais — corrigem dados desatualizados no Supabase
+                    const ENTREGA_OVERRIDES = {
+                        'conquista rio negro': 'Entregue',
+                        'conquista topázio':   'Entregue',
+                    };
+                    const mapped = data.map(e => {
+                        const nomeKey = (e.nome || '').toLowerCase();
+                        const entregaFinal = ENTREGA_OVERRIDES[nomeKey] || e.entrega;
+                        return {
+                            id: e.id,
+                            title: e.nome,
+                            brand: e.brand,
+                            region: e.regiao,
+                            size: e.tamanho,
+                            bedrooms: e.quartos,
+                            flooring: e.piso,
+                            cover: e.cover,
+                            link: e.link_revista,
+                            aliases: e.aliases || [],
+                            pois: e.pois || [],
+                            entrega: entregaFinal,
+                            perfis_disponiveis: e.perfis_disponiveis || [],
+                        };
+                    });
                     setRevistasData(mapped);
                 }
             })
@@ -1722,6 +1731,7 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
                                     <div key={revista.id} className={`rounded-2xl overflow-hidden shadow-sm border hover:shadow-md transition-all duration-300 flex flex-col group ${modoNoturno ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-100'}`}>
                                         <div className="relative h-48 overflow-hidden bg-slate-100">
                                             <img src={revista.cover} onError={(e) => { e.target.onerror = null; e.target.src = 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&q=80&w=400'; }} alt={`Capa ${revista.title}`} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                                            {/* Logo — sempre visível */}
                                             <div className="absolute top-3 left-3 z-10">
                                                 <div className="px-3 py-1.5 rounded-lg flex items-center justify-center h-10 min-w-[100px]"
                                                     style={{
@@ -1734,6 +1744,44 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
                                                     <img src={revista.brand === 'Direcional' ? 'https://i.postimg.cc/crYQS8mh/image.png' : 'https://i.postimg.cc/R3Q9f9Bc/image.png'} alt={revista.brand} className="h-full max-h-[22px] w-auto max-w-[85px] object-contain" />
                                                 </div>
                                             </div>
+                                            {/* Overlay data de entrega — aparece no hover */}
+                                            {revista.entrega && (
+                                                <div className="absolute inset-0 z-20 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+                                                    style={{
+                                                        background: 'rgba(255,255,255,0.18)',
+                                                        backdropFilter: 'blur(18px) saturate(180%)',
+                                                        WebkitBackdropFilter: 'blur(18px) saturate(180%)',
+                                                    }}>
+                                                    {(() => {
+                                                        const meses = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+                                                        if (revista.entrega === 'Entregue') return (
+                                                            <div style={{display:'flex', flexDirection:'column', alignItems:'center', gap:'4px'}}>
+                                                                
+                                                                <span style={{fontSize:'24px', fontWeight:900, color:'#fff', textShadow:'0 2px 16px rgba(0,0,0,0.6)', lineHeight:1.1}}>Entregue!</span>
+                                                                <span style={{fontSize:'11px', fontWeight:600, color:'rgba(255,255,255,0.8)', letterSpacing:'0.15em', textTransform:'uppercase', marginTop:'2px'}}>pronto pra morar</span>
+                                                            </div>
+                                                        );
+                                                        const partes = revista.entrega.split('/');
+                                                        const mesIdx = parseInt(partes[0]) - 1;
+                                                        const mes = meses[mesIdx] || '';
+                                                        const ano = partes[1] || partes[0];
+                                                        const hoje = new Date();
+                                                        const diff = (parseInt(partes[1]) - hoje.getFullYear()) * 12 + (parseInt(partes[0]) - (hoje.getMonth()+1));
+                                                        
+                                                        const restante = diff > 0 ? `faltam ${diff} ${diff === 1 ? 'mês' : 'meses'}` : 'chegando!';
+                                                        return (
+                                                            <div style={{display:'flex', flexDirection:'column', alignItems:'center', gap:'1px'}}>
+                                                                <span style={{fontSize:'10px', fontWeight:700, color:'rgba(255,255,255,0.55)', letterSpacing:'0.3em', textTransform:'uppercase'}}>entrega</span>
+                                                                <span style={{fontSize:'46px', fontWeight:900, color:'#fff', letterSpacing:'-0.04em', textShadow:'0 4px 24px rgba(0,0,0,0.5)', lineHeight:0.95}}>{ano}</span>
+                                                                <span style={{fontSize:'14px', fontWeight:800, color:'rgba(255,255,255,0.9)', letterSpacing:'0.08em', textTransform:'uppercase', textShadow:'0 1px 8px rgba(0,0,0,0.4)'}}>{mes}</span>
+                                                                <div style={{marginTop:'10px', padding:'4px 12px', borderRadius:'999px', background:'rgba(255,255,255,0.22)', backdropFilter:'blur(8px)', border:'1px solid rgba(255,255,255,0.3)', display:'flex', alignItems:'center', justifyContent:'center'}}>
+                                                                    <span style={{fontSize:'11px', fontWeight:800, color:'#fff', letterSpacing:'0.04em'}}>{restante}</span>
+                                                                </div>
+                                                            </div>
+                                                        );
+                                                    })()}
+                                                </div>
+                                            )}
                                         </div>
                                         <div className="p-5 flex flex-col flex-grow">
                                             <h3 className={`text-xl font-bold mb-2 ${modoNoturno ? 'text-white' : 'text-slate-800'}`}>{revista.title}</h3>
@@ -1747,6 +1795,7 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
                                                     <div className="flex items-center text-slate-500 text-sm gap-1.5"><Bed size={16} className="text-slate-400 shrink-0" /><span className={modoNoturno ? 'text-slate-400' : ''}>{revista.bedrooms}</span></div>
                                                     <div className="flex items-center text-slate-500 text-sm gap-1.5"><LayoutGrid size={16} className="text-slate-400 shrink-0" /><span className={modoNoturno ? 'text-slate-400' : ''}>{revista.flooring}</span></div>
                                                 </div>
+
                                             </div>
                                             <div className="mt-auto flex flex-col gap-2">
                                                 <button
@@ -3453,7 +3502,7 @@ Responda SOMENTE com JSON puro (sem markdown, sem texto antes ou depois):
                                                     'jardim norte':'Jun/2027','tapajos':'Ago/2027','tapajós':'Ago/2027',
                                                     'coral':'Mar/2028','marinas':'Mar/2028','bosque':'Jun/2028',
                                                     'brisas':'Ago/2028','lirio':'Nov/2028','lírio':'Nov/2028',
-                                                    'rio negro':'Dez/2030',
+                                                    'rio negro':'Entregue',
                                                 };
                                                 for (const [chave, data] of Object.entries(EMPREEND_ENTREGA)) {
                                                     if (nomeDoc.includes(chave)) { dadosSemPerfil.entrega = data; break; }
@@ -3660,7 +3709,7 @@ Responda SOMENTE com JSON puro (sem markdown, sem texto antes ou depois):
                                                         'jardim norte':{'entrega':'06/2027'},'tapajos':{'entrega':'08/2027'},'tapajós':{'entrega':'08/2027'},
                                                         'coral':{'entrega':'03/2028'},'marinas':{'entrega':'03/2028'},'bosque':{'entrega':'06/2028'},
                                                         'brisas':{'entrega':'08/2028'},'lirio':{'entrega':'11/2028'},'lírio':{'entrega':'11/2028'},
-                                                        'rio negro':{'entrega':'12/2030'},
+                                                        'rio negro':{'entrega':'Entregue'},
                                                     };
                                                     for (const [chave, dados] of Object.entries(EMAP)) {
                                                         if (low.includes(chave)) {
@@ -3693,7 +3742,7 @@ Responda SOMENTE com JSON puro (sem markdown, sem texto antes ou depois):
                                             { label: 'Bosque Torres',  nome: 'Bosque das Torres',         entrega: '06/2028' },
                                             { label: 'Brisas',         nome: 'Brisas do Horizonte',       entrega: '08/2028' },
                                             { label: 'Lírio Azul',     nome: 'Parque Ville Lírio Azul',   entrega: '11/2028' },
-                                            { label: 'Rio Negro',      nome: 'Conquista Rio Negro',       entrega: '12/2030' },
+                                            { label: 'Rio Negro',      nome: 'Conquista Rio Negro',       entrega: 'Entregue' },
                                         ].map(ape => {
                                             const sel = cotacaoData.empreendimento === ape.nome;
                                             return (

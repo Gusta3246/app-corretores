@@ -1,8 +1,23 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Search, Building, ExternalLink, MapPin, BookOpen, Maximize, Bed, LayoutGrid, Rocket, Quote, Sparkles, ChevronDown, ChevronUp, ChevronLeft, FileText, TableProperties, BookMarked, HelpCircle, Calculator, Bot, X, Send, Wand2, Paperclip, File as FileIcon, Trash2, FolderPlus, GripVertical, Plus, MessageCircle, Moon, Sun, AlertTriangle, Book } from 'lucide-react';
 import { buscarRespostaDoRobo, buscarRespostaGemini } from './bot/dadosFinanciamento.js';
-// === DADOS DAS REVISTAS E BASE DE CONHECIMENTO DO CHATBOT ===
-const revistasData = [
+// === SUPABASE CONFIG ===
+const SUPABASE_URL = 'https://dpgsolpjterirmnudkpg.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRwZ3NvbHBqdGVyaXJtbnVka3BnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM0NDAwOTYsImV4cCI6MjA4OTAxNjA5Nn0.JHCbWbb2bMC6gdcxPcVjvCVfRHbMSOdduY7VHI0IwrE';
+
+const supabaseFetch = async (tabela) => {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/${tabela}?select=*`, {
+        headers: {
+            'apikey': SUPABASE_KEY,
+            'Authorization': `Bearer ${SUPABASE_KEY}`,
+        }
+    });
+    if (!res.ok) throw new Error('Erro ao buscar ' + tabela);
+    return res.json();
+};
+
+// === DADOS DAS REVISTAS E BASE DE CONHECIMENTO DO CHATBOT (fallback local) ===
+const revistasDataLocal = [
     { id: 1, title: "Brisas do Horizonte", brand: "Direcional", region: "Coroado - Zona Leste", size: "43m² a 45m²", bedrooms: "2 quartos", flooring: "Todo o apê", cover: "https://www.direcional.com.br/wp-content/uploads/2025/06/Perspectiva-Guarita-BrisasdoHorizonte.jpg.webp", link: "https://drive.google.com/file/d/18IXtAt9PLVjIsk2PkXIHXnVCaduVkGu2/view?usp=drive_link", aliases: ["brisas", "brisas do horizonte", "horizonte"], pois: ["Supermercado Vitória (1 min)", "Escola Mun. Profª Maria Rodrigues Tapajós (2 min)", "SPA Coroado (3 min)", "Estádio Carlos Zamith (5 min)", "Park Mall Ephigênio Salles (6 min)", "UFAM - Universidade Federal do Amazonas (7 min)", "Hospital Dr. João Lúcio (7 min)", "Samel São José Medical Center (7 min)", "Sesi Clube do Trabalhador (8 min)", "Manauara Shopping (14 min)"] },
     { id: 2, title: "Parque Ville Orquídea", brand: "Direcional", region: "Lago Azul - Zona Norte", size: "41m²", bedrooms: "2 quartos", flooring: "Todo o apê", cover: "https://www.direcional.com.br/wp-content/uploads/2024/05/Perspectiva_PARQUEVILLEORQUIDEA_GUARITA.jpg.webp", link: "https://drive.google.com/file/d/1F_BeT2jceDM8u4kCbSXN8kp2rk7boQTG/view?usp=drive_link", aliases: ["orquidea", "orquídea", "parque ville", "parque ville orquidea"], pois: ["Escola Mun. Viviane Estrela (1-2 min)", "Clínica da Família C. Nicolau (1-2 min)", "Veneza Express (3-4 min)", "Nova Era Supermercado (3-4 min)", "Terminal 6 (3-4 min)", "Colégio Militar da PM VI (3-4 min)", "Shopping Via Norte (7 min)", "Hospital Delphina Aziz (10 min)", "Sumaúma Park Shopping (12 min)"] },
     { id: 3, title: "Village Torres", brand: "Direcional", region: "Lago Azul - Zona Norte", size: "36m²", bedrooms: "2 quartos", flooring: "Cozinha, banheiro e lavatório", cover: "https://www.direcional.com.br/wp-content/uploads/2024/09/Perspectiva-Guarita-VillageTorres.jpg.webp", link: "https://drive.google.com/file/d/1blVconA5fjODxvXB7s8KT6dSlX8KpLLv/view?usp=drive_link", aliases: ["village", "village torres", "torres"], pois: ["Supermercado Nova Era", "Shopping Via Norte", "Sumaúma Park Shopping", "Atacadão"] },
@@ -85,25 +100,6 @@ const imagensEquipeDiarias = [
     "https://i.postimg.cc/4xMnK7YP/Copia-de-IMG-3117.jpg",
     "https://i.postimg.cc/2SJ3qb1V/Copia-de-IMG-5622-(1).jpg",
     "https://i.postimg.cc/QCxjYhBj/Copia-de-IMG-9585.jpg",
-    "https://i.postimg.cc/fWKLcg3X/Copia-de-IMG-9919.avif",
-    "https://i.postimg.cc/3NHYhYXz/Copia-de-IMG-1227.jpg",
-    "https://i.postimg.cc/gkCrJbYL/Copia-de-IMG-5647.jpg",
-    "https://i.postimg.cc/52Gc1f1z/Chat-GPT-Image-12-de-mar-de-2026-12-31-34-(1).jpg",
-    "https://i.postimg.cc/2SJpmCmT/Copia-de-IMG-9690.jpg",
-    "https://i.postimg.cc/3x6M737F/IMG-0459.jpg",
-    "https://i.postimg.cc/NjKVdZTC/c8a258dc-090d-4c52-957f-529a2dc897ca.jpg",
-    "https://i.postimg.cc/tCc9D09Q/Copia-de-IMG-0779-(1).jpg",
-    "https://i.postimg.cc/fLvwvJRq/Copia-de-IMG-1017.jpg",
-    "https://i.postimg.cc/sXP20TwK/Copia-de-IMG-1504.jpg",
-    "https://i.postimg.cc/KzhzN6r5/Copia-de-IMG-1515.jpg",
-    "https://i.postimg.cc/hGT4fCWS/Copia-de-IMG-2336.jpg",
-    "https://i.postimg.cc/bvtr1yb8/Copia-de-IMG-2830.jpg",
-    "https://i.postimg.cc/1zqXDmFK/Copia-de-IMG-3048.jpg",
-    "https://i.postimg.cc/YSW0QrF3/Copia-de-IMG-3049.jpg",
-    "https://i.postimg.cc/mgqhczP5/Copia-de-IMG-3054.jpg",
-    "https://i.postimg.cc/4xMnK7YP/Copia-de-IMG-3117.jpg",
-    "https://i.postimg.cc/2SJ3qb1V/Copia-de-IMG-5622-(1).jpg",
-    "https://i.postimg.cc/QCxjYhBj/Copia-de-IMG-9585.jpg",
     "https://i.postimg.cc/fWKLcg3X/Copia-de-IMG-9919.avif"
 ];
 
@@ -145,6 +141,35 @@ export default function App() {
     return "Ainda estou aprendendo sobre esse detalhe. Posso te ajudar com documentos para análise ou informações das tabelas?";
   };
     const [searchTerm, setSearchTerm] = useState('');
+    const [revistasData, setRevistasData] = useState(revistasDataLocal);
+    const [supabaseLoading, setSupabaseLoading] = useState(true);
+
+    // Carrega empreendimentos do Supabase
+    useEffect(() => {
+        supabaseFetch('empreendimentos')
+            .then(data => {
+                if (data && data.length > 0) {
+                    const mapped = data.map(e => ({
+                        id: e.id,
+                        title: e.nome,
+                        brand: e.brand,
+                        region: e.regiao,
+                        size: e.tamanho,
+                        bedrooms: e.quartos,
+                        flooring: e.piso,
+                        cover: e.cover,
+                        link: e.link_revista,
+                        aliases: e.aliases || [],
+                        pois: e.pois || [],
+                        entrega: e.entrega,
+                        perfis_disponiveis: e.perfis_disponiveis || [],
+                    }));
+                    setRevistasData(mapped);
+                }
+            })
+            .catch(err => console.warn('Supabase offline, usando dados locais:', err))
+            .finally(() => setSupabaseLoading(false));
+    }, []);
     const [activeBrand, setActiveBrand] = useState('Direcional');
     const [fraseDoDia] = useState(frasesMotivacionais[dayIndex % frasesMotivacionais.length]);
     const [imagemDoDia] = useState(imagensEquipeDiarias[dayIndex % imagensEquipeDiarias.length]);
@@ -228,6 +253,9 @@ export default function App() {
     const [activeZone, setActiveZone] = useState(null);
     const [clientName, setClientName] = useState(() => localStorage.getItem('dst_client') || '');
     const [showPastaRapidaInfo, setShowPastaRapidaInfo] = useState(false);
+    const [showTaxasDocsModal, setShowTaxasDocsModal] = useState(false);
+    const TAXAS_BASE_URL = "https://docs.google.com/spreadsheets/d/1PKNdiepf9c6q2MDQjROS62JNpaW77sN1FbyHN4yDD5g/edit?usp=sharing&rm=minimal";
+    const [taxasIframeSrc, setTaxasIframeSrc] = useState(TAXAS_BASE_URL);
     const [showCotacaoModal, setShowCotacaoModal] = useState(false);
     const [showCotacaoGate, setShowCotacaoGate] = useState(false);
     const [showCotacaoSenha, setShowCotacaoSenha] = useState(false);
@@ -241,13 +269,10 @@ export default function App() {
     // Modal boas vindas — mostra no máximo 3x (total, entre sessões)
     const [showBemVindo, setShowBemVindo] = useState(() => {
         const views = parseInt(localStorage.getItem('dst_bv_count') || '0');
-        return views < 6;
+        return views < 3;
     });
-    const [bemVindoCountdown, setBemVindoCountdown] = useState(8);    const [cotacaoGateSenha, setCotacaoGateSenha] = useState("");
+    const [cotacaoGateSenha, setCotacaoGateSenha] = useState("");
     const [cotacaoGateErro, setCotacaoGateErro] = useState(false);
-    const [showTaxasDocsModal, setShowTaxasDocsModal] = useState(false);
-    const TAXAS_BASE_URL = "https://docs.google.com/spreadsheets/d/1PKNdiepf9c6q2MDQjROS62JNpaW77sN1FbyHN4yDD5g/edit?usp=sharing&rm=minimal";
-    const [taxasIframeSrc, setTaxasIframeSrc] = useState(TAXAS_BASE_URL);
     const cotacaoUnlockedAtRef = useRef(null);
     const [cotacaoData, setCotacaoData] = useState({ perfil: '', empreendimento: '', valorImovel: '', renda: '', financiamentoBanco: '', subsidio: '', fgts: '', atoCliente: '', parcelaFinanciamento: '', entrega: '', mesesCorrecao: '' });
     const [cotacaoFile, setCotacaoFile] = useState(null);
@@ -327,21 +352,6 @@ export default function App() {
         }, 1000);
         return () => clearInterval(interval);
     }, [showCotacaoInfo]);
-
-    // Countdown de 8s para o botão "Entendi" do modal Boas Vindas (apenas nas 3 primeiras vezes)
-    useEffect(() => {
-        if (!showBemVindo) { setBemVindoCountdown(8); return; }
-        const views = parseInt(localStorage.getItem('dst_bv_count') || '0');
-        if (views >= 3) return; // nas vezes 4-6 não tem countdown
-        setBemVindoCountdown(8);
-        const interval = setInterval(() => {
-            setBemVindoCountdown(prev => {
-                if (prev <= 1) { clearInterval(interval); return 0; }
-                return prev - 1;
-            });
-        }, 1000);
-        return () => clearInterval(interval);
-    }, [showBemVindo]);
 
     // ESTADO PARA AS FRASES AMIGÁVEIS DO ROBÔ E CONTROLE DE SCROLL
     const [robotPhraseIndex, setRobotPhraseIndex] = useState(0);
@@ -3198,64 +3208,12 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
                 </div>
             )}
 
-            {/* MODAL TAXAS DOCS */}
-            {showTaxasDocsModal && (
-                <div className="fixed inset-0 z-[70] flex flex-col"
-                    style={{ background: modoNoturno ? 'rgba(7,11,22,0.82)' : 'rgba(15,23,42,0.55)', backdropFilter: 'blur(20px) saturate(180%)', WebkitBackdropFilter: 'blur(20px) saturate(180%)' }}>
-                    <div className="cotacao-modal-open flex flex-col w-full"
-                        style={{ height: '100%', background: modoNoturno ? '#0B1120' : '#f8fafc' }}>
-
-                        {/* HEADER — azul cobre notch/status bar */}
-                        <div className="shrink-0 relative overflow-hidden"
-                            style={{
-                                background: 'linear-gradient(135deg, #0ea5e9 0%, #0284c7 40%, #0369a1 100%)',
-                                boxShadow: '0 4px 32px rgba(14,165,233,0.45)',
-                                paddingTop: 'env(safe-area-inset-top, 0px)',
-                            }}>
-                            <div className="absolute inset-0 pointer-events-none" style={{ background: 'radial-gradient(ellipse at top right, rgba(255,255,255,0.12) 0%, transparent 60%)' }}/>
-                            <div className="relative z-10 flex items-center gap-3 px-5 pt-4 pb-4">
-                                <button onClick={() => setShowTaxasDocsModal(false)}
-                                    className="w-9 h-9 rounded-2xl flex items-center justify-center transition-all active:scale-90 shrink-0"
-                                    style={{ background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(8px)' }}>
-                                    <ChevronLeft size={20} color="white" />
-                                </button>
-                                <div className="flex-1 min-w-0">
-                                    <h2 className="text-white font-black text-xl uppercase tracking-widest drop-shadow-md truncate">📄 Taxas Docs</h2>
-                                    <p className="text-sky-100 text-xs font-medium mt-0.5">Previsão de despesas de transmissão</p>
-                                </div>
-                                <a
-                                    href="https://drive.google.com/drive/u/1/folders/14mYfQkNaSc9APr6hpOTKKTFQ02oq3uOf"
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="shrink-0 flex items-center gap-2 px-4 py-2.5 rounded-2xl transition-all active:scale-90"
-                                    style={{ background: 'rgba(255,255,255,0.22)', backdropFilter: 'blur(8px)', boxShadow: '0 2px 12px rgba(0,0,0,0.15)' }}>
-                                    <FileText size={18} color="white" />
-                                    <span className="text-white text-xs font-black uppercase tracking-wide">Abrir Tabelas</span>
-                                </a>
-                            </div>
-                        </div>
-
-                        {/* IFRAME */}
-                        <div className="flex-1 overflow-hidden relative">
-                            <iframe
-                                src={taxasIframeSrc}
-                                className="w-full h-full border-0"
-                                title="Taxas de Transmissão de Imóvel"
-                                allow="autoplay"
-                            />
-                        </div>
-
-
-                    </div>
-                </div>
-            )}
-
             {/* MODAL BOAS VINDAS */}
             {showBemVindo && (
                 <div className="fixed inset-0 z-[90] flex items-end sm:items-center justify-center p-4 sm:p-6"
                     style={{ background: 'rgba(7,11,22,0.8)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)' }}>
-                    <div className={`w-full max-w-sm rounded-3xl overflow-hidden shadow-2xl flex flex-col ${modoNoturno ? 'bg-[#0f1829] border border-slate-700/60' : 'bg-white border border-slate-200'}`}
-                        style={{ animation: 'poi-modal-in 0.4s cubic-bezier(0.34,1.2,0.64,1) both', maxHeight: '90vh' }}>
+                    <div className={`w-full max-w-sm rounded-3xl overflow-hidden shadow-2xl ${modoNoturno ? 'bg-[#0f1829] border border-slate-700/60' : 'bg-white border border-slate-200'}`}
+                        style={{ animation: 'poi-modal-in 0.4s cubic-bezier(0.34,1.2,0.64,1) both' }}>
                         {/* Header gradiente */}
                         <div className="relative overflow-hidden px-6 pt-7 pb-5"
                             style={{ background: 'linear-gradient(135deg, #1e3a5f 0%, #1e2d4f 50%, #2d1b69 100%)' }}>
@@ -3267,7 +3225,7 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
                             </div>
                         </div>
                         {/* Novidades */}
-                        <div className="px-5 py-5 flex flex-col gap-3 overflow-y-auto flex-1">
+                        <div className="px-5 py-5 flex flex-col gap-3">
                             {/* Item 1 */}
                             <div className={`flex items-start gap-3 p-3.5 rounded-2xl ${modoNoturno ? 'bg-slate-800/70' : 'bg-slate-50'}`}>
                                 <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ background: 'linear-gradient(135deg,#0ea5e9,#0284c7)' }}>
@@ -3288,21 +3246,17 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
                                     <p className={`text-[11px] leading-relaxed mt-0.5 ${modoNoturno ? 'text-slate-400' : 'text-slate-500'}`}>Coloque os documentos em qualquer formato e a IA irá organizar para você na ordem correta para o CCA. </p>
                                 </div>
                             </div>
-
-                            {/* Item 4 — Taxas Docs */}
+                            {/* Item 3 */}
                             <div className={`flex items-start gap-3 p-3.5 rounded-2xl ${modoNoturno ? 'bg-slate-800/70' : 'bg-slate-50'}`}>
-                                <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ background: 'linear-gradient(135deg,#0ea5e9,#0369a1)' }}>
-                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+                                <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ background: 'linear-gradient(135deg,#10b981,#059669)' }}>
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
                                 </div>
                                 <div>
-                                    <div className="flex items-center gap-2">
-                                        <p className={`text-xs font-black uppercase tracking-wide ${modoNoturno ? 'text-white' : 'text-slate-800'}`}>Taxas Docs</p>
-                                        <span className="text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full text-white" style={{ background: 'linear-gradient(135deg,#0ea5e9,#0369a1)' }}>Novo</span>
-                                    </div>
-                                    <p className={`text-[11px] leading-relaxed mt-0.5 ${modoNoturno ? 'text-slate-400' : 'text-slate-500'}`}>Veja a parcela de documentações do seu cliente com o juros embutido.</p>
+                                    <p className={`text-xs font-black uppercase tracking-wide ${modoNoturno ? 'text-white' : 'text-slate-800'}`}>Chatbot Destemidos</p>
+                                    <p className={`text-[11px] leading-relaxed mt-0.5 ${modoNoturno ? 'text-slate-400' : 'text-slate-500'}`}>Tire dúvidas sobre os empreendimentos com nosso assistente de IA treinado para te ajudar a vender mais.</p>
                                 </div>
                             </div>
-                            {/* Item 5 — Em breve */}
+                            {/* Item 4 — Em breve */}
                             <div className={`flex items-start gap-3 p-3.5 rounded-2xl border-2 border-dashed ${modoNoturno ? 'bg-indigo-950/40 border-indigo-700/50' : 'bg-indigo-50/60 border-indigo-200'}`}>
                                 <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ background: 'linear-gradient(135deg,#6366f1,#7c3aed)' }}>
                                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
@@ -3318,33 +3272,12 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
                         </div>
                         {/* Botão fechar */}
                         <div className="px-5 pb-6">
-                            {(() => {
-                                const views = parseInt(localStorage.getItem('dst_bv_count') || '0');
-                                const hasCountdown = views < 3;
-                                const isLocked = hasCountdown && bemVindoCountdown > 0;
-                                const closeBemVindo = () => {
-                                    setShowBemVindo(false);
-                                    const v = parseInt(localStorage.getItem('dst_bv_count') || '0');
-                                    localStorage.setItem('dst_bv_count', String(v + 1));
-                                };
-                                return (
-                                    <>
-                                        {hasCountdown && bemVindoCountdown > 0 && (
-                                            <div className={`mb-3 rounded-2xl overflow-hidden h-1.5 ${modoNoturno ? 'bg-slate-700' : 'bg-slate-200'}`}>
-                                                <div className="h-full transition-all duration-1000"
-                                                    style={{ width: `${((8 - bemVindoCountdown) / 8) * 100}%`, background: 'linear-gradient(90deg, #6366f1, #7c3aed)' }} />
-                                            </div>
-                                        )}
-                                        <button
-                                            onClick={isLocked ? undefined : closeBemVindo}
-                                            disabled={isLocked}
-                                            className={`w-full py-4 rounded-2xl text-sm font-black uppercase tracking-widest transition-all active:scale-95 ${isLocked ? (modoNoturno ? 'bg-slate-800 text-slate-600 cursor-not-allowed' : 'bg-slate-100 text-slate-400 cursor-not-allowed') : 'text-white'}`}
-                                            style={isLocked ? {} : { background: 'linear-gradient(135deg,#6366f1 0%,#4f46e5 45%,#7c3aed 100%)', boxShadow: '0 4px 20px rgba(99,102,241,0.45)' }}>
-                                            {isLocked ? `leia antes de continuar — ${bemVindoCountdown}s` : 'Entendido, vamos vender! 🔥'}
-                                        </button>
-                                    </>
-                                );
-                            })()}
+                            <button
+                                onClick={() => { setShowBemVindo(false); const v = parseInt(localStorage.getItem('dst_bv_count') || '0'); localStorage.setItem('dst_bv_count', String(v + 1)); }}
+                                className="w-full py-4 rounded-2xl text-sm font-black uppercase tracking-widest text-white active:scale-95 transition-all"
+                                style={{ background: 'linear-gradient(135deg,#6366f1 0%,#4f46e5 45%,#7c3aed 100%)', boxShadow: '0 4px 20px rgba(99,102,241,0.45)' }}>
+                                Entendido, vamos vender! 🔥
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -3872,7 +3805,7 @@ Responda SOMENTE com JSON puro (sem markdown, sem texto antes ou depois):
                                     { bg: 'linear-gradient(135deg, #0ea5e9 0%, #0284c7 40%, #0369a1 100%)', shadow: '0 8px 28px rgba(14,165,233,0.30)' },
                                     { bg: 'linear-gradient(135deg, #10b981 0%, #059669 40%, #047857 100%)', shadow: '0 8px 28px rgba(16,185,129,0.30)' },
                                 ];
-                                const planos = cotacaoResult.slice(0, 2); // 2 cards: + Anuais e Ato à Vista
+                                const planos = cotacaoResult.slice(0, 1); // 1 card: Ato à Vista
                                 const meta   = cotacaoResult[2] || {};
                                 const todosReprovados = planos.every(pl => !pl.aprovado);
                                 return (
@@ -4019,7 +3952,7 @@ Responda SOMENTE com JSON puro (sem markdown, sem texto antes ou depois):
                                                                 </div>
                                                             </div>
 
-                                                            <p className={`text-[9px] ${modoNoturno?'text-slate-600':'text-slate-400'}`}>📌 Fator comercial 1.47146 × 84 parcelas{plano.fatorLabel ? ` · ${plano.fatorLabel}` : ''}</p>
+                                                            <p className={`text-[9px] ${modoNoturno?'text-slate-600':'text-slate-400'}`}>📌 Fator comercial {plano.fatorComercial ? plano.fatorComercial : '1.47146'} × 84 parcelas{plano.fatorLabel ? ` · ${plano.fatorLabel}` : ''}</p>
                                                             {plano.rebalance && (
                                                                 <div className={`mt-2 p-2 rounded-lg text-[10px] font-semibold ${modoNoturno?'bg-amber-900/30 text-amber-300':'bg-amber-50 text-amber-700'}`}>
                                                                     ⚖️ {plano.rebalance}
@@ -4057,6 +3990,12 @@ Responda SOMENTE com JSON puro (sem markdown, sem texto antes ou depois):
                                     haptic('medium');
                                     setCotacaoResult(null);
                                     try {
+                                        // ══════════════════════════════════════════════
+                                        // PARÂMETROS POR PERFIL
+                                        // psLimite     = % do imóvel que a Direcional parcela (R1)
+                                        // condicao     = % da renda para parcela PS + financiamento (R2)
+                                        // comprometimento = % da renda só para parcela PS (R3)
+                                        // ══════════════════════════════════════════════
                                         const PARAMS = {
                                             diamante: { psLimite: 0.25, condicao: 0.50, comprometimento: 0.20 },
                                             ouro:     { psLimite: 0.20, condicao: 0.50, comprometimento: 0.20 },
@@ -4065,79 +4004,74 @@ Responda SOMENTE com JSON puro (sem markdown, sem texto antes ou depois):
                                             aco:      { psLimite: 0.12, condicao: 0.40, comprometimento: 0.10 },
                                         };
 
-                                        // Mapa de empreendimentos: chave (substring) → { fator, entrega: 'MM/AAAA' }
-                                        // Anuais = quantos dezembros há entre hoje e a entrega (exclusive)
-                                        const EMPREEND_MAP = {
-                                            'topazio':        { fator: 1.85,   entrega: '04/2026' },
-                                            'jardim botanico':{ fator: 1.72,   entrega: '11/2026' },
-                                            'jardim botânico':{ fator: 1.72,   entrega: '11/2026' },
-                                            'village':        { fator: 1.6033, entrega: '04/2027' },
-                                            'orquidea':       { fator: 1.6033, entrega: '04/2027' },
-                                            'orquídea':       { fator: 1.6033, entrega: '04/2027' },
-                                            'jardim norte':   { fator: 1.58,   entrega: '06/2027' },
-                                            'tapajos':        { fator: 1.56,   entrega: '08/2027' },
-                                            'tapajós':        { fator: 1.56,   entrega: '08/2027' },
-                                            'coral':          { fator: 1.50,   entrega: '03/2028' },
-                                            'marinas':        { fator: 1.50,   entrega: '03/2028' },
-                                            'bosque':         { fator: 1.4579, entrega: '06/2028' },
-                                            'brisas':         { fator: 1.44,   entrega: '08/2028' },
-                                            'lirio':          { fator: 1.41,   entrega: '11/2028' },
-                                            'lírio':          { fator: 1.41,   entrega: '11/2028' },
-                                            'rio negro':      { fator: 1.25,   entrega: '12/2030' },
+                                        // Mapa de empreendimentos → data de entrega (gerado do Supabase via revistasData)
+                                        const EMPREEND_MAP = {};
+                                        revistasData.forEach(e => {
+                                            if (e.entrega) {
+                                                (e.aliases || []).forEach(alias => {
+                                                    EMPREEND_MAP[alias.toLowerCase()] = { entrega: e.entrega };
+                                                });
+                                                EMPREEND_MAP[e.title.toLowerCase()] = { entrega: e.entrega };
+                                            }
+                                        });
+
+                                        // ── Utilitários ──
+                                        const toNum = (s) => s ? parseFloat(s.replace(/[R$\s.]/g, '').replace(',', '.')) || 0 : 0;
+                                        const brl   = (v) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+                                        const pct   = (v) => `${(v * 100).toFixed(0)}%`;
+
+                                        // ── Fator dinâmico por data de entrega ──
+                                        // fator = 1.20 + 0.72 × e^(−0.026 × meses)
+                                        const calcFatorDinamico = (dataEntregaStr) => {
+                                            const match = dataEntregaStr && dataEntregaStr.match(/(\d{1,2})[\/\-](\d{4})/);
+                                            if (!match) return 1.471466;
+                                            const hoje = new Date();
+                                            const mesAtual  = hoje.getFullYear() * 12 + hoje.getMonth();
+                                            const mesEntrega = parseInt(match[2]) * 12 + (parseInt(match[1]) - 1);
+                                            const meses = Math.max(0, mesEntrega - mesAtual);
+                                            return 1.20 + 0.72 * Math.exp(-0.026 * meses);
                                         };
 
-                                        // Calcula quantos dezembros futuros há antes de uma data de entrega (MM/AAAA ou texto)
+                                        // ── Conta dezembros futuros antes da entrega (anuais) ──
                                         const contarAnuais = (dataStr) => {
                                             if (!dataStr) return 0;
-                                            // Tenta extrair MM/AAAA ou AAAA
                                             const matchMY = dataStr.match(/(\d{1,2})[\/\-](\d{4})/);
                                             const matchY  = dataStr.match(/\b(20\d{2})\b/);
                                             let mesEntrega, anoEntrega;
                                             if (matchMY) { mesEntrega = parseInt(matchMY[1]); anoEntrega = parseInt(matchMY[2]); }
                                             else if (matchY) { mesEntrega = 12; anoEntrega = parseInt(matchY[1]); }
                                             else return 0;
-                                            const hoje = new Date();
+                                            const hoje    = new Date();
                                             const anoHoje = hoje.getFullYear();
-                                            const mesHoje = hoje.getMonth() + 1; // 1-12
+                                            const mesHoje = hoje.getMonth() + 1;
                                             let count = 0;
-                                            // Conta dezembros de (anoHoje) até (anoEntrega), exclusive o mês de entrega
                                             for (let ano = anoHoje; ano <= anoEntrega; ano++) {
-                                                // Dezembro desse ano
-                                                const dezMes = 12, dezAno = ano;
-                                                // Já passou? (dezembro já foi esse ano)
-                                                if (dezAno < anoHoje || (dezAno === anoHoje && dezMes <= mesHoje)) continue;
-                                                // Depois da entrega?
-                                                if (dezAno > anoEntrega || (dezAno === anoEntrega && dezMes >= mesEntrega)) continue;
+                                                if (ano < anoHoje || (ano === anoHoje && 12 <= mesHoje)) continue;
+                                                if (ano > anoEntrega || (ano === anoEntrega && 12 >= mesEntrega)) continue;
                                                 count++;
                                             }
                                             return count;
                                         };
 
-                                        const toNum = (s) => s ? parseFloat(s.replace(/[R$\s.]/g, '').replace(',', '.')) || 0 : 0;
-                                        const brl = (v) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-                                        const pct = (v) => `${(v * 100).toFixed(0)}%`;
-
-                                        const perfil        = perfilSelecionado;
-                                        const p             = PARAMS[perfil];
-                                        const valorImovel   = toNum(cotacaoData.valorImovel);
-                                        const renda         = toNum(cotacaoData.renda);
-                                        const financBanco   = toNum(cotacaoData.financiamentoBanco);
-                                        const subsidio      = toNum(cotacaoData.subsidio);
-                                        const fgts          = toNum(cotacaoData.fgts);
-                                        // parcelaFinanc: valor digitado (aprovado pela Caixa) ou estimativa de 30% da renda
-                                        const parcelaFinancDigitada = toNum(cotacaoData.parcelaFinanciamento);
-                                        // Nos cálculos dos planos usa-se sempre o valor digitado (ou zero se não informado)
-                                        const parcelaFinanc = parcelaFinancDigitada;
-                                        const atoCliente    = toNum(cotacaoData.atoCliente) || 1000;
-                                        const empreendNome  = (cotacaoData.empreendimento || '').toLowerCase();
+                                        // ── Leitura dos campos ──
+                                        const perfil      = perfilSelecionado;
+                                        const p           = PARAMS[perfil];
+                                        const valorImovel = toNum(cotacaoData.valorImovel);
+                                        const renda       = toNum(cotacaoData.renda);
+                                        const financBanco = toNum(cotacaoData.financiamentoBanco);
+                                        const subsidio    = toNum(cotacaoData.subsidio);
+                                        const fgts        = toNum(cotacaoData.fgts);
+                                        const parcelaFinanc         = toNum(cotacaoData.parcelaFinanciamento);
+                                        const parcelaFinancDigitada = parcelaFinanc;
+                                        const atoCliente  = toNum(cotacaoData.atoCliente) || 1000;
+                                        const empreendNome = (cotacaoData.empreendimento || '').toLowerCase();
 
                                         if (!perfil || !p)  { setCotacaoResult('⚠️ Selecione o perfil do cliente.'); throw new Error('sem perfil'); }
                                         if (!valorImovel)   { setCotacaoResult('⚠️ Informe o valor do imóvel.'); throw new Error('sem valor'); }
                                         if (!renda)         { setCotacaoResult('⚠️ Informe a renda do cliente.'); throw new Error('sem renda'); }
 
-                                        // Detecta empreendimento pelo nome (fator fixo removido — usa Price dinâmico)
-                                        let fatorLabel = null;
-                                        let entregaDetectada = null;
+                                        // ── Detecta empreendimento e data de entrega ──
+                                        let fatorLabel = null, entregaDetectada = null;
                                         for (const [chave, dados] of Object.entries(EMPREEND_MAP)) {
                                             if (empreendNome.includes(chave)) {
                                                 fatorLabel = cotacaoData.empreendimento;
@@ -4145,132 +4079,86 @@ Responda SOMENTE com JSON puro (sem markdown, sem texto antes ou depois):
                                                 break;
                                             }
                                         }
-
-                                        // Anuais: usa data do campo entrega se preenchida, senão usa do mapa
                                         const dataEntregaFinal = cotacaoData.entrega || entregaDetectada || '';
-                                        const nAnuais = contarAnuais(dataEntregaFinal);
+                                        const nAnuais   = contarAnuais(dataEntregaFinal);
+                                        const valorAnual = renda * 0.5; // cada anual = 50% da renda
 
-                                        const valorAnual = renda * 0.5; // cada anual = 50% da renda do cliente
-                                        const PARCELA_MIN = 300;
-
-                                        // ══════════════════════════════════════════════════════════
-                                        // FATOR COMERCIAL DINÂMICO (descoberto por engenharia reversa)
-                                        // Fórmula: Parcela = Saldo PS × FATOR(meses) ÷ 84
-                                        // Dois fatores validados contra o sistema oficial:
-                                        //   Sem sinais (m=1): FATOR_BASE=1.471466 → parcela = PS × 1.471466 / 84
-                                        //   Com sinais (m=1+N): FATOR_BASE=1.4582, incr=1.01106 → parcela = PS × 1.4582 × 1.01106^N / 84
-                                        // ══════════════════════════════════════════════════════════
-                                        const FATOR_BASE_SEM_SINAIS = 1.471466;
-                                        const FATOR_BASE_COM_SINAIS = 1.4582;
+                                        // ── Fator comercial ──
+                                        const FATOR_BASE_SEM_SINAIS = calcFatorDinamico(dataEntregaFinal);
+                                        const FATOR_BASE_COM_SINAIS = FATOR_BASE_SEM_SINAIS * (1.4582 / 1.471466);
                                         const FATOR_INCR  = 1.01106;
                                         const PARCELAS_PS = 84;
-                                        const calcFator   = (sinais) => sinais === 0
+                                        const calcFator = (sinais) => sinais === 0
                                             ? FATOR_BASE_SEM_SINAIS
                                             : FATOR_BASE_COM_SINAIS * Math.pow(FATOR_INCR, sinais);
 
-                                        const calcPlano = ({ anuaisUsados = 0, atoExtra = 0, label = '', cor = 0, atoDisplay = null, atoNecessario = null }) => {
-                                            // ══════════════════════════════════════════════════════════
-                                            // CÁLCULO CORRETO — TOP-DOWN (igual ao sistema oficial)
-                                            // NUNCA subtrair o teto do PS da Entrada Bruta
-                                            // Sinais = Ato parcelado em 3x (cliente não tem o ato cheio)
-                                            // ══════════════════════════════════════════════════════════
+                                        // ══════════════════════════════════════════════
+                                        // FUNÇÃO PRINCIPAL DE CÁLCULO DE UM PLANO
+                                        // Recebe: ato necessário, PS a parcelar, anuais usados
+                                        // Devolve: objeto completo com todos os valores e regras
+                                        // ══════════════════════════════════════════════
+                                        const calcPlano = ({ atoNecessario, psParcelado, anuaisUsados = 0, label = '', cor = 0 }) => {
 
-                                            // PASSO 1: Dívida real
+                                            // ENTRADA BRUTA = imóvel - banco - subsídio - fgts
                                             const entradaBruta = Math.max(0, valorImovel - financBanco - subsidio - fgts);
 
-                                            // PASSO 2: Ato efetivo (o que o cliente realmente vai pagar como entrada total)
-                                            // atoNecessario = ato cheio necessário (ex: R$ 10.000)
-                                            // atoCliente    = o que o cliente tem no dia (ex: R$ 1.000)
-                                            // Se atoNecessario > atoCliente → diferença vai para sinais (3x)
-                                            const atoEfetivo = atoDisplay !== null ? atoDisplay
-                                                             : atoNecessario !== null ? atoNecessario
-                                                             : Math.max(0, atoCliente + atoExtra);
-
-                                            // Sinais = ato parcelado: diferença entre o ato necessário e o que o cliente tem
-                                            const diferencaAto = Math.max(0, atoEfetivo - atoCliente);
-                                            const sinaisQtd    = diferencaAto > 0.01 ? 3 : 0;
-                                            const sinaisValor  = sinaisQtd > 0 ? diferencaAto / 3 : 0;
-
-                                            // PASSO 3: Saldo PS = Entrada Bruta - Ato EFETIVO
-                                            const saldoPSbruto = Math.max(0, entradaBruta - atoEfetivo);
-
-                                            // Carência: meses = 1 (ato) + sinaisQtd
-                                            const mesesCarenciaR1 = 1 + sinaisQtd;
-                                            const TAXA_CARENCIA   = 0.005; // 0.5% ao mês
-                                            const psComCarencia   = saldoPSbruto * Math.pow(1 + TAXA_CARENCIA, mesesCarenciaR1);
-
-                                            // R1: PS com carência não pode ultrapassar psLimite% do imóvel
+                                            // R1: PS fixo no teto do perfil — sempre esse valor na composição
                                             const psTetoR1 = p.psLimite * valorImovel;
-                                            const r1ok     = psComCarencia <= psTetoR1 + 0.01;
 
-                                            // Lógica do fator e PS base (validada contra o site oficial):
-                                            // Se PS com carência >= teto → o site desconta a carência do teto
-                                            //   PS_base = teto / (1.005)^meses → fator = 1.471466 (FATOR_BASE_SEM_SINAIS)
-                                            // Se PS com carência < teto → PS livre
-                                            //   PS_base = PS_bruto → fator = 1.4582 × 1.01106^sinaisQtd
-                                            let saldoPSbase, fatorPS;
-                                            if (sinaisQtd === 0) {
-                                                // Sem sinais: PS bruto direto, fator base sem sinais
-                                                saldoPSbase = Math.min(saldoPSbruto, psTetoR1);
-                                                fatorPS = FATOR_BASE_SEM_SINAIS;
-                                            } else if (psComCarencia >= psTetoR1 - 0.02) {
-                                                // Com sinais, PS toca o teto: desconta a carência do teto
-                                                saldoPSbase = psTetoR1 / Math.pow(1 + TAXA_CARENCIA, mesesCarenciaR1);
-                                                fatorPS = FATOR_BASE_SEM_SINAIS;
-                                            } else {
-                                                // Com sinais, PS abaixo do teto: PS bruto com fator cheio
-                                                saldoPSbase = saldoPSbruto;
-                                                fatorPS = calcFator(sinaisQtd);
-                                            }
+                                            // ATO: o que o cliente paga na assinatura
+                                            const ato = atoCliente;
 
-                                            // PASSO 4: Abate anuais do saldo PS
+                                            // SINAIS: se o ato necessário > o que o cliente tem → parcela em 3x
+                                            const diferencaAto = Math.max(0, atoNecessario - atoCliente);
+                                            const sinaisQtd   = diferencaAto > 0.01 ? 3 : 0;
+                                            const sinaisValor = sinaisQtd > 0 ? diferencaAto / 3 : 0;
+
+                                            // PS PARCELADO: o que gera a parcela mensal (pode ser menor que psTetoR1 se renda não comporta)
+                                            const psBase = psParcelado !== undefined ? psParcelado : psTetoR1;
+
+                                            // ANUAIS: abate do PS parcelado
                                             const abateAnual = anuaisUsados * valorAnual;
-                                            const saldoPSliq  = Math.max(0, saldoPSbase - abateAnual);
+                                            const psLiq = Math.max(0, psBase - abateAnual);
 
-                                            // PASSO 5: Parcela = Saldo PS × fator ÷ 84
-                                            const parcelaPS = (saldoPSliq * fatorPS) / PARCELAS_PS;
+                                            // FATOR: com ou sem sinais
+                                            const fatorPS = calcFator(sinaisQtd);
 
-                                            // R2: Financ + PS ≤ condicao% × renda
-                                            const r2ok = (parcelaFinanc + parcelaPS) <= p.condicao * renda + 0.01;
+                                            // PARCELA MENSAL = PS líquido × fator ÷ 84
+                                            const parcelaPS = (psLiq * fatorPS) / PARCELAS_PS;
 
-                                            // R3: parcelaPS ≤ comprometimento% × renda
-                                            const r3ok = parcelaPS <= p.comprometimento * renda + 0.01;
-
+                                            // VALIDAÇÕES
+                                            // R1: sempre aprovado — é informativo
+                                            const r1ok = true;
+                                            // R2: parcela PS + financiamento ≤ condicao% da renda
+                                            const r2ok = (parcelaFinanc + parcelaPS) <= p.condicao * renda;
+                                            // R3: parcela PS ≤ comprometimento% da renda
+                                            const r3ok = parcelaPS <= p.comprometimento * renda;
                                             const aprovado = r1ok && r2ok && r3ok;
 
-                                            // Aviso de reprovação
+                                            // Mensagem de reprovação
                                             let rebalance = null;
-                                            if (!r1ok) {
-                                                rebalance = `❌ Reprovado por R1: PS com carência (${brl(psComCarencia)}) ultrapassa o teto de ${(p.psLimite*100).toFixed(0)}% do imóvel (máx ${brl(psTetoR1)}).`;
-                                            } else if (!r2ok) {
-                                                rebalance = `❌ Reprovado por R2: Financiamento + PS (${brl(parcelaFinanc + parcelaPS)}/mês) ultrapassa ${(p.condicao*100).toFixed(0)}% da renda (máx ${brl(p.condicao * renda)}/mês).`;
-                                            } else if (!r3ok) {
-                                                rebalance = `❌ Reprovado por R3: Parcela PS (${brl(parcelaPS)}/mês) ultrapassa ${(p.comprometimento*100).toFixed(0)}% da renda (máx ${brl(p.comprometimento * renda)}/mês).`;
-                                            }
+                                            if (!r2ok) rebalance = `❌ Reprovado por R2: Financiamento + PS (${brl(parcelaFinanc + parcelaPS)}/mês) ultrapassa ${(p.condicao*100).toFixed(0)}% da renda (máx ${brl(p.condicao * renda)}/mês).`;
+                                            else if (!r3ok) rebalance = `❌ Reprovado por R3: Parcela PS (${brl(parcelaPS)}/mês) ultrapassa ${(p.comprometimento*100).toFixed(0)}% da renda (máx ${brl(p.comprometimento * renda)}/mês).`;
 
                                             // % para exibição
+                                            const pctR1atual = p.psLimite * 100;
                                             const pctR2atual = renda > 0 ? ((parcelaFinanc + parcelaPS) / renda) * 100 : 0;
                                             const pctR3atual = renda > 0 ? (parcelaPS / renda) * 100 : 0;
-                                            const pctR1atual = valorImovel > 0 ? (psComCarencia / valorImovel) * 100 : 0;
 
                                             return {
-                                                aprovado,
-                                                label, cor,
+                                                aprovado, label, cor,
                                                 valorImovel:    brl(valorImovel),
                                                 financBanco:    financBanco ? brl(financBanco) : null,
                                                 subsidio:       subsidio    ? brl(subsidio)    : null,
                                                 fgts:           fgts        ? brl(fgts)        : null,
                                                 entradaBruta:   brl(entradaBruta),
                                                 benePS:         brl(psTetoR1),
-                                                benePSTeto:     brl(psTetoR1),
-                                                // atoSinaisTotal = ato na assinatura + total dos sinais (= atoEfetivo completo)
-                                                atoSinaisTotal: brl(atoEfetivo),
-                                                ato:            brl(atoCliente), // o que o cliente paga na assinatura
-                                                excessoAto:     null,
-                                                // Sinais = ato parcelado em 3x (só aparece se cliente não tem o ato cheio)
-                                                sinais: sinaisQtd > 0 ? { qtd: sinaisQtd, valor: brl(sinaisValor) } : null,
+                                                atoSinaisTotal: brl(Math.max(0, entradaBruta - psTetoR1)),
+                                                ato:            brl(ato),
+                                                sinais:         sinaisQtd > 0 ? { qtd: sinaisQtd, valor: brl(sinaisValor) } : null,
                                                 parcelaPS:      `${brl(parcelaPS)}/mês`,
                                                 anuais:         anuaisUsados > 0 ? `${brl(valorAnual)} × ${anuaisUsados}` : null,
+                                                excessoAto:     null,
                                                 rebalance,
                                                 regras: [
                                                     {
@@ -4278,8 +4166,8 @@ Responda SOMENTE com JSON puro (sem markdown, sem texto antes ou depois):
                                                         rotulo: 'R1 Percentual pró soluto',
                                                         pctAtual: pctR1atual.toFixed(1) + '%',
                                                         pctLimite: pct(p.psLimite),
-                                                        detalhe: `PS c/ carência ${brl(psComCarencia)} · teto máximo ${brl(psTetoR1)} — não pode ultrapassar`,
-                                                        descricao: `R1 verifica se o PS com carência (${brl(psComCarencia)}) não ultrapassa ${pct(p.psLimite)} do imóvel = ${brl(psTetoR1)}. O PS base é ${brl(saldoPSbruto)}, acrescido de juros de 0,5%/mês × ${mesesCarenciaR1} meses.`,
+                                                        detalhe: `Teto Direcional: ${(p.psLimite*100).toFixed(0)}% do imóvel = ${brl(psTetoR1)}`,
+                                                        descricao: `R1 é o valor que a Direcional parcela em 84x. Sempre ${(p.psLimite*100).toFixed(0)}% do imóvel = ${brl(psTetoR1)}.`,
                                                     },
                                                     {
                                                         ok: r2ok,
@@ -4287,7 +4175,7 @@ Responda SOMENTE com JSON puro (sem markdown, sem texto antes ou depois):
                                                         pctAtual: pctR2atual.toFixed(1) + '%',
                                                         pctLimite: pct(p.condicao),
                                                         detalhe: `${brl(parcelaFinanc + parcelaPS)}/mês · máx ${brl(p.condicao * renda)}`,
-                                                        descricao: `R2 controla o comprometimento total da renda com moradia. A soma da parcela do financiamento bancário (${brl(parcelaFinanc)}/mês) mais a parcela do PS (${brl(parcelaPS)}/mês) não pode ultrapassar ${pct(p.condicao)} da renda bruta do cliente. Limite: ${brl(p.condicao * renda)}/mês.`,
+                                                        descricao: `R2: parcela PS (${brl(parcelaPS)}/mês) + financiamento (${brl(parcelaFinanc)}/mês) não pode ultrapassar ${pct(p.condicao)} da renda = ${brl(p.condicao * renda)}/mês.`,
                                                     },
                                                     {
                                                         ok: r3ok,
@@ -4295,113 +4183,118 @@ Responda SOMENTE com JSON puro (sem markdown, sem texto antes ou depois):
                                                         pctAtual: pctR3atual.toFixed(1) + '%',
                                                         pctLimite: pct(p.comprometimento),
                                                         detalhe: `${brl(parcelaPS)}/mês · máx ${brl(p.comprometimento * renda)}`,
-                                                        descricao: `R3 controla o comprometimento específico com o PS parcelado. A parcela mensal do PS sozinha não pode ultrapassar ${pct(p.comprometimento)} da renda bruta. Limite: ${brl(p.comprometimento * renda)}/mês.`,
+                                                        descricao: `R3: parcela PS sozinha (${brl(parcelaPS)}/mês) não pode ultrapassar ${pct(p.comprometimento)} da renda = ${brl(p.comprometimento * renda)}/mês.`,
                                                     },
                                                 ],
                                                 coefEfetivo: `÷ 84 parcelas`,
                                                 fatorLabel,
+                                                fatorComercial: fatorPS.toFixed(4),
                                             };
                                         };
 
-                                        // ══════════════════════════════════════════════════════════
-                                        // MOTOR DE BUSCA DE APROVAÇÃO — LÓGICA TOP-DOWN CORRETA
-                                        // Saldo PS = Entrada Bruta - Ato (nunca subtrai teto PS)
-                                        // ══════════════════════════════════════════════════════════
-                                        const buscarAprovacao = ({ label = '', cor = 0 }) => {
-                                            const entradaBruta  = Math.max(0, valorImovel - financBanco - subsidio - fgts);
-                                            const saldoPSbruto  = Math.max(0, entradaBruta - atoCliente);
-                                            // R1: saldo PS nunca ultrapassa o teto do perfil
-                                            const psTetoR1busca = p.psLimite * valorImovel;
-                                            const saldoPSbase   = Math.min(saldoPSbruto, psTetoR1busca);
-                                            const maxAnuaisDisp = nAnuais;
+                                        // ══════════════════════════════════════════════
+                                        // PLANO 1 — "Ato Informado"
+                                        // Usa o ato que o cliente tem e escala anuais se precisar
+                                        // ══════════════════════════════════════════════
+                                        const calcPlano1 = () => {
+                                            const entradaBruta = Math.max(0, valorImovel - financBanco - subsidio - fgts);
+                                            const psTetoR1     = p.psLimite * valorImovel;
 
-                                            // Limites REAIS de renda
-                                            const maxParcelaR3 = p.comprometimento * renda;
-                                            const maxParcelaR2 = Math.max(0, p.condicao * renda - parcelaFinanc);
-                                            const maxParcela   = Math.min(maxParcelaR3, maxParcelaR2);
+                                            // Ato informado pelo cliente
+                                            const atoNecessario = atoCliente;
 
-                                            // Card 1: usa fator base sem sinais para estimar se aprova
-                                            const fatorCard1 = FATOR_BASE_SEM_SINAIS;
+                                            // PS parcelado começa no teto R1
+                                            // Se R2/R3 reprovarem, escala anuais para reduzir parcela
+                                            let psParcelado = psTetoR1;
+                                            let anuaisUsados = 0;
 
-                                            // CAMINHO FELIZ: sem anuais, parcela já cabe na renda
-                                            const parcelaSemAnuais = (saldoPSbase * fatorCard1) / PARCELAS_PS;
-                                            if (parcelaSemAnuais <= maxParcela + 0.01) {
-                                                return calcPlano({ anuaisUsados: 0, label, cor });
-                                            }
+                                            const limiteR3 = p.comprometimento * renda;
+                                            const limiteR2 = Math.max(0, p.condicao * renda - parcelaFinanc);
+                                            const limiteParcela = Math.min(limiteR3, limiteR2);
 
-                                            // Parcela alta: escala anuais até aprovar
-                                            for (let a = 1; a <= maxAnuaisDisp; a++) {
-                                                const saldoComAnuais   = Math.max(0, saldoPSbase - a * valorAnual);
-                                                const parcelaComAnuais = (saldoComAnuais * fatorCard1) / PARCELAS_PS;
-                                                if (parcelaComAnuais <= maxParcela + 0.01) {
-                                                    return calcPlano({ anuaisUsados: a, label, cor });
+                                            // Verifica se aprova sem anuais
+                                            const sinaisQtd = (atoNecessario - atoCliente) > 0.01 ? 3 : 0;
+                                            let parcela = (psParcelado * calcFator(sinaisQtd)) / PARCELAS_PS;
+
+                                            if (parcela > limiteParcela) {
+                                                // Escala anuais até aprovar
+                                                for (let a = 1; a <= nAnuais; a++) {
+                                                    const psComAnual = Math.max(0, psTetoR1 - a * valorAnual);
+                                                    parcela = (psComAnual * calcFator(sinaisQtd)) / PARCELAS_PS;
+                                                    if (parcela <= limiteParcela) {
+                                                        anuaisUsados = a;
+                                                        psParcelado = psComAnual;
+                                                        break;
+                                                    }
+                                                    anuaisUsados = a;
+                                                    psParcelado = psComAnual;
                                                 }
                                             }
 
-                                            // Anuais não bastam: retorna reprovado com o melhor resultado possível
-                                            // NÃO marca como aprovado — deixa as regras R2/R3 reprovarem corretamente
-                                            return calcPlano({ anuaisUsados: maxAnuaisDisp, label, cor });
+                                            return calcPlano({
+                                                atoNecessario,
+                                                psParcelado,
+                                                anuaisUsados,
+                                                label: 'Ato Informado',
+                                                cor: 1,
+                                            });
                                         };
+                                        const plano1 = calcPlano1();
 
-                                        // Card 1: Plano com ato informado pelo corretor
-                                        const plano1 = buscarAprovacao({
-                                            label: nAnuais > 0 ? '+ Anuais' : 'Ato Informado',
-                                            cor: 1,
-                                        });
+                                        // ══════════════════════════════════════════════
+                                        // PLANO 2 — "Ato à Vista"
+                                        // Calcula o ato necessário para R2 e R3 aprovarem
+                                        // Se renda não comporta o PS cheio → excesso vai para ato/sinais
+                                        // ══════════════════════════════════════════════
+                                        const calcPlano2 = () => {
+                                            const entradaBruta = Math.max(0, valorImovel - financBanco - subsidio - fgts);
+                                            const psTetoR1     = p.psLimite * valorImovel;
 
-                                        // Card 2: "Ato à Vista" — ato mínimo necessário para aprovar sem anuais
-                                        // Se o cliente não tiver o ato cheio → mostra sinais (ato parcelado em 3x)
-                                        const calcAtoVista = () => {
-                                            const entradaBrutaV = Math.max(0, valorImovel - financBanco - subsidio - fgts);
-                                            const maxParR3   = p.comprometimento * renda;
-                                            const maxParR2   = Math.max(0, p.condicao * renda - parcelaFinanc);
-                                            const maxParcela = Math.min(maxParR3, maxParR2);
-                                            // R1: teto do PS para este perfil
-                                            const psTetoR1vista = p.psLimite * valorImovel;
-                                            // Card 2 (Ato à Vista): sem sinais = fator 1 mês; com sinais = fator 4 meses
-                                            // Calculamos primeiro sem sinais para achar o ato necessário
-                                            const TAXA_CAR = 0.005;
-                                            // Sem sinais (m=1): PS_max = teto/(1.005)^1, fator=1.471466
-                                            const psMaxSemS  = psTetoR1vista / Math.pow(1 + TAXA_CAR, 1);
-                                            const saldoPSmaxSemS = Math.min((maxParcela * PARCELAS_PS) / FATOR_BASE_SEM_SINAIS, psMaxSemS);
-                                            const atoNecSemS = entradaBrutaV - saldoPSmaxSemS;
-                                            if (atoNecSemS <= atoCliente + 0.01) {
-                                                return calcPlano({ anuaisUsados: 0, label: 'Ato à Vista', cor: 2, atoNecessario: Math.max(atoCliente, atoNecSemS) });
+                                            // Limite de parcela mensal pela renda
+                                            const limiteR3 = p.comprometimento * renda;
+                                            const limiteR2 = Math.max(0, p.condicao * renda - parcelaFinanc);
+                                            const limiteParcela = Math.min(limiteR3, limiteR2);
+
+                                            // PS que a renda suporta = limite × 84 ÷ fator
+                                            // Usa fator com sinais (conservador) pois provavelmente haverá sinais
+                                            const fatorComS  = calcFator(3);
+                                            const fatorSemS  = calcFator(0);
+
+                                            // Testa sem sinais primeiro
+                                            let psParcelado = Math.floor((limiteParcela * PARCELAS_PS) / fatorSemS * 100) / 100;
+                                            psParcelado = Math.min(psParcelado, psTetoR1);
+
+                                            // Ato necessário = entrada bruta - PS parcelado
+                                            let atoNecessario = Math.max(atoCliente, entradaBruta - psParcelado);
+
+                                            // Se vai ter sinais, recalcula com fator conservador
+                                            if (atoNecessario > atoCliente + 0.01) {
+                                                psParcelado = Math.floor((limiteParcela * PARCELAS_PS) / fatorComS * 100) / 100;
+                                                psParcelado = Math.min(psParcelado, psTetoR1);
+                                                atoNecessario = Math.max(atoCliente, entradaBruta - psParcelado);
                                             }
-                                            // Com sinais (m=4): calcular ato necessário
-                                            // Primeiro tentar com PS no teto (fator=1.471466, PS=teto/(1.005)^4)
-                                            const psMaxComS_teto = psTetoR1vista / Math.pow(1 + TAXA_CAR, 4);
-                                            const parcelaComTeto = psMaxComS_teto * FATOR_BASE_SEM_SINAIS / PARCELAS_PS;
-                                            if (parcelaComTeto <= maxParcela + 0.01) {
-                                                // Teto garante aprovação → ato necessário para PS tocar o teto
-                                                const atoNecComTeto = Math.max(atoCliente, entradaBrutaV - psMaxComS_teto);
-                                                return calcPlano({ anuaisUsados: 0, label: 'Ato à Vista', cor: 2, atoNecessario: atoNecComTeto });
-                                            }
-                                            // PS abaixo do teto com fator cheio (m=4)
-                                            const fatorComSinais = calcFator(3);
-                                            const saldoPSmaxComS = (maxParcela * PARCELAS_PS) / fatorComSinais;
-                                            const atoNecessarioVista = Math.max(atoCliente, entradaBrutaV - saldoPSmaxComS);
-                                            return calcPlano({ anuaisUsados: 0, label: 'Ato à Vista', cor: 2, atoNecessario: atoNecessarioVista });
+
+                                            return calcPlano({
+                                                atoNecessario,
+                                                psParcelado,
+                                                anuaisUsados: 0,
+                                                label: 'Ato à Vista',
+                                                cor: 2,
+                                            });
                                         };
-                                        const plano2 = calcAtoVista();
+                                        const plano2 = calcPlano2();
                                         const plano3 = plano2; // placeholder — só 2 cards
 
-                                        // Renda mínima para aprovar com o Saldo PS REAL do cliente (limitado pelo teto R1)
-                                        const entradaBrutaCalc = Math.max(0, valorImovel - financBanco - subsidio - fgts);
-                                        const saldoPSrealCalc  = Math.min(Math.max(0, entradaBrutaCalc - atoCliente), p.psLimite * valorImovel);
-                                        const parcelaPSCalc    = (saldoPSrealCalc * FATOR_BASE_SEM_SINAIS) / PARCELAS_PS;
-                                        const rendaMinR3    = parcelaPSCalc > 0 ? parcelaPSCalc / p.comprometimento : 0;
-                                        let rendaMinR2;
-                                        if (parcelaFinancDigitada > 0) {
-                                            rendaMinR2 = (parcelaFinancDigitada + parcelaPSCalc) / p.condicao;
-                                        } else {
-                                            const margemR2 = p.condicao - 0.30;
-                                            rendaMinR2 = margemR2 > 0.001 ? parcelaPSCalc / margemR2 : Infinity;
-                                        }
+                                        // Renda mínima = renda necessária para a parcela do PS caber em R2 e R3
+                                        // PS = teto R1 fixo
+                                        const psTetoCalc    = p.psLimite * valorImovel;
+                                        const parcelaPSCalc = (psTetoCalc * FATOR_BASE_SEM_SINAIS) / PARCELAS_PS;
+                                        const rendaMinR3    = parcelaPSCalc / p.comprometimento;
+                                        const rendaMinR2    = (parcelaFinancDigitada + parcelaPSCalc) / p.condicao;
                                         const rendaMinima   = Math.ceil(Math.max(rendaMinR3, rendaMinR2));
 
                                         // ── Monta resultado provisório e exibe imediatamente ──
-                                        const resultadoProvisorio = [plano1, plano2, { rendaMinima, renda }];
+                                        const resultadoProvisorio = [plano2, { rendaMinima, renda }];
                                         setCotacaoResult(resultadoProvisorio);
 
                                         // ── IA analisa os planos e sugere ajustes ──
@@ -4504,7 +4397,7 @@ Responda em português, direto ao ponto.`;
                                                 const data = await resp.json();
                                                 const analise = data?.content?.[0]?.text || null;
                                                 if (analise) {
-                                                    setCotacaoResult([plano1, plano2, { rendaMinima, renda, analiseIA: analise }]);
+                                                    setCotacaoResult([plano2, { rendaMinima, renda, analiseIA: analise }]);
                                                 }
                                             } catch(err) {
                                                 console.warn('Análise IA falhou:', err);
@@ -4529,6 +4422,51 @@ Responda em português, direto ao ponto.`;
             )}
 
 
+
+            {showTaxasDocsModal && (
+                <div className="fixed inset-0 z-[70] flex flex-col"
+                    style={{ background: modoNoturno ? 'rgba(7,11,22,0.82)' : 'rgba(15,23,42,0.55)', backdropFilter: 'blur(20px) saturate(180%)', WebkitBackdropFilter: 'blur(20px) saturate(180%)' }}>
+                    <div className="cotacao-modal-open flex flex-col w-full"
+                        style={{ height: '100%', background: modoNoturno ? '#0B1120' : '#f8fafc' }}>
+                        <div className="shrink-0 relative overflow-hidden"
+                            style={{
+                                background: 'linear-gradient(135deg, #0ea5e9 0%, #0284c7 40%, #0369a1 100%)',
+                                boxShadow: '0 4px 32px rgba(14,165,233,0.45)',
+                                paddingTop: 'env(safe-area-inset-top, 0px)',
+                            }}>
+                            <div className="absolute inset-0 pointer-events-none" style={{ background: 'radial-gradient(ellipse at top right, rgba(255,255,255,0.12) 0%, transparent 60%)' }}/>
+                            <div className="relative z-10 flex items-center gap-3 px-5 pt-4 pb-4">
+                                <button onClick={() => setShowTaxasDocsModal(false)}
+                                    className="w-9 h-9 rounded-2xl flex items-center justify-center transition-all active:scale-90 shrink-0"
+                                    style={{ background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(8px)' }}>
+                                    <ChevronLeft size={20} color="white" />
+                                </button>
+                                <div className="flex-1 min-w-0">
+                                    <h2 className="text-white font-black text-xl uppercase tracking-widest drop-shadow-md truncate">📄 Taxas Docs</h2>
+                                    <p className="text-sky-100 text-xs font-medium mt-0.5">Previsão de despesas de transmissão</p>
+                                </div>
+                                <a
+                                    href="https://drive.google.com/drive/u/1/folders/14mYfQkNaSc9APr6hpOTKKTFQ02oq3uOf"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="shrink-0 flex items-center gap-2 px-4 py-2.5 rounded-2xl transition-all active:scale-90"
+                                    style={{ background: 'rgba(255,255,255,0.22)', backdropFilter: 'blur(8px)', boxShadow: '0 2px 12px rgba(0,0,0,0.15)' }}>
+                                    <FileText size={18} color="white" />
+                                    <span className="text-white text-xs font-black uppercase tracking-wide">Abrir Tabelas</span>
+                                </a>
+                            </div>
+                        </div>
+                        <div className="flex-1 overflow-hidden relative">
+                            <iframe
+                                src={taxasIframeSrc}
+                                className="w-full h-full border-0"
+                                title="Taxas de Transmissão de Imóvel"
+                                allow="autoplay"
+                            />
+                        </div>
+                    </div>
+                </div>
+            )}
 
         </div>
     );

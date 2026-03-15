@@ -1806,37 +1806,6 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg_verso","label":"RG Verso"}`;
 
                 {(activeBrand === 'Direcional' || activeBrand === 'Riva') && (
                     <>
-                        {/* ── BANNER MOBILE DE MARCA — só aparece em celular ── */}
-                        <div className="sm:hidden mb-4 rounded-2xl overflow-hidden"
-                            style={{
-                                background: activeBrand === 'Direcional'
-                                    ? 'linear-gradient(135deg, #0f2a5e 0%, #1a3a7a 60%, #0d2050 100%)'
-                                    : 'linear-gradient(135deg, #2d1b6e 0%, #3d2a8a 60%, #1e0f5c 100%)',
-                                boxShadow: activeBrand === 'Direcional'
-                                    ? '0 4px 20px rgba(15,42,94,0.35)'
-                                    : '0 4px 20px rgba(45,27,110,0.35)',
-                            }}>
-                            {/* Linha vermelha no topo */}
-                            <div style={{ height: 4, background: 'linear-gradient(90deg, #dc2626, #ef4444, #dc2626)' }} />
-                            {/* Conteúdo */}
-                            <div className="flex items-center justify-between px-5 py-4">
-                                <img
-                                    src={activeBrand === 'Direcional'
-                                        ? 'https://i.postimg.cc/crYQS8mh/image.png'
-                                        : 'https://i.postimg.cc/R3Q9f9Bc/image.png'}
-                                    alt={activeBrand}
-                                    style={{ height: 28, width: 'auto', objectFit: 'contain', filter: 'brightness(0) invert(1)' }}
-                                />
-                                <div style={{ textAlign: 'right' }}>
-                                    <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em' }}>
-                                        {activeBrand === 'Direcional' ? 'Empreendimentos' : 'Lançamentos'}
-                                    </p>
-                                    <p style={{ color: 'rgba(255,255,255,0.90)', fontSize: 13, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-                                        {activeBrand === 'Direcional' ? 'Manaus · AM' : 'Manaus · AM'}
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
                         {filteredRevistas.length === 0 ? (
                             <div className={`text-center py-12 rounded-xl shadow-sm border transition-colors ${modoNoturno ? 'bg-slate-800 border-slate-700 text-slate-300' : 'bg-white border-slate-100 text-slate-900'}`}>
                                 <BookOpen className="mx-auto h-12 w-12 text-slate-300 mb-3" />
@@ -1909,29 +1878,30 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg_verso","label":"RG Verso"}`;
                                             <img src={revista.cover} onError={(e) => { e.target.onerror = null; e.target.src = 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&q=80&w=400'; }} alt={`Capa ${revista.title}`} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out" />
                                             {/* Shimmer sobre a capa no hover */}
                                             <div className="cover-shine-layer absolute inset-0 pointer-events-none z-10" style={{background:'linear-gradient(105deg, transparent 30%, rgba(255,255,255,0.28) 50%, transparent 70%)', transform:'translateX(-120%) skewX(-15deg)'}} />
-                                            {/* Mini header mobile / badge desktop */}
+                                            {/* ── HEADER EDITORIAL mobile: nome + triângulo diagonal ── */}
                                             {window.innerWidth < 640 ? (
-                                                <div className="absolute top-0 left-0 right-0 z-10 flex items-center justify-between px-3 py-2.5"
+                                                <div className="absolute top-0 left-0 right-0 z-10 overflow-hidden"
                                                     style={{
-                                                        background: 'linear-gradient(180deg, rgba(0,0,0,0.45) 0%, transparent 100%)',
+                                                        background: revista.brand === 'Direcional'
+                                                            ? 'linear-gradient(135deg, #0a1f4e 0%, #1a3a7a 100%)'
+                                                            : 'linear-gradient(135deg, #1e0f5c 0%, #3d2a8a 100%)',
                                                         borderRadius: '24px 24px 0 0',
+                                                        padding: '10px 12px 11px',
                                                     }}>
-                                                    {/* Logo da marca */}
-                                                    <div className="px-2.5 py-1.5 rounded-xl flex items-center justify-center"
-                                                        style={{
-                                                            background: 'rgba(255,255,255,0.92)',
-                                                            backdropFilter: 'blur(8px)',
-                                                            WebkitBackdropFilter: 'blur(8px)',
-                                                            boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
-                                                        }}>
-                                                        <img src={revista.brand === 'Direcional' ? 'https://i.postimg.cc/crYQS8mh/image.png' : 'https://i.postimg.cc/R3Q9f9Bc/image.png'} alt={revista.brand} className="h-5 w-auto max-w-[80px] object-contain" />
-                                                    </div>
-                                                    {/* Info direita: região */}
-                                                    <div className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl"
-                                                        style={{ background: 'rgba(0,0,0,0.35)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)' }}>
-                                                        <MapPin size={11} className="text-white/80 shrink-0" />
-                                                        <span className="text-white text-[11px] font-semibold truncate max-w-[140px]">{revista.region}</span>
-                                                    </div>
+                                                    {/* Triângulo diagonal vermelho no canto inferior direito */}
+                                                    <svg style={{ position:'absolute', bottom:0, right:0, width:64, height:'100%', overflow:'visible', pointerEvents:'none' }} viewBox="0 0 64 48" preserveAspectRatio="none">
+                                                        <polygon points="64,0 64,48 0,48" fill="#dc2626" opacity="0.92"/>
+                                                    </svg>
+                                                    {/* Logo pequeno */}
+                                                    <img
+                                                        src={revista.brand === 'Direcional' ? 'https://i.postimg.cc/crYQS8mh/image.png' : 'https://i.postimg.cc/R3Q9f9Bc/image.png'}
+                                                        alt={revista.brand}
+                                                        style={{ height:13, width:'auto', objectFit:'contain', filter:'brightness(0) invert(1)', opacity:.65, marginBottom:4, display:'block', position:'relative', zIndex:2 }}
+                                                    />
+                                                    {/* Nome do empreendimento */}
+                                                    <span style={{ color:'#fff', fontSize:15, fontWeight:900, lineHeight:1.15, display:'block', position:'relative', zIndex:2, letterSpacing:'-0.01em', textShadow:'0 1px 6px rgba(0,0,0,0.3)', maxWidth:'75%' }}>
+                                                        {revista.title}
+                                                    </span>
                                                 </div>
                                             ) : (
                                                 <div className="absolute top-3 left-3 z-10">

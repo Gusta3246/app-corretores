@@ -1806,6 +1806,38 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg_verso","label":"RG Verso"}`;
 
                 {(activeBrand === 'Direcional' || activeBrand === 'Riva') && (
                     <>
+                        {/* ── BANNER MOBILE DE MARCA — só aparece em celular ── */}
+                        <div className="sm:hidden mb-4 rounded-2xl overflow-hidden"
+                            style={{
+                                background: activeBrand === 'Direcional'
+                                    ? 'linear-gradient(135deg, #0f2a5e 0%, #1a3a7a 60%, #0d2050 100%)'
+                                    : 'linear-gradient(135deg, #2d1b6e 0%, #3d2a8a 60%, #1e0f5c 100%)',
+                                boxShadow: activeBrand === 'Direcional'
+                                    ? '0 4px 20px rgba(15,42,94,0.35)'
+                                    : '0 4px 20px rgba(45,27,110,0.35)',
+                            }}>
+                            {/* Linha vermelha no topo */}
+                            <div style={{ height: 4, background: 'linear-gradient(90deg, #dc2626, #ef4444, #dc2626)' }} />
+                            {/* Conteúdo */}
+                            <div className="flex items-center justify-between px-5 py-4">
+                                <img
+                                    src={activeBrand === 'Direcional'
+                                        ? 'https://i.postimg.cc/crYQS8mh/image.png'
+                                        : 'https://i.postimg.cc/R3Q9f9Bc/image.png'}
+                                    alt={activeBrand}
+                                    style={{ height: 28, width: 'auto', objectFit: 'contain', filter: 'brightness(0) invert(1)' }}
+                                />
+                                <div style={{ textAlign: 'right' }}>
+                                    <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em' }}>
+                                        {activeBrand === 'Direcional' ? 'Empreendimentos' : 'Lançamentos'}
+                                    </p>
+                                    <p style={{ color: 'rgba(255,255,255,0.90)', fontSize: 13, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                                        {activeBrand === 'Direcional' ? 'Manaus · AM' : 'Manaus · AM'}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    <>
                         {filteredRevistas.length === 0 ? (
                             <div className={`text-center py-12 rounded-xl shadow-sm border transition-colors ${modoNoturno ? 'bg-slate-800 border-slate-700 text-slate-300' : 'bg-white border-slate-100 text-slate-900'}`}>
                                 <BookOpen className="mx-auto h-12 w-12 text-slate-300 mb-3" />

@@ -1961,22 +1961,22 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
                 // Endereços reais dos empreendimentos (confirmados nas fontes oficiais Direcional/Riva)
                 // Usado como ORIGEM na rota do Maps — garante que a rota parte do local correto
                 const EMPREEND_COORDS = {
-                    'Brisas do Horizonte':         'Rua Ivailândia, 485, Coroado, Manaus, AM',
-                    'Parque Ville Orquídea':        'Av. Comendador José Cruz, 1026, Jardim Manaus, Manaus, AM',
-                    'Village Torres':               'Rua Dona Debla Henriques, 400, Lago Azul, Manaus, AM',
-                    'Conquista Jardim Botânico':    'Av. Monsenhor Amâncio de Miranda, 200, Nova Cidade, Manaus, AM',
-                    'Viva Vida Coral':              'Av. Tude Moutinho, 1053, Colônia Terra Nova, Manaus, AM',
-                    'Conquista Jardim Norte':       'Rua Vicente Martins, 900, Santa Etelvina, Manaus, AM',
-                    'Viva Vida Rio Amazonas':       'Av. do Turismo, 12686, Tarumã, Manaus, AM',
-                    'Bosque das Torres':            'Rua Dona Debla Henriques, 450, Lago Azul, Manaus, AM',
-                    'Parque Ville Lírio Azul':      'Av. Santa Tereza D\'Avila, 1096, Lago Azul, Manaus, AM',
-                    'Amazon Boulevard Classic':     'Av. Torquato Tapajós, 1357, Bairro da Paz, Manaus, AM',
-                    'Amazon Boulevard Prime':       'Av. Torquato Tapajós, 1357, Bairro da Paz, Manaus, AM',
-                    'Città Oasis Azzure':           'Rua Santa Bárbara, 200, Flores, Manaus, AM',
-                    'Zenith Condomínio Clube':      'Rua Rio Amazonas, 409, São Francisco, Manaus, AM',
-                    'Conquista Topázio':            'Av. Tude Moutinho, 945, Colônia Terra Nova, Manaus, AM',
-                    'Conquista Rio Negro':          'Rua Frederico Baird, 2990, Ponta Negra, Manaus, AM',
-                    'Viva Vida Rio Tapajós':        'Av. do Turismo, 12850, Tarumã, Manaus, AM',
+                    'Brisas do Horizonte':         '-3.0863455,-59.9757828',
+                    'Parque Ville Orquídea':        '-2.9737056,-60.0065346',
+                    'Village Torres':               '-2.9710343,-59.9962363',
+                    'Conquista Jardim Botânico':    '-2.9845565,-59.9896558',
+                    'Viva Vida Coral':              '-3.01547,-60.018348',
+                    'Conquista Jardim Norte':       '-2.9878435,-60.004704',
+                    'Viva Vida Rio Amazonas':       '-2.9835792,-60.0470611',
+                    'Bosque das Torres':            '-2.9696927,-59.997579',
+                    'Parque Ville Lírio Azul':      '-2.9759258,-60.0065576',
+                    'Amazon Boulevard Classic':     '-3.060292,-60.0253649',
+                    'Amazon Boulevard Prime':       '-3.060292,-60.0253649',
+                    'Città Oasis Azzure':           '-3.0732449,-60.0158834',
+                    'Zenith Condomínio Clube':      '-3.1040641,-59.9993555',
+                    'Conquista Topázio':            '-3.01547,-60.018348',
+                    'Conquista Rio Negro':          '-3.0401114,-60.0800979',
+                    'Viva Vida Rio Tapajós':        '-2.9835792,-60.0470611',
                 };
 
                 // Mapa de POIs com endereço exato para evitar o Maps abrir a unidade errada

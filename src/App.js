@@ -1837,7 +1837,6 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg_verso","label":"RG Verso"}`;
                                 </div>
                             </div>
                         </div>
-                    <>
                         {filteredRevistas.length === 0 ? (
                             <div className={`text-center py-12 rounded-xl shadow-sm border transition-colors ${modoNoturno ? 'bg-slate-800 border-slate-700 text-slate-300' : 'bg-white border-slate-100 text-slate-900'}`}>
                                 <BookOpen className="mx-auto h-12 w-12 text-slate-300 mb-3" />

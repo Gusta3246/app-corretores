@@ -36,6 +36,7 @@ const utilitariosData = [
     { title: "FICHA CADASTRO PF - CLIENTE INFORMAL", link: "https://drive.google.com/file/d/1Y5h9B3oe8HdoU7EGJwkcEerQACIaGAAG/view?usp=drive_link" }
 ];
 
+
 // === FRASES MOTIVACIONAIS DIÁRIAS ===
 const frasesMotivacionais = [
     { texto: "O sucesso é a soma de pequenos esforços repetidos dia após dia.", autor: "Robert Collier" },
@@ -91,6 +92,28 @@ const imagensEquipeDiarias = [
 // Cálculos para manter a mesma imagem e frase durante todo o dia
 const today = new Date();
 const dayIndex = Math.floor((today.getTime() - today.getTimezoneOffset() * 60000) / (1000 * 60 * 60 * 24));
+
+// ── RippleButton ────────────────────────────────────────────────
+function RippleButton({ onClick, className, children, style }) {
+    const btnRef = useRef(null);
+    const handleClick = (e) => {
+        const btn = btnRef.current;
+        if (!btn) return;
+        const rect = btn.getBoundingClientRect();
+        const x = (e.clientX || e.touches?.[0]?.clientX || rect.left + rect.width / 2) - rect.left;
+        const y = (e.clientY || e.touches?.[0]?.clientY || rect.top + rect.height / 2) - rect.top;
+        const ripple = document.createElement('span');
+        ripple.style.cssText = `position:absolute;left:${x}px;top:${y}px;transform:translate(-50%,-50%) scale(0);width:200px;height:200px;border-radius:50%;background:rgba(255,255,255,0.35);animation:ripple-anim 0.55s ease-out forwards;pointer-events:none;`;
+        btn.appendChild(ripple);
+        ripple.addEventListener('animationend', () => ripple.remove());
+        onClick?.(e);
+    };
+    return (
+        <button ref={btnRef} className={className} style={{ ...style, position: 'relative', overflow: 'hidden' }} onClick={handleClick}>
+            {children}
+        </button>
+    );
+}
 
 export default function App() {
     const haptic = (style = 'light') => {
@@ -237,6 +260,54 @@ export default function App() {
     const [cotacaoResult, setCotacaoResult] = useState(null);
     const [openRegra, setOpenRegra] = useState(null); // 'planIdx-regraIdx'
     const cotacaoFileRef = useRef(null);
+    const tabRefs = {
+        Direcional:  useRef(null),
+        Riva:        useRef(null),
+        Utilitarios: useRef(null),
+        Guia:        useRef(null),
+    };
+    const navRef = useRef(null);
+    const [pillStyle, setPillStyle] = useState({ left: 0, width: 0, opacity: 0, color: 'Direcional' });
+
+    const calcPill = (brand) => {
+        const activeRef = tabRefs[brand];
+        if (!activeRef?.current || !navRef?.current) return;
+        const navRect = navRef.current.getBoundingClientRect();
+        const tabRect = activeRef.current.getBoundingClientRect();
+        setPillStyle({
+            left:    tabRect.left - navRect.left + navRef.current.scrollLeft,
+            width:   tabRect.width,
+            opacity: 1,
+            color:   brand,
+        });
+    };
+
+    useEffect(() => { calcPill(activeBrand); }, [activeBrand]);
+
+    // ── Pull-to-refresh handlers ──
+    const handlePtrTouchStart = (e) => {
+        if (window.scrollY === 0) pullStartY.current = e.touches[0].clientY;
+    };
+    const handlePtrTouchMove = (e) => {
+        if (window.scrollY !== 0 || pullStartY.current === 0) return;
+        const delta = e.touches[0].clientY - pullStartY.current;
+        if (delta > 0 && delta < 120) { setIsPulling(true); setPullY(delta); }
+    };
+    const handlePtrTouchEnd = () => {
+        if (pullY > 80) {
+            setIsRefreshing(true);
+            setPullY(0);
+            setTimeout(() => { setIsRefreshing(false); setIsPulling(false); pullStartY.current = 0; }, 1200);
+        } else {
+            setIsPulling(false); setPullY(0); pullStartY.current = 0;
+        }
+    };
+
+    // Calcula posição inicial após o DOM montar
+    useEffect(() => {
+        const id = requestAnimationFrame(() => calcPill(activeBrand));
+        return () => cancelAnimationFrame(id);
+    }, []);
     const [perfilSelecionado, setPerfilSelecionado] = useState(null); // 'diamante'|'ouro'|'prata'|'bronze'|'aco'
     const [perfilExpandido, setPerfilExpandido] = useState(null);
     const [pastaRapidaCountdown, setPastaRapidaCountdown] = useState(10);
@@ -248,6 +319,12 @@ export default function App() {
 
     // Hide search bar on mobile scroll down, show on scroll up
     const [searchBarVisible, setSearchBarVisible] = useState(true);
+    // Pull-to-refresh
+    const [isPulling, setIsPulling] = useState(false);
+    const [pullY, setPullY] = useState(0);
+    const [isRefreshing, setIsRefreshing] = useState(false);
+    const pullStartY = useRef(0);
+    const mainContainerRef = useRef(null);
     const lastScrollY = useRef(0);
 
     useEffect(() => {
@@ -1224,7 +1301,7 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
         setDragGhostPos({ x: touch.clientX, y: touch.clientY });
     };
 
-    const handleTouchMove = (e) => {
+    const handleDragTouchMove = (e) => {
         e.preventDefault();
         const touch = e.touches[0];
         setDragGhostPos({ x: touch.clientX, y: touch.clientY });
@@ -1238,7 +1315,7 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
         }
     };
 
-    const handleTouchEnd = () => {
+    const handleDragTouchEnd = () => {
         const from = touchDragIndex.current;
         const to = touchTargetIndex.current;
         if (from !== null && to !== null && from !== to) {
@@ -1487,8 +1564,41 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
     });
 
     return (
-        <div className={`min-h-screen font-sans pb-12 relative transition-colors duration-500 ${modoNoturno ? 'bg-[#0B1120] text-slate-100' : 'bg-slate-50 text-slate-800'}`}
+        <>
+            {/* Pull-to-refresh indicator */}
+            {(isPulling || isRefreshing) && (
+                <div style={{
+                    position:'fixed', top: isRefreshing ? 16 : Math.min(pullY * 0.5, 40),
+                    left:'50%', transform:'translateX(-50%)',
+                    zIndex:100, transition: isPulling ? 'none' : 'top 0.3s ease',
+                }}>
+                    <div style={{
+                        background: modoNoturno ? 'rgba(30,41,59,0.95)' : 'rgba(255,255,255,0.95)',
+                        border: `1px solid ${modoNoturno ? 'rgba(99,102,241,0.4)' : 'rgba(99,102,241,0.2)'}`,
+                        borderRadius:'999px', padding:'8px 16px',
+                        display:'flex', alignItems:'center', gap:'8px',
+                        boxShadow:'0 4px 20px rgba(0,0,0,0.15)',
+                        backdropFilter:'blur(12px)',
+                    }}>
+                        <div style={{
+                            width:16, height:16, borderRadius:'50%',
+                            border:`2px solid ${modoNoturno ? '#818cf8' : '#6366f1'}`,
+                            borderTopColor:'transparent',
+                            animation: isRefreshing ? 'ptr-spin 0.7s linear infinite' : 'none',
+                            transform: isPulling ? `rotate(${pullY * 3}deg)` : undefined,
+                        }}/>
+                        <span style={{fontSize:12, fontWeight:700, color: modoNoturno ? '#c7d2fe' : '#6366f1', letterSpacing:'0.05em'}}>
+                            {isRefreshing ? 'Atualizando...' : 'Solte para atualizar'}
+                        </span>
+                    </div>
+                </div>
+            )}
+        <div ref={mainContainerRef}
+            className={`min-h-screen font-sans pb-12 relative transition-colors duration-500 ${modoNoturno ? 'bg-[#0B1120] text-slate-100' : 'bg-slate-50 text-slate-800'}`}
             onMouseMove={handleGlobalDragOver}
+            onTouchStart={handlePtrTouchStart}
+            onTouchMove={handlePtrTouchMove}
+            onTouchEnd={handlePtrTouchEnd}
         >
             {/* ── SAFE AREA + HEADER — camada única de vidro ────────────────
                 Um único elemento fixed parte do top:0 (cobre o notch) e tem
@@ -1602,15 +1712,15 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
 
             <main className="main-content max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
                 {/* BANNER INSPIRAÇÃO DIÁRIA */}
-                <div className="mb-8 relative rounded-2xl overflow-hidden shadow-lg group">
-                    <img src={imagemDoDia} onError={(e) => { e.target.src = '' }} alt="Equipe Destemidos" className="w-full h-64 sm:h-80 object-cover group-hover:scale-105 transition-transform duration-1000 bg-slate-200" style={{ objectPosition: `center ${bannerFocusY}` }} />
+                <div className="mb-8 relative rounded-2xl overflow-hidden shadow-lg group banner-reveal">
+                    <img src={imagemDoDia} onError={(e) => { e.target.src = '' }} alt="Equipe Destemidos" className="w-full h-64 sm:h-80 object-cover bg-slate-200 banner-ken-burns" style={{ objectPosition: `center ${bannerFocusY}` }} />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/50 to-transparent flex flex-col justify-end p-6 sm:p-8">
-                        <div className="flex items-center gap-2 mb-3">
+                        <div className="flex items-center gap-2 mb-3 banner-text-1">
                             <span className="bg-amber-500 text-amber-950 text-xs font-black uppercase tracking-wider py-1.5 px-3 rounded-full flex items-center gap-1 shadow-lg">
                                 <Sparkles size={14} /> Inspiração do Dia
                             </span>
                         </div>
-                        <div className="flex gap-3">
+                        <div className="flex gap-3 banner-text-2">
                             <Quote size={32} className="text-amber-500/50 shrink-0 mt-1" />
                             <div>
                                 <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-white leading-tight max-w-3xl drop-shadow-md">"{fraseDoDia.texto}"</h2>
@@ -1624,14 +1734,50 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
 
                 {/* NAVEGAÇÃO DE ABAS */}
                 <div className={`border-b overflow-x-auto custom-scrollbar transition-colors duration-500 ${modoNoturno ? 'border-slate-800' : 'border-gray-200'}`}>
-                    <nav className="-mb-px flex space-x-6 sm:space-x-8 min-w-max" aria-label="Tabs">
-                        <button onClick={() => { haptic(); setActiveBrand('Direcional'); }} className={`whitespace-nowrap py-4 px-2 border-b-2 transition-colors flex items-center ${activeBrand === 'Direcional' ? (modoNoturno ? 'border-blue-500' : 'border-blue-900') : 'border-transparent hover:border-gray-300'}`}>
+                    <nav ref={navRef} className="-mb-px flex space-x-6 sm:space-x-8 min-w-max relative" aria-label="Tabs">
+                        {/* Pill animada — desliza para a aba ativa */}
+                        {pillStyle.opacity > 0 && (() => {
+                            const pillColors = {
+                                Direcional:  modoNoturno
+                                    ? { bg: 'rgba(96,165,250,0.15)',  border: 'rgba(96,165,250,0.35)',  shadow: 'rgba(96,165,250,0.25)' }
+                                    : { bg: 'rgba(30,58,138,0.08)',   border: 'rgba(30,58,138,0.2)',    shadow: 'rgba(30,58,138,0.12)' },
+                                Riva:        modoNoturno
+                                    ? { bg: 'rgba(129,140,248,0.15)', border: 'rgba(129,140,248,0.35)', shadow: 'rgba(129,140,248,0.25)' }
+                                    : { bg: 'rgba(30,27,75,0.08)',    border: 'rgba(30,27,75,0.2)',     shadow: 'rgba(30,27,75,0.12)' },
+                                Utilitarios: { bg: 'rgba(234,88,12,0.1)',   border: 'rgba(234,88,12,0.3)',   shadow: 'rgba(234,88,12,0.2)' },
+                                Guia:        { bg: 'rgba(225,29,72,0.1)',   border: 'rgba(225,29,72,0.3)',   shadow: 'rgba(225,29,72,0.2)' },
+                            };
+                            const c = pillColors[activeBrand] || pillColors.Direcional;
+                            return (
+                                <span
+                                    aria-hidden="true"
+                                    style={{
+                                        position: 'absolute',
+                                        top: '50%',
+                                        transform: 'translateY(-50%)',
+                                        left: pillStyle.left - 8,
+                                        width: pillStyle.width + 16,
+                                        height: '36px',
+                                        borderRadius: '999px',
+                                        transition: 'left 0.4s cubic-bezier(0.34,1.56,0.64,1), width 0.4s cubic-bezier(0.34,1.56,0.64,1), background 0.3s ease, box-shadow 0.3s ease',
+                                        background: c.bg,
+                                        border: `1.5px solid ${c.border}`,
+                                        boxShadow: `0 2px 12px ${c.shadow}`,
+                                        pointerEvents: 'none',
+                                        zIndex: 0,
+                                        backdropFilter: 'blur(4px)',
+                                        WebkitBackdropFilter: 'blur(4px)',
+                                    }}
+                                />
+                            );
+                        })()}
+                        <button ref={tabRefs.Direcional} onClick={() => { haptic(); setActiveBrand('Direcional'); }} className={`whitespace-nowrap py-4 px-2 border-b-2 transition-colors flex items-center relative z-10 ${activeBrand === 'Direcional' ? (modoNoturno ? 'border-transparent' : 'border-transparent') : 'border-transparent hover:border-gray-300'}`}>
                             <div className={`flex items-center transition-all ${activeBrand === 'Direcional' ? 'opacity-100' : 'opacity-50 grayscale hover:grayscale-0 hover:opacity-100'}`}>
                                 <span className={`font-black text-lg tracking-tight ${modoNoturno ? 'text-blue-400' : 'text-blue-900'}`}>DIRECIONAL</span>
                                 <span className="w-1.5 h-1.5 bg-red-600 ml-1 rounded-sm"></span>
                             </div>
                         </button>
-                        <button onClick={() => { haptic(); setActiveBrand('Riva'); }} className={`whitespace-nowrap py-4 px-2 border-b-2 transition-colors flex items-center ${activeBrand === 'Riva' ? (modoNoturno ? 'border-indigo-400' : 'border-indigo-950') : 'border-transparent hover:border-gray-300'}`}>
+                        <button ref={tabRefs.Riva} onClick={() => { haptic(); setActiveBrand('Riva'); }} className={`whitespace-nowrap py-4 px-2 border-b-2 transition-colors flex items-center relative z-10 ${activeBrand === 'Riva' ? 'border-transparent' : 'border-transparent hover:border-gray-300'}`}>
                             <div className={`flex items-center transition-all ${activeBrand === 'Riva' ? 'opacity-100' : 'opacity-50 grayscale hover:grayscale-0 hover:opacity-100'}`}>
                                 <span className={`font-black text-lg tracking-tight ${modoNoturno ? 'text-indigo-400' : 'text-indigo-950'}`}>RIVA</span>
                                 <span className={`w-1.5 h-1.5 ml-1 rounded-sm ${modoNoturno ? 'bg-indigo-400' : 'bg-indigo-950'}`}></span>
@@ -1649,13 +1795,13 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
                                 <TableProperties size={16} className={`ml-1.5 ${modoNoturno ? 'text-violet-400' : 'text-violet-600'}`} />
                             </div>
                         </a>
-                        <button onClick={() => { haptic(); setActiveBrand('Utilitarios'); }} className={`whitespace-nowrap py-4 px-2 border-b-2 transition-colors flex items-center ${activeBrand === 'Utilitarios' ? 'border-orange-600' : 'border-transparent hover:border-gray-300'}`}>
+                        <button ref={tabRefs.Utilitarios} onClick={() => { haptic(); setActiveBrand('Utilitarios'); }} className={`whitespace-nowrap py-4 px-2 border-b-2 transition-colors flex items-center relative z-10 ${activeBrand === 'Utilitarios' ? 'border-transparent' : 'border-transparent hover:border-gray-300'}`}>
                             <div className={`flex items-center transition-all ${activeBrand === 'Utilitarios' ? 'opacity-100' : 'opacity-50 grayscale hover:grayscale-0 hover:opacity-100'}`}>
                                 <span className="text-orange-600 font-black text-lg tracking-tight">UTILITÁRIOS</span>
                                 <BookMarked size={16} className="ml-1.5 text-orange-600" />
                             </div>
                         </button>
-                        <button onClick={() => { haptic(); setActiveBrand('Guia'); }} className={`whitespace-nowrap py-4 px-2 border-b-2 transition-colors flex items-center ${activeBrand === 'Guia' ? 'border-rose-600' : 'border-transparent hover:border-gray-300'}`}>
+                        <button ref={tabRefs.Guia} onClick={() => { haptic(); setActiveBrand('Guia'); }} className={`whitespace-nowrap py-4 px-2 border-b-2 transition-colors flex items-center relative z-10 ${activeBrand === 'Guia' ? 'border-transparent' : 'border-transparent hover:border-gray-300'}`}>
                             <div className={`flex items-center transition-all ${activeBrand === 'Guia' ? 'opacity-100' : 'opacity-50 grayscale hover:grayscale-0 hover:opacity-100'}`}>
                                 <span className="text-rose-600 font-black text-lg tracking-tight">GUIA</span>
                                 <HelpCircle size={16} className="ml-1.5 text-rose-600" />
@@ -1675,10 +1821,14 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
                             </div>
                         ) : (
                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                                {filteredRevistas.map((revista) => (
-                                    <div key={revista.id} className={`rounded-2xl overflow-hidden shadow-sm border hover:shadow-md transition-all duration-300 flex flex-col group ${modoNoturno ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-100'}`}>
+                                {filteredRevistas.map((revista, cardIdx) => (
+                                    <div key={revista.id}
+                                        className={`card-entry rounded-2xl overflow-hidden shadow-sm border hover:shadow-md transition-shadow duration-300 flex flex-col group ${modoNoturno ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-100'}`}
+                                        style={{ animationDelay: `${cardIdx * 70}ms` }}
+                                    >
                                         <div className="relative h-48 overflow-hidden bg-slate-100">
                                             <img src={revista.cover} onError={(e) => { e.target.onerror = null; e.target.src = 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&q=80&w=400'; }} alt={`Capa ${revista.title}`} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                                            {/* Badge NOVO */}
                                             {/* Logo — sempre visível */}
                                             <div className="absolute top-3 left-3 z-10">
                                                 <div className="px-3 py-1.5 rounded-lg flex items-center justify-center h-10 min-w-[100px]"
@@ -1746,7 +1896,7 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
 
                                             </div>
                                             <div className="mt-auto flex flex-col gap-2">
-                                                <button
+                                                <RippleButton
                                                     onClick={() => {
                                                         haptic('medium');
                                                         const previewUrl = revista.link
@@ -1755,10 +1905,10 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
                                                     }}
                                                     className={`w-full flex items-center justify-center gap-2 py-3 rounded-lg font-semibold transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg ${revista.brand === 'Direcional' ? 'bg-gradient-to-r from-orange-500 via-red-500 to-orange-600 hover:from-orange-600 hover:to-red-600 shadow-orange-300/30 text-white' : 'bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 hover:from-blue-700 hover:to-indigo-700 shadow-blue-300/30 text-white'}`}>
                                                     <BookOpen size={18} /> Ver Revista
-                                                </button>
-                                                <button onClick={() => { haptic(); setSelectedPois(revista); }} className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-lg font-semibold transition-colors duration-200 border text-sm ${modoNoturno ? 'bg-slate-700 border-slate-600 text-slate-200 hover:bg-slate-600' : 'bg-slate-100 border-slate-200 text-slate-700 hover:bg-slate-200'}`}>
+                                                </RippleButton>
+                                                <RippleButton onClick={() => { haptic(); setSelectedPois(revista); }} className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-lg font-semibold transition-colors duration-200 border text-sm ${modoNoturno ? 'bg-slate-700 border-slate-600 text-slate-200 hover:bg-slate-600' : 'bg-slate-100 border-slate-200 text-slate-700 hover:bg-slate-200'}`}>
                                                     <MapPin size={16} className="text-rose-500" /> Ver Pontos de Referência
-                                                </button>
+                                                </RippleButton>
                                             </div>
                                         </div>
                                     </div>
@@ -2201,7 +2351,22 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
                     </div>
                 </button>
                 <style dangerouslySetInnerHTML={{ __html: `
+
+                    /* ── BANNER ANIMATIONS ── */
+                    @keyframes banner-reveal { from { opacity:0; transform:scale(1.03); } to { opacity:1; transform:scale(1); } }
+                    .banner-reveal { animation: banner-reveal 0.9s cubic-bezier(0.22,1,0.36,1) both; }
+                    @keyframes ken-burns { 0% { transform:scale(1); } 100% { transform:scale(1.06); } }
+                    .banner-ken-burns { animation: ken-burns 12s ease-in-out infinite alternate; }
+                    @keyframes banner-text-up { from { opacity:0; transform:translateY(14px); } to { opacity:1; transform:translateY(0); } }
+                    .banner-text-1 { animation: banner-text-up 0.7s cubic-bezier(0.22,1,0.36,1) 0.3s both; }
+                    .banner-text-2 { animation: banner-text-up 0.7s cubic-bezier(0.22,1,0.36,1) 0.5s both; }
                     @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+                    @keyframes ripple-anim { 0% { transform: translate(-50%,-50%) scale(0); opacity:1; } 100% { transform: translate(-50%,-50%) scale(1); opacity:0; } }
+                    @keyframes card-entry { 0% { opacity:0; transform:translateY(16px); } 100% { opacity:1; transform:translateY(0); } }
+                    @keyframes badge-pulse { 0%,100% { box-shadow:0 0 0 0 rgba(249,115,22,0.6), 0 0 0 0 rgba(249,115,22,0.3); } 50% { box-shadow:0 0 0 5px rgba(249,115,22,0.0), 0 0 0 10px rgba(249,115,22,0.0); } }
+                    @keyframes ptr-spin { to { transform: rotate(360deg); } }
+                    
+                    .card-entry { opacity:0; animation: card-entry 0.5s cubic-bezier(0.22,1,0.36,1) both; }
                     .animate-float { animation: float 4s ease-in-out infinite; }
                     @keyframes logo-flip {
                         0%   { transform: rotateY(0deg);   }
@@ -2493,8 +2658,8 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
                                         onDragOver={handleDragOver}
                                         onDrop={(e) => handleDrop(e, index)}
                                         onTouchStart={(e) => handleTouchStart(e, index)}
-                                        onTouchMove={handleTouchMove}
-                                        onTouchEnd={handleTouchEnd}
+                                        onTouchMove={handleDragTouchMove}
+                                        onTouchEnd={handleDragTouchEnd}
                                         onClick={() => { if (!isDraggingActive) { haptic('light'); setFullscreenDoc(doc); } }}
                                         style={cardStyle}
                                         className={`relative group border-2 border-dashed ${extraClass} ${draggedItemIndex === index ? 'border-orange-400 scale-90 opacity-30 rotate-3' : (modoNoturno ? `border-transparent bg-slate-800 ${folderSource === 'rapida' ? 'hover:border-orange-500' : 'hover:border-indigo-500'}` : `border-transparent bg-white ${folderSource === 'rapida' ? 'hover:border-orange-300' : 'hover:border-indigo-300'}`)} rounded-xl overflow-hidden shadow-sm hover:shadow-lg transition-colors aspect-[3/4] flex flex-col cursor-move`}>
@@ -4466,5 +4631,6 @@ Responda em português, direto ao ponto.`;
             )}
 
         </div>
+        </>
     );
 }

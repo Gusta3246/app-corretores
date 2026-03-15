@@ -1705,7 +1705,7 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg_verso","label":"RG Verso"}`;
 
             <main className="main-content max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
                 {/* BANNER INSPIRAÇÃO DIÁRIA */}
-                <div className="mb-1 relative rounded-2xl overflow-hidden shadow-lg group banner-reveal">
+                <div className="mb-1 relative rounded-3xl overflow-hidden shadow-lg group banner-reveal">
                     <img src={imagemDoDia} onError={(e) => { e.target.src = '' }} alt="Equipe Destemidos" className="w-full h-64 sm:h-80 object-cover bg-slate-200 banner-ken-burns" style={{ objectPosition: `center ${bannerFocusY}` }} />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/50 to-transparent flex flex-col justify-end p-6 sm:p-8">
                         <div className="flex items-center gap-2 mb-3 banner-text-1">
@@ -2568,7 +2568,10 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg_verso","label":"RG Verso"}`;
                     ? 'left-0 right-0 bottom-0 rounded-none'
                     : 'left-0 right-0 bottom-0 rounded-none md:bottom-6 md:right-6 md:left-auto md:rounded-3xl md:w-[350px] lg:w-[420px] md:h-[600px] md:max-h-[85vh] origin-bottom-right'}
                 `}
-                style={modoNoturno ? { background: 'rgba(13,18,36,0.92)', backdropFilter: 'blur(32px)', WebkitBackdropFilter: 'blur(32px)', border: '1px solid rgba(255,255,255,0.08)' } : { background: 'rgba(255,255,255,0.72)', backdropFilter: 'blur(32px) saturate(200%)', WebkitBackdropFilter: 'blur(32px) saturate(200%)', border: '1px solid rgba(255,255,255,0.88)' }}>
+                style={modoNoturno
+                    ? { background: '#0B1120' }
+                    : { background: '#f2f2f7' }
+                }>
 
                 {/* ── HEADER CHATBOT ── */}
                 <div className="relative overflow-hidden shrink-0"
@@ -2622,7 +2625,7 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg_verso","label":"RG Verso"}`;
                 </div>
 
                 {!isCreatingFolder && (
-                    <div ref={chatScrollRef} className="overflow-y-auto px-4 py-5 space-y-4 custom-scrollbar flex-1">
+                    <div ref={chatScrollRef} className={`overflow-y-auto px-4 py-5 space-y-4 custom-scrollbar flex-1 transition-colors ${modoNoturno ? 'bg-[#0B1120]' : 'bg-[#f2f2f7]'}`}>
                         {chatMessages.map((msg, idx) => (
                             <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                                 {msg.role === 'bot' && (
@@ -2788,7 +2791,7 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg_verso","label":"RG Verso"}`;
                         </div>
 
                         {pendingDocs.length > 0 && (
-                            <div className={`shrink-0 border-t flex justify-end transition-colors ${modoNoturno ? 'border-slate-800/40' : 'border-white/40'}`} style={{ background: modoNoturno ? 'rgba(13,18,36,0.6)' : 'rgba(255,255,255,0.55)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', padding: '10px 12px', paddingBottom: 'max(10px, calc(env(safe-area-inset-bottom) + 6px))' }}>
+                            <div className={`shrink-0 border-t flex justify-end transition-colors ${modoNoturno ? 'bg-[#0B1120] border-slate-800' : 'bg-[#f2f2f7] border-slate-200'}`} style={{ padding: '10px 12px', paddingBottom: 'max(10px, calc(env(safe-area-inset-bottom) + 6px))' }}>
                                 <button onClick={() => { haptic('medium'); setIsFinalizingFolder(true); }}
                                     className="text-white px-6 py-2.5 rounded-2xl font-black text-xs uppercase tracking-widest shadow-lg transition-all flex items-center gap-2 relative overflow-hidden active:scale-95"
                                     style={folderSource === 'rapida'
@@ -2805,7 +2808,7 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg_verso","label":"RG Verso"}`;
                     </div>
                 )}
 
-                <div className={`border-t rounded-b-3xl shrink-0 flex flex-col transition-colors ${isCreatingFolder ? 'hidden' : ''} ${modoNoturno ? 'bg-[#0B1120] border-slate-800' : 'bg-white border-slate-100'}`}>
+                <div className={`border-t rounded-b-3xl shrink-0 flex flex-col transition-colors ${isCreatingFolder ? 'hidden' : ''} ${modoNoturno ? 'bg-[#0B1120] border-slate-800' : 'bg-[#f2f2f7] border-slate-200'}`}>
                     <div className="px-3 pt-2.5 pb-2 flex gap-1.5 items-center overflow-x-auto custom-scrollbar">
                         <button onClick={() => { haptic(); setFolderSource('manual'); setIsCreatingFolder(true); fileInputRef.current?.click(); }}
                             className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider transition-all text-white relative overflow-hidden"

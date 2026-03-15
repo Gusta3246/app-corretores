@@ -1,26 +1,24 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Search, Building, ExternalLink, MapPin, BookOpen, Maximize, Bed, LayoutGrid, Rocket, Quote, Sparkles, ChevronDown, ChevronUp, ChevronLeft, FileText, TableProperties, BookMarked, HelpCircle, Calculator, Bot, X, Send, Wand2, Paperclip, File as FileIcon, Trash2, FolderPlus, GripVertical, Plus, MessageCircle, Moon, Sun, AlertTriangle, Book } from 'lucide-react';
 import { buscarRespostaDoRobo, buscarRespostaGemini } from './bot/dadosFinanciamento.js';
-
-
-// === DADOS DAS REVISTAS E BASE DE CONHECIMENTO DO CHATBOT (fallback local) ===
+// === DADOS DAS REVISTAS E BASE DE CONHECIMENTO DO CHATBOT ===
 const revistasDataLocal = [
-    { id: 1, title: "Brisas do Horizonte", brand: "Direcional", region: "Coroado - Zona Leste", size: "43m² a 45m²", bedrooms: "2 quartos", flooring: "Todo o apê", cover: "https://www.direcional.com.br/wp-content/uploads/2025/06/Perspectiva-Guarita-BrisasdoHorizonte.jpg.webp", link: "https://drive.google.com/file/d/18IXtAt9PLVjIsk2PkXIHXnVCaduVkGu2/view?usp=drive_link", aliases: ["brisas", "brisas do horizonte", "horizonte"], location: { lat: -3.0863455, lng: -59.9757828, mapsUrl: "https://www.google.com/maps/place/BRISAS+DO+HORIZONTE/@-3.0863455,-59.9770703,18z" }, pois: ["Supermercado Vitória (1 min)", "Escola Mun. Profª Maria Rodrigues Tapajós (2 min)", "SPA Coroado (3 min)", "Estádio Carlos Zamith (5 min)", "Park Mall Ephigênio Salles (6 min)", "UFAM - Universidade Federal do Amazonas (7 min)", "Hospital Dr. João Lúcio (7 min)", "Samel São José Medical Center (7 min)", "Sesi Clube do Trabalhador (8 min)", "Manauara Shopping (14 min)"] },
-    { id: 2, title: "Parque Ville Orquídea", brand: "Direcional", region: "Lago Azul - Zona Norte", size: "41m²", bedrooms: "2 quartos", flooring: "Todo o apê", cover: "https://www.direcional.com.br/wp-content/uploads/2024/05/Perspectiva_PARQUEVILLEORQUIDEA_GUARITA.jpg.webp", link: "https://drive.google.com/file/d/1F_BeT2jceDM8u4kCbSXN8kp2rk7boQTG/view?usp=drive_link", aliases: ["orquidea", "orquídea", "parque ville", "parque ville orquidea"], location: { lat: -2.9737056, lng: -60.0065346, mapsUrl: "https://www.google.com/maps/place/Condom%C3%ADnio+Parque+Ville+Orqu%C3%ADdea/@-2.9737056,-60.0091095,17z" }, pois: ["Escola Mun. Viviane Estrela (1-2 min)", "Clínica da Família C. Nicolau (1-2 min)", "Veneza Express (3-4 min)", "Nova Era Supermercado (3-4 min)", "Terminal 6 (3-4 min)", "Colégio Militar da PM VI (3-4 min)", "Shopping Via Norte (7 min)", "Hospital Delphina Aziz (10 min)", "Sumaúma Park Shopping (12 min)"] },
-    { id: 3, title: "Village Torres", brand: "Direcional", region: "Lago Azul - Zona Norte", size: "36m²", bedrooms: "2 quartos", flooring: "Cozinha, banheiro e lavatório", cover: "https://www.direcional.com.br/wp-content/uploads/2024/09/Perspectiva-Guarita-VillageTorres.jpg.webp", link: "https://drive.google.com/file/d/1NWb_kcH0bmjKN9EacPA8owgXdpnFK_jh/preview", aliases: ["village", "village torres", "torres"], location: { lat: -2.9710343, lng: -59.9962363, mapsUrl: "https://www.google.com/maps/place/Village+Torres/@-2.9710343,-59.9988112,17z" }, pois: ["Supermercado Nova Era", "Shopping Via Norte", "Sumaúma Park Shopping", "Atacadão"] },
-    { id: 4, title: "Conquista Jardim Botânico", brand: "Direcional", region: "Nova Cidade - Zona Norte", size: "40m²", bedrooms: "2 quartos", flooring: "Cozinha, banheiro e lavatório", cover: "https://www.direcional.com.br/wp-content/uploads/2024/03/Conquista-Jardim-Botanico-Guarita.jpg.webp", link: "https://drive.google.com/file/d/1TYzIq8RuGORXfxQpH8CGZejTjF_GlUz0/view?usp=drive_link", aliases: ["botanico", "botânico", "jardim botanico", "conquista jardim"], location: { lat: -2.9845565, lng: -59.9896558, mapsUrl: "https://www.google.com/maps/place/Conquista+Jardim+Bot%C3%A2nico/@-2.9845565,-59.9922307,17z" }, pois: ["MUSA (Museu da Amazônia / Jardim Botânico)", "Shopping Via Norte", "Supermercado DB Nova Cidade", "SPA Galiléia"] },
-    { id: 5, title: "Viva Vida Coral", brand: "Direcional", region: "Colônia Terra Nova - Zona Norte", size: "41m² a 51m²", bedrooms: "2 quartos", flooring: "Cozinha, banheiro e lavatório", cover: "https://www.direcional.com.br/wp-content/uploads/2025/05/Perspectiva-Guarita-VivaVidaCoral.jpg.webp", link: "https://drive.google.com/file/d/1lYo3otquzwdnD0r5f6JobBbW-6KmGOF4/view?usp=drive_link", aliases: ["coral", "viva vida coral", "viva vida"], location: { lat: -3.01547, lng: -60.018348, mapsUrl: "https://www.google.com/maps/place/VIVA+VIDA+CORAL/@-3.01547,-60.0209229,17z" }, pois: ["Shopping Via Norte", "Loja Havan", "Atacadão", "Hospital Delphina Aziz", "Posto Atem (famoso na entrada do bairro)"] },
-    { id: 6, title: "Conquista Jardim Norte", brand: "Direcional", region: "Santa Etelvina - Zona Norte", size: "36m²", bedrooms: "2 quartos", flooring: "Cozinha, banheiro e lavatório", cover: "https://www.direcional.com.br/wp-content/uploads/2024/12/Perspectiva-Guarita-ConquistaJardimNorte.jpg.webp", link: "https://drive.google.com/file/d/1_Hyb72NWl1HjEiabKLL9m5ZMutHExesY/view?usp=drive_link", aliases: ["jardim norte", "santa etelvina", "conquista norte"], location: { lat: -2.9878435, lng: -60.004704, mapsUrl: "https://www.google.com/maps/place/Conquista+Jardim+Norte/@-2.9878435,-60.0072789,17z" }, pois: ["Shopping Via Norte (1 min)", "Havan (1 min)", "Fun Park (1 min)", "Nova Era Supermercado (1 min)", "UBS Sálvio Belota (2 min)", "Feira do Santa Etelvina (2 min)", "Terminal 06 (5 min)", "15º Distrito Policial (5-7 min)", "Hiper DB (5-7 min)", "Hospital Delphina Aziz", "Escola Dra. Viviane Estrela"] },
-    { id: 7, title: "Viva Vida Rio Amazonas", brand: "Direcional", region: "Tarumã - Zona Oeste", size: "36m²", bedrooms: "2 quartos", flooring: "Cozinha, banheiro e lavatório", cover: "https://www.direcional.com.br/wp-content/uploads/2023/07/Guarita-Viva-Vida-Rio-Amazonas-Direcional.jpg.webp", link: "https://drive.google.com/", aliases: ["amazonas", "rio amazonas", "viva vida rio amazonas"], location: { lat: -2.9835792, lng: -60.0470611, mapsUrl: "https://www.google.com/maps/place/Condom%C3%ADnio+Viva+vida+Rio+Amazonas/@-2.9835792,-60.051932,17z" }, pois: ["Aeroporto Internacional Eduardo Gomes", "Orla da Ponta Negra", "Sivam (Sistema de Vigilância da Amazônia)", "Sipam", "Supermercado Veneza"] },
-    { id: 8, title: "Bosque das Torres", brand: "Direcional", region: "Lago Azul - Zona Norte", size: "36m²", bedrooms: "2 quartos", flooring: "Cozinha, banheiro e lavatório", cover: "https://www.direcional.com.br/wp-content/uploads/2025/10/portaria-bosque-das-torres.jpg.webp", link: "https://drive.google.com/file/d/1lPnNQuxlPkKOcW2JqOB7KEWsaQVpZzcU/view?usp=drive_link", aliases: ["bosque", "bosque das torres"], location: { lat: -2.9696927, lng: -59.997579, mapsUrl: "https://www.google.com/maps/place/Vista+torres/@-2.9691784,-60.0011732,16z" }, pois: ["Supermercado Nova Era (Torres)", "Sumaúma Park Shopping", "Parque do Mindu", "Faculdade Estácio (polo próximo)"] },
-    { id: 9, title: "Parque Ville Lírio Azul", brand: "Direcional", region: "Lago Azul - Zona Norte", size: "41m²", bedrooms: "2 quartos", flooring: "Cozinha, banheiro e lavatório", cover: "https://www.direcional.com.br/wp-content/uploads/2025/11/fachada-noturna-parque-ville-lirio-azul.jpg.webp", link: "https://drive.google.com/file/d/1fc7AXap6nhkpTlxONsm46WJCKxIWIhwe/view?usp=drive_link", aliases: ["lirio", "lírio", "lirio azul", "parque ville lirio"], location: { lat: -2.9759258, lng: -60.0065576, mapsUrl: "https://www.google.com/maps/place/Parque+Ville+L%C3%ADrio+Azul/@-2.9781636,-60.0150349,16.5z" }, pois: ["Escola Integral João S. Braga (1 min)", "Colégio Militar da PM VI (2 min)", "Escola Est. Eliana Braga (2 min)", "Nova Era Supermercado (2 min)", "Clínica da Família C. Gracie (2 min)", "UBS José Fligliuolo (4 min)", "Clínica da Família C. Nicolau (4 min)", "Terminal 6 e 7 (4 min)", "Shopping Via Norte / Havan / Fun Park (7 min)", "Hospital Delphina Aziz (8 min)"] },
-    { id: 10, title: "Amazon Boulevard Classic", brand: "Riva", region: "Bairro da Paz - Zona Centro-Oeste", size: "44m² a 69,78m²", bedrooms: "2 quartos", flooring: "Todo o apê", cover: "https://www.rivaincorporadora.com.br/wp-content/uploads/2023/11/fachada-noturna_amazon-boulevard-classic.jpg.webp", link: "https://drive.google.com/file/d/1ZX37T2S8FlHnSiO-yeAjlFyqq_5-dVzx/view?usp=drive_link", aliases: ["classic", "amazon boulevard", "boulevard", "boulevard classic"], location: { lat: -3.060292, lng: -60.0253649, mapsUrl: "https://www.google.com/maps/place/Amazon+Boulevard+Classic+-+Riva/@-3.060292,-60.0279398,17z" }, pois: ["Arena da Amazônia", "Amazonas Shopping", "Carrefour Hipermercado", "UNIP (Universidade Paulista)", "Terminal Rodoviário de Manaus", "Hospital Tropical (Fundação de Medicina Tropical)"] },
-    { id: 11, title: "Amazon Boulevard Prime", brand: "Riva", region: "Bairro da Paz - Zona Centro-Oeste", size: "51m² a 90,39m²", bedrooms: "2 e 3 quartos", flooring: "Todo o apê", cover: "https://www.rivaincorporadora.com.br/wp-content/uploads/2025/06/guarita-Amazon-prime-boulevard-riva.jpg.webp", link: "https://drive.google.com/file/d/1aIuBlwLYGStUm7DNE3gCbfu3Ty2JmkGM/view?usp=drive_link", aliases: ["prime", "amazon prime", "boulevard prime"], location: { lat: -3.060292, lng: -60.0253649, mapsUrl: "https://www.google.com/maps/place/Amazon+Boulevard+Classic+-+Riva/@-3.060292,-60.0279398,17z" }, pois: ["Arena da Amazônia", "Sambódromo", "Hipermercado Carrefour", "La Parilla Restaurante", "Aeroclub", "Petz", "Clube Municipal (ao lado)", "Vila Olímpica", "Drogaria Bom Preço", "Drogaria Santo Remédio"] },
-    { id: 12, title: "Città Oasis Azzure", brand: "Riva", region: "Flores - Zona Centro-Sul", size: "48m² a 75m²", bedrooms: "2 e 3 quartos", flooring: "Todo o apê", cover: "https://www.rivaincorporadora.com.br/wp-content/uploads/2025/08/citta-azzure_GUARITA.jpg.webp", link: "https://drive.google.com/file/d/1Y-fT6UbQ-OopqVaV0POgHRIdlayMXMOB/view?usp=sharing", aliases: ["citta", "città", "azzure", "oasis", "oasis azzure"], location: { lat: -3.0732449, lng: -60.0158834, mapsUrl: "https://www.google.com/maps/place/Citta+Oasis+Azzure/@-3.0732449,-60.0184583,17z" }, pois: ["Universidade Nilton Lins", "Laranjeiras Restaurante (polo gastronômico)", "Sushi Ponta Negra", "Domes Burgers", "Di Fiori - Casa de Massas e Pizzas", "Na Lenha Pizzaria", "Drogaria Santo Remédio", "Supermercado Atack (Laranjeiras)", "Sollarium Mall"] },
-    { id: 13, title: "Zenith Condomínio Clube", brand: "Riva", region: "São Francisco - Zona Sul", size: "48m² a 49m²", bedrooms: "2 e 3 quartos", flooring: "Todo o apê", cover: "https://www.rivaincorporadora.com.br/wp-content/uploads/2024/08/Perspectiva-Guarita-ZenithCondominioClube.webp", link: "https://drive.google.com/file/d/1wv_v56T2ACEHtPZF-iRBvEWY2VVdUXxu/view?usp=drive_link", aliases: ["zenith", "zenith condominio"], location: { lat: -3.1040641, lng: -59.9993555, mapsUrl: "https://www.google.com/maps/place/Zenith+Condom%C3%ADnio+Clube+%E2%80%93+Stand+de+Vendas/@-3.1040641,-60.0019304,17z" }, pois: ["Manauara Shopping", "Fórum Ministro Henoch Reis", "Tribunal de Justiça (TJ-AM)", "Hospital Check Up", "Colégio Martha Falcão", "Faculdade Martha Falcão", "Faculdade Estácio"] },
-    { id: 14, title: "Conquista Topázio", brand: "Direcional", region: "Colônia Terra Nova - Zona Norte", size: "41m² a 51m²", bedrooms: "1 e 2 quartos", flooring: "Todo o apê", cover: "https://www.direcional.com.br/wp-content/uploads/2023/04/Guarita-Conquista-Topazio-Direcional.jpg.webp", link: "https://drive.google.com/file/d/1SMIfr9HbfLd06UaDLKbMUxxtuh4cPPEM/view?usp=drive_link", aliases: ["topazio", "topázio", "conquista topazio"], location: { lat: -3.01547, lng: -60.018348, mapsUrl: "https://www.google.com/maps/place/VIVA+VIDA+CORAL/@-3.01547,-60.0209229,17z" }, pois: ["Allegro Mall (vizinho)", "Shopping Via Norte", "Atacadão", "Loja Havan", "SPA da Colônia Terra Nova"] },
-    { id: 16, title: "Conquista Rio Negro", brand: "Direcional", region: "Ponta Negra - Zona Oeste", size: "41m²", bedrooms: "2 quartos", flooring: "Todo o apê", entrega: "Entregue", cover: "https://www.direcional.com.br/wp-content/uploads/2022/11/Guarita-Conquista-Rio-Negro-Direcional.jpg.webp", link: "https://drive.google.com/file/d/1pHLQwUSn6BDMfLo7fFGonyyWlgtXwNmy/view?usp=drive_link", aliases: ["negro", "rio negro", "conquista rio negro"], location: { lat: -3.0401114, lng: -60.0800979, mapsUrl: "https://www.google.com/maps/place/Conquista+Rio+Negro+-+Ponta+Negra/@-3.0401114,-60.0826728,17z" }, pois: ["Shopping Ponta Negra", "DB Ponta Negra", "Orla 92 Mall", "Supermercado Veneza", "Orla da Ponta Negra", "Praia Dourada", "Marina Tauá", "Balneário do SESC", "Aeroporto Eduardo Gomes", "Policlínica José Lins", "Colégio Século"] },
-    { id: 17, title: "Viva Vida Rio Tapajós", brand: "Direcional", region: "Tarumã - Zona Oeste", size: "36m²", bedrooms: "2 quartos", flooring: "Cozinha, banheiro e lavatório", cover: "https://www.direcional.com.br/wp-content/uploads/2025/02/Perspectiva-Guarita-VivaVidaRioTapajos.jpg.webp", link: "https://drive.google.com/file/d/1k3TOypf5bm_zXPfc-ulb7vY9e7MKxmlk/view?usp=drive_link", aliases: ["tapajos", "tapajós", "rio tapajos", "viva vida rio tapajos"], location: { lat: -2.9835792, lng: -60.0470611, mapsUrl: "https://www.google.com/maps/place/Condom%C3%ADnio+Viva+vida+Rio+Amazonas/@-2.9835792,-60.051932,17z" }, pois: ["Aeroporto Internacional de Manaus", "Tarumã (área de balneários famosos)", "Sivam", "proximidade com a entrada da Ponta Negra"] }
+    { id: 1, title: "Brisas do Horizonte", brand: "Direcional", region: "Coroado - Zona Leste", size: "43m² a 45m²", bedrooms: "2 quartos", flooring: "Todo o apê", entrega: "08/2028", cover: "https://www.direcional.com.br/wp-content/uploads/2025/06/Perspectiva-Guarita-BrisasdoHorizonte.jpg.webp", link: "https://drive.google.com/file/d/18IXtAt9PLVjIsk2PkXIHXnVCaduVkGu2/view?usp=drive_link", aliases: ["brisas", "brisas do horizonte", "horizonte"], pois: ["Supermercado Vitória (1 min)", "Escola Mun. Profª Maria Rodrigues Tapajós (2 min)", "SPA Coroado (3 min)", "Estádio Carlos Zamith (5 min)", "Park Mall Ephigênio Salles (6 min)", "UFAM - Universidade Federal do Amazonas (7 min)", "Hospital Dr. João Lúcio (7 min)", "Samel São José Medical Center (7 min)", "Sesi Clube do Trabalhador (8 min)", "Manauara Shopping (14 min)"] },
+    { id: 2, title: "Parque Ville Orquídea", brand: "Direcional", region: "Lago Azul - Zona Norte", size: "41m²", bedrooms: "2 quartos", flooring: "Todo o apê", entrega: "04/2027", cover: "https://www.direcional.com.br/wp-content/uploads/2024/05/Perspectiva_PARQUEVILLEORQUIDEA_GUARITA.jpg.webp", link: "https://drive.google.com/file/d/1F_BeT2jceDM8u4kCbSXN8kp2rk7boQTG/view?usp=drive_link", aliases: ["orquidea", "orquídea", "parque ville", "parque ville orquidea"], pois: ["Escola Mun. Viviane Estrela (1-2 min)", "Clínica da Família C. Nicolau (1-2 min)", "Veneza Express (3-4 min)", "Nova Era Supermercado (3-4 min)", "Terminal 6 (3-4 min)", "Colégio Militar da PM VI (3-4 min)", "Shopping Via Norte (7 min)", "Hospital Delphina Aziz (10 min)", "Sumaúma Park Shopping (12 min)"] },
+    { id: 3, title: "Village Torres", brand: "Direcional", region: "Lago Azul - Zona Norte", size: "36m²", bedrooms: "2 quartos", flooring: "Cozinha, banheiro e lavatório", entrega: "04/2027", cover: "https://www.direcional.com.br/wp-content/uploads/2024/09/Perspectiva-Guarita-VillageTorres.jpg.webp", link: "https://drive.google.com/file/d/1blVconA5fjODxvXB7s8KT6dSlX8KpLLv/view?usp=drive_link", aliases: ["village", "village torres", "torres"], pois: ["Supermercado Nova Era", "Shopping Via Norte", "Sumaúma Park Shopping", "Atacadão"] },
+    { id: 4, title: "Conquista Jardim Botânico", brand: "Direcional", region: "Nova Cidade - Zona Norte", size: "40m²", bedrooms: "2 quartos", flooring: "Cozinha, banheiro e lavatório", entrega: "11/2026", cover: "https://www.direcional.com.br/wp-content/uploads/2024/03/Conquista-Jardim-Botanico-Guarita.jpg.webp", link: "https://drive.google.com/file/d/1TYzIq8RuGORXfxQpH8CGZejTjF_GlUz0/view?usp=drive_link", aliases: ["botanico", "botânico", "jardim botanico", "conquista jardim"], pois: ["MUSA (Museu da Amazônia / Jardim Botânico)", "Shopping Via Norte", "Supermercado DB Nova Cidade", "SPA Galiléia"] },
+    { id: 5, title: "Viva Vida Coral", brand: "Direcional", region: "Colônia Terra Nova - Zona Norte", size: "41m² a 51m²", bedrooms: "2 quartos", flooring: "Cozinha, banheiro e lavatório", entrega: "03/2028", cover: "https://www.direcional.com.br/wp-content/uploads/2025/05/Perspectiva-Guarita-VivaVidaCoral.jpg.webp", link: "https://drive.google.com/file/d/1lYo3otquzwdnD0r5f6JobBbW-6KmGOF4/view?usp=drive_link", aliases: ["coral", "viva vida coral", "viva vida"], pois: ["Shopping Via Norte", "Loja Havan", "Atacadão", "Hospital Delphina Aziz", "Posto Atem (famoso na entrada do bairro)"] },
+    { id: 6, title: "Conquista Jardim Norte", brand: "Direcional", region: "Santa Etelvina - Zona Norte", size: "36m²", bedrooms: "2 quartos", flooring: "Cozinha, banheiro e lavatório", entrega: "06/2027", cover: "https://www.direcional.com.br/wp-content/uploads/2024/12/Perspectiva-Guarita-ConquistaJardimNorte.jpg.webp", link: "https://drive.google.com/file/d/1_Hyb72NWl1HjEiabKLL9m5ZMutHExesY/view?usp=drive_link", aliases: ["jardim norte", "santa etelvina", "conquista norte"], pois: ["Shopping Via Norte (1 min)", "Havan (1 min)", "Fun Park (1 min)", "Nova Era Supermercado (1 min)", "UBS Sálvio Belota (2 min)", "Feira do Santa Etelvina (2 min)", "Terminal 06 (5 min)", "15º Distrito Policial (5-7 min)", "Hiper DB (5-7 min)", "Hospital Delphina Aziz", "Escola Dra. Viviane Estrela"] },
+    { id: 7, title: "Viva Vida Rio Amazonas", brand: "Direcional", region: "Tarumã - Zona Oeste", size: "36m²", bedrooms: "2 quartos", flooring: "Cozinha, banheiro e lavatório", entrega: "03/2026", cover: "https://www.direcional.com.br/wp-content/uploads/2023/07/Guarita-Viva-Vida-Rio-Amazonas-Direcional.jpg.webp", link: "https://drive.google.com/", aliases: ["amazonas", "rio amazonas", "viva vida rio amazonas"], pois: ["Aeroporto Internacional Eduardo Gomes", "Orla da Ponta Negra", "Sivam (Sistema de Vigilância da Amazônia)", "Sipam", "Supermercado Veneza"] },
+    { id: 8, title: "Bosque das Torres", brand: "Direcional", region: "Lago Azul - Zona Norte", size: "36m²", bedrooms: "2 quartos", flooring: "Cozinha, banheiro e lavatório", entrega: "06/2028", cover: "https://www.direcional.com.br/wp-content/uploads/2025/10/portaria-bosque-das-torres.jpg.webp", link: "https://drive.google.com/file/d/1lPnNQuxlPkKOcW2JqOB7KEWsaQVpZzcU/view?usp=drive_link", aliases: ["bosque", "bosque das torres"], pois: ["Supermercado Nova Era (Torres)", "Sumaúma Park Shopping", "Parque do Mindu", "Faculdade Estácio (polo próximo)"] },
+    { id: 9, title: "Parque Ville Lírio Azul", brand: "Direcional", region: "Lago Azul - Zona Norte", size: "41m²", bedrooms: "2 quartos", flooring: "Cozinha, banheiro e lavatório", entrega: "11/2028", cover: "https://www.direcional.com.br/wp-content/uploads/2025/11/fachada-noturna-parque-ville-lirio-azul.jpg.webp", link: "https://drive.google.com/file/d/1fc7AXap6nhkpTlxONsm46WJCKxIWIhwe/view?usp=drive_link", aliases: ["lirio", "lírio", "lirio azul", "parque ville lirio"], pois: ["Escola Integral João S. Braga (1 min)", "Colégio Militar da PM VI (2 min)", "Escola Est. Eliana Braga (2 min)", "Nova Era Supermercado (2 min)", "Clínica da Família C. Gracie (2 min)", "UBS José Fligliuolo (4 min)", "Clínica da Família C. Nicolau (4 min)", "Terminal 6 e 7 (4 min)", "Shopping Via Norte / Havan / Fun Park (7 min)", "Hospital Delphina Aziz (8 min)"] },
+    { id: 10, title: "Amazon Boulevard Classic", brand: "Riva", region: "Bairro da Paz - Zona Centro-Oeste", size: "44m² a 69,78m²", bedrooms: "2 quartos", flooring: "Todo o apê", entrega: "12/2026", cover: "https://www.rivaincorporadora.com.br/wp-content/uploads/2023/11/fachada-noturna_amazon-boulevard-classic.jpg.webp", link: "https://drive.google.com/file/d/1ZX37T2S8FlHnSiO-yeAjlFyqq_5-dVzx/view?usp=drive_link", aliases: ["classic", "amazon boulevard", "boulevard", "boulevard classic"], pois: ["Arena da Amazônia", "Amazonas Shopping", "Carrefour Hipermercado", "UNIP (Universidade Paulista)", "Terminal Rodoviário de Manaus", "Hospital Tropical (Fundação de Medicina Tropical)"] },
+    { id: 11, title: "Amazon Boulevard Prime", brand: "Riva", region: "Bairro da Paz - Zona Centro-Oeste", size: "51m² a 90,39m²", bedrooms: "2 e 3 quartos", flooring: "Todo o apê", entrega: "06/2028", cover: "https://www.rivaincorporadora.com.br/wp-content/uploads/2025/06/guarita-Amazon-prime-boulevard-riva.jpg.webp", link: "https://drive.google.com/file/d/1aIuBlwLYGStUm7DNE3gCbfu3Ty2JmkGM/view?usp=drive_link", aliases: ["prime", "amazon prime", "boulevard prime"], pois: ["Arena da Amazônia", "Sambódromo", "Hipermercado Carrefour", "La Parilla Restaurante", "Aeroclub", "Petz", "Clube Municipal (ao lado)", "Vila Olímpica", "Drogaria Bom Preço", "Drogaria Santo Remédio"] },
+    { id: 12, title: "Città Oasis Azzure", brand: "Riva", region: "Flores - Zona Centro-Sul", size: "48m² a 75m²", bedrooms: "2 e 3 quartos", flooring: "Todo o apê", entrega: "11/2028", cover: "https://www.rivaincorporadora.com.br/wp-content/uploads/2025/08/citta-azzure_GUARITA.jpg.webp", link: "https://drive.google.com/file/d/1Y-fT6UbQ-OopqVaV0POgHRIdlayMXMOB/view?usp=sharing", aliases: ["citta", "città", "azzure", "oasis", "oasis azzure"], pois: ["Universidade Nilton Lins", "Laranjeiras Restaurante (polo gastronômico)", "Sushi Ponta Negra", "Domes Burgers", "Di Fiori - Casa de Massas e Pizzas", "Na Lenha Pizzaria", "Drogaria Santo Remédio", "Supermercado Atack (Laranjeiras)", "Sollarium Mall"] },
+    { id: 13, title: "Zenith Condomínio Clube", brand: "Riva", region: "São Francisco - Zona Sul", size: "48m² a 49m²", bedrooms: "2 e 3 quartos", flooring: "Todo o apê", entrega: "03/2028", cover: "https://www.rivaincorporadora.com.br/wp-content/uploads/2024/08/Perspectiva-Guarita-ZenithCondominioClube.webp", link: "https://drive.google.com/file/d/1wv_v56T2ACEHtPZF-iRBvEWY2VVdUXxu/view?usp=drive_link", aliases: ["zenith", "zenith condominio"], pois: ["Manauara Shopping", "Fórum Ministro Henoch Reis", "Tribunal de Justiça (TJ-AM)", "Hospital Check Up", "Colégio Martha Falcão", "Faculdade Martha Falcão", "Faculdade Estácio"] },
+    { id: 14, title: "Conquista Topázio", brand: "Direcional", region: "Colônia Terra Nova - Zona Norte", size: "41m² a 51m²", bedrooms: "1 e 2 quartos", flooring: "Todo o apê", entrega: "Entregue", cover: "https://www.direcional.com.br/wp-content/uploads/2023/04/Guarita-Conquista-Topazio-Direcional.jpg.webp", link: "https://drive.google.com/file/d/1SMIfr9HbfLd06UaDLKbMUxxtuh4cPPEM/view?usp=drive_link", aliases: ["topazio", "topázio", "conquista topazio"], pois: ["Allegro Mall (vizinho)", "Shopping Via Norte", "Atacadão", "Loja Havan", "SPA da Colônia Terra Nova"] },
+    { id: 16, title: "Conquista Rio Negro", brand: "Direcional", region: "Ponta Negra - Zona Oeste", size: "41m²", bedrooms: "2 quartos", flooring: "Todo o apê", entrega: "Entregue", cover: "https://www.direcional.com.br/wp-content/uploads/2022/11/Guarita-Conquista-Rio-Negro-Direcional.jpg.webp", link: "https://drive.google.com/file/d/1pHLQwUSn6BDMfLo7fFGonyyWlgtXwNmy/view?usp=drive_link", aliases: ["negro", "rio negro", "conquista rio negro"], pois: ["Shopping Ponta Negra", "DB Ponta Negra", "Orla 92 Mall", "Supermercado Veneza", "Orla da Ponta Negra", "Praia Dourada", "Marina Tauá", "Balneário do SESC", "Aeroporto Eduardo Gomes", "Policlínica José Lins", "Colégio Século"] },
+    { id: 17, title: "Viva Vida Rio Tapajós", brand: "Direcional", region: "Tarumã - Zona Oeste", size: "36m²", bedrooms: "2 quartos", flooring: "Cozinha, banheiro e lavatório", entrega: "08/2027", cover: "https://www.direcional.com.br/wp-content/uploads/2025/02/Perspectiva-Guarita-VivaVidaRioTapajos.jpg.webp", link: "https://drive.google.com/file/d/1k3TOypf5bm_zXPfc-ulb7vY9e7MKxmlk/view?usp=drive_link", aliases: ["tapajos", "tapajós", "rio tapajos", "viva vida rio tapajos"], pois: ["Aeroporto Internacional de Manaus", "Tarumã (área de balneários famosos)", "Sivam", "proximidade com a entrada da Ponta Negra"] }
 ];
 
 // === DADOS DE UTILITÁRIOS ===
@@ -245,26 +243,6 @@ export default function App() {
     const pastaRapidaClicksRef = useRef(parseInt(localStorage.getItem('dst_pr_clicks') || '0'));
     const [showCotacaoInfo, setShowCotacaoInfo] = useState(false);
     const [pdfLeitor, setPdfLeitor] = useState(null); // { title, url, brand } — leitor de revista in-app
-    const [iframeError, setIframeError] = useState(false); // true quando iframe falha em carregar
-
-    // Timeout para detectar erro silencioso do Drive no iframe (X-Frame-Options)
-    useEffect(() => {
-        if (!pdfLeitor) { setIframeError(false); return; }
-        const iframeLoaded = { ok: false };
-        // Dá 8 segundos — se o iframe não disparou onLoad com sucesso, provavelmente deu erro
-        const timer = setTimeout(() => {
-            if (!iframeLoaded.ok) setIframeError(true);
-        }, 8000);
-        // Listener para saber se o iframe carregou OK (via mensagem do Drive ou cross-origin catch)
-        const onMsg = (e) => {
-            if (e.origin && e.origin.includes('google.com')) {
-                iframeLoaded.ok = true;
-                clearTimeout(timer);
-            }
-        };
-        window.addEventListener('message', onMsg);
-        return () => { clearTimeout(timer); window.removeEventListener('message', onMsg); };
-    }, [pdfLeitor]);
     const [cotacaoInfoCountdown, setCotacaoInfoCountdown] = useState(10);
     const cotacaoClicksRef = useRef(parseInt(localStorage.getItem('dst_cot_clicks') || '0'));
 
@@ -1768,40 +1746,16 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
 
                                             </div>
                                             <div className="mt-auto flex flex-col gap-2">
-                                                {revista.openExternal ? (
-                                                    <button
-                                                        onClick={() => {
-                                                            haptic('medium');
-                                                            const url = revista.link;
-                                                            // Tenta forçar abertura no navegador externo (funciona em PWA Android/iOS)
-                                                            const isAndroid = /android/i.test(navigator.userAgent);
-                                                            const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
-                                                            if (isAndroid) {
-                                                                // Intent URL força Chrome externo no Android
-                                                                window.location.href = `intent://${url.replace(/^https?:\/\//, '')}#Intent;scheme=https;package=com.android.chrome;end`;
-                                                            } else if (isIOS) {
-                                                                window.location.href = url;
-                                                            } else {
-                                                                window.open(url, '_blank', 'noopener,noreferrer');
-                                                            }
-                                                        }}
-                                                        className={`w-full flex items-center justify-center gap-2 py-3 rounded-lg font-semibold transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg ${revista.brand === 'Direcional' ? 'bg-gradient-to-r from-orange-500 via-red-500 to-orange-600 hover:from-orange-600 hover:to-red-600 shadow-orange-300/30 text-white' : 'bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 hover:from-blue-700 hover:to-indigo-700 shadow-blue-300/30 text-white'}`}>
-                                                        <BookOpen size={18} /> Ver Revista
-                                                    </button>
-                                                ) : (
-                                                    <button
-                                                        onClick={() => {
-                                                            haptic('medium');
-                                                            const previewUrl = revista.link.includes('/preview')
-                                                                ? revista.link
-                                                                : revista.link.replace(/\/view(\?.*)?$/, '/preview');
-                                                            setIframeError(false);
-                                                            setPdfLeitor({ title: revista.title, url: previewUrl, brand: revista.brand });
-                                                        }}
-                                                        className={`w-full flex items-center justify-center gap-2 py-3 rounded-lg font-semibold transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg ${revista.brand === 'Direcional' ? 'bg-gradient-to-r from-orange-500 via-red-500 to-orange-600 hover:from-orange-600 hover:to-red-600 shadow-orange-300/30 text-white' : 'bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 hover:from-blue-700 hover:to-indigo-700 shadow-blue-300/30 text-white'}`}>
-                                                        <BookOpen size={18} /> Ver Revista
-                                                    </button>
-                                                )}
+                                                <button
+                                                    onClick={() => {
+                                                        haptic('medium');
+                                                        const previewUrl = revista.link
+                                                            .replace(/\/view(\?.*)?$/, '/preview');
+                                                        setPdfLeitor({ title: revista.title, url: previewUrl, brand: revista.brand });
+                                                    }}
+                                                    className={`w-full flex items-center justify-center gap-2 py-3 rounded-lg font-semibold transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg ${revista.brand === 'Direcional' ? 'bg-gradient-to-r from-orange-500 via-red-500 to-orange-600 hover:from-orange-600 hover:to-red-600 shadow-orange-300/30 text-white' : 'bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 hover:from-blue-700 hover:to-indigo-700 shadow-blue-300/30 text-white'}`}>
+                                                    <BookOpen size={18} /> Ver Revista
+                                                </button>
                                                 <button onClick={() => { haptic(); setSelectedPois(revista); }} className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-lg font-semibold transition-colors duration-200 border text-sm ${modoNoturno ? 'bg-slate-700 border-slate-600 text-slate-200 hover:bg-slate-600' : 'bg-slate-100 border-slate-200 text-slate-700 hover:bg-slate-200'}`}>
                                                     <MapPin size={16} className="text-rose-500" /> Ver Pontos de Referência
                                                 </button>
@@ -1945,7 +1899,7 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
 
                         {/* Botão X flutuante sobre o notch */}
                         <button
-                            onClick={() => { setPdfLeitor(null); setIframeError(false); }}
+                            onClick={() => setPdfLeitor(null)}
                             className="absolute z-20 w-9 h-9 flex items-center justify-center rounded-full text-white active:scale-95 transition-all"
                             style={{
                                 top: 'calc(env(safe-area-inset-top, 0px) + 8px)',
@@ -1959,99 +1913,39 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
                             <X size={18} />
                         </button>
 
-                        {iframeError ? (
-                            /* Tela de erro amigável com botão grande para abrir no navegador */
-                            <div className="absolute inset-0 flex flex-col items-center justify-center gap-6 px-8">
-                                <div className={`w-20 h-20 rounded-3xl flex items-center justify-center ${isDir ? 'bg-orange-500/20' : 'bg-blue-500/20'}`}>
-                                    <AlertTriangle size={36} className="text-yellow-400" />
+                        {/* iframe — começa abaixo da status bar para o botão nativo do Drive ficar visível */}
+                        <div className="absolute left-0 right-0 bottom-0 z-0"
+                            style={{top:'env(safe-area-inset-top, 0px)', background:'#0f0f0f'}}>
+                            {/* Loading atrás do iframe */}
+                            <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 pointer-events-none" style={{background:'#0f0f0f', zIndex:0}}>
+                                <div className={`w-16 h-16 rounded-2xl flex items-center justify-center ${isDir ? 'bg-orange-500/20' : 'bg-blue-500/20'}`}>
+                                    <BookOpen size={32} className={isDir ? 'text-orange-400' : 'text-blue-400'} />
                                 </div>
-                                <div className="text-center">
-                                    <p className="text-white font-bold text-lg mb-1">Não foi possível carregar</p>
-                                    <p className="text-white/50 text-sm">O Google Drive bloqueou a visualização inline.<br/>Abra no navegador para ver a revista.</p>
+                                <p className="text-white/60 text-sm">Carregando revista...</p>
+                                <div className="flex gap-1.5">
+                                    {[0,1,2].map(i => (
+                                        <div key={i} className={`w-2 h-2 rounded-full ${isDir ? 'bg-orange-400' : 'bg-blue-400'}`}
+                                            style={{animation:`bounce 1s ease-in-out ${i*0.15}s infinite alternate`}} />
+                                    ))}
                                 </div>
-                                <a
-                                    href={driveViewUrl}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className={`flex items-center gap-3 px-8 py-4 rounded-2xl font-bold text-white text-base transition-all active:scale-95 shadow-lg ${isDir ? 'bg-gradient-to-r from-orange-500 to-red-500' : 'bg-gradient-to-r from-blue-600 to-indigo-600'}`}
-                                >
-                                    <ExternalLink size={20} /> Abrir no navegador
-                                </a>
-                                <button
-                                    onClick={() => { setPdfLeitor(null); setIframeError(false); }}
-                                    className="text-white/40 text-sm underline"
-                                >
-                                    Voltar
-                                </button>
                             </div>
-                        ) : (
-                            /* iframe normal com timeout para detectar erro do Drive */
-                            <div className="absolute left-0 right-0 bottom-0 z-0"
-                                style={{top:'env(safe-area-inset-top, 0px)', background:'#0f0f0f'}}>
-                                {/* Loading atrás do iframe */}
-                                <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 pointer-events-none" style={{background:'#0f0f0f', zIndex:0}}>
-                                    <div className={`w-16 h-16 rounded-2xl flex items-center justify-center ${isDir ? 'bg-orange-500/20' : 'bg-blue-500/20'}`}>
-                                        <BookOpen size={32} className={isDir ? 'text-orange-400' : 'text-blue-400'} />
-                                    </div>
-                                    <p className="text-white/60 text-sm">Carregando revista...</p>
-                                    <div className="flex gap-1.5">
-                                        {[0,1,2].map(i => (
-                                            <div key={i} className={`w-2 h-2 rounded-full ${isDir ? 'bg-orange-400' : 'bg-blue-400'}`}
-                                                style={{animation:`bounce 1s ease-in-out ${i*0.15}s infinite alternate`}} />
-                                        ))}
-                                    </div>
-                                </div>
-                                <iframe
-                                    key={pdfLeitor.url}
-                                    src={pdfLeitor.url}
-                                    title={pdfLeitor.title}
-                                    allow="autoplay"
-                                    className="border-0"
-                                    onLoad={(e) => {
-                                        // Tenta detectar página de erro do Drive via título (funciona em alguns browsers)
-                                        try {
-                                            const doc = e.target.contentDocument || e.target.contentWindow?.document;
-                                            if (doc && doc.title && (
-                                                doc.title.toLowerCase().includes('error') ||
-                                                doc.title.toLowerCase().includes('não existe') ||
-                                                doc.title.toLowerCase().includes('not found')
-                                            )) {
-                                                setIframeError(true);
-                                            }
-                                        } catch (_) {
-                                            // Cross-origin block = Drive carregou (provavelmente ok)
-                                        }
-                                    }}
-                                    style={{
-                                        position: 'absolute',
-                                        inset: 0,
-                                        width: '100%',
-                                        height: '100%',
-                                        zIndex: 1,
-                                        background: 'transparent',
-                                        touchAction: 'pan-y pinch-zoom',
-                                    }}
-                                />
-                                {/* Botão flutuante sempre visível para abrir no navegador */}
-                                <a
-                                    href={driveViewUrl}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="absolute z-10 flex items-center gap-2 px-4 py-2 rounded-full text-white text-xs font-semibold transition-all active:scale-95"
-                                    style={{
-                                        bottom: 'calc(env(safe-area-inset-bottom, 0px) + 12px)',
-                                        right: '12px',
-                                        background: 'rgba(0,0,0,0.65)',
-                                        backdropFilter: 'blur(10px)',
-                                        WebkitBackdropFilter: 'blur(10px)',
-                                        border: '1px solid rgba(255,255,255,0.2)'
-                                    }}
-                                >
-                                    <ExternalLink size={14} /> Abrir no navegador
-                                </a>
-                            </div>
-                        )}
-
+                            <iframe
+                                key={pdfLeitor.url}
+                                src={pdfLeitor.url}
+                                title={pdfLeitor.title}
+                                allow="autoplay"
+                                className="border-0"
+                                style={{
+                                    position: 'absolute',
+                                    inset: 0,
+                                    width: '100%',
+                                    height: '100%',
+                                    zIndex: 1,
+                                    background: '#0f0f0f',
+                                    touchAction: 'pan-y pinch-zoom',
+                                }}
+                            />
+                        </div>
                         <style>{`
                             @keyframes bounce {
                                 from { transform: translateY(0); opacity: 0.5; }
@@ -2066,24 +1960,23 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
             {selectedPois && (() => {
                 // Endereços reais dos empreendimentos (confirmados nas fontes oficiais Direcional/Riva)
                 // Usado como ORIGEM na rota do Maps — garante que a rota parte do local correto
-                // Coordenadas exatas extraídas do Google Maps — origem para cálculo de rota até os POIs
                 const EMPREEND_COORDS = {
-                    'Brisas do Horizonte':         '-3.0863455,-59.9757828',
-                    'Parque Ville Orquídea':        '-2.9737056,-60.0065346',
-                    'Village Torres':               '-2.9710343,-59.9962363',
-                    'Conquista Jardim Botânico':    '-2.9845565,-59.9896558',
-                    'Viva Vida Coral':              '-3.01547,-60.018348',
-                    'Conquista Jardim Norte':       '-2.9878435,-60.004704',
-                    'Viva Vida Rio Amazonas':       '-2.9835792,-60.0470611',
-                    'Bosque das Torres':            '-2.9696927,-59.997579',
-                    'Parque Ville Lírio Azul':      '-2.9759258,-60.0065576',
-                    'Amazon Boulevard Classic':     '-3.060292,-60.0253649',
-                    'Amazon Boulevard Prime':       '-3.060292,-60.0253649',
-                    'Città Oasis Azzure':           '-3.0732449,-60.0158834',
-                    'Zenith Condomínio Clube':      '-3.1040641,-59.9993555',
-                    'Conquista Topázio':            '-3.01547,-60.018348',
-                    'Conquista Rio Negro':          '-3.0401114,-60.0800979',
-                    'Viva Vida Rio Tapajós':        '-2.9835792,-60.0470611',
+                    'Brisas do Horizonte':         'Rua Ivailândia, 485, Coroado, Manaus, AM',
+                    'Parque Ville Orquídea':        'Av. Comendador José Cruz, 1026, Jardim Manaus, Manaus, AM',
+                    'Village Torres':               'Rua Dona Debla Henriques, 400, Lago Azul, Manaus, AM',
+                    'Conquista Jardim Botânico':    'Av. Monsenhor Amâncio de Miranda, 200, Nova Cidade, Manaus, AM',
+                    'Viva Vida Coral':              'Av. Tude Moutinho, 1053, Colônia Terra Nova, Manaus, AM',
+                    'Conquista Jardim Norte':       'Rua Vicente Martins, 900, Santa Etelvina, Manaus, AM',
+                    'Viva Vida Rio Amazonas':       'Av. do Turismo, 12686, Tarumã, Manaus, AM',
+                    'Bosque das Torres':            'Rua Dona Debla Henriques, 450, Lago Azul, Manaus, AM',
+                    'Parque Ville Lírio Azul':      'Av. Santa Tereza D\'Avila, 1096, Lago Azul, Manaus, AM',
+                    'Amazon Boulevard Classic':     'Av. Torquato Tapajós, 1357, Bairro da Paz, Manaus, AM',
+                    'Amazon Boulevard Prime':       'Av. Torquato Tapajós, 1357, Bairro da Paz, Manaus, AM',
+                    'Città Oasis Azzure':           'Rua Santa Bárbara, 200, Flores, Manaus, AM',
+                    'Zenith Condomínio Clube':      'Rua Rio Amazonas, 409, São Francisco, Manaus, AM',
+                    'Conquista Topázio':            'Av. Tude Moutinho, 945, Colônia Terra Nova, Manaus, AM',
+                    'Conquista Rio Negro':          'Rua Frederico Baird, 2990, Ponta Negra, Manaus, AM',
+                    'Viva Vida Rio Tapajós':        'Av. do Turismo, 12850, Tarumã, Manaus, AM',
                 };
 
                 // Mapa de POIs com endereço exato para evitar o Maps abrir a unidade errada
@@ -2194,9 +2087,7 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
                     'Colégio Século':                          'Colégio Século, Manaus',
                 };
 
-                // Usa coordenadas lat,lng como origem — abre o ponto exato do empreendimento no Maps
-                const origemCoords = EMPREEND_COORDS[selectedPois.title] || null;
-                const origemEndereco = origemCoords || (selectedPois.title + ', Manaus, AM');
+                const origemEndereco = EMPREEND_COORDS[selectedPois.title] || (selectedPois.title + ', Manaus, AM');
 
                 const abrirMapa = (poi) => {
                     haptic('light');
@@ -2206,7 +2097,6 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
                     const destino = POI_ENDERECOS[nomePoi] || POI_ENDERECOS[poi] || `${nomePoi}, Manaus, AM`;
                     const origemEncoded = encodeURIComponent(origemEndereco);
                     const destinoEncoded = encodeURIComponent(destino);
-                    // Coordenadas como origem garantem o ponto exato do empreendimento no Maps
                     const url = `https://www.google.com/maps/dir/${origemEncoded}/${destinoEncoded}`;
                     window.open(url, '_blank');
                 };

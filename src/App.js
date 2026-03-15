@@ -1,26 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Search, Building, ExternalLink, MapPin, BookOpen, Maximize, Bed, LayoutGrid, Rocket, Quote, Sparkles, ChevronDown, ChevronUp, ChevronLeft, FileText, TableProperties, BookMarked, HelpCircle, Calculator, Bot, X, Send, Wand2, Paperclip, File as FileIcon, Trash2, FolderPlus, GripVertical, Plus, MessageCircle, Moon, Sun, AlertTriangle, Book } from 'lucide-react';
 import { buscarRespostaDoRobo, buscarRespostaGemini } from './bot/dadosFinanciamento.js';
-// === SUPABASE CONFIG ===
-const SUPABASE_URL = 'https://dpgsolpjterirmnudkpg.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRwZ3NvbHBqdGVyaXJtbnVka3BnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM0NDAwOTYsImV4cCI6MjA4OTAxNjA5Nn0.JHCbWbb2bMC6gdcxPcVjvCVfRHbMSOdduY7VHI0IwrE';
 
-const supabaseFetch = async (tabela) => {
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/${tabela}?select=*`, {
-        headers: {
-            'apikey': SUPABASE_KEY,
-            'Authorization': `Bearer ${SUPABASE_KEY}`,
-        }
-    });
-    if (!res.ok) throw new Error('Erro ao buscar ' + tabela);
-    return res.json();
-};
 
 // === DADOS DAS REVISTAS E BASE DE CONHECIMENTO DO CHATBOT (fallback local) ===
 const revistasDataLocal = [
     { id: 1, title: "Brisas do Horizonte", brand: "Direcional", region: "Coroado - Zona Leste", size: "43m² a 45m²", bedrooms: "2 quartos", flooring: "Todo o apê", cover: "https://www.direcional.com.br/wp-content/uploads/2025/06/Perspectiva-Guarita-BrisasdoHorizonte.jpg.webp", link: "https://drive.google.com/file/d/18IXtAt9PLVjIsk2PkXIHXnVCaduVkGu2/view?usp=drive_link", aliases: ["brisas", "brisas do horizonte", "horizonte"], location: { lat: -3.0863455, lng: -59.9757828, mapsUrl: "https://www.google.com/maps/place/BRISAS+DO+HORIZONTE/@-3.0863455,-59.9770703,18z" }, pois: ["Supermercado Vitória (1 min)", "Escola Mun. Profª Maria Rodrigues Tapajós (2 min)", "SPA Coroado (3 min)", "Estádio Carlos Zamith (5 min)", "Park Mall Ephigênio Salles (6 min)", "UFAM - Universidade Federal do Amazonas (7 min)", "Hospital Dr. João Lúcio (7 min)", "Samel São José Medical Center (7 min)", "Sesi Clube do Trabalhador (8 min)", "Manauara Shopping (14 min)"] },
     { id: 2, title: "Parque Ville Orquídea", brand: "Direcional", region: "Lago Azul - Zona Norte", size: "41m²", bedrooms: "2 quartos", flooring: "Todo o apê", cover: "https://www.direcional.com.br/wp-content/uploads/2024/05/Perspectiva_PARQUEVILLEORQUIDEA_GUARITA.jpg.webp", link: "https://drive.google.com/file/d/1F_BeT2jceDM8u4kCbSXN8kp2rk7boQTG/view?usp=drive_link", aliases: ["orquidea", "orquídea", "parque ville", "parque ville orquidea"], location: { lat: -2.9737056, lng: -60.0065346, mapsUrl: "https://www.google.com/maps/place/Condom%C3%ADnio+Parque+Ville+Orqu%C3%ADdea/@-2.9737056,-60.0091095,17z" }, pois: ["Escola Mun. Viviane Estrela (1-2 min)", "Clínica da Família C. Nicolau (1-2 min)", "Veneza Express (3-4 min)", "Nova Era Supermercado (3-4 min)", "Terminal 6 (3-4 min)", "Colégio Militar da PM VI (3-4 min)", "Shopping Via Norte (7 min)", "Hospital Delphina Aziz (10 min)", "Sumaúma Park Shopping (12 min)"] },
-    { id: 3, title: "Village Torres", brand: "Direcional", region: "Lago Azul - Zona Norte", size: "36m²", bedrooms: "2 quartos", flooring: "Cozinha, banheiro e lavatório", cover: "https://www.direcional.com.br/wp-content/uploads/2024/09/Perspectiva-Guarita-VillageTorres.jpg.webp", link: "https://drive.google.com/file/d/1blVconA5fjODxvXB7s8KT6dSlX8KpLLv/view?usp=drive_link", aliases: ["village", "village torres", "torres"], location: { lat: -2.9710343, lng: -59.9962363, mapsUrl: "https://www.google.com/maps/place/Village+Torres/@-2.9710343,-59.9988112,17z" }, pois: ["Supermercado Nova Era", "Shopping Via Norte", "Sumaúma Park Shopping", "Atacadão"] },
+    { id: 3, title: "Village Torres", brand: "Direcional", region: "Lago Azul - Zona Norte", size: "36m²", bedrooms: "2 quartos", flooring: "Cozinha, banheiro e lavatório", cover: "https://www.direcional.com.br/wp-content/uploads/2024/09/Perspectiva-Guarita-VillageTorres.jpg.webp", link: "https://drive.google.com/file/d/1NWb_kcH0bmjKN9EacPA8owgXdpnFK_jh/preview", aliases: ["village", "village torres", "torres"], location: { lat: -2.9710343, lng: -59.9962363, mapsUrl: "https://www.google.com/maps/place/Village+Torres/@-2.9710343,-59.9988112,17z" }, pois: ["Supermercado Nova Era", "Shopping Via Norte", "Sumaúma Park Shopping", "Atacadão"] },
     { id: 4, title: "Conquista Jardim Botânico", brand: "Direcional", region: "Nova Cidade - Zona Norte", size: "40m²", bedrooms: "2 quartos", flooring: "Cozinha, banheiro e lavatório", cover: "https://www.direcional.com.br/wp-content/uploads/2024/03/Conquista-Jardim-Botanico-Guarita.jpg.webp", link: "https://drive.google.com/file/d/1TYzIq8RuGORXfxQpH8CGZejTjF_GlUz0/view?usp=drive_link", aliases: ["botanico", "botânico", "jardim botanico", "conquista jardim"], location: { lat: -2.9845565, lng: -59.9896558, mapsUrl: "https://www.google.com/maps/place/Conquista+Jardim+Bot%C3%A2nico/@-2.9845565,-59.9922307,17z" }, pois: ["MUSA (Museu da Amazônia / Jardim Botânico)", "Shopping Via Norte", "Supermercado DB Nova Cidade", "SPA Galiléia"] },
     { id: 5, title: "Viva Vida Coral", brand: "Direcional", region: "Colônia Terra Nova - Zona Norte", size: "41m² a 51m²", bedrooms: "2 quartos", flooring: "Cozinha, banheiro e lavatório", cover: "https://www.direcional.com.br/wp-content/uploads/2025/05/Perspectiva-Guarita-VivaVidaCoral.jpg.webp", link: "https://drive.google.com/file/d/1lYo3otquzwdnD0r5f6JobBbW-6KmGOF4/view?usp=drive_link", aliases: ["coral", "viva vida coral", "viva vida"], location: { lat: -3.01547, lng: -60.018348, mapsUrl: "https://www.google.com/maps/place/VIVA+VIDA+CORAL/@-3.01547,-60.0209229,17z" }, pois: ["Shopping Via Norte", "Loja Havan", "Atacadão", "Hospital Delphina Aziz", "Posto Atem (famoso na entrada do bairro)"] },
     { id: 6, title: "Conquista Jardim Norte", brand: "Direcional", region: "Santa Etelvina - Zona Norte", size: "36m²", bedrooms: "2 quartos", flooring: "Cozinha, banheiro e lavatório", cover: "https://www.direcional.com.br/wp-content/uploads/2024/12/Perspectiva-Guarita-ConquistaJardimNorte.jpg.webp", link: "https://drive.google.com/file/d/1_Hyb72NWl1HjEiabKLL9m5ZMutHExesY/view?usp=drive_link", aliases: ["jardim norte", "santa etelvina", "conquista norte"], location: { lat: -2.9878435, lng: -60.004704, mapsUrl: "https://www.google.com/maps/place/Conquista+Jardim+Norte/@-2.9878435,-60.0072789,17z" }, pois: ["Shopping Via Norte (1 min)", "Havan (1 min)", "Fun Park (1 min)", "Nova Era Supermercado (1 min)", "UBS Sálvio Belota (2 min)", "Feira do Santa Etelvina (2 min)", "Terminal 06 (5 min)", "15º Distrito Policial (5-7 min)", "Hiper DB (5-7 min)", "Hospital Delphina Aziz", "Escola Dra. Viviane Estrela"] },
@@ -141,44 +128,7 @@ export default function App() {
     return "Ainda estou aprendendo sobre esse detalhe. Posso te ajudar com documentos para análise ou informações das tabelas?";
   };
     const [searchTerm, setSearchTerm] = useState('');
-    const [revistasData, setRevistasData] = useState(revistasDataLocal);
-    const [supabaseLoading, setSupabaseLoading] = useState(true);
-
-    // Carrega empreendimentos do Supabase
-    useEffect(() => {
-        supabaseFetch('empreendimentos')
-            .then(data => {
-                if (data && data.length > 0) {
-                    // Overrides locais — corrigem dados desatualizados no Supabase
-                    const ENTREGA_OVERRIDES = {
-                        'conquista rio negro': 'Entregue',
-                        'conquista topázio':   'Entregue',
-                    };
-                    const mapped = data.map(e => {
-                        const nomeKey = (e.nome || '').toLowerCase();
-                        const entregaFinal = ENTREGA_OVERRIDES[nomeKey] || e.entrega;
-                        return {
-                            id: e.id,
-                            title: e.nome,
-                            brand: e.brand,
-                            region: e.regiao,
-                            size: e.tamanho,
-                            bedrooms: e.quartos,
-                            flooring: e.piso,
-                            cover: e.cover,
-                            link: e.link_revista,
-                            aliases: e.aliases || [],
-                            pois: e.pois || [],
-                            entrega: entregaFinal,
-                            perfis_disponiveis: e.perfis_disponiveis || [],
-                        };
-                    });
-                    setRevistasData(mapped);
-                }
-            })
-            .catch(err => console.warn('Supabase offline, usando dados locais:', err))
-            .finally(() => setSupabaseLoading(false));
-    }, []);
+    const [revistasData] = useState(revistasDataLocal);
     const [activeBrand, setActiveBrand] = useState('Direcional');
     const [fraseDoDia] = useState(frasesMotivacionais[dayIndex % frasesMotivacionais.length]);
     const [imagemDoDia] = useState(imagensEquipeDiarias[dayIndex % imagensEquipeDiarias.length]);
@@ -295,6 +245,26 @@ export default function App() {
     const pastaRapidaClicksRef = useRef(parseInt(localStorage.getItem('dst_pr_clicks') || '0'));
     const [showCotacaoInfo, setShowCotacaoInfo] = useState(false);
     const [pdfLeitor, setPdfLeitor] = useState(null); // { title, url, brand } — leitor de revista in-app
+    const [iframeError, setIframeError] = useState(false); // true quando iframe falha em carregar
+
+    // Timeout para detectar erro silencioso do Drive no iframe (X-Frame-Options)
+    useEffect(() => {
+        if (!pdfLeitor) { setIframeError(false); return; }
+        const iframeLoaded = { ok: false };
+        // Dá 8 segundos — se o iframe não disparou onLoad com sucesso, provavelmente deu erro
+        const timer = setTimeout(() => {
+            if (!iframeLoaded.ok) setIframeError(true);
+        }, 8000);
+        // Listener para saber se o iframe carregou OK (via mensagem do Drive ou cross-origin catch)
+        const onMsg = (e) => {
+            if (e.origin && e.origin.includes('google.com')) {
+                iframeLoaded.ok = true;
+                clearTimeout(timer);
+            }
+        };
+        window.addEventListener('message', onMsg);
+        return () => { clearTimeout(timer); window.removeEventListener('message', onMsg); };
+    }, [pdfLeitor]);
     const [cotacaoInfoCountdown, setCotacaoInfoCountdown] = useState(10);
     const cotacaoClicksRef = useRef(parseInt(localStorage.getItem('dst_cot_clicks') || '0'));
 
@@ -1798,16 +1768,40 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
 
                                             </div>
                                             <div className="mt-auto flex flex-col gap-2">
-                                                <button
-                                                    onClick={() => {
-                                                        haptic('medium');
-                                                        const previewUrl = revista.link
-                                                            .replace(/\/view(\?.*)?$/, '/preview');
-                                                        setPdfLeitor({ title: revista.title, url: previewUrl, brand: revista.brand });
-                                                    }}
-                                                    className={`w-full flex items-center justify-center gap-2 py-3 rounded-lg font-semibold transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg ${revista.brand === 'Direcional' ? 'bg-gradient-to-r from-orange-500 via-red-500 to-orange-600 hover:from-orange-600 hover:to-red-600 shadow-orange-300/30 text-white' : 'bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 hover:from-blue-700 hover:to-indigo-700 shadow-blue-300/30 text-white'}`}>
-                                                    <BookOpen size={18} /> Ver Revista
-                                                </button>
+                                                {revista.openExternal ? (
+                                                    <button
+                                                        onClick={() => {
+                                                            haptic('medium');
+                                                            const url = revista.link;
+                                                            // Tenta forçar abertura no navegador externo (funciona em PWA Android/iOS)
+                                                            const isAndroid = /android/i.test(navigator.userAgent);
+                                                            const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+                                                            if (isAndroid) {
+                                                                // Intent URL força Chrome externo no Android
+                                                                window.location.href = `intent://${url.replace(/^https?:\/\//, '')}#Intent;scheme=https;package=com.android.chrome;end`;
+                                                            } else if (isIOS) {
+                                                                window.location.href = url;
+                                                            } else {
+                                                                window.open(url, '_blank', 'noopener,noreferrer');
+                                                            }
+                                                        }}
+                                                        className={`w-full flex items-center justify-center gap-2 py-3 rounded-lg font-semibold transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg ${revista.brand === 'Direcional' ? 'bg-gradient-to-r from-orange-500 via-red-500 to-orange-600 hover:from-orange-600 hover:to-red-600 shadow-orange-300/30 text-white' : 'bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 hover:from-blue-700 hover:to-indigo-700 shadow-blue-300/30 text-white'}`}>
+                                                        <BookOpen size={18} /> Ver Revista
+                                                    </button>
+                                                ) : (
+                                                    <button
+                                                        onClick={() => {
+                                                            haptic('medium');
+                                                            const previewUrl = revista.link.includes('/preview')
+                                                                ? revista.link
+                                                                : revista.link.replace(/\/view(\?.*)?$/, '/preview');
+                                                            setIframeError(false);
+                                                            setPdfLeitor({ title: revista.title, url: previewUrl, brand: revista.brand });
+                                                        }}
+                                                        className={`w-full flex items-center justify-center gap-2 py-3 rounded-lg font-semibold transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg ${revista.brand === 'Direcional' ? 'bg-gradient-to-r from-orange-500 via-red-500 to-orange-600 hover:from-orange-600 hover:to-red-600 shadow-orange-300/30 text-white' : 'bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 hover:from-blue-700 hover:to-indigo-700 shadow-blue-300/30 text-white'}`}>
+                                                        <BookOpen size={18} /> Ver Revista
+                                                    </button>
+                                                )}
                                                 <button onClick={() => { haptic(); setSelectedPois(revista); }} className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-lg font-semibold transition-colors duration-200 border text-sm ${modoNoturno ? 'bg-slate-700 border-slate-600 text-slate-200 hover:bg-slate-600' : 'bg-slate-100 border-slate-200 text-slate-700 hover:bg-slate-200'}`}>
                                                     <MapPin size={16} className="text-rose-500" /> Ver Pontos de Referência
                                                 </button>
@@ -1951,7 +1945,7 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
 
                         {/* Botão X flutuante sobre o notch */}
                         <button
-                            onClick={() => setPdfLeitor(null)}
+                            onClick={() => { setPdfLeitor(null); setIframeError(false); }}
                             className="absolute z-20 w-9 h-9 flex items-center justify-center rounded-full text-white active:scale-95 transition-all"
                             style={{
                                 top: 'calc(env(safe-area-inset-top, 0px) + 8px)',
@@ -1965,39 +1959,99 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
                             <X size={18} />
                         </button>
 
-                        {/* iframe — começa abaixo da status bar para o botão nativo do Drive ficar visível */}
-                        <div className="absolute left-0 right-0 bottom-0 z-0"
-                            style={{top:'env(safe-area-inset-top, 0px)', background:'#0f0f0f'}}>
-                            {/* Loading atrás do iframe */}
-                            <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 pointer-events-none" style={{background:'#0f0f0f', zIndex:0}}>
-                                <div className={`w-16 h-16 rounded-2xl flex items-center justify-center ${isDir ? 'bg-orange-500/20' : 'bg-blue-500/20'}`}>
-                                    <BookOpen size={32} className={isDir ? 'text-orange-400' : 'text-blue-400'} />
+                        {iframeError ? (
+                            /* Tela de erro amigável com botão grande para abrir no navegador */
+                            <div className="absolute inset-0 flex flex-col items-center justify-center gap-6 px-8">
+                                <div className={`w-20 h-20 rounded-3xl flex items-center justify-center ${isDir ? 'bg-orange-500/20' : 'bg-blue-500/20'}`}>
+                                    <AlertTriangle size={36} className="text-yellow-400" />
                                 </div>
-                                <p className="text-white/60 text-sm">Carregando revista...</p>
-                                <div className="flex gap-1.5">
-                                    {[0,1,2].map(i => (
-                                        <div key={i} className={`w-2 h-2 rounded-full ${isDir ? 'bg-orange-400' : 'bg-blue-400'}`}
-                                            style={{animation:`bounce 1s ease-in-out ${i*0.15}s infinite alternate`}} />
-                                    ))}
+                                <div className="text-center">
+                                    <p className="text-white font-bold text-lg mb-1">Não foi possível carregar</p>
+                                    <p className="text-white/50 text-sm">O Google Drive bloqueou a visualização inline.<br/>Abra no navegador para ver a revista.</p>
                                 </div>
+                                <a
+                                    href={driveViewUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className={`flex items-center gap-3 px-8 py-4 rounded-2xl font-bold text-white text-base transition-all active:scale-95 shadow-lg ${isDir ? 'bg-gradient-to-r from-orange-500 to-red-500' : 'bg-gradient-to-r from-blue-600 to-indigo-600'}`}
+                                >
+                                    <ExternalLink size={20} /> Abrir no navegador
+                                </a>
+                                <button
+                                    onClick={() => { setPdfLeitor(null); setIframeError(false); }}
+                                    className="text-white/40 text-sm underline"
+                                >
+                                    Voltar
+                                </button>
                             </div>
-                            <iframe
-                                key={pdfLeitor.url}
-                                src={pdfLeitor.url}
-                                title={pdfLeitor.title}
-                                allow="autoplay"
-                                className="border-0"
-                                style={{
-                                    position: 'absolute',
-                                    inset: 0,
-                                    width: '100%',
-                                    height: '100%',
-                                    zIndex: 1,
-                                    background: '#0f0f0f',
-                                    touchAction: 'pan-y pinch-zoom',
-                                }}
-                            />
-                        </div>
+                        ) : (
+                            /* iframe normal com timeout para detectar erro do Drive */
+                            <div className="absolute left-0 right-0 bottom-0 z-0"
+                                style={{top:'env(safe-area-inset-top, 0px)', background:'#0f0f0f'}}>
+                                {/* Loading atrás do iframe */}
+                                <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 pointer-events-none" style={{background:'#0f0f0f', zIndex:0}}>
+                                    <div className={`w-16 h-16 rounded-2xl flex items-center justify-center ${isDir ? 'bg-orange-500/20' : 'bg-blue-500/20'}`}>
+                                        <BookOpen size={32} className={isDir ? 'text-orange-400' : 'text-blue-400'} />
+                                    </div>
+                                    <p className="text-white/60 text-sm">Carregando revista...</p>
+                                    <div className="flex gap-1.5">
+                                        {[0,1,2].map(i => (
+                                            <div key={i} className={`w-2 h-2 rounded-full ${isDir ? 'bg-orange-400' : 'bg-blue-400'}`}
+                                                style={{animation:`bounce 1s ease-in-out ${i*0.15}s infinite alternate`}} />
+                                        ))}
+                                    </div>
+                                </div>
+                                <iframe
+                                    key={pdfLeitor.url}
+                                    src={pdfLeitor.url}
+                                    title={pdfLeitor.title}
+                                    allow="autoplay"
+                                    className="border-0"
+                                    onLoad={(e) => {
+                                        // Tenta detectar página de erro do Drive via título (funciona em alguns browsers)
+                                        try {
+                                            const doc = e.target.contentDocument || e.target.contentWindow?.document;
+                                            if (doc && doc.title && (
+                                                doc.title.toLowerCase().includes('error') ||
+                                                doc.title.toLowerCase().includes('não existe') ||
+                                                doc.title.toLowerCase().includes('not found')
+                                            )) {
+                                                setIframeError(true);
+                                            }
+                                        } catch (_) {
+                                            // Cross-origin block = Drive carregou (provavelmente ok)
+                                        }
+                                    }}
+                                    style={{
+                                        position: 'absolute',
+                                        inset: 0,
+                                        width: '100%',
+                                        height: '100%',
+                                        zIndex: 1,
+                                        background: 'transparent',
+                                        touchAction: 'pan-y pinch-zoom',
+                                    }}
+                                />
+                                {/* Botão flutuante sempre visível para abrir no navegador */}
+                                <a
+                                    href={driveViewUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="absolute z-10 flex items-center gap-2 px-4 py-2 rounded-full text-white text-xs font-semibold transition-all active:scale-95"
+                                    style={{
+                                        bottom: 'calc(env(safe-area-inset-bottom, 0px) + 12px)',
+                                        right: '12px',
+                                        background: 'rgba(0,0,0,0.65)',
+                                        backdropFilter: 'blur(10px)',
+                                        WebkitBackdropFilter: 'blur(10px)',
+                                        border: '1px solid rgba(255,255,255,0.2)'
+                                    }}
+                                >
+                                    <ExternalLink size={14} /> Abrir no navegador
+                                </a>
+                            </div>
+                        )}
+
                         <style>{`
                             @keyframes bounce {
                                 from { transform: translateY(0); opacity: 0.5; }

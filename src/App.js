@@ -1878,45 +1878,19 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg_verso","label":"RG Verso"}`;
                                             <img src={revista.cover} onError={(e) => { e.target.onerror = null; e.target.src = 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&q=80&w=400'; }} alt={`Capa ${revista.title}`} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out" />
                                             {/* Shimmer sobre a capa no hover */}
                                             <div className="cover-shine-layer absolute inset-0 pointer-events-none z-10" style={{background:'linear-gradient(105deg, transparent 30%, rgba(255,255,255,0.28) 50%, transparent 70%)', transform:'translateX(-120%) skewX(-15deg)'}} />
-                                            {/* ── HEADER EDITORIAL mobile: nome + triângulo diagonal ── */}
-                                            {window.innerWidth < 640 ? (
-                                                <div className="absolute top-0 left-0 right-0 z-10 overflow-hidden"
+                                            {/* Badge logo */}
+                                            <div className="absolute top-3 left-3 z-10">
+                                                <div className="px-3 py-1.5 rounded-lg flex items-center justify-center h-10 min-w-[100px]"
                                                     style={{
-                                                        background: revista.brand === 'Direcional'
-                                                            ? 'linear-gradient(135deg, #0a1f4e 0%, #1a3a7a 100%)'
-                                                            : 'linear-gradient(135deg, #1e0f5c 0%, #3d2a8a 100%)',
-                                                        borderRadius: '24px 24px 0 0',
-                                                        padding: '10px 12px 11px',
+                                                        background: 'rgba(255,255,255,0.82)',
+                                                        backdropFilter: 'blur(8px) saturate(140%)',
+                                                        WebkitBackdropFilter: 'blur(8px) saturate(140%)',
+                                                        border: '1px solid rgba(255,255,255,0.9)',
+                                                        boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
                                                     }}>
-                                                    {/* Triângulo diagonal vermelho no canto inferior direito */}
-                                                    <svg style={{ position:'absolute', bottom:0, right:0, width:64, height:'100%', overflow:'visible', pointerEvents:'none' }} viewBox="0 0 64 48" preserveAspectRatio="none">
-                                                        <polygon points="64,0 64,48 0,48" fill="#dc2626" opacity="0.92"/>
-                                                    </svg>
-                                                    {/* Logo pequeno */}
-                                                    <img
-                                                        src={revista.brand === 'Direcional' ? 'https://i.postimg.cc/crYQS8mh/image.png' : 'https://i.postimg.cc/R3Q9f9Bc/image.png'}
-                                                        alt={revista.brand}
-                                                        style={{ height:13, width:'auto', objectFit:'contain', filter:'brightness(0) invert(1)', opacity:.65, marginBottom:4, display:'block', position:'relative', zIndex:2 }}
-                                                    />
-                                                    {/* Nome do empreendimento */}
-                                                    <span style={{ color:'#fff', fontSize:15, fontWeight:900, lineHeight:1.15, display:'block', position:'relative', zIndex:2, letterSpacing:'-0.01em', textShadow:'0 1px 6px rgba(0,0,0,0.3)', maxWidth:'75%' }}>
-                                                        {revista.title}
-                                                    </span>
+                                                    <img src={revista.brand === 'Direcional' ? 'https://i.postimg.cc/crYQS8mh/image.png' : 'https://i.postimg.cc/R3Q9f9Bc/image.png'} alt={revista.brand} className="h-full max-h-[22px] w-auto max-w-[85px] object-contain" />
                                                 </div>
-                                            ) : (
-                                                <div className="absolute top-3 left-3 z-10">
-                                                    <div className="px-3 py-1.5 rounded-lg flex items-center justify-center h-10 min-w-[100px]"
-                                                        style={{
-                                                            background: 'rgba(255,255,255,0.82)',
-                                                            backdropFilter: 'blur(8px) saturate(140%)',
-                                                            WebkitBackdropFilter: 'blur(8px) saturate(140%)',
-                                                            border: '1px solid rgba(255,255,255,0.9)',
-                                                            boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
-                                                        }}>
-                                                        <img src={revista.brand === 'Direcional' ? 'https://i.postimg.cc/crYQS8mh/image.png' : 'https://i.postimg.cc/R3Q9f9Bc/image.png'} alt={revista.brand} className="h-full max-h-[22px] w-auto max-w-[85px] object-contain" />
-                                                    </div>
-                                                </div>
-                                            )}
+                                            </div>
                                             {/* Overlay data de entrega — aparece no hover */}
                                             {revista.entrega && (
                                                 <div className="absolute inset-0 z-20 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-500"

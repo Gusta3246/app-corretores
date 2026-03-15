@@ -246,11 +246,7 @@ export default function App() {
         return Date.now() - ts < 60 * 60 * 1000; // 1 hora
     };
 
-    // Modal boas vindas — mostra no máximo 3x (total, entre sessões)
-    const [showBemVindo, setShowBemVindo] = useState(() => {
-        const views = parseInt(localStorage.getItem('dst_bv_count') || '0');
-        return views < 3;
-    });
+
     const [cotacaoGateSenha, setCotacaoGateSenha] = useState("");
     const [cotacaoGateErro, setCotacaoGateErro] = useState(false);
     const cotacaoUnlockedAtRef = useRef(null);
@@ -284,25 +280,6 @@ export default function App() {
 
     useEffect(() => { calcPill(activeBrand); }, [activeBrand]);
 
-    // ── Pull-to-refresh handlers ──
-    const handlePtrTouchStart = (e) => {
-        if (window.scrollY === 0) pullStartY.current = e.touches[0].clientY;
-    };
-    const handlePtrTouchMove = (e) => {
-        if (window.scrollY !== 0 || pullStartY.current === 0) return;
-        const delta = e.touches[0].clientY - pullStartY.current;
-        if (delta > 0 && delta < 120) { setIsPulling(true); setPullY(delta); }
-    };
-    const handlePtrTouchEnd = () => {
-        if (pullY > 80) {
-            setIsRefreshing(true);
-            setPullY(0);
-            setTimeout(() => { setIsRefreshing(false); setIsPulling(false); pullStartY.current = 0; }, 1200);
-        } else {
-            setIsPulling(false); setPullY(0); pullStartY.current = 0;
-        }
-    };
-
     // Calcula posição inicial após o DOM montar
     useEffect(() => {
         const id = requestAnimationFrame(() => calcPill(activeBrand));
@@ -320,10 +297,6 @@ export default function App() {
     // Hide search bar on mobile scroll down, show on scroll up
     const [searchBarVisible, setSearchBarVisible] = useState(true);
     // Pull-to-refresh
-    const [isPulling, setIsPulling] = useState(false);
-    const [pullY, setPullY] = useState(0);
-    const [isRefreshing, setIsRefreshing] = useState(false);
-    const pullStartY = useRef(0);
     const mainContainerRef = useRef(null);
     const lastScrollY = useRef(0);
 
@@ -1566,39 +1539,9 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
     return (
         <>
             {/* Pull-to-refresh indicator */}
-            {(isPulling || isRefreshing) && (
-                <div style={{
-                    position:'fixed', top: isRefreshing ? 16 : Math.min(pullY * 0.5, 40),
-                    left:'50%', transform:'translateX(-50%)',
-                    zIndex:100, transition: isPulling ? 'none' : 'top 0.3s ease',
-                }}>
-                    <div style={{
-                        background: modoNoturno ? 'rgba(30,41,59,0.95)' : 'rgba(255,255,255,0.95)',
-                        border: `1px solid ${modoNoturno ? 'rgba(99,102,241,0.4)' : 'rgba(99,102,241,0.2)'}`,
-                        borderRadius:'999px', padding:'8px 16px',
-                        display:'flex', alignItems:'center', gap:'8px',
-                        boxShadow:'0 4px 20px rgba(0,0,0,0.15)',
-                        backdropFilter:'blur(12px)',
-                    }}>
-                        <div style={{
-                            width:16, height:16, borderRadius:'50%',
-                            border:`2px solid ${modoNoturno ? '#818cf8' : '#6366f1'}`,
-                            borderTopColor:'transparent',
-                            animation: isRefreshing ? 'ptr-spin 0.7s linear infinite' : 'none',
-                            transform: isPulling ? `rotate(${pullY * 3}deg)` : undefined,
-                        }}/>
-                        <span style={{fontSize:12, fontWeight:700, color: modoNoturno ? '#c7d2fe' : '#6366f1', letterSpacing:'0.05em'}}>
-                            {isRefreshing ? 'Atualizando...' : 'Solte para atualizar'}
-                        </span>
-                    </div>
-                </div>
-            )}
         <div ref={mainContainerRef}
             className={`min-h-screen font-sans pb-12 relative transition-colors duration-500 ${modoNoturno ? 'bg-[#0B1120] text-slate-100' : 'bg-slate-50 text-slate-800'}`}
             onMouseMove={handleGlobalDragOver}
-            onTouchStart={handlePtrTouchStart}
-            onTouchMove={handlePtrTouchMove}
-            onTouchEnd={handlePtrTouchEnd}
         >
             {/* ── SAFE AREA + HEADER — camada única de vidro ────────────────
                 Um único elemento fixed parte do top:0 (cobre o notch) e tem
@@ -1823,11 +1766,15 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                                 {filteredRevistas.map((revista, cardIdx) => (
                                     <div key={revista.id}
-                                        className={`card-entry rounded-2xl overflow-hidden shadow-sm border hover:shadow-md transition-shadow duration-300 flex flex-col group ${modoNoturno ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-100'}`}
-                                        style={{ animationDelay: `${cardIdx * 70}ms` }}
+                                        className={`card-entry rounded-2xl overflow-hidden shadow-sm border flex flex-col group ${modoNoturno ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-100'}`}
+                                        style={{ animationDelay: `${cardIdx * 70}ms`, transition: 'transform 0.35s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.35s ease' }}
+                                        onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-8px) scale(1.06)'; e.currentTarget.style.boxShadow = modoNoturno ? '0 24px 48px rgba(0,0,0,0.55)' : '0 24px 48px rgba(0,0,0,0.18)'; }}
+                                        onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0) scale(1)'; e.currentTarget.style.boxShadow = ''; }}
                                     >
                                         <div className="relative h-48 overflow-hidden bg-slate-100">
-                                            <img src={revista.cover} onError={(e) => { e.target.onerror = null; e.target.src = 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&q=80&w=400'; }} alt={`Capa ${revista.title}`} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                                            <img src={revista.cover} onError={(e) => { e.target.onerror = null; e.target.src = 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&q=80&w=400'; }} alt={`Capa ${revista.title}`} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out" />
+                                            {/* Shimmer sobre a capa no hover */}
+                                            <div className="cover-shine-layer absolute inset-0 pointer-events-none z-10" style={{background:'linear-gradient(105deg, transparent 30%, rgba(255,255,255,0.28) 50%, transparent 70%)', transform:'translateX(-120%) skewX(-15deg)'}} />
                                             {/* Badge NOVO */}
                                             {/* Logo — sempre visível */}
                                             <div className="absolute top-3 left-3 z-10">
@@ -2388,6 +2335,18 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
                         animation: ia-ring-spin 2.4s linear infinite;
                         pointer-events: none;
                     }
+
+                    /* ── CARD COVER SHINE ── */
+                    .cover-shine { position: relative; }
+                    @keyframes cover-shimmer {
+                        0%   { transform: translateX(-120%) skewX(-15deg); opacity: 0; }
+                        10%  { opacity: 1; }
+                        60%  { transform: translateX(220%) skewX(-15deg); opacity: 0.6; }
+                        100% { transform: translateX(220%) skewX(-15deg); opacity: 0; }
+                    }
+                    .group:hover .cover-shine-layer {
+                        animation: cover-shimmer 0.8s ease-out forwards;
+                    }
                     /* ── BANNER ANIMATIONS ── */
                     @keyframes banner-reveal { from { opacity:0; transform:scale(1.03); } to { opacity:1; transform:scale(1); } }
                     .banner-reveal { animation: banner-reveal 0.9s cubic-bezier(0.22,1,0.36,1) both; }
@@ -2400,7 +2359,6 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
                     @keyframes ripple-anim { 0% { transform: translate(-50%,-50%) scale(0); opacity:1; } 100% { transform: translate(-50%,-50%) scale(1); opacity:0; } }
                     @keyframes card-entry { 0% { opacity:0; transform:translateY(16px); } 100% { opacity:1; transform:translateY(0); } }
                     @keyframes badge-pulse { 0%,100% { box-shadow:0 0 0 0 rgba(249,115,22,0.6), 0 0 0 0 rgba(249,115,22,0.3); } 50% { box-shadow:0 0 0 5px rgba(249,115,22,0.0), 0 0 0 10px rgba(249,115,22,0.0); } }
-                    @keyframes ptr-spin { to { transform: rotate(360deg); } }
                     
                     .card-entry { opacity:0; animation: card-entry 0.5s cubic-bezier(0.22,1,0.36,1) both; }
                     .animate-float { animation: float 4s ease-in-out infinite; }
@@ -3407,79 +3365,7 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
             )}
 
             {/* MODAL BOAS VINDAS */}
-            {showBemVindo && (
-                <div className="fixed inset-0 z-[90] flex items-end sm:items-center justify-center p-4 sm:p-6"
-                    style={{ background: 'rgba(7,11,22,0.8)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)' }}>
-                    <div className={`w-full max-w-sm rounded-3xl overflow-hidden shadow-2xl ${modoNoturno ? 'bg-[#0f1829] border border-slate-700/60' : 'bg-white border border-slate-200'}`}
-                        style={{ animation: 'poi-modal-in 0.4s cubic-bezier(0.34,1.2,0.64,1) both' }}>
-                        {/* Header gradiente */}
-                        <div className="relative overflow-hidden px-6 pt-7 pb-5"
-                            style={{ background: 'linear-gradient(135deg, #1e3a5f 0%, #1e2d4f 50%, #2d1b69 100%)' }}>
-                            <div className="absolute inset-0 pointer-events-none" style={{ background: 'radial-gradient(ellipse at top right, rgba(99,102,241,0.3) 0%, transparent 60%)' }}/>
-                            <div className="relative z-10 flex flex-col items-center gap-2 text-center">
-                                <img src="https://i.postimg.cc/XpWRf9pj/logo.png" alt="Logo" className="w-12 h-12 object-contain rounded-xl mb-1"/>
-                                <h2 className="text-white text-lg font-black tracking-widest uppercase">Bem-vindo!</h2>
-                                <p className="text-slate-300 text-xs leading-relaxed">Confira as novidades da plataforma</p>
-                            </div>
-                        </div>
-                        {/* Novidades */}
-                        <div className="px-5 py-5 flex flex-col gap-3">
-                            {/* Item 1 */}
-                            <div className={`flex items-start gap-3 p-3.5 rounded-2xl ${modoNoturno ? 'bg-slate-800/70' : 'bg-slate-50'}`}>
-                                <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ background: 'linear-gradient(135deg,#0ea5e9,#0284c7)' }}>
-                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
-                                </div>
-                                <div>
-                                    <p className={`text-xs font-black uppercase tracking-wide ${modoNoturno ? 'text-white' : 'text-slate-800'}`}>Pontos de Referência</p>
-                                    <p className={`text-[11px] leading-relaxed mt-0.5 ${modoNoturno ? 'text-slate-400' : 'text-slate-500'}`}>Clique e veja a rota do ponto de referência em relação ao local do emprendimento no Google Maps.</p>
-                                </div>
-                            </div>
-                            {/* Item 2 */}
-                            <div className={`flex items-start gap-3 p-3.5 rounded-2xl ${modoNoturno ? 'bg-slate-800/70' : 'bg-slate-50'}`}>
-                                <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ background: 'linear-gradient(135deg,#f59e0b,#d97706)' }}>
-                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
-                                </div>
-                                <div>
-                                    <p className={`text-xs font-black uppercase tracking-wide ${modoNoturno ? 'text-white' : 'text-slate-800'}`}>Pasta Rápida</p>
-                                    <p className={`text-[11px] leading-relaxed mt-0.5 ${modoNoturno ? 'text-slate-400' : 'text-slate-500'}`}>Coloque os documentos em qualquer formato e a IA irá organizar para você na ordem correta para o CCA. </p>
-                                </div>
-                            </div>
-                            {/* Item 3 */}
-                            <div className={`flex items-start gap-3 p-3.5 rounded-2xl ${modoNoturno ? 'bg-slate-800/70' : 'bg-slate-50'}`}>
-                                <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ background: 'linear-gradient(135deg,#10b981,#059669)' }}>
-                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-                                </div>
-                                <div>
-                                    <p className={`text-xs font-black uppercase tracking-wide ${modoNoturno ? 'text-white' : 'text-slate-800'}`}>Chatbot Destemidos</p>
-                                    <p className={`text-[11px] leading-relaxed mt-0.5 ${modoNoturno ? 'text-slate-400' : 'text-slate-500'}`}>Tire dúvidas sobre os empreendimentos com nosso assistente de IA treinado para te ajudar a vender mais.</p>
-                                </div>
-                            </div>
-                            {/* Item 4 — Em breve */}
-                            <div className={`flex items-start gap-3 p-3.5 rounded-2xl border-2 border-dashed ${modoNoturno ? 'bg-indigo-950/40 border-indigo-700/50' : 'bg-indigo-50/60 border-indigo-200'}`}>
-                                <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ background: 'linear-gradient(135deg,#6366f1,#7c3aed)' }}>
-                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
-                                </div>
-                                <div>
-                                    <div className="flex items-center gap-2">
-                                        <p className={`text-xs font-black uppercase tracking-wide ${modoNoturno ? 'text-indigo-300' : 'text-indigo-700'}`}>Cotação com IA</p>
-                                        <span className="text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full text-white" style={{ background: 'linear-gradient(135deg,#6366f1,#7c3aed)' }}>Em breve</span>
-                                    </div>
-                                    <p className={`text-[11px] leading-relaxed mt-0.5 ${modoNoturno ? 'text-slate-400' : 'text-slate-500'}`}>Em breve você só vai precisar colar um <strong>print da sua aprovação</strong> e a cotação será gerada em segundos pela IA. 🚀</p>
-                                </div>
-                            </div>
-                        </div>
-                        {/* Botão fechar */}
-                        <div className="px-5 pb-6">
-                            <button
-                                onClick={() => { setShowBemVindo(false); const v = parseInt(localStorage.getItem('dst_bv_count') || '0'); localStorage.setItem('dst_bv_count', String(v + 1)); }}
-                                className="w-full py-4 rounded-2xl text-sm font-black uppercase tracking-widest text-white active:scale-95 transition-all"
-                                style={{ background: 'linear-gradient(135deg,#6366f1 0%,#4f46e5 45%,#7c3aed 100%)', boxShadow: '0 4px 20px rgba(99,102,241,0.45)' }}>
-                                Entendido, vamos vender! 🔥
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
+
 
             {/* MODAL COTAÇÃO */}
             {showCotacaoModal && (

@@ -728,27 +728,31 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
 Responda APENAS com JSON válido, sem texto adicional: {"category":"CATEGORIA","label":"NOME DO DOCUMENTO"}
 
 CATEGORIAS POSSÍVEIS:
-- "rg" → RG ou Identidade (quando não dá para distinguir frente/verso): tem campos de identificação, número do RG
-- "cnh" → CNH: tem foto do motorista, logo DETRAN, letras de categoria (A B C D E), validade
-- "cpf" → CPF: tem número no formato XXX.XXX.XXX-XX, texto "Cadastro de Pessoas Físicas" ou "Receita Federal"
-- "oab" → OAB: tem logo da OAB, texto "Ordem dos Advogados do Brasil"
-- "creci" → CRECI: tem logo CRECI, texto "Conselho Regional de Corretores de Imóveis"
-- "rg_frente" → RG Frente: lado com foto 3x4, nome, data de nascimento, número do RG
-- "rg_verso" → RG Verso: lado com impressão digital, filiação (nome dos pais), órgão emissor
-- "residencia" → Comprovante de Residência: conta de luz, água, gás, internet, telefone, TV por assinatura, fatura de celular — qualquer documento que tenha endereço completo com CEP e valor/vencimento
-- "certidao_casamento" → Certidão de Casamento: tem texto "CERTIDÃO DE CASAMENTO", nome do cartório, nomes dos cônjuges
-- "certidao_nascimento" → Certidão de Nascimento: tem texto "CERTIDÃO DE NASCIMENTO", nome do cartório
-- "certidao_obito" → Certidão de Óbito: tem texto "CERTIDÃO DE ÓBITO", data de falecimento
-- "ctps" → Carteira de Trabalho: tem texto "CARTEIRA DE TRABALHO E PREVIDÊNCIA SOCIAL" ou "CTPS Digital", logo Governo Federal
-- "contracheque" → Contracheque ou Holerite: tem tabela com colunas Vencimentos e Descontos, valores de INSS, FGTS, salário base, total líquido
-- "imposto_renda" → Imposto de Renda: tem texto "DECLARAÇÃO DE AJUSTE ANUAL" ou "DIRPF", logo Receita Federal
-- "extrato_bancario" → Extrato Bancário: tem logo de banco (Caixa, Bradesco, Itaú, Nubank, Banco do Brasil, Santander, Inter), lista de transações, saldo, agência e conta
-- "fgts" → FGTS: tem logo "CAIXA" junto com "FGTS", número PIS/PASEP, tabela de depósitos mensais, "Valor para Fins Rescisórios"
-- "outros" → use apenas se não se encaixar em nenhuma categoria acima
+- "rg_frente" → RG Frente: lado com FOTO 3x4 colada, nome completo, data de nascimento, número do RG, naturalidade. É um cartão plastificado pequeno.
+- "rg_verso" → RG Verso: lado SEM foto, tem impressão digital (polegar), campos de filiação (Pai/Mãe ou nome dos pais), órgão emissor (SSP, DETRAN etc), assinatura do titular. É um cartão plastificado pequeno. NÃO confunda com certidão — certidão é papel A4 ou folha grande.
+- "rg" → RG genérico quando não dá para distinguir frente/verso
+- "cnh" → CNH: tem foto do motorista, logo DETRAN, categorias (A B C D E), validade
+- "cpf" → CPF: número XXX.XXX.XXX-XX, texto "Cadastro de Pessoas Físicas" ou "Receita Federal"
+- "oab" → OAB: logo da OAB, "Ordem dos Advogados do Brasil"
+- "creci" → CRECI: logo CRECI, "Conselho Regional de Corretores de Imóveis"
+- "residencia" → Comprovante de Residência: conta de luz, água, gás, internet, telefone, fatura — endereço completo com CEP e valor/vencimento
+- "certidao_nascimento" → Certidão de Nascimento: documento em PAPEL A4 ou folha grande (não cartão), texto "CERTIDÃO DE NASCIMENTO" em destaque, nome do cartório, registro de nascimento, data de nascimento, nome dos pais. ATENÇÃO: certidão é sempre um papel impresso grande, nunca um cartão plastificado.
+- "certidao_casamento" → Certidão de Casamento: PAPEL A4 grande, texto "CERTIDÃO DE CASAMENTO", nomes dos cônjuges, data do casamento, nome do cartório
+- "certidao_obito" → Certidão de Óbito: PAPEL A4 grande, texto "CERTIDÃO DE ÓBITO", data de falecimento
+- "ctps" → Carteira de Trabalho: "CARTEIRA DE TRABALHO E PREVIDÊNCIA SOCIAL" ou "CTPS Digital", logo Governo Federal
+- "contracheque" → Contracheque ou Holerite: tabela com Vencimentos e Descontos, INSS, FGTS, salário base, total líquido
+- "imposto_renda" → Imposto de Renda: "DECLARAÇÃO DE AJUSTE ANUAL" ou "DIRPF", logo Receita Federal
+- "extrato_bancario" → Extrato Bancário: logo de banco (Caixa, Bradesco, Itaú, Nubank, Banco do Brasil, Santander, Inter), transações, saldo
+- "fgts" → FGTS: logo "CAIXA" + "FGTS", número PIS/PASEP, tabela de depósitos, "Valor para Fins Rescisórios"
+- "outros" → use apenas se realmente não se encaixar em nenhuma categoria
 
-IMPORTANTE: Seja generoso na classificação. Se há qualquer indicação visual de uma categoria, classifique nela. Só use "outros" se realmente não der para identificar.
+REGRAS CRÍTICAS DE DESEMPATE:
+1. Se o documento é um CARTÃO PEQUENO PLASTIFICADO (tamanho carteira) → nunca é certidão. Se tem impressão digital ou filiação → é rg_verso.
+2. Se o documento é uma FOLHA GRANDE DE PAPEL (A4 ou maior) com texto formal de cartório → é certidão, nunca RG.
+3. Certidão SEMPRE tem o nome do cartório impresso e o número do registro civil. RG verso NUNCA tem nome de cartório.
+4. Se vê impressão digital (dedo) → é rg_verso, sem exceção.
 
-Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
+Responda SOMENTE o JSON. Exemplo: {"category":"rg_verso","label":"RG Verso"}`;
 
     const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 
@@ -772,10 +776,38 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
     };
 
     const fileToBase64 = (arrayBuffer) => {
+        // Usa chunks para evitar stack overflow em arquivos grandes
         const bytes = new Uint8Array(arrayBuffer);
+        const chunkSize = 8192;
         let binary = '';
-        for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i]);
+        for (let i = 0; i < bytes.byteLength; i += chunkSize) {
+            binary += String.fromCharCode(...bytes.subarray(i, i + chunkSize));
+        }
         return btoa(binary);
+    };
+
+    // Redimensiona imagem para max 1280px antes de enviar à IA (evita timeout e payloads gigantes)
+    const resizeImageForAI = async (file) => {
+        return new Promise((resolve) => {
+            const img = new Image();
+            const url = URL.createObjectURL(file);
+            img.onload = () => {
+                URL.revokeObjectURL(url);
+                const MAX = 1280;
+                let w = img.width, h = img.height;
+                if (w > MAX || h > MAX) {
+                    if (w > h) { h = Math.round(h * MAX / w); w = MAX; }
+                    else { w = Math.round(w * MAX / h); h = MAX; }
+                }
+                const canvas = document.createElement('canvas');
+                canvas.width = w; canvas.height = h;
+                canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+                const b64 = canvas.toDataURL('image/jpeg', 0.88).split(',')[1];
+                resolve(b64);
+            };
+            img.onerror = () => { URL.revokeObjectURL(url); resolve(null); };
+            img.src = url;
+        });
     };
 
     // ✅ OTIMIZAÇÃO: timeout de 12s por modelo para não travar indefinidamente
@@ -1066,8 +1098,10 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
                 if (arm4) return arm4;
 
             } else if (file.type.startsWith('image/')) {
-                mime = ['image/jpeg','image/png','image/webp','image/gif'].includes(file.type) ? file.type : 'image/jpeg';
-                b64 = fileToBase64(masterBuffer.slice(0));
+                mime = 'image/jpeg';
+                // Redimensiona para max 1280px — evita timeout e payload gigante na IA
+                b64 = await resizeImageForAI(file);
+                if (!b64) return { category: 'outros', order: 99, label: 'Outro Documento' };
 
                 // ── Arma 4: OCR em imagens (usa cópia fresca do buffer) ──
                 const arm4img = await classifyByOCR(masterBuffer.slice(0), mime);
@@ -1540,9 +1574,25 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
         <>
             {/* Pull-to-refresh indicator */}
         <div ref={mainContainerRef}
-            className={`min-h-screen font-sans pb-12 relative transition-colors duration-500 ${modoNoturno ? 'bg-[#0B1120] text-slate-100' : 'bg-slate-50 text-slate-800'}`}
+            className={`min-h-screen font-sans pb-12 relative transition-colors duration-500 ${modoNoturno ? 'bg-[#0B1120] text-slate-100' : 'text-slate-800'}`}
+            style={modoNoturno ? undefined : { background: '#f2f2f7' }}
             onMouseMove={handleGlobalDragOver}
         >
+            {/* ── DARK MODE: orbs flutuantes ── */}
+            {modoNoturno && (
+                <div aria-hidden="true" className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
+                    <style>{`
+                        @keyframes orb-a { 0%{transform:translate(0px,0px) scale(1)} 25%{transform:translate(60px,-45px) scale(1.08)} 50%{transform:translate(20px,-80px) scale(1.04)} 75%{transform:translate(-40px,-30px) scale(0.96)} 100%{transform:translate(0px,0px) scale(1)} }
+                        @keyframes orb-b { 0%{transform:translate(0px,0px) scale(1)} 30%{transform:translate(-70px,55px) scale(1.07)} 60%{transform:translate(-30px,90px) scale(1.03)} 80%{transform:translate(50px,40px) scale(0.95)} 100%{transform:translate(0px,0px) scale(1)} }
+                        @keyframes orb-c { 0%{transform:translate(0px,0px) scale(1)} 35%{transform:translate(50px,60px) scale(1.10)} 70%{transform:translate(-20px,40px) scale(1.05)} 100%{transform:translate(0px,0px) scale(1)} }
+                        @keyframes orb-d { 0%{transform:translate(0px,0px) scale(1)} 40%{transform:translate(-55px,-50px) scale(1.06)} 70%{transform:translate(30px,-20px) scale(0.94)} 100%{transform:translate(0px,0px) scale(1)} }
+                    `}</style>
+                    <div style={{ position:'absolute', top:'-15%', left:'-10%', width:'62vw', height:'62vw', maxWidth:720, maxHeight:720, borderRadius:'50%', background:'radial-gradient(circle, rgba(56,189,248,0.22) 0%, rgba(56,189,248,0.08) 40%, transparent 70%)', animation:'orb-a 22s ease-in-out infinite', filter:'blur(1px)' }}/>
+                    <div style={{ position:'absolute', top:'15%', right:'-12%', width:'52vw', height:'52vw', maxWidth:620, maxHeight:620, borderRadius:'50%', background:'radial-gradient(circle, rgba(99,102,241,0.24) 0%, rgba(99,102,241,0.08) 42%, transparent 70%)', animation:'orb-b 28s ease-in-out infinite 4s', filter:'blur(1px)' }}/>
+                    <div style={{ position:'absolute', bottom:'-12%', left:'18%', width:'56vw', height:'56vw', maxWidth:660, maxHeight:660, borderRadius:'50%', background:'radial-gradient(circle, rgba(37,99,235,0.18) 0%, rgba(37,99,235,0.05) 48%, transparent 70%)', animation:'orb-c 32s ease-in-out infinite 9s', filter:'blur(1px)' }}/>
+                    <div style={{ position:'absolute', top:'-5%', right:'15%', width:'35vw', height:'35vw', maxWidth:420, maxHeight:420, borderRadius:'50%', background:'radial-gradient(circle, rgba(139,92,246,0.16) 0%, rgba(139,92,246,0.04) 50%, transparent 70%)', animation:'orb-d 18s ease-in-out infinite 2s', filter:'blur(1px)' }}/>
+                </div>
+            )}
             {/* ── SAFE AREA + HEADER — camada única de vidro ────────────────
                 Um único elemento fixed parte do top:0 (cobre o notch) e tem
                 padding-top = env(safe-area-inset-top) para o conteúdo começar
@@ -1766,11 +1816,61 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                                 {filteredRevistas.map((revista, cardIdx) => (
                                     <div key={revista.id}
-                                        className={`card-entry rounded-2xl overflow-hidden shadow-sm border flex flex-col group ${modoNoturno ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-100'}`}
-                                        style={{ animationDelay: `${cardIdx * 70}ms`, transition: 'transform 0.35s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.35s ease' }}
-                                        onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-8px) scale(1.06)'; e.currentTarget.style.boxShadow = modoNoturno ? '0 24px 48px rgba(0,0,0,0.55)' : '0 24px 48px rgba(0,0,0,0.18)'; }}
-                                        onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0) scale(1)'; e.currentTarget.style.boxShadow = ''; }}
+                                        className="card-entry overflow-hidden flex flex-col group"
+                                        style={{
+                                            animationDelay: `${cardIdx * 70}ms`,
+                                            transition: 'transform 0.35s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.35s ease',
+                                            position: 'relative',
+                                            borderRadius: '24px',
+                                            /* Liquid glass base */
+                                            background: modoNoturno
+                                                ? 'rgba(255,255,255,0.07)'
+                                                : 'rgba(255,255,255,0.45)',
+                                            backdropFilter: 'blur(28px) saturate(200%) brightness(1.02)',
+                                            WebkitBackdropFilter: 'blur(28px) saturate(200%) brightness(1.02)',
+                                            /* Borda refletiva — outline duplo */
+                                            border: modoNoturno
+                                                ? '1px solid rgba(255,255,255,0.12)'
+                                                : '1px solid rgba(255,255,255,0.90)',
+                                            outline: modoNoturno
+                                                ? '1px solid rgba(99,179,248,0.08)'
+                                                : '1.5px solid rgba(160,185,230,0.40)',
+                                            outlineOffset: '-1px',
+                                            /* Sombra multicamada iOS */
+                                            boxShadow: modoNoturno
+                                                ? '0 2px 8px rgba(0,0,0,0.30), 0 8px 32px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.14), inset 0 -1px 0 rgba(0,0,0,0.12)'
+                                                : '0 2px 6px rgba(100,130,200,0.10), 0 8px 28px rgba(100,130,200,0.14), 0 1px 0 rgba(255,255,255,1) inset, 0 -1px 0 rgba(100,130,200,0.10) inset',
+                                        }}
+                                        onMouseEnter={e => {
+                                            e.currentTarget.style.transform = 'translateY(-8px) scale(1.05)';
+                                            e.currentTarget.style.boxShadow = modoNoturno
+                                                ? '0 4px 16px rgba(0,0,0,0.35), 0 20px 48px rgba(0,0,0,0.40), inset 0 1px 0 rgba(255,255,255,0.18), inset 0 -1px 0 rgba(0,0,0,0.12)'
+                                                : '0 4px 12px rgba(100,130,200,0.14), 0 20px 48px rgba(100,130,200,0.18), inset 0 1.5px 0 rgba(255,255,255,1), inset 0 -1px 0 rgba(100,130,200,0.12)';
+                                        }}
+                                        onMouseLeave={e => {
+                                            e.currentTarget.style.transform = 'translateY(0) scale(1)';
+                                            e.currentTarget.style.boxShadow = modoNoturno
+                                                ? '0 2px 8px rgba(0,0,0,0.30), 0 8px 32px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.14), inset 0 -1px 0 rgba(0,0,0,0.12)'
+                                                : '0 2px 6px rgba(100,130,200,0.10), 0 8px 28px rgba(100,130,200,0.14), 0 1px 0 rgba(255,255,255,1) inset, 0 -1px 0 rgba(100,130,200,0.10) inset';
+                                        }}
                                     >
+                                        {/* Specular highlight — reflexo de luz no topo */}
+                                        <div aria-hidden="true" style={{
+                                            position: 'absolute', top: 0, left: 0, right: 0,
+                                            height: '38%', zIndex: 1, pointerEvents: 'none',
+                                            background: modoNoturno
+                                                ? 'linear-gradient(180deg, rgba(255,255,255,0.10) 0%, rgba(255,255,255,0.03) 60%, transparent 100%)'
+                                                : 'linear-gradient(180deg, rgba(255,255,255,0.72) 0%, rgba(255,255,255,0.22) 55%, transparent 100%)',
+                                            borderRadius: '24px 24px 0 0',
+                                        }}/>
+                                        {/* Refração lateral — borda luminosa esquerda */}
+                                        <div aria-hidden="true" style={{
+                                            position: 'absolute', top: '10%', left: 0, bottom: '10%',
+                                            width: '1px', zIndex: 1, pointerEvents: 'none',
+                                            background: modoNoturno
+                                                ? 'linear-gradient(180deg, transparent 0%, rgba(255,255,255,0.20) 35%, rgba(255,255,255,0.28) 65%, transparent 100%)'
+                                                : 'linear-gradient(180deg, transparent 0%, rgba(255,255,255,0.90) 35%, rgba(255,255,255,0.95) 65%, transparent 100%)',
+                                        }}/>
                                         <div className="relative h-48 overflow-hidden bg-slate-100">
                                             <img src={revista.cover} onError={(e) => { e.target.onerror = null; e.target.src = 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&q=80&w=400'; }} alt={`Capa ${revista.title}`} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out" />
                                             {/* Shimmer sobre a capa no hover */}
@@ -2198,56 +2298,49 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
                     window.open(url, '_blank');
                 };
                 return (
-                    <div className={`fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 ${closingPoi ? 'poi-backdrop-out' : 'poi-backdrop'}`} onClick={closePoi}>
-                        <div className={`rounded-2xl w-full max-w-md overflow-hidden shadow-2xl border ${closingPoi ? 'poi-modal-close' : 'poi-modal-open'} ${modoNoturno ? 'bg-slate-800/80 border-slate-700/60 backdrop-blur-xl' : 'bg-white/80 border-slate-200/60 backdrop-blur-xl'}`} onClick={e => e.stopPropagation()}>
-                            {/* Header */}
-                            <div className={`p-4 border-b flex justify-between items-center ${modoNoturno ? 'bg-slate-900/40 border-slate-700/60' : 'bg-white/60 border-slate-200/60'}`}>
+                    <div className={`fixed inset-0 z-50 flex items-center justify-center p-4 ${closingPoi ? 'poi-backdrop-out' : 'poi-backdrop'}`}
+                        style={{ background: modoNoturno ? 'rgba(7,11,22,0.65)' : 'rgba(15,23,42,0.35)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)' }}
+                        onClick={closePoi}>
+                        <div className={`w-full max-w-md overflow-hidden ${closingPoi ? 'poi-modal-close' : 'poi-modal-open'}`}
+                            style={modoNoturno ? {
+                                borderRadius:'24px', background:'rgba(10,15,30,0.72)', backdropFilter:'blur(40px) saturate(180%)', WebkitBackdropFilter:'blur(40px) saturate(180%)', border:'1.5px solid rgba(255,255,255,0.16)', outline:'1px solid rgba(99,179,248,0.12)', outlineOffset:'-2px', boxShadow:'0 8px 32px rgba(0,0,0,0.6), 0 32px 80px rgba(0,0,0,0.5), inset 0 1.5px 0 rgba(255,255,255,0.18), inset 0 -1px 0 rgba(0,0,0,0.2)'
+                            } : {
+                                borderRadius:'24px', background:'rgba(255,255,255,0.52)', backdropFilter:'blur(40px) saturate(220%) brightness(1.05)', WebkitBackdropFilter:'blur(40px) saturate(220%) brightness(1.05)', border:'1.5px solid rgba(255,255,255,0.92)', outline:'1.5px solid rgba(150,175,230,0.45)', outlineOffset:'-2px', boxShadow:'0 4px 16px rgba(80,110,200,0.12), 0 16px 48px rgba(80,110,200,0.18), inset 0 2px 0 rgba(255,255,255,1), inset 0 -1px 0 rgba(100,130,200,0.12)'
+                            }}
+                            onClick={e => e.stopPropagation()}>
+                            <div className="p-4 flex justify-between items-center"
+                                style={{ borderBottom: modoNoturno ? '1px solid rgba(99,179,248,0.12)' : '1px solid rgba(0,0,0,0.06)', background: modoNoturno ? 'rgba(255,255,255,0.03)' : 'rgba(255,255,255,0.5)' }}>
                                 <h3 className={`font-bold flex items-center gap-2 ${modoNoturno ? 'text-white' : 'text-slate-800'}`}>
                                     <MapPin className="text-rose-500" size={20} /> Pontos de Referência
                                 </h3>
-                                <button onClick={closePoi} className="text-slate-400 hover:text-slate-600 p-1 rounded-full hover:bg-slate-200 transition-colors"><X size={20} /></button>
+                                <button onClick={closePoi} className="text-slate-400 hover:text-slate-600 p-1 rounded-full hover:bg-slate-200/40 transition-colors"><X size={20} /></button>
                             </div>
                             <div className="p-5">
                                 <h4 className={`font-bold text-lg mb-1 ${modoNoturno ? 'text-white' : 'text-slate-800'}`}>{selectedPois.title}</h4>
-                                {/* Dica de toque */}
                                 <p className={`text-[10px] font-semibold mb-4 flex items-center gap-1.5 ${modoNoturno ? 'text-slate-500' : 'text-slate-400'}`}>
                                     <span>👆</span> Toque em qualquer ponto para ver o caminho no mapa
                                 </p>
-                                <div className={`rounded-xl overflow-hidden border divide-y ${modoNoturno ? 'border-slate-700/60 divide-slate-700/60' : 'border-slate-100 divide-slate-100'}`}>
+                                <div className="rounded-xl overflow-hidden"
+                                    style={{ border: modoNoturno ? '1px solid rgba(99,179,248,0.12)' : '1px solid rgba(0,0,0,0.06)', background: modoNoturno ? 'rgba(255,255,255,0.03)' : 'rgba(255,255,255,0.5)' }}>
                                     {selectedPois.pois.map((poi, idx) => (
-                                        <button
-                                            key={idx}
-                                            onClick={() => abrirMapa(poi)}
-                                            style={{animationDelay:`${idx * 0.05}s`}}
-                                            className={`w-full flex items-center gap-3 px-4 py-3 text-left transition-all active:scale-[0.98] poi-item-in group
-                                                ${modoNoturno
-                                                    ? 'hover:bg-rose-500/10 active:bg-rose-500/15'
-                                                    : 'hover:bg-rose-50 active:bg-rose-100'
-                                                }`}
-                                        >
-                                            {/* Ícone de pin */}
-                                            <div className={`shrink-0 w-7 h-7 rounded-full flex items-center justify-center transition-all group-hover:scale-110
-                                                ${modoNoturno ? 'bg-rose-500/15' : 'bg-rose-50'}`}>
+                                        <button key={idx} onClick={() => abrirMapa(poi)}
+                                            style={{ animationDelay:`${idx * 0.05}s` }}
+                                            className={`w-full flex items-center gap-3 px-4 py-3 text-left transition-all active:scale-[0.98] poi-item-in group ${modoNoturno ? 'hover:bg-rose-500/10' : 'hover:bg-rose-50/60'}`}>
+                                            <div className={`shrink-0 w-7 h-7 rounded-full flex items-center justify-center transition-all group-hover:scale-110 ${modoNoturno ? 'bg-rose-500/15' : 'bg-rose-50/80'}`}>
                                                 <MapPin size={13} className="text-rose-500" />
                                             </div>
-                                            {/* Nome do POI */}
-                                            <span className={`flex-1 text-sm font-medium leading-snug transition-colors
-                                                ${modoNoturno
-                                                    ? 'text-slate-300 group-hover:text-white'
-                                                    : 'text-slate-600 group-hover:text-slate-900'
-                                                }`}>
-                                                {poi}
-                                            </span>
-                                            {/* Seta de rota */}
-                                            <div className={`shrink-0 flex items-center gap-1 text-[9px] font-black uppercase tracking-wider transition-all opacity-0 group-hover:opacity-100 -translate-x-1 group-hover:translate-x-0
-                                                ${modoNoturno ? 'text-rose-400' : 'text-rose-500'}`}>
-                                                <span>Ver rota</span>
-                                                <ExternalLink size={10} />
+                                            <span className={`flex-1 text-sm font-medium leading-snug transition-colors ${modoNoturno ? 'text-slate-300 group-hover:text-white' : 'text-slate-600 group-hover:text-slate-900'}`}>{poi}</span>
+                                            <div className={`shrink-0 flex items-center gap-1 text-[9px] font-black uppercase tracking-wider transition-all opacity-0 group-hover:opacity-100 -translate-x-1 group-hover:translate-x-0 ${modoNoturno ? 'text-rose-400' : 'text-rose-500'}`}>
+                                                <span>Ver rota</span><ExternalLink size={10} />
                                             </div>
                                         </button>
                                     ))}
                                 </div>
-                                <button onClick={() => { haptic(); closePoi(); }} className={`w-full mt-4 py-2.5 font-semibold rounded-xl transition-colors text-sm ${modoNoturno ? 'bg-slate-700 text-white hover:bg-slate-600' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'}`}>Fechar</button>
+                                <button onClick={() => { haptic(); closePoi(); }}
+                                    className={`w-full mt-4 py-2.5 font-semibold rounded-xl transition-all text-sm active:scale-[0.98] ${modoNoturno ? 'text-white hover:bg-white/10' : 'text-slate-700 hover:bg-slate-100/60'}`}
+                                    style={{ border: modoNoturno ? '1px solid rgba(255,255,255,0.12)' : '1px solid rgba(0,0,0,0.08)', background: modoNoturno ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.6)', backdropFilter: 'blur(8px)' }}>
+                                    Fechar
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -2474,7 +2567,8 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
                 ${isCreatingFolder
                     ? 'left-0 right-0 bottom-0 rounded-none'
                     : 'left-0 right-0 bottom-0 rounded-none md:bottom-6 md:right-6 md:left-auto md:rounded-3xl md:w-[350px] lg:w-[420px] md:h-[600px] md:max-h-[85vh] origin-bottom-right'}
-                ${modoNoturno ? 'bg-[#0B1120]' : 'bg-slate-50'}`}>
+                `}
+                style={modoNoturno ? { background: 'rgba(13,18,36,0.92)', backdropFilter: 'blur(32px)', WebkitBackdropFilter: 'blur(32px)', border: '1px solid rgba(255,255,255,0.08)' } : { background: 'rgba(255,255,255,0.72)', backdropFilter: 'blur(32px) saturate(200%)', WebkitBackdropFilter: 'blur(32px) saturate(200%)', border: '1px solid rgba(255,255,255,0.88)' }}>
 
                 {/* ── HEADER CHATBOT ── */}
                 <div className="relative overflow-hidden shrink-0"
@@ -2528,7 +2622,7 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
                 </div>
 
                 {!isCreatingFolder && (
-                    <div ref={chatScrollRef} className={`overflow-y-auto px-4 py-5 space-y-4 custom-scrollbar flex-1 transition-colors ${modoNoturno ? 'bg-[#0B1120]' : 'bg-slate-50'}`}>
+                    <div ref={chatScrollRef} className="overflow-y-auto px-4 py-5 space-y-4 custom-scrollbar flex-1">
                         {chatMessages.map((msg, idx) => (
                             <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                                 {msg.role === 'bot' && (
@@ -2553,7 +2647,7 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
                                     style={{ background: 'linear-gradient(135deg, #6366f1 0%, #7c3aed 100%)', boxShadow: '0 2px 8px rgba(99,102,241,0.4)' }}>
                                     <Sparkles size={12} className="text-white" style={{animation:'spin 2s linear infinite'}} />
                                 </div>
-                                <div className={`border rounded-2xl rounded-tl-sm px-4 py-3 shadow-sm flex gap-1.5 items-center ${modoNoturno ? 'bg-slate-800/80 border-slate-700/60' : 'bg-white border-slate-100'}`}>
+                                <div className={`border rounded-2xl rounded-tl-sm px-4 py-3 shadow-sm flex gap-1.5 items-center `} style={{ background: modoNoturno ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.65)', border: modoNoturno ? '1px solid rgba(255,255,255,0.10)' : '1px solid rgba(255,255,255,0.80)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)' }}>
                                     <div className="w-1.5 h-1.5 rounded-full animate-bounce" style={{background:'#818cf8'}}></div>
                                     <div className="w-1.5 h-1.5 rounded-full animate-bounce" style={{background:'#818cf8', animationDelay:'0.2s'}}></div>
                                     <div className="w-1.5 h-1.5 rounded-full animate-bounce" style={{background:'#818cf8', animationDelay:'0.4s'}}></div>
@@ -2565,7 +2659,7 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
                 )}
 
                 {isCreatingFolder && (
-                    <div className={`flex-1 overflow-hidden flex flex-col transition-colors ${closingFolder ? 'folder-collapsing' : 'folder-expanding'} ${modoNoturno ? 'bg-[#0B1120]' : 'bg-slate-50'}`}>
+                    <div className={`flex-1 overflow-hidden flex flex-col transition-colors ${closingFolder ? 'folder-collapsing' : 'folder-expanding'} `}>
 
                         {/* Subheader da pasta */}
                         <div className={`shrink-0 border-b backdrop-blur-xl transition-colors ${modoNoturno ? 'bg-slate-900/60 border-slate-800' : 'bg-white/80 border-slate-100'}`}>
@@ -2694,8 +2788,7 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
                         </div>
 
                         {pendingDocs.length > 0 && (
-                            <div className={`shrink-0 border-t flex justify-end transition-colors ${modoNoturno ? 'bg-[#0B1120] border-slate-800' : 'bg-white border-slate-100'}`}
-                                style={{ padding: '10px 12px', paddingBottom: 'max(10px, calc(env(safe-area-inset-bottom) + 6px))' }}>
+                            <div className={`shrink-0 border-t flex justify-end transition-colors ${modoNoturno ? 'border-slate-800/40' : 'border-white/40'}`} style={{ background: modoNoturno ? 'rgba(13,18,36,0.6)' : 'rgba(255,255,255,0.55)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', padding: '10px 12px', paddingBottom: 'max(10px, calc(env(safe-area-inset-bottom) + 6px))' }}>
                                 <button onClick={() => { haptic('medium'); setIsFinalizingFolder(true); }}
                                     className="text-white px-6 py-2.5 rounded-2xl font-black text-xs uppercase tracking-widest shadow-lg transition-all flex items-center gap-2 relative overflow-hidden active:scale-95"
                                     style={folderSource === 'rapida'
@@ -2827,19 +2920,11 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
                     style={{ background: 'rgba(7,11,22,0.65)', backdropFilter: 'blur(20px) saturate(180%)', WebkitBackdropFilter: 'blur(20px) saturate(180%)' }}
                     onClick={() => setIsFinalizingFolder(false)}>
                     <div
-                        className="animate-slide-up w-full sm:max-w-sm rounded-t-3xl sm:rounded-3xl overflow-hidden shadow-2xl flex flex-col"
+                        className="animate-slide-up w-full sm:max-w-sm overflow-hidden flex flex-col"
                         style={modoNoturno ? {
-                            background: 'rgba(15,23,42,0.95)',
-                            backdropFilter: 'blur(28px) saturate(180%)',
-                            WebkitBackdropFilter: 'blur(28px) saturate(180%)',
-                            border: '1px solid rgba(249,115,22,0.2)',
-                            boxShadow: '0 -8px 48px rgba(249,115,22,0.15), 0 24px 64px rgba(0,0,0,0.5)',
+                            borderRadius:'24px', background:'rgba(10,15,30,0.72)', backdropFilter:'blur(40px) saturate(180%)', WebkitBackdropFilter:'blur(40px) saturate(180%)', border:'1.5px solid rgba(249,115,22,0.25)', outline:'1px solid rgba(255,255,255,0.10)', outlineOffset:'-2px', boxShadow:'0 8px 32px rgba(0,0,0,0.6), 0 32px 80px rgba(0,0,0,0.5), inset 0 1.5px 0 rgba(255,255,255,0.18), inset 0 -1px 0 rgba(0,0,0,0.2)'
                         } : {
-                            background: 'rgba(255,255,255,0.97)',
-                            backdropFilter: 'blur(28px) saturate(200%)',
-                            WebkitBackdropFilter: 'blur(28px) saturate(200%)',
-                            border: '1px solid rgba(255,255,255,0.95)',
-                            boxShadow: '0 -8px 48px rgba(249,115,22,0.12), 0 24px 64px rgba(0,0,0,0.1)',
+                            borderRadius:'24px', background:'rgba(255,255,255,0.52)', backdropFilter:'blur(40px) saturate(220%) brightness(1.05)', WebkitBackdropFilter:'blur(40px) saturate(220%) brightness(1.05)', border:'1.5px solid rgba(255,255,255,0.92)', outline:'1.5px solid rgba(150,175,230,0.45)', outlineOffset:'-2px', boxShadow:'0 4px 16px rgba(80,110,200,0.12), 0 16px 48px rgba(80,110,200,0.18), inset 0 2px 0 rgba(255,255,255,1), inset 0 -1px 0 rgba(100,130,200,0.12)'
                         }}
                         onClick={e => e.stopPropagation()}>
 
@@ -2876,7 +2961,7 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
                         {/* Body */}
                         <div className="px-5 pt-4 pb-2">
                             <label className={`text-[9px] font-black uppercase tracking-[0.18em] mb-2 block ${modoNoturno ? 'text-slate-500' : 'text-slate-400'}`}>Nome do Arquivo</label>
-                            <div className={`rounded-2xl overflow-hidden border ${modoNoturno ? 'bg-slate-800/80 border-slate-700/60' : 'bg-white border-slate-100 shadow-sm'}`}>
+                            <div style={{ borderRadius:16, border: modoNoturno ? '1px solid rgba(255,255,255,0.10)' : '1px solid rgba(255,255,255,0.85)', background: modoNoturno ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.70)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)' }}>
                                 <input 
                                     type="text" 
                                     value={pdfFileName} 
@@ -3041,19 +3126,11 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
             {showPastaRapidaInfo && (
                 <div className="fixed inset-0 z-[70] flex items-end sm:items-center justify-center p-0 sm:p-4"
                     style={{ background: 'rgba(7,11,22,0.65)', backdropFilter: 'blur(16px) saturate(180%)', WebkitBackdropFilter: 'blur(16px) saturate(180%)' }}>
-                    <div className={`animate-slide-up w-full sm:max-w-sm rounded-t-3xl sm:rounded-3xl overflow-hidden shadow-2xl`}
+                    <div className="animate-slide-up w-full sm:max-w-sm overflow-hidden"
                         style={modoNoturno ? {
-                            background: 'rgba(15,23,42,0.95)',
-                            backdropFilter: 'blur(28px) saturate(180%)',
-                            WebkitBackdropFilter: 'blur(28px) saturate(180%)',
-                            border: '1px solid rgba(99,102,241,0.2)',
-                            boxShadow: '0 -8px 48px rgba(99,102,241,0.2), 0 24px 64px rgba(0,0,0,0.5)',
+                            borderRadius:'24px', background:'rgba(10,15,30,0.72)', backdropFilter:'blur(40px) saturate(180%)', WebkitBackdropFilter:'blur(40px) saturate(180%)', border:'1.5px solid rgba(255,255,255,0.16)', outline:'1px solid rgba(99,179,248,0.12)', outlineOffset:'-2px', boxShadow:'0 8px 32px rgba(0,0,0,0.6), 0 32px 80px rgba(0,0,0,0.5), inset 0 1.5px 0 rgba(255,255,255,0.18), inset 0 -1px 0 rgba(0,0,0,0.2)'
                         } : {
-                            background: 'rgba(255,255,255,0.96)',
-                            backdropFilter: 'blur(28px) saturate(200%)',
-                            WebkitBackdropFilter: 'blur(28px) saturate(200%)',
-                            border: '1px solid rgba(255,255,255,0.95)',
-                            boxShadow: '0 -8px 48px rgba(99,102,241,0.15), 0 24px 64px rgba(0,0,0,0.1)',
+                            borderRadius:'24px', background:'rgba(255,255,255,0.52)', backdropFilter:'blur(40px) saturate(220%) brightness(1.05)', WebkitBackdropFilter:'blur(40px) saturate(220%) brightness(1.05)', border:'1.5px solid rgba(255,255,255,0.92)', outline:'1.5px solid rgba(150,175,230,0.45)', outlineOffset:'-2px', boxShadow:'0 4px 16px rgba(80,110,200,0.12), 0 16px 48px rgba(80,110,200,0.18), inset 0 2px 0 rgba(255,255,255,1), inset 0 -1px 0 rgba(100,130,200,0.12)'
                         }}
                         onClick={e => e.stopPropagation()}>
 
@@ -3081,7 +3158,7 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
 
                         {/* Conteúdo */}
                         <div className="px-5 pt-4 pb-2">
-                            <div className={`rounded-2xl p-4 border ${modoNoturno ? 'bg-slate-800/60 border-orange-500/20' : 'bg-orange-50 border-orange-100'}`}>
+                            <div style={{ borderRadius:16, background: modoNoturno ? 'rgba(249,115,22,0.08)' : 'rgba(255,255,255,0.65)', border: modoNoturno ? '1px solid rgba(249,115,22,0.22)' : '1px solid rgba(249,115,22,0.15)', backdropFilter:'blur(12px)', WebkitBackdropFilter:'blur(12px)' }}>
                                 <p className={`font-black text-sm mb-2 uppercase tracking-widest ${modoNoturno ? 'text-orange-400' : 'text-orange-600'}`}>O que é a Pasta Rápida?</p>
                                 <p className={`text-sm leading-relaxed ${modoNoturno ? 'text-slate-300' : 'text-slate-700'}`}>
                                     Envie os documentos em <strong>qualquer formato</strong> e a IA <strong>identifica e organiza</strong> tudo automaticamente na ordem certa.
@@ -3129,23 +3206,12 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
             {showCotacaoInfo && (
                 <div className="fixed inset-0 z-[70] flex items-end sm:items-center justify-center p-0 sm:p-4"
                     style={{ background: 'rgba(7,11,22,0.72)', backdropFilter: 'blur(18px) saturate(180%)', WebkitBackdropFilter: 'blur(18px) saturate(180%)' }}>
-                    <div className={`animate-slide-up w-full sm:max-w-md flex flex-col rounded-t-3xl sm:rounded-3xl shadow-2xl`}
-                        style={{
-                            maxHeight: '92dvh',
-                            ...(modoNoturno ? {
-                                background: 'rgba(13,18,36,0.97)',
-                                backdropFilter: 'blur(28px) saturate(180%)',
-                                WebkitBackdropFilter: 'blur(28px) saturate(180%)',
-                                border: '1px solid rgba(99,102,241,0.25)',
-                                boxShadow: '0 -8px 48px rgba(99,102,241,0.25), 0 24px 64px rgba(0,0,0,0.6)',
-                            } : {
-                                background: 'rgba(255,255,255,0.97)',
-                                backdropFilter: 'blur(28px) saturate(200%)',
-                                WebkitBackdropFilter: 'blur(28px) saturate(200%)',
-                                border: '1px solid rgba(255,255,255,0.95)',
-                                boxShadow: '0 -8px 48px rgba(99,102,241,0.18), 0 24px 64px rgba(0,0,0,0.12)',
-                            })
-                        }}
+                    <div className="animate-slide-up w-full sm:max-w-md flex flex-col"
+                        style={{ maxHeight:'92dvh', ...(modoNoturno ? {
+                            borderRadius:'24px', background:'rgba(10,15,30,0.72)', backdropFilter:'blur(40px) saturate(180%)', WebkitBackdropFilter:'blur(40px) saturate(180%)', border:'1.5px solid rgba(255,255,255,0.16)', outline:'1px solid rgba(99,102,241,0.15)', outlineOffset:'-2px', boxShadow:'0 8px 32px rgba(0,0,0,0.6), 0 32px 80px rgba(0,0,0,0.5), inset 0 1.5px 0 rgba(255,255,255,0.18), inset 0 -1px 0 rgba(0,0,0,0.2)'
+                        } : {
+                            borderRadius:'24px', background:'rgba(255,255,255,0.52)', backdropFilter:'blur(40px) saturate(220%) brightness(1.05)', WebkitBackdropFilter:'blur(40px) saturate(220%) brightness(1.05)', border:'1.5px solid rgba(255,255,255,0.92)', outline:'1.5px solid rgba(150,175,230,0.45)', outlineOffset:'-2px', boxShadow:'0 4px 16px rgba(80,110,200,0.12), 0 16px 48px rgba(80,110,200,0.18), inset 0 2px 0 rgba(255,255,255,1), inset 0 -1px 0 rgba(100,130,200,0.12)'
+                        }) }}
                         onClick={e => e.stopPropagation()}>
 
                         {/* Header fixo com shimmer */}
@@ -3288,8 +3354,12 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
                 <div className="fixed inset-0 z-[80] flex items-center justify-center p-5"
                     style={{ background: 'rgba(7,11,22,0.75)', backdropFilter: 'blur(18px)', WebkitBackdropFilter: 'blur(18px)' }}
                     onClick={(e) => { if (e.target === e.currentTarget) { setShowCotacaoSenha(false); setCotacaoSenhaInput(''); setCotacaoSenhaErro(false); } }}>
-                    <div className={`w-full max-w-xs rounded-3xl p-7 flex flex-col gap-5 shadow-2xl ${modoNoturno ? 'bg-[#0f1829] border border-slate-700/50' : 'bg-white border border-slate-200'}`}
-                        style={{ animation: 'poi-modal-in 0.35s cubic-bezier(0.34,1.3,0.64,1) both' }}>
+                    <div className="w-full max-w-xs p-7 flex flex-col gap-5"
+                        style={{ animation:'poi-modal-in 0.35s cubic-bezier(0.34,1.3,0.64,1) both', ...(modoNoturno ? {
+                            borderRadius:'24px', background:'rgba(10,15,30,0.72)', backdropFilter:'blur(40px) saturate(180%)', WebkitBackdropFilter:'blur(40px) saturate(180%)', border:'1.5px solid rgba(255,255,255,0.16)', outline:'1px solid rgba(99,179,248,0.12)', outlineOffset:'-2px', boxShadow:'0 8px 32px rgba(0,0,0,0.6), 0 32px 80px rgba(0,0,0,0.5), inset 0 1.5px 0 rgba(255,255,255,0.18), inset 0 -1px 0 rgba(0,0,0,0.2)'
+                        } : {
+                            borderRadius:'24px', background:'rgba(255,255,255,0.52)', backdropFilter:'blur(40px) saturate(220%) brightness(1.05)', WebkitBackdropFilter:'blur(40px) saturate(220%) brightness(1.05)', border:'1.5px solid rgba(255,255,255,0.92)', outline:'1.5px solid rgba(150,175,230,0.45)', outlineOffset:'-2px', boxShadow:'0 4px 16px rgba(80,110,200,0.12), 0 16px 48px rgba(80,110,200,0.18), inset 0 2px 0 rgba(255,255,255,1), inset 0 -1px 0 rgba(100,130,200,0.12)'
+                        }) }}>
                         {/* Ícone */}
                         <div className="flex flex-col items-center gap-2">
                             <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-1"
@@ -3371,8 +3441,8 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
             {showCotacaoModal && (
                 <div className="fixed inset-0 z-[70] flex flex-col"
                     style={{ background: modoNoturno ? 'rgba(7,11,22,0.82)' : 'rgba(15,23,42,0.55)', backdropFilter: 'blur(20px) saturate(180%)', WebkitBackdropFilter: 'blur(20px) saturate(180%)' }}>
-                    <div className={`cotacao-modal-open flex flex-col h-full w-full ${modoNoturno ? 'bg-[#0B1120]' : 'bg-slate-50'}`}
-                        style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}>
+                    <div className="cotacao-modal-open flex flex-col h-full w-full"
+                        style={{ paddingTop: 'env(safe-area-inset-top, 0px)', background: modoNoturno ? '#0B1120' : 'rgba(242,242,247,0.95)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)' }}>
 
                         {/* ── HEADER ── */}
                         <div className="shrink-0 relative overflow-hidden"
@@ -3645,7 +3715,7 @@ Responda SOMENTE com JSON puro (sem markdown, sem texto antes ou depois):
                                         {/* Card Perfil */}
                                         <div className="flex flex-col">
                                             <p className={`text-[9px] font-black uppercase tracking-[0.18em] mb-2 ml-1 ${modoNoturno ? 'text-slate-500' : 'text-slate-400'}`}>Perfil Comercial</p>
-                                            <div className={`flex-1 rounded-3xl border transition-colors flex flex-col justify-center px-4 py-4 ${modoNoturno ? 'bg-slate-800/80 border-slate-700/60' : 'bg-white border-slate-100 shadow-sm'}`}>
+                                            <div className={`flex-1 rounded-3xl border transition-colors flex flex-col justify-center px-4 py-4 `} style={{ background: modoNoturno ? 'rgba(255,255,255,0.05)' : 'rgba(255,255,255,0.60)', border: modoNoturno ? '1px solid rgba(255,255,255,0.09)' : '1px solid rgba(255,255,255,0.80)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)' }}>
                                                 <label className={`block text-[9px] font-black uppercase tracking-widest mb-1 ${modoNoturno ? 'text-slate-500' : 'text-slate-400'}`}>👤 Perfil Comercial do Cliente</label>
                                                 <p className={`text-[9px] mb-3 ${modoNoturno ? 'text-slate-600' : 'text-slate-400'}`}>Define as condições de PS e comprometimento — não é baseado na renda</p>
                                                 {/* Pílulas de perfil — overflow:hidden no container, cada pílula cresce/encolhe */}
@@ -3725,7 +3795,7 @@ Responda SOMENTE com JSON puro (sem markdown, sem texto antes ou depois):
                             {/* CARD EMPREENDIMENTO */}
                             <div>
                                 <p className={`text-[9px] font-black uppercase tracking-[0.18em] mb-2 ml-1 ${modoNoturno ? 'text-slate-500' : 'text-slate-400'}`}>Empreendimento</p>
-                                <div className={`rounded-3xl overflow-hidden border ${modoNoturno ? 'bg-slate-800/80 border-slate-700/60' : 'bg-white border-slate-100 shadow-sm'}`}>
+                                <div className={`rounded-3xl overflow-hidden border `} style={{ background: modoNoturno ? 'rgba(255,255,255,0.05)' : 'rgba(255,255,255,0.60)', border: modoNoturno ? '1px solid rgba(255,255,255,0.09)' : '1px solid rgba(255,255,255,0.80)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)' }}>
                                     <div className="px-4 pt-3.5 pb-2 flex items-center gap-3">
                                         <span className="text-base shrink-0 w-6 text-center">🏗️</span>
                                         <div className="flex-1 min-w-0">
@@ -3823,7 +3893,7 @@ Responda SOMENTE com JSON puro (sem markdown, sem texto antes ou depois):
                                     {/* GRUPO: FINANCEIRO */}
                                     <div>
                                         <p className={`text-[9px] font-black uppercase tracking-[0.18em] mb-2 ml-1 ${modoNoturno ? 'text-slate-500' : 'text-slate-400'}`}>Financeiro</p>
-                                        <div className={`rounded-3xl overflow-hidden border ${modoNoturno ? 'bg-slate-800/80 border-slate-700/60' : 'bg-white border-slate-100 shadow-sm'}`}>
+                                        <div className={`rounded-3xl overflow-hidden border `} style={{ background: modoNoturno ? 'rgba(255,255,255,0.05)' : 'rgba(255,255,255,0.60)', border: modoNoturno ? '1px solid rgba(255,255,255,0.09)' : '1px solid rgba(255,255,255,0.80)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)' }}>
 
                                             {/* ATO DO CLIENTE — destaque no topo */}
                                             <div className={`px-4 py-3 ${modoNoturno ? 'bg-indigo-950/60 border-b border-indigo-800/40' : 'bg-indigo-50 border-b border-indigo-100'}`}>
@@ -3861,7 +3931,7 @@ Responda SOMENTE com JSON puro (sem markdown, sem texto antes ou depois):
                                     {/* GRUPO: BENEFÍCIOS & PARCELA */}
                                     <div>
                                         <p className={`text-[9px] font-black uppercase tracking-[0.18em] mb-2 ml-1 ${modoNoturno ? 'text-slate-500' : 'text-slate-400'}`}>Benefícios & Parcela</p>
-                                        <div className={`rounded-3xl overflow-hidden border divide-y ${modoNoturno ? 'bg-slate-800/80 border-slate-700/60 divide-slate-700/60' : 'bg-white border-slate-100 divide-slate-100 shadow-sm'}`}>
+                                        <div className={`rounded-3xl overflow-hidden border divide-y `} style={{ background: modoNoturno ? 'rgba(255,255,255,0.05)' : 'rgba(255,255,255,0.60)', border: modoNoturno ? '1px solid rgba(255,255,255,0.09)' : '1px solid rgba(255,255,255,0.80)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)' }}>
                                             {[
                                                 { key: 'subsidio',            label: 'Subsídio',                  placeholder: 'R$ 55.000,00',    icon: '🎁' },
                                                 { key: 'fgts',                label: 'FGTS',                      placeholder: 'R$ 12.000,00',    icon: '📋' },
@@ -4511,7 +4581,7 @@ Responda em português, direto ao ponto.`;
                 <div className="fixed inset-0 z-[70] flex flex-col"
                     style={{ background: modoNoturno ? 'rgba(7,11,22,0.82)' : 'rgba(15,23,42,0.55)', backdropFilter: 'blur(20px) saturate(180%)', WebkitBackdropFilter: 'blur(20px) saturate(180%)' }}>
                     <div className="cotacao-modal-open flex flex-col w-full"
-                        style={{ height: '100%', background: modoNoturno ? '#0B1120' : '#f8fafc' }}>
+                        style={{ height: '100%', background: modoNoturno ? '#0B1120' : 'rgba(242,242,247,0.95)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)' }}>
                         <div className="shrink-0 relative overflow-hidden"
                             style={{
                                 background: 'linear-gradient(135deg, #0ea5e9 0%, #0284c7 40%, #0369a1 100%)',

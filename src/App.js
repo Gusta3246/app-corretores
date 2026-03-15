@@ -1878,20 +1878,44 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg_verso","label":"RG Verso"}`;
                                             <img src={revista.cover} onError={(e) => { e.target.onerror = null; e.target.src = 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&q=80&w=400'; }} alt={`Capa ${revista.title}`} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out" />
                                             {/* Shimmer sobre a capa no hover */}
                                             <div className="cover-shine-layer absolute inset-0 pointer-events-none z-10" style={{background:'linear-gradient(105deg, transparent 30%, rgba(255,255,255,0.28) 50%, transparent 70%)', transform:'translateX(-120%) skewX(-15deg)'}} />
-                                            {/* Badge NOVO */}
-                                            {/* Logo — sempre visível */}
-                                            <div className="absolute top-3 left-3 z-10">
-                                                <div className="px-3 py-1.5 rounded-lg flex items-center justify-center h-10 min-w-[100px]"
+                                            {/* Mini header mobile / badge desktop */}
+                                            {window.innerWidth < 640 ? (
+                                                <div className="absolute top-0 left-0 right-0 z-10 flex items-center justify-between px-3 py-2.5"
                                                     style={{
-                                                        background: 'rgba(255,255,255,0.82)',
-                                                        backdropFilter: 'blur(8px) saturate(140%)',
-                                                        WebkitBackdropFilter: 'blur(8px) saturate(140%)',
-                                                        border: '1px solid rgba(255,255,255,0.9)',
-                                                        boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+                                                        background: 'linear-gradient(180deg, rgba(0,0,0,0.45) 0%, transparent 100%)',
+                                                        borderRadius: '24px 24px 0 0',
                                                     }}>
-                                                    <img src={revista.brand === 'Direcional' ? 'https://i.postimg.cc/crYQS8mh/image.png' : 'https://i.postimg.cc/R3Q9f9Bc/image.png'} alt={revista.brand} className="h-full max-h-[22px] w-auto max-w-[85px] object-contain" />
+                                                    {/* Logo da marca */}
+                                                    <div className="px-2.5 py-1.5 rounded-xl flex items-center justify-center"
+                                                        style={{
+                                                            background: 'rgba(255,255,255,0.92)',
+                                                            backdropFilter: 'blur(8px)',
+                                                            WebkitBackdropFilter: 'blur(8px)',
+                                                            boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+                                                        }}>
+                                                        <img src={revista.brand === 'Direcional' ? 'https://i.postimg.cc/crYQS8mh/image.png' : 'https://i.postimg.cc/R3Q9f9Bc/image.png'} alt={revista.brand} className="h-5 w-auto max-w-[80px] object-contain" />
+                                                    </div>
+                                                    {/* Info direita: região */}
+                                                    <div className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl"
+                                                        style={{ background: 'rgba(0,0,0,0.35)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)' }}>
+                                                        <MapPin size={11} className="text-white/80 shrink-0" />
+                                                        <span className="text-white text-[11px] font-semibold truncate max-w-[140px]">{revista.region}</span>
+                                                    </div>
                                                 </div>
-                                            </div>
+                                            ) : (
+                                                <div className="absolute top-3 left-3 z-10">
+                                                    <div className="px-3 py-1.5 rounded-lg flex items-center justify-center h-10 min-w-[100px]"
+                                                        style={{
+                                                            background: 'rgba(255,255,255,0.82)',
+                                                            backdropFilter: 'blur(8px) saturate(140%)',
+                                                            WebkitBackdropFilter: 'blur(8px) saturate(140%)',
+                                                            border: '1px solid rgba(255,255,255,0.9)',
+                                                            boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+                                                        }}>
+                                                        <img src={revista.brand === 'Direcional' ? 'https://i.postimg.cc/crYQS8mh/image.png' : 'https://i.postimg.cc/R3Q9f9Bc/image.png'} alt={revista.brand} className="h-full max-h-[22px] w-auto max-w-[85px] object-contain" />
+                                                    </div>
+                                                </div>
+                                            )}
                                             {/* Overlay data de entrega — aparece no hover */}
                                             {revista.entrega && (
                                                 <div className="absolute inset-0 z-20 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-500"

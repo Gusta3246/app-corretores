@@ -1871,7 +1871,7 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg_verso","label":"RG Verso"}`;
                                                 ? 'linear-gradient(180deg, transparent 0%, rgba(255,255,255,0.20) 35%, rgba(255,255,255,0.28) 65%, transparent 100%)'
                                                 : 'linear-gradient(180deg, transparent 0%, rgba(255,255,255,0.90) 35%, rgba(255,255,255,0.95) 65%, transparent 100%)',
                                         }}/>
-                                        <div className="relative h-48 overflow-hidden bg-slate-100">
+                                        <div className="relative h-56 sm:h-48 overflow-hidden bg-slate-100">
                                             <img src={revista.cover} onError={(e) => { e.target.onerror = null; e.target.src = 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&q=80&w=400'; }} alt={`Capa ${revista.title}`} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out" />
                                             {/* Shimmer sobre a capa no hover */}
                                             <div className="cover-shine-layer absolute inset-0 pointer-events-none z-10" style={{background:'linear-gradient(105deg, transparent 30%, rgba(255,255,255,0.28) 50%, transparent 70%)', transform:'translateX(-120%) skewX(-15deg)'}} />

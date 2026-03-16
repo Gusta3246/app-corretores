@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useLayoutEffect, useRef } from 'react';
 import { Search, Building, ExternalLink, MapPin, BookOpen, Maximize, Bed, LayoutGrid, Rocket, Quote, Sparkles, ChevronDown, ChevronUp, ChevronLeft, FileText, TableProperties, BookMarked, HelpCircle, Calculator, Bot, X, Send, Wand2, Paperclip, File as FileIcon, Trash2, FolderPlus, GripVertical, Plus, MessageCircle, Moon, Sun, AlertTriangle, Book } from 'lucide-react';
 import { buscarRespostaDoRobo, buscarRespostaGemini } from './bot/dadosFinanciamento.js';
 
@@ -118,12 +118,20 @@ function RippleButton({ onClick, className, children, style }) {
 }
 
 export default function App() {
-    const [headerHeight, setHeaderHeight] = useState(96);
+    const [headerHeight, setHeaderHeight] = useState(0);
     // Sticky tabs — abas grudam no header quando banner sai da tela
     const [tabsSticky, setTabsSticky] = useState(false);
     const bannerNavRef = useRef(null);
+    const headerRef = useRef(null);
     // Search bar visibility (esconde no mobile ao scrollar para baixo)
     const [searchBarVisible, setSearchBarVisible] = useState(true);
+
+    // Mede o header antes do primeiro paint para evitar o salto
+    useLayoutEffect(() => {
+        if (headerRef.current) {
+            setHeaderHeight(headerRef.current.offsetHeight);
+        }
+    }, []);
 
     useEffect(() => {
         let rafId;
@@ -283,7 +291,6 @@ export default function App() {
     const [isChatLoading, setIsChatLoading] = useState(false);
     const messagesEndRef = useRef(null);
     const chatInputRef = useRef(null);
-    const headerRef = useRef(null);
     const [activeZone, setActiveZone] = useState(null);
     const [clientName, setClientName] = useState(() => localStorage.getItem('dst_client') || '');
     const [showPastaRapidaInfo, setShowPastaRapidaInfo] = useState(false);
@@ -1702,12 +1709,8 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
                     background: modoNoturno ? 'rgba(15,23,42,0.70)' : 'rgba(255,255,255,0.75)',
                     backdropFilter: 'blur(24px) saturate(180%)',
                     WebkitBackdropFilter: 'blur(24px) saturate(180%)',
-                    borderBottom: tabsSticky
-                        ? 'none'
-                        : (modoNoturno ? '1px solid rgba(51,65,85,0.6)' : '1px solid rgba(226,232,240,0.6)'),
-                    boxShadow: tabsSticky
-                        ? 'none'
-                        : (modoNoturno ? '0 1px 8px rgba(0,0,0,0.25)' : '0 1px 8px rgba(148,163,184,0.3)'),
+                    borderBottom: modoNoturno ? '1px solid rgba(51,65,85,0.6)' : '1px solid rgba(226,232,240,0.6)',
+                    boxShadow: modoNoturno ? '0 2px 8px rgba(0,0,0,0.25)' : '0 2px 8px rgba(148,163,184,0.3)',
                 }}>
                 <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="flex flex-col sm:flex-row sm:items-center sm:gap-4 sm:py-3">
@@ -1868,7 +1871,7 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
                     </div>
                 </div>
 
-                {/* ── ABAS STICKY MOBILE — integradas ao header, sem separação visual ── */}
+                {/* ── ABAS STICKY MOBILE — dentro do header, fundo transparente ── */}
                 <div className="sm:hidden"
                     style={{
                         maxHeight: tabsSticky ? 72 : 0,

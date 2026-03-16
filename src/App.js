@@ -118,7 +118,7 @@ function RippleButton({ onClick, className, children, style }) {
 }
 
 export default function App() {
-    const [headerHeight, setHeaderHeight] = useState(120);
+    const [headerHeight, setHeaderHeight] = useState(96);
 
     useEffect(() => {
         const updateHeaderHeight = () => {
@@ -126,8 +126,7 @@ export default function App() {
                 setHeaderHeight(headerRef.current.offsetHeight);
             }
         };
-        // Aguarda a animação do header terminar antes de medir
-        const id = setTimeout(updateHeaderHeight, 350);
+        const id = setTimeout(updateHeaderHeight, 100);
         window.addEventListener('resize', updateHeaderHeight);
         return () => { clearTimeout(id); window.removeEventListener('resize', updateHeaderHeight); };
     }, []);
@@ -1605,27 +1604,9 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
             )}
             {/* Ocultar scrollbar da nav de abas + centralizar no desktop */}
             <style>{`
-                @font-face {
-                    font-family: 'EB Garamond';
-                    font-style: normal;
-                    font-weight: 400;
-                    font-display: swap;
-                    src: url('https://fonts.gstatic.com/s/ebgaramond/v26/SlGDmQSbi6Ws4Wuh5RL9GjkdMKBzOns.woff2') format('woff2');
-                }
-                @font-face {
-                    font-family: 'EB Garamond';
-                    font-style: italic;
-                    font-weight: 400;
-                    font-display: swap;
-                    src: url('https://fonts.gstatic.com/s/ebgaramond/v26/SlGWmQSbi6Ws-zexuqLVlLmxc_ryAQkSYZTDFg.woff2') format('woff2');
-                }
-                @font-face {
-                    font-family: 'EB Garamond';
-                    font-style: italic;
-                    font-weight: 700;
-                    font-display: swap;
-                    src: url('https://fonts.gstatic.com/s/ebgaramond/v26/SlGSmQSbi6Ws-zexuqLVlLmxc_ryAQkSYZTDFg.woff2') format('woff2');
-                }
+                
+                
+                
                 nav[aria-label="Tabs"]::-webkit-scrollbar { display: none; }
                 nav[aria-label="Tabs"] { -ms-overflow-style: none; scrollbar-width: none; }
                 @media (min-width: 640px) {
@@ -1768,14 +1749,14 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
                 </div>
             </header>
 
-            <main className="main-content max-w-5xl mx-auto px-4 sm:px-6 lg:px-8" style={{ paddingTop: `calc(env(safe-area-inset-top, 0px) + ${headerHeight}px)` }}>
+            <main className="main-content max-w-5xl mx-auto px-4 sm:px-6 lg:px-8" style={{ paddingTop: `calc(env(safe-area-inset-top, 0px) + ${headerHeight + 4}px)` }}>
                 {/* BANNER INSPIRAÇÃO DIÁRIA */}
                 {/* ── BANNER + ABAS ── */}
                 <div className="relative shadow-lg banner-reveal" style={{
                     borderRadius: 24,
                     clipPath: 'inset(0 round 24px)',
                     marginTop: 16,
-                    marginBottom: 16,
+                    marginBottom: 24,
                 }}>
                     <img src={imagemDoDia} onError={(e) => { e.target.src = '' }} alt="Equipe Destemidos" className="w-full h-72 sm:h-96 object-cover bg-slate-200 banner-ken-burns" style={{ objectPosition: `center ${bannerFocusY}`, display: 'block' }} />
                     {/* Camada 1: blur progressivo de baixo pra cima */}
@@ -1800,7 +1781,7 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
                             <div className="banner-text-2">
                                 <div>
                                     <span style={{
-                                        fontFamily: 'EB Garamond, Georgia, serif',
+                                        fontFamily: 'Georgia, serif',
                                         fontSize: 38,
                                         lineHeight: 0.75,
                                         color: '#e8c96a',
@@ -1811,7 +1792,7 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
                                         userSelect: 'none',
                                     }}>"</span>
                                     <p style={{
-                                        fontFamily: 'EB Garamond, Georgia, serif',
+                                        fontFamily: 'Georgia, serif',
                                         fontStyle: 'italic',
                                         fontWeight: 400,
                                         fontSize: 'clamp(14px, 3vw, 21px)',
@@ -1822,7 +1803,7 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
                                     }}>
                                         {fraseDoDia.texto.split(/('[^']*')/g).map((parte, i) =>
                                             /^'[^']*'$/.test(parte)
-                                                ? <strong key={i} style={{ fontStyle: 'normal', fontWeight: 700, color: '#fcd34d', fontFamily: 'EB Garamond, Georgia, serif' }}>{parte}</strong>
+                                                ? <strong key={i} style={{ fontStyle: 'normal', fontWeight: 700, color: '#fcd34d', fontFamily: 'Georgia, serif' }}>{parte}</strong>
                                                 : <React.Fragment key={i}>{parte}</React.Fragment>
                                         )}
                                     </p>
@@ -1834,7 +1815,7 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
                                         color: 'rgba(255,255,255,0.25)',
                                         letterSpacing: '0.16em',
                                         textTransform: 'uppercase',
-                                        fontFamily: 'EB Garamond, Georgia, serif',
+                                        fontFamily: 'Georgia, serif',
                                         fontStyle: 'italic',
                                     }}>{fraseDoDia.autor}</p>
                                 </div>
@@ -1916,7 +1897,7 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
                                 <p className="text-slate-500">Tente buscar por outro nome ou bairro.</p>
                             </div>
                         ) : (
-                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                                 {filteredRevistas.map((revista, cardIdx) => (
                                     <div key={revista.id}
                                         className="card-entry overflow-hidden flex flex-col group"

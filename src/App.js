@@ -1924,13 +1924,13 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
                 </div>
             </header>
 
-            <main className="main-content max-w-5xl mx-auto px-4 sm:px-6 lg:px-8" style={{ paddingTop: `calc(env(safe-area-inset-top, 0px) + ${headerHeight + 4}px)` }}>
+            <main className="main-content max-w-5xl mx-auto px-4 sm:px-6 lg:px-8" style={{ paddingTop: `calc(env(safe-area-inset-top, 0px) + ${headerHeight}px)` }}>
                 {/* BANNER INSPIRAÇÃO DIÁRIA */}
                 {/* ── BANNER + ABAS ── */}
                 <div className="relative shadow-lg banner-reveal" style={{
                     borderRadius: 24,
                     clipPath: 'inset(0 round 24px)',
-                    marginTop: 16,
+                    marginTop: 12,
                     marginBottom: 24,
                 }}>
                     <img src={imagemDoDia} onError={(e) => { e.target.src = '' }} alt="Equipe Destemidos" className="w-full h-72 sm:h-96 object-cover bg-slate-200 banner-ken-burns" style={{ objectPosition: `center ${bannerFocusY}`, display: 'block' }} />

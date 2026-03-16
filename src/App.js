@@ -122,17 +122,53 @@ export default function App() {
     // Sticky tabs — abas grudam no header quando banner sai da tela
     const [tabsSticky, setTabsSticky] = useState(false);
     const bannerNavRef = useRef(null);
+    // Search bar visibility (esconde no mobile ao scrollar para baixo)
+    const [searchBarVisible, setSearchBarVisible] = useState(true);
 
     useEffect(() => {
-        const updateHeaderHeight = () => {
+        let rafId;
+        let measuring = false;
+
+        const measure = () => {
             if (headerRef.current) {
-                setHeaderHeight(headerRef.current.offsetHeight);
+                const h = headerRef.current.offsetHeight;
+                setHeaderHeight(h);
             }
         };
-        const id = setTimeout(updateHeaderHeight, 100);
-        window.addEventListener('resize', updateHeaderHeight);
-        return () => { clearTimeout(id); window.removeEventListener('resize', updateHeaderHeight); };
-    }, [tabsSticky]);
+
+        // Mede durante toda a duração da transição (~350ms) usando rAF
+        const measureDuring = () => {
+            if (measuring) return;
+            measuring = true;
+            const start = performance.now();
+            const tick = () => {
+                measure();
+                if (performance.now() - start < 400) {
+                    rafId = requestAnimationFrame(tick);
+                } else {
+                    measuring = false;
+                    measure(); // medição final
+                }
+            };
+            rafId = requestAnimationFrame(tick);
+        };
+
+        measure(); // medição inicial
+        window.addEventListener('resize', measure);
+
+        // ResizeObserver como backup para desktop
+        let ro;
+        if (headerRef.current && window.ResizeObserver) {
+            ro = new ResizeObserver(measure);
+            ro.observe(headerRef.current);
+        }
+
+        return () => {
+            cancelAnimationFrame(rafId);
+            window.removeEventListener('resize', measure);
+            ro?.disconnect();
+        };
+    }, [tabsSticky, searchBarVisible]);
 
     const haptic = (style = 'light') => {
         if (!navigator.vibrate) return;
@@ -315,7 +351,6 @@ export default function App() {
     const cotacaoClicksRef = useRef(parseInt(localStorage.getItem('dst_cot_clicks') || '0'));
 
     // Hide search bar on mobile scroll down, show on scroll up
-    const [searchBarVisible, setSearchBarVisible] = useState(true);
     // Pull-to-refresh
     const mainContainerRef = useRef(null);
     const lastScrollY = useRef(0);
@@ -1667,8 +1702,12 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
                     background: modoNoturno ? 'rgba(15,23,42,0.70)' : 'rgba(255,255,255,0.75)',
                     backdropFilter: 'blur(24px) saturate(180%)',
                     WebkitBackdropFilter: 'blur(24px) saturate(180%)',
-                    borderBottom: modoNoturno ? '1px solid rgba(51,65,85,0.6)' : '1px solid rgba(226,232,240,0.6)',
-                    boxShadow: modoNoturno ? '0 1px 8px rgba(0,0,0,0.25)' : '0 1px 8px rgba(148,163,184,0.3)',
+                    borderBottom: tabsSticky
+                        ? 'none'
+                        : (modoNoturno ? '1px solid rgba(51,65,85,0.6)' : '1px solid rgba(226,232,240,0.6)'),
+                    boxShadow: tabsSticky
+                        ? 'none'
+                        : (modoNoturno ? '0 1px 8px rgba(0,0,0,0.25)' : '0 1px 8px rgba(148,163,184,0.3)'),
                 }}>
                 <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="flex flex-col sm:flex-row sm:items-center sm:gap-4 sm:py-3">
@@ -1797,7 +1836,7 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
                                                     : 'none',
                                             };
                                             const labelColor = isActive
-                                                ? (modoNoturno ? '#ffffff' : '#0f172a')
+                                                ? (modoNoturno ? '#ffffff' : '#334155')
                                                 : (modoNoturno ? 'rgba(255,255,255,0.48)' : 'rgba(15,23,42,0.48)');
                                             return tab.isBtn ? (
                                                 <button key={tab.id} onClick={() => { haptic(); tab.action(); }} style={tabStyle}>
@@ -1829,46 +1868,48 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
                     </div>
                 </div>
 
-                {/* ── ABAS STICKY MOBILE — aparecem abaixo do header no mobile ── */}
+                {/* ── ABAS STICKY MOBILE — integradas ao header, sem separação visual ── */}
                 <div className="sm:hidden"
                     style={{
                         maxHeight: tabsSticky ? 72 : 0,
                         opacity: tabsSticky ? 1 : 0,
                         overflow: 'hidden',
                         transition: 'max-height 0.28s cubic-bezier(0.25,0.46,0.45,0.94), opacity 0.22s ease',
-                        borderTop: modoNoturno ? '1px solid rgba(51,65,85,0.5)' : '1px solid rgba(226,232,240,0.4)',
                     }}>
                     <div className="sticky-tabs-bar" style={{ display: 'flex', gap: 7, alignItems: 'center', overflowX: 'auto', WebkitOverflowScrolling: 'touch', scrollbarWidth: 'none', msOverflowStyle: 'none', paddingLeft: 14, paddingRight: 14, paddingTop: 11, paddingBottom: 11 }}>
                         {[
-                            { id: 'Direcional',  label: 'DIRECIONAL',  action: () => setActiveBrand('Direcional'), isBtn: true },
-                            { id: 'Riva',        label: 'RIVA',        action: () => setActiveBrand('Riva'),        isBtn: true },
-                            { id: 'Simulador',   label: 'SIMULADOR',   href: 'https://www8.caixa.gov.br/siopiinternet-web/simulaOperacaoInternet.do?method=inicializarCasoUso&isVoltar=true' },
-                            { id: 'Tabelas',     label: 'TABELAS',     href: 'https://drive.google.com/drive/folders/14mYfQkNaSc9APr6hpOTKKTFQ02oq3uOf?usp=sharing' },
-                            { id: 'Utilitarios', label: 'UTILITÁRIOS', action: () => setActiveBrand('Utilitarios'), isBtn: true },
-                            { id: 'Guia',        label: 'GUIA',        action: () => setActiveBrand('Guia'),        isBtn: true },
+                            { id: 'Direcional',  label: 'DIRECIONAL',  icon: <span style={{width:5,height:5,borderRadius:2,background:'rgba(255,255,255,0.7)',flexShrink:0,display:'inline-block'}}/>, action: () => setActiveBrand('Direcional'), isBtn: true },
+                            { id: 'Riva',        label: 'RIVA',        icon: <span style={{width:5,height:5,borderRadius:2,background:'rgba(255,255,255,0.7)',flexShrink:0,display:'inline-block'}}/>, action: () => setActiveBrand('Riva'),        isBtn: true },
+                            { id: 'Simulador',   label: 'SIMULADOR',   icon: <Calculator size={13} style={{color:'rgba(255,255,255,0.6)',flexShrink:0}}/>, href: 'https://www8.caixa.gov.br/siopiinternet-web/simulaOperacaoInternet.do?method=inicializarCasoUso&isVoltar=true' },
+                            { id: 'Tabelas',     label: 'TABELAS',     icon: <TableProperties size={13} style={{color:'rgba(255,255,255,0.6)',flexShrink:0}}/>, href: 'https://drive.google.com/drive/folders/14mYfQkNaSc9APr6hpOTKKTFQ02oq3uOf?usp=sharing' },
+                            { id: 'Utilitarios', label: 'UTILITÁRIOS', icon: <BookMarked size={13} style={{color:'rgba(255,255,255,0.6)',flexShrink:0}}/>, action: () => setActiveBrand('Utilitarios'), isBtn: true },
+                            { id: 'Guia',        label: 'GUIA',        icon: <HelpCircle size={13} style={{color:'rgba(255,255,255,0.6)',flexShrink:0}}/>, action: () => setActiveBrand('Guia'),        isBtn: true },
                         ].map((tab) => {
                             const isActive = activeBrand === tab.id;
                             const tabStyle = {
-                                borderRadius: 16,
-                                paddingTop: 11, paddingBottom: 11, paddingLeft: 18, paddingRight: 18,
+                                borderRadius: 12,
+                                paddingTop: 9, paddingBottom: 9, paddingLeft: 16, paddingRight: 16,
                                 cursor: 'pointer', textDecoration: 'none',
-                                display: 'flex', alignItems: 'center', flexShrink: 0, whiteSpace: 'nowrap',
-                                transition: 'background 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease',
+                                display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0, whiteSpace: 'nowrap',
+                                transition: 'background 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease',
                                 background: isActive
-                                    ? (modoNoturno ? 'rgba(255,255,255,0.22)' : 'rgba(15,23,42,0.13)')
-                                    : (modoNoturno ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)'),
+                                    ? (modoNoturno ? 'rgba(255,255,255,0.28)' : 'rgba(15,23,42,0.12)')
+                                    : (modoNoturno ? 'rgba(255,255,255,0.07)' : 'rgba(15,23,42,0.05)'),
                                 border: isActive
-                                    ? (modoNoturno ? '1.5px solid rgba(255,255,255,0.45)' : '1.5px solid rgba(15,23,42,0.30)')
-                                    : (modoNoturno ? '1.5px solid rgba(255,255,255,0.10)' : '1.5px solid rgba(0,0,0,0.09)'),
+                                    ? (modoNoturno ? '1px solid rgba(255,255,255,0.40)' : '1px solid rgba(15,23,42,0.25)')
+                                    : (modoNoturno ? '1px solid rgba(255,255,255,0.12)' : '1px solid rgba(15,23,42,0.10)'),
                                 boxShadow: isActive
-                                    ? (modoNoturno ? '0 2px 12px rgba(0,0,0,0.30), inset 0 1px 0 rgba(255,255,255,0.20)' : '0 2px 10px rgba(0,0,0,0.12), inset 0 1px 0 rgba(255,255,255,1)')
+                                    ? (modoNoturno ? '0 2px 14px rgba(0,0,0,0.28), inset 0 1px 0 rgba(255,255,255,0.35)' : '0 2px 8px rgba(0,0,0,0.10), inset 0 1px 0 rgba(255,255,255,0.9)')
                                     : 'none',
                             };
-                            const labelColor = isActive
-                                ? (modoNoturno ? '#ffffff' : '#0f172a')
-                                : (modoNoturno ? 'rgba(255,255,255,0.40)' : 'rgba(15,23,42,0.38)');
+                            const labelColor = modoNoturno ? '#fff' : '#1e293b';
+                            const labelOpacity = isActive ? 1 : (modoNoturno ? 0.38 : 0.5);
+                            const iconColor = modoNoturno ? 'rgba(255,255,255,0.6)' : 'rgba(30,41,59,0.6)';
                             const inner = (
-                                <span style={{ fontSize: 13, fontWeight: 900, letterSpacing: '0.06em', color: labelColor, transition: 'color 0.22s' }}>{tab.label}</span>
+                                <>
+                                    <span style={{ fontSize: 13, fontWeight: 800, letterSpacing: '0.05em', color: labelColor, opacity: labelOpacity, transition: 'opacity 0.25s' }}>{tab.label}</span>
+                                    <span style={{ opacity: isActive ? 0.85 : 0.28, display: 'flex', alignItems: 'center', transition: 'opacity 0.25s', color: iconColor }}>{tab.icon}</span>
+                                </>
                             );
                             return tab.isBtn ? (
                                 <button key={tab.id} onClick={() => { haptic(); tab.action(); }} style={tabStyle}>{inner}</button>

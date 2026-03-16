@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Search, Building, ExternalLink, MapPin, BookOpen, Maximize, Bed, LayoutGrid, Rocket, Quote, Sparkles, ChevronDown, ChevronUp, ChevronLeft, FileText, TableProperties, BookMarked, HelpCircle, Calculator, Bot, X, Send, Wand2, Paperclip, File as FileIcon, Trash2, FolderPlus, GripVertical, Plus, MessageCircle, Moon, Sun, AlertTriangle, Book } from 'lucide-react';
 import { buscarRespostaDoRobo, buscarRespostaGemini } from './bot/dadosFinanciamento.js';
+
+
 // === DADOS DAS REVISTAS E BASE DE CONHECIMENTO DO CHATBOT ===
 const revistasDataLocal = [
     { id: 1, title: "Brisas do Horizonte", brand: "Direcional", region: "Coroado - Zona Leste", size: "43m² a 45m²", bedrooms: "2 quartos", flooring: "Todo o apê", entrega: "08/2028", cover: "https://www.direcional.com.br/wp-content/uploads/2025/06/Perspectiva-Guarita-BrisasdoHorizonte.jpg.webp", link: "https://drive.google.com/file/d/18IXtAt9PLVjIsk2PkXIHXnVCaduVkGu2/view?usp=drive_link", aliases: ["brisas", "brisas do horizonte", "horizonte"], pois: ["Supermercado Vitória (1 min)", "Escola Mun. Profª Maria Rodrigues Tapajós (2 min)", "SPA Coroado (3 min)", "Estádio Carlos Zamith (5 min)", "Park Mall Ephigênio Salles (6 min)", "UFAM - Universidade Federal do Amazonas (7 min)", "Hospital Dr. João Lúcio (7 min)", "Samel São José Medical Center (7 min)", "Sesi Clube do Trabalhador (8 min)", "Manauara Shopping (14 min)"] },
@@ -74,16 +76,16 @@ const frasesMotivacionais = [
 
 // === IMAGENS DE EQUIPE (Muda Diariamente) ===
 const imagensEquipeDiarias = [
+    "https://i.postimg.cc/4xMnK7YP/Copia-de-IMG-3117.jpg",
+    "https://i.postimg.cc/sXP20TwK/Copia-de-IMG-1504.jpg",
     "https://i.postimg.cc/tCc9D09Q/Copia-de-IMG-0779-(1).jpg",
     "https://i.postimg.cc/fLvwvJRq/Copia-de-IMG-1017.jpg",
-    "https://i.postimg.cc/sXP20TwK/Copia-de-IMG-1504.jpg",
     "https://i.postimg.cc/KzhzN6r5/Copia-de-IMG-1515.jpg",
     "https://i.postimg.cc/hGT4fCWS/Copia-de-IMG-2336.jpg",
     "https://i.postimg.cc/bvtr1yb8/Copia-de-IMG-2830.jpg",
     "https://i.postimg.cc/1zqXDmFK/Copia-de-IMG-3048.jpg",
     "https://i.postimg.cc/YSW0QrF3/Copia-de-IMG-3049.jpg",
     "https://i.postimg.cc/mgqhczP5/Copia-de-IMG-3054.jpg",
-    "https://i.postimg.cc/4xMnK7YP/Copia-de-IMG-3117.jpg",
     "https://i.postimg.cc/2SJ3qb1V/Copia-de-IMG-5622-(1).jpg",
     "https://i.postimg.cc/QCxjYhBj/Copia-de-IMG-9585.jpg",
     "https://i.postimg.cc/fWKLcg3X/Copia-de-IMG-9919.avif"
@@ -116,6 +118,20 @@ function RippleButton({ onClick, className, children, style }) {
 }
 
 export default function App() {
+    const [headerHeight, setHeaderHeight] = useState(120);
+
+    useEffect(() => {
+        const updateHeaderHeight = () => {
+            if (headerRef.current) {
+                setHeaderHeight(headerRef.current.offsetHeight);
+            }
+        };
+        // Aguarda a animação do header terminar antes de medir
+        const id = setTimeout(updateHeaderHeight, 350);
+        window.addEventListener('resize', updateHeaderHeight);
+        return () => { clearTimeout(id); window.removeEventListener('resize', updateHeaderHeight); };
+    }, []);
+
     const haptic = (style = 'light') => {
         if (!navigator.vibrate) return;
         const p = { light: 10, medium: 25, heavy: 40, success: [10, 50, 10] };
@@ -152,7 +168,7 @@ export default function App() {
     const [revistasData] = useState(revistasDataLocal);
     const [activeBrand, setActiveBrand] = useState('Direcional');
     const [fraseDoDia] = useState(frasesMotivacionais[dayIndex % frasesMotivacionais.length]);
-    const [imagemDoDia] = useState(imagensEquipeDiarias[dayIndex % imagensEquipeDiarias.length]);
+    const [imagemDoDia] = useState("https://i.postimg.cc/fbzc1rWb/Copia-de-IMG-1659.jpg");
     const [modoNoturno, setModoNoturno] = useState(() => localStorage.getItem('modoNoturno') === 'true');
     const [bannerFocusY, setBannerFocusY] = useState('30%');
 
@@ -264,7 +280,7 @@ export default function App() {
     };
     const navRef = useRef(null);
     const [pillStyle, setPillStyle] = useState({ left: 0, width: 0, opacity: 0, color: 'Direcional' });
-
+    const [hoveredTabIdx, setHoveredTabIdx] = useState(null);
     const calcPill = (brand) => {
         const activeRef = tabRefs[brand];
         if (!activeRef?.current || !navRef?.current) return;
@@ -276,6 +292,8 @@ export default function App() {
             opacity: 1,
             color:   brand,
         });
+        // Auto-scroll para a aba ativa no mobile
+        activeRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
     };
 
     useEffect(() => { calcPill(activeBrand); }, [activeBrand]);
@@ -728,31 +746,27 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
 Responda APENAS com JSON válido, sem texto adicional: {"category":"CATEGORIA","label":"NOME DO DOCUMENTO"}
 
 CATEGORIAS POSSÍVEIS:
-- "rg_frente" → RG Frente: lado com FOTO 3x4 colada, nome completo, data de nascimento, número do RG, naturalidade. É um cartão plastificado pequeno.
-- "rg_verso" → RG Verso: lado SEM foto, tem impressão digital (polegar), campos de filiação (Pai/Mãe ou nome dos pais), órgão emissor (SSP, DETRAN etc), assinatura do titular. É um cartão plastificado pequeno. NÃO confunda com certidão — certidão é papel A4 ou folha grande.
-- "rg" → RG genérico quando não dá para distinguir frente/verso
-- "cnh" → CNH: tem foto do motorista, logo DETRAN, categorias (A B C D E), validade
-- "cpf" → CPF: número XXX.XXX.XXX-XX, texto "Cadastro de Pessoas Físicas" ou "Receita Federal"
-- "oab" → OAB: logo da OAB, "Ordem dos Advogados do Brasil"
-- "creci" → CRECI: logo CRECI, "Conselho Regional de Corretores de Imóveis"
-- "residencia" → Comprovante de Residência: conta de luz, água, gás, internet, telefone, fatura — endereço completo com CEP e valor/vencimento
-- "certidao_nascimento" → Certidão de Nascimento: documento em PAPEL A4 ou folha grande (não cartão), texto "CERTIDÃO DE NASCIMENTO" em destaque, nome do cartório, registro de nascimento, data de nascimento, nome dos pais. ATENÇÃO: certidão é sempre um papel impresso grande, nunca um cartão plastificado.
-- "certidao_casamento" → Certidão de Casamento: PAPEL A4 grande, texto "CERTIDÃO DE CASAMENTO", nomes dos cônjuges, data do casamento, nome do cartório
-- "certidao_obito" → Certidão de Óbito: PAPEL A4 grande, texto "CERTIDÃO DE ÓBITO", data de falecimento
-- "ctps" → Carteira de Trabalho: "CARTEIRA DE TRABALHO E PREVIDÊNCIA SOCIAL" ou "CTPS Digital", logo Governo Federal
-- "contracheque" → Contracheque ou Holerite: tabela com Vencimentos e Descontos, INSS, FGTS, salário base, total líquido
-- "imposto_renda" → Imposto de Renda: "DECLARAÇÃO DE AJUSTE ANUAL" ou "DIRPF", logo Receita Federal
-- "extrato_bancario" → Extrato Bancário: logo de banco (Caixa, Bradesco, Itaú, Nubank, Banco do Brasil, Santander, Inter), transações, saldo
-- "fgts" → FGTS: logo "CAIXA" + "FGTS", número PIS/PASEP, tabela de depósitos, "Valor para Fins Rescisórios"
-- "outros" → use apenas se realmente não se encaixar em nenhuma categoria
+- "rg" → RG ou Identidade (quando não dá para distinguir frente/verso): tem campos de identificação, número do RG
+- "cnh" → CNH: tem foto do motorista, logo DETRAN, letras de categoria (A B C D E), validade
+- "cpf" → CPF: tem número no formato XXX.XXX.XXX-XX, texto "Cadastro de Pessoas Físicas" ou "Receita Federal"
+- "oab" → OAB: tem logo da OAB, texto "Ordem dos Advogados do Brasil"
+- "creci" → CRECI: tem logo CRECI, texto "Conselho Regional de Corretores de Imóveis"
+- "rg_frente" → RG Frente: lado com foto 3x4, nome, data de nascimento, número do RG
+- "rg_verso" → RG Verso: lado com impressão digital, filiação (nome dos pais), órgão emissor
+- "residencia" → Comprovante de Residência: conta de luz, água, gás, internet, telefone, TV por assinatura, fatura de celular — qualquer documento que tenha endereço completo com CEP e valor/vencimento
+- "certidao_casamento" → Certidão de Casamento: tem texto "CERTIDÃO DE CASAMENTO", nome do cartório, nomes dos cônjuges
+- "certidao_nascimento" → Certidão de Nascimento: tem texto "CERTIDÃO DE NASCIMENTO", nome do cartório
+- "certidao_obito" → Certidão de Óbito: tem texto "CERTIDÃO DE ÓBITO", data de falecimento
+- "ctps" → Carteira de Trabalho: tem texto "CARTEIRA DE TRABALHO E PREVIDÊNCIA SOCIAL" ou "CTPS Digital", logo Governo Federal
+- "contracheque" → Contracheque ou Holerite: tem tabela com colunas Vencimentos e Descontos, valores de INSS, FGTS, salário base, total líquido
+- "imposto_renda" → Imposto de Renda: tem texto "DECLARAÇÃO DE AJUSTE ANUAL" ou "DIRPF", logo Receita Federal
+- "extrato_bancario" → Extrato Bancário: tem logo de banco (Caixa, Bradesco, Itaú, Nubank, Banco do Brasil, Santander, Inter), lista de transações, saldo, agência e conta
+- "fgts" → FGTS: tem logo "CAIXA" junto com "FGTS", número PIS/PASEP, tabela de depósitos mensais, "Valor para Fins Rescisórios"
+- "outros" → use apenas se não se encaixar em nenhuma categoria acima
 
-REGRAS CRÍTICAS DE DESEMPATE:
-1. Se o documento é um CARTÃO PEQUENO PLASTIFICADO (tamanho carteira) → nunca é certidão. Se tem impressão digital ou filiação → é rg_verso.
-2. Se o documento é uma FOLHA GRANDE DE PAPEL (A4 ou maior) com texto formal de cartório → é certidão, nunca RG.
-3. Certidão SEMPRE tem o nome do cartório impresso e o número do registro civil. RG verso NUNCA tem nome de cartório.
-4. Se vê impressão digital (dedo) → é rg_verso, sem exceção.
+IMPORTANTE: Seja generoso na classificação. Se há qualquer indicação visual de uma categoria, classifique nela. Só use "outros" se realmente não der para identificar.
 
-Responda SOMENTE o JSON. Exemplo: {"category":"rg_verso","label":"RG Verso"}`;
+Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
 
     const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 
@@ -776,7 +790,6 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg_verso","label":"RG Verso"}`;
     };
 
     const fileToBase64 = (arrayBuffer) => {
-        // Usa chunks para evitar stack overflow em arquivos grandes
         const bytes = new Uint8Array(arrayBuffer);
         const chunkSize = 8192;
         let binary = '';
@@ -786,7 +799,6 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg_verso","label":"RG Verso"}`;
         return btoa(binary);
     };
 
-    // Redimensiona imagem para max 1280px antes de enviar à IA (evita timeout e payloads gigantes)
     const resizeImageForAI = async (file) => {
         return new Promise((resolve) => {
             const img = new Image();
@@ -1099,7 +1111,6 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg_verso","label":"RG Verso"}`;
 
             } else if (file.type.startsWith('image/')) {
                 mime = 'image/jpeg';
-                // Redimensiona para max 1280px — evita timeout e payload gigante na IA
                 b64 = await resizeImageForAI(file);
                 if (!b64) return { category: 'outros', order: 99, label: 'Outro Documento' };
 
@@ -1578,7 +1589,6 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg_verso","label":"RG Verso"}`;
             style={modoNoturno ? undefined : { background: '#f2f2f7' }}
             onMouseMove={handleGlobalDragOver}
         >
-            {/* ── DARK MODE: orbs flutuantes ── */}
             {modoNoturno && (
                 <div aria-hidden="true" className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
                     <style>{`
@@ -1587,12 +1597,67 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg_verso","label":"RG Verso"}`;
                         @keyframes orb-c { 0%{transform:translate(0px,0px) scale(1)} 35%{transform:translate(50px,60px) scale(1.10)} 70%{transform:translate(-20px,40px) scale(1.05)} 100%{transform:translate(0px,0px) scale(1)} }
                         @keyframes orb-d { 0%{transform:translate(0px,0px) scale(1)} 40%{transform:translate(-55px,-50px) scale(1.06)} 70%{transform:translate(30px,-20px) scale(0.94)} 100%{transform:translate(0px,0px) scale(1)} }
                     `}</style>
-                    <div style={{ position:'absolute', top:'-15%', left:'-10%', width:'62vw', height:'62vw', maxWidth:720, maxHeight:720, borderRadius:'50%', background:'radial-gradient(circle, rgba(56,189,248,0.22) 0%, rgba(56,189,248,0.08) 40%, transparent 70%)', animation:'orb-a 22s ease-in-out infinite', filter:'blur(1px)' }}/>
-                    <div style={{ position:'absolute', top:'15%', right:'-12%', width:'52vw', height:'52vw', maxWidth:620, maxHeight:620, borderRadius:'50%', background:'radial-gradient(circle, rgba(99,102,241,0.24) 0%, rgba(99,102,241,0.08) 42%, transparent 70%)', animation:'orb-b 28s ease-in-out infinite 4s', filter:'blur(1px)' }}/>
-                    <div style={{ position:'absolute', bottom:'-12%', left:'18%', width:'56vw', height:'56vw', maxWidth:660, maxHeight:660, borderRadius:'50%', background:'radial-gradient(circle, rgba(37,99,235,0.18) 0%, rgba(37,99,235,0.05) 48%, transparent 70%)', animation:'orb-c 32s ease-in-out infinite 9s', filter:'blur(1px)' }}/>
-                    <div style={{ position:'absolute', top:'-5%', right:'15%', width:'35vw', height:'35vw', maxWidth:420, maxHeight:420, borderRadius:'50%', background:'radial-gradient(circle, rgba(139,92,246,0.16) 0%, rgba(139,92,246,0.04) 50%, transparent 70%)', animation:'orb-d 18s ease-in-out infinite 2s', filter:'blur(1px)' }}/>
+                    <div style={{ position:'absolute', top:'-15%', left:'-10%', width:'62vw', height:'62vw', maxWidth:720, maxHeight:720, borderRadius:'50%', background:'radial-gradient(circle, rgba(56,189,248,0.12) 0%, rgba(56,189,248,0.04) 40%, transparent 70%)', animation:'orb-a 22s ease-in-out infinite', filter:'blur(1px)' }}/>
+                    <div style={{ position:'absolute', top:'15%', right:'-12%', width:'52vw', height:'52vw', maxWidth:620, maxHeight:620, borderRadius:'50%', background:'radial-gradient(circle, rgba(99,102,241,0.13) 0%, rgba(99,102,241,0.04) 42%, transparent 70%)', animation:'orb-b 28s ease-in-out infinite 4s', filter:'blur(1px)' }}/>
+                    <div style={{ position:'absolute', bottom:'-12%', left:'18%', width:'56vw', height:'56vw', maxWidth:660, maxHeight:660, borderRadius:'50%', background:'radial-gradient(circle, rgba(37,99,235,0.10) 0%, rgba(37,99,235,0.03) 48%, transparent 70%)', animation:'orb-c 32s ease-in-out infinite 9s', filter:'blur(1px)' }}/>
+                    <div style={{ position:'absolute', top:'-5%', right:'15%', width:'35vw', height:'35vw', maxWidth:420, maxHeight:420, borderRadius:'50%', background:'radial-gradient(circle, rgba(139,92,246,0.09) 0%, rgba(139,92,246,0.02) 50%, transparent 70%)', animation:'orb-d 18s ease-in-out infinite 2s', filter:'blur(1px)' }}/>
                 </div>
             )}
+            {/* Ocultar scrollbar da nav de abas + centralizar no desktop */}
+            <style>{`
+                @font-face {
+                    font-family: 'EB Garamond';
+                    font-style: normal;
+                    font-weight: 400;
+                    font-display: swap;
+                    src: url('https://fonts.gstatic.com/s/ebgaramond/v26/SlGDmQSbi6Ws4Wuh5RL9GjkdMKBzOns.woff2') format('woff2');
+                }
+                @font-face {
+                    font-family: 'EB Garamond';
+                    font-style: italic;
+                    font-weight: 400;
+                    font-display: swap;
+                    src: url('https://fonts.gstatic.com/s/ebgaramond/v26/SlGWmQSbi6Ws-zexuqLVlLmxc_ryAQkSYZTDFg.woff2') format('woff2');
+                }
+                @font-face {
+                    font-family: 'EB Garamond';
+                    font-style: italic;
+                    font-weight: 700;
+                    font-display: swap;
+                    src: url('https://fonts.gstatic.com/s/ebgaramond/v26/SlGSmQSbi6Ws-zexuqLVlLmxc_ryAQkSYZTDFg.woff2') format('woff2');
+                }
+                nav[aria-label="Tabs"]::-webkit-scrollbar { display: none; }
+                nav[aria-label="Tabs"] { -ms-overflow-style: none; scrollbar-width: none; }
+                @media (min-width: 640px) {
+                    nav[aria-label="Tabs"] { justify-content: center !important; overflow-x: visible !important; flex-wrap: wrap; padding-left: 0 !important; padding-right: 0 !important; }
+                }
+                @keyframes shimmer-sweep {
+                    0%   { transform: translateX(-150%) skewX(-18deg); }
+                    100% { transform: translateX(280%)  skewX(-18deg); }
+                }
+                .group:hover .card-shimmer-sweep {
+                    animation: shimmer-sweep 0.65s cubic-bezier(0.25,0.46,0.45,0.94) forwards;
+                }
+                .group:hover img { transform: scale(1.12) !important; }
+                .group img { transition: transform 0.7s cubic-bezier(0.25,0.46,0.45,0.94) !important; }
+                @keyframes banner-reveal-anim {
+                    0%   { opacity: 0; transform: translateY(18px) scale(0.98); }
+                    100% { opacity: 1; transform: translateY(0)    scale(1); }
+                }
+                .banner-reveal {
+                    animation: banner-reveal-anim 0.7s cubic-bezier(0.25,0.46,0.45,0.94) both;
+                }
+                @keyframes banner-text-in-1 {
+                    0%   { opacity: 0; transform: translateY(10px); }
+                    100% { opacity: 1; transform: translateY(0); }
+                }
+                @keyframes banner-text-in-2 {
+                    0%   { opacity: 0; transform: translateY(14px); }
+                    100% { opacity: 1; transform: translateY(0); }
+                }
+                .banner-text-1 { animation: banner-text-in-1 0.55s 0.35s cubic-bezier(0.25,0.46,0.45,0.94) both; }
+                .banner-text-2 { animation: banner-text-in-2 0.55s 0.50s cubic-bezier(0.25,0.46,0.45,0.94) both; }
+            `}</style>
             {/* ── SAFE AREA + HEADER — camada única de vidro ────────────────
                 Um único elemento fixed parte do top:0 (cobre o notch) e tem
                 padding-top = env(safe-area-inset-top) para o conteúdo começar
@@ -1703,105 +1768,143 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg_verso","label":"RG Verso"}`;
                 </div>
             </header>
 
-            <main className="main-content max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+            <main className="main-content max-w-5xl mx-auto px-4 sm:px-6 lg:px-8" style={{ paddingTop: `calc(env(safe-area-inset-top, 0px) + ${headerHeight}px)` }}>
                 {/* BANNER INSPIRAÇÃO DIÁRIA */}
-                <div className="mb-1 relative rounded-3xl overflow-hidden shadow-lg group banner-reveal">
-                    <img src={imagemDoDia} onError={(e) => { e.target.src = '' }} alt="Equipe Destemidos" className="w-full h-64 sm:h-80 object-cover bg-slate-200 banner-ken-burns" style={{ objectPosition: `center ${bannerFocusY}` }} />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/50 to-transparent flex flex-col justify-end p-6 sm:p-8">
-                        <div className="flex items-center gap-2 mb-3 banner-text-1">
-                            <span className="bg-amber-500 text-amber-950 text-xs font-black uppercase tracking-wider py-1.5 px-3 rounded-full flex items-center gap-1 shadow-lg">
-                                <Sparkles size={14} /> Inspiração do Dia
-                            </span>
-                        </div>
-                        <div className="flex gap-3 banner-text-2">
-                            <Quote size={32} className="text-amber-500/50 shrink-0 mt-1" />
-                            <div>
-                                <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-white leading-tight max-w-3xl drop-shadow-md">"{fraseDoDia.texto}"</h2>
-                                <p className="text-amber-400 font-medium mt-3 flex items-center gap-2">
-                                    <span className="w-6 h-[1px] bg-amber-400/50 block"></span> {fraseDoDia.autor}
-                                </p>
+                {/* ── BANNER + ABAS ── */}
+                <div className="relative shadow-lg banner-reveal" style={{
+                    borderRadius: 24,
+                    clipPath: 'inset(0 round 24px)',
+                    marginTop: 16,
+                    marginBottom: 16,
+                }}>
+                    <img src={imagemDoDia} onError={(e) => { e.target.src = '' }} alt="Equipe Destemidos" className="w-full h-72 sm:h-96 object-cover bg-slate-200 banner-ken-burns" style={{ objectPosition: `center ${bannerFocusY}`, display: 'block' }} />
+                    {/* Camada 1: blur progressivo de baixo pra cima */}
+                    <div className="absolute inset-0 pointer-events-none" style={{
+                        backdropFilter: 'blur(14px)',
+                        WebkitBackdropFilter: 'blur(14px)',
+                        maskImage: 'linear-gradient(to top, black 0%, black 30%, transparent 62%)',
+                        WebkitMaskImage: 'linear-gradient(to top, black 0%, black 30%, transparent 62%)',
+                    }}/>
+                    {/* Camada 2: escurecimento */}
+                    <div className="absolute inset-0 pointer-events-none" style={{
+                        background: 'linear-gradient(to top, rgba(0,0,0,0.78) 0%, rgba(0,0,0,0.50) 32%, rgba(0,0,0,0.12) 60%, transparent 80%)',
+                    }}/>
+                    {/* Conteúdo */}
+                    <div className="absolute inset-0 flex flex-col justify-end">
+                        <div className="px-4 sm:px-8 pt-4 sm:pt-8">
+                            <div className="flex items-center gap-2 mb-2 sm:mb-3 banner-text-1">
+                                <span className="bg-amber-500 text-amber-950 text-[10px] sm:text-xs font-black uppercase tracking-wider py-1 sm:py-1.5 px-2.5 sm:px-3 rounded-full flex items-center gap-1 shadow-lg">
+                                    <Sparkles size={12} /> Inspiração do Dia
+                                </span>
                             </div>
+                            <div className="banner-text-2">
+                                <div>
+                                    <span style={{
+                                        fontFamily: 'EB Garamond, Georgia, serif',
+                                        fontSize: 38,
+                                        lineHeight: 0.75,
+                                        color: '#e8c96a',
+                                        opacity: 0.65,
+                                        display: 'inline',
+                                        verticalAlign: 'top',
+                                        marginRight: 5,
+                                        userSelect: 'none',
+                                    }}>"</span>
+                                    <p style={{
+                                        fontFamily: 'EB Garamond, Georgia, serif',
+                                        fontStyle: 'italic',
+                                        fontWeight: 400,
+                                        fontSize: 'clamp(14px, 3vw, 21px)',
+                                        color: '#f0e8d4',
+                                        lineHeight: 1.6,
+                                        display: 'inline',
+                                        textShadow: '0 1px 8px rgba(0,0,0,0.4)',
+                                    }}>
+                                        {fraseDoDia.texto.split(/('[^']*')/g).map((parte, i) =>
+                                            /^'[^']*'$/.test(parte)
+                                                ? <strong key={i} style={{ fontStyle: 'normal', fontWeight: 700, color: '#fcd34d', fontFamily: 'EB Garamond, Georgia, serif' }}>{parte}</strong>
+                                                : <React.Fragment key={i}>{parte}</React.Fragment>
+                                        )}
+                                    </p>
+                                </div>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginTop: 10 }}>
+                                    <div style={{ width: 3, height: 3, borderRadius: '50%', background: '#c9a84c', opacity: 0.55, flexShrink: 0 }} />
+                                    <p style={{
+                                        fontSize: 9,
+                                        color: 'rgba(255,255,255,0.25)',
+                                        letterSpacing: '0.16em',
+                                        textTransform: 'uppercase',
+                                        fontFamily: 'EB Garamond, Georgia, serif',
+                                        fontStyle: 'italic',
+                                    }}>{fraseDoDia.autor}</p>
+                                </div>
+                            </div>
+                        </div>
+                        {/* Abas maiores com destaque glass — Dock Effect */}
+                        <div className="mt-3 sm:mt-5 pb-4">
+                            {(() => {
+                                const TABS = [
+                                    { id: 'Direcional',  label: 'DIRECIONAL', icon: <span style={{width:5,height:5,borderRadius:2,background:'rgba(255,255,255,0.7)',flexShrink:0,display:'inline-block'}}/>, action: () => setActiveBrand('Direcional'), isBtn: true },
+                                    { id: 'Riva',        label: 'RIVA',        icon: <span style={{width:5,height:5,borderRadius:2,background:'rgba(255,255,255,0.7)',flexShrink:0,display:'inline-block'}}/>, action: () => setActiveBrand('Riva'),        isBtn: true },
+                                    { id: 'Simulador',   label: 'SIMULADOR',   icon: <Calculator size={13} style={{color:'rgba(255,255,255,0.6)',flexShrink:0}}/>, href: 'https://www8.caixa.gov.br/siopiinternet-web/simulaOperacaoInternet.do?method=inicializarCasoUso&isVoltar=true' },
+                                    { id: 'Tabelas',     label: 'TABELAS',     icon: <TableProperties size={13} style={{color:'rgba(255,255,255,0.6)',flexShrink:0}}/>, href: 'https://drive.google.com/drive/folders/14mYfQkNaSc9APr6hpOTKKTFQ02oq3uOf?usp=sharing' },
+                                    { id: 'Utilitarios', label: 'UTILITÁRIOS', icon: <BookMarked size={13} style={{color:'rgba(255,255,255,0.6)',flexShrink:0}}/>, action: () => setActiveBrand('Utilitarios'), isBtn: true },
+                                    { id: 'Guia',        label: 'GUIA',        icon: <HelpCircle size={13} style={{color:'rgba(255,255,255,0.6)',flexShrink:0}}/>, action: () => setActiveBrand('Guia'),        isBtn: true },
+                                ];
+                                const getDockPadding = (idx) => {
+                                    if (hoveredTabIdx === null) return { paddingTop: 9, paddingBottom: 9, paddingLeft: 16, paddingRight: 16 };
+                                    const dist = Math.abs(idx - hoveredTabIdx);
+                                    if (dist === 0) return { paddingTop: 13, paddingBottom: 13, paddingLeft: 22, paddingRight: 22 };
+                                    if (dist === 1) return { paddingTop: 11, paddingBottom: 11, paddingLeft: 19, paddingRight: 19 };
+                                    return { paddingTop: 9, paddingBottom: 9, paddingLeft: 16, paddingRight: 16 };
+                                };
+                                const getDockFontSize = (idx) => {
+                                    if (hoveredTabIdx === null) return 12;
+                                    const dist = Math.abs(idx - hoveredTabIdx);
+                                    if (dist === 0) return 13.5;
+                                    if (dist === 1) return 12.5;
+                                    return 12;
+                                };
+                                return (
+                                    <nav ref={navRef} className="flex gap-1 items-end" aria-label="Tabs"
+                                        style={{ overflowX: 'auto', overflowY: 'visible', WebkitOverflowScrolling: 'touch', scrollbarWidth: 'none', msOverflowStyle: 'none', paddingLeft: 16, paddingRight: 16, paddingBottom: 4, justifyContent: 'safe center' }}>
+                                        {TABS.map((tab, idx) => {
+                                            const isActive = activeBrand === tab.id;
+                                            const dockPad = getDockPadding(idx);
+                                            const dockFs  = getDockFontSize(idx);
+                                            const style = {
+                                                borderRadius: 12, ...dockPad, border: 'none', cursor: 'pointer', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0, scrollSnapAlign: 'start', whiteSpace: 'nowrap',
+                                                transition: 'padding 0.30s cubic-bezier(0.25,0.46,0.45,0.94), background 0.25s ease, box-shadow 0.25s ease',
+                                                background: isActive ? 'rgba(255,255,255,0.28)' : 'rgba(255,255,255,0.07)',
+                                                backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)',
+                                                border: isActive ? '1px solid rgba(255,255,255,0.40)' : '1px solid rgba(255,255,255,0.12)',
+                                                boxShadow: isActive ? '0 2px 14px rgba(0,0,0,0.28), inset 0 1px 0 rgba(255,255,255,0.35)' : 'none',
+                                                animation: isActive ? 'tab-brighten 0.30s ease forwards' : 'none',
+                                            };
+                                            const inner = (
+                                                <>
+                                                    <span style={{ fontSize: dockFs, fontWeight:800, letterSpacing:'0.05em', color:'#fff', opacity: isActive ? 1 : 0.38, transition:'font-size 0.30s cubic-bezier(0.25,0.46,0.45,0.94), opacity 0.25s' }}>{tab.label}</span>
+                                                    <span style={{ opacity: isActive ? 0.85 : 0.28, transition:'opacity 0.25s', display:'flex', alignItems:'center' }}>{tab.icon}</span>
+                                                </>
+                                            );
+                                            const isTouchDevice = () => window.matchMedia('(hover: none) and (pointer: coarse)').matches;
+                                            const dockHandlers = {
+                                                onMouseEnter: () => { if (!isTouchDevice()) setHoveredTabIdx(idx); },
+                                                onMouseLeave: () => { if (!isTouchDevice()) setHoveredTabIdx(null); },
+                                            };
+                                            return tab.isBtn ? (
+                                                <button key={tab.id} ref={tabRefs[tab.id]} onClick={() => { haptic(); tab.action(); }} style={style} {...dockHandlers}>{inner}</button>
+                                            ) : (
+                                                <a key={tab.id} href={tab.href} target="_blank" rel="noopener noreferrer" style={style} {...dockHandlers}>{inner}</a>
+                                            );
+                                        })}
+                                    </nav>
+                                );
+                            })()}
                         </div>
                     </div>
                 </div>
 
-                {/* NAVEGAÇÃO DE ABAS */}
-                <div className={`border-b overflow-x-auto custom-scrollbar transition-colors duration-500 ${modoNoturno ? 'border-slate-800' : 'border-gray-200'}`}>
-                    <nav ref={navRef} className="-mb-px flex space-x-6 sm:space-x-8 min-w-max relative" aria-label="Tabs">
-                        {/* Pill animada — desliza para a aba ativa */}
-                        {pillStyle.opacity > 0 && (() => {
-                            const pillColors = {
-                                Direcional:  modoNoturno
-                                    ? { bg: 'rgba(96,165,250,0.15)',  border: 'rgba(96,165,250,0.35)',  shadow: 'rgba(96,165,250,0.25)' }
-                                    : { bg: 'rgba(30,58,138,0.08)',   border: 'rgba(30,58,138,0.2)',    shadow: 'rgba(30,58,138,0.12)' },
-                                Riva:        modoNoturno
-                                    ? { bg: 'rgba(129,140,248,0.15)', border: 'rgba(129,140,248,0.35)', shadow: 'rgba(129,140,248,0.25)' }
-                                    : { bg: 'rgba(30,27,75,0.08)',    border: 'rgba(30,27,75,0.2)',     shadow: 'rgba(30,27,75,0.12)' },
-                                Utilitarios: { bg: 'rgba(234,88,12,0.1)',   border: 'rgba(234,88,12,0.3)',   shadow: 'rgba(234,88,12,0.2)' },
-                                Guia:        { bg: 'rgba(225,29,72,0.1)',   border: 'rgba(225,29,72,0.3)',   shadow: 'rgba(225,29,72,0.2)' },
-                            };
-                            const c = pillColors[activeBrand] || pillColors.Direcional;
-                            return (
-                                <span
-                                    aria-hidden="true"
-                                    style={{
-                                        position: 'absolute',
-                                        top: '50%',
-                                        transform: 'translateY(-50%)',
-                                        left: pillStyle.left - 8,
-                                        width: pillStyle.width + 16,
-                                        height: '36px',
-                                        borderRadius: '999px',
-                                        transition: 'left 0.4s cubic-bezier(0.34,1.56,0.64,1), width 0.4s cubic-bezier(0.34,1.56,0.64,1), background 0.3s ease, box-shadow 0.3s ease',
-                                        background: c.bg,
-                                        border: `1.5px solid ${c.border}`,
-                                        boxShadow: `0 2px 12px ${c.shadow}`,
-                                        pointerEvents: 'none',
-                                        zIndex: 0,
-                                        backdropFilter: 'blur(4px)',
-                                        WebkitBackdropFilter: 'blur(4px)',
-                                    }}
-                                />
-                            );
-                        })()}
-                        <button ref={tabRefs.Direcional} onClick={() => { haptic(); setActiveBrand('Direcional'); }} className={`whitespace-nowrap py-4 px-2 border-b-2 transition-colors flex items-center relative z-10 ${activeBrand === 'Direcional' ? (modoNoturno ? 'border-transparent' : 'border-transparent') : 'border-transparent hover:border-gray-300'}`}>
-                            <div className={`flex items-center transition-all ${activeBrand === 'Direcional' ? 'opacity-100' : 'opacity-50 grayscale hover:grayscale-0 hover:opacity-100'}`}>
-                                <span className={`font-black text-lg tracking-tight ${modoNoturno ? 'text-blue-400' : 'text-blue-900'}`}>DIRECIONAL</span>
-                                <span className="w-1.5 h-1.5 bg-red-600 ml-1 rounded-sm"></span>
-                            </div>
-                        </button>
-                        <button ref={tabRefs.Riva} onClick={() => { haptic(); setActiveBrand('Riva'); }} className={`whitespace-nowrap py-4 px-2 border-b-2 transition-colors flex items-center relative z-10 ${activeBrand === 'Riva' ? 'border-transparent' : 'border-transparent hover:border-gray-300'}`}>
-                            <div className={`flex items-center transition-all ${activeBrand === 'Riva' ? 'opacity-100' : 'opacity-50 grayscale hover:grayscale-0 hover:opacity-100'}`}>
-                                <span className={`font-black text-lg tracking-tight ${modoNoturno ? 'text-indigo-400' : 'text-indigo-950'}`}>RIVA</span>
-                                <span className={`w-1.5 h-1.5 ml-1 rounded-sm ${modoNoturno ? 'bg-indigo-400' : 'bg-indigo-950'}`}></span>
-                            </div>
-                        </button>
-                        <a href="https://www8.caixa.gov.br/siopiinternet-web/simulaOperacaoInternet.do?method=inicializarCasoUso&isVoltar=true" target="_blank" rel="noopener noreferrer" className="whitespace-nowrap py-4 px-2 border-b-2 border-transparent hover:border-gray-300 transition-colors flex items-center group">
-                            <div className="flex items-center transition-all opacity-60 grayscale group-hover:grayscale-0 group-hover:opacity-100">
-                                <span className={`font-black text-lg tracking-tight ${modoNoturno ? 'text-emerald-400' : 'text-emerald-700'}`}>SIMULADOR</span>
-                                <Calculator size={16} className={`ml-1.5 ${modoNoturno ? 'text-emerald-400' : 'text-emerald-600'}`} />
-                            </div>
-                        </a>
-                        <a href="https://drive.google.com/drive/folders/14mYfQkNaSc9APr6hpOTKKTFQ02oq3uOf?usp=sharing" target="_blank" rel="noopener noreferrer" className="whitespace-nowrap py-4 px-2 border-b-2 border-transparent hover:border-gray-300 transition-colors flex items-center group">
-                            <div className="flex items-center transition-all opacity-60 grayscale group-hover:grayscale-0 group-hover:opacity-100">
-                                <span className={`font-black text-lg tracking-tight ${modoNoturno ? 'text-violet-400' : 'text-violet-700'}`}>TABELAS</span>
-                                <TableProperties size={16} className={`ml-1.5 ${modoNoturno ? 'text-violet-400' : 'text-violet-600'}`} />
-                            </div>
-                        </a>
-                        <button ref={tabRefs.Utilitarios} onClick={() => { haptic(); setActiveBrand('Utilitarios'); }} className={`whitespace-nowrap py-4 px-2 border-b-2 transition-colors flex items-center relative z-10 ${activeBrand === 'Utilitarios' ? 'border-transparent' : 'border-transparent hover:border-gray-300'}`}>
-                            <div className={`flex items-center transition-all ${activeBrand === 'Utilitarios' ? 'opacity-100' : 'opacity-50 grayscale hover:grayscale-0 hover:opacity-100'}`}>
-                                <span className="text-orange-600 font-black text-lg tracking-tight">UTILITÁRIOS</span>
-                                <BookMarked size={16} className="ml-1.5 text-orange-600" />
-                            </div>
-                        </button>
-                        <button ref={tabRefs.Guia} onClick={() => { haptic(); setActiveBrand('Guia'); }} className={`whitespace-nowrap py-4 px-2 border-b-2 transition-colors flex items-center relative z-10 ${activeBrand === 'Guia' ? 'border-transparent' : 'border-transparent hover:border-gray-300'}`}>
-                            <div className={`flex items-center transition-all ${activeBrand === 'Guia' ? 'opacity-100' : 'opacity-50 grayscale hover:grayscale-0 hover:opacity-100'}`}>
-                                <span className="text-rose-600 font-black text-lg tracking-tight">GUIA</span>
-                                <HelpCircle size={16} className="ml-1.5 text-rose-600" />
-                            </div>
-                        </button>
-                    </nav>
-                </div>
 
 
                 {(activeBrand === 'Direcional' || activeBrand === 'Riva') && (
@@ -1813,75 +1916,54 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg_verso","label":"RG Verso"}`;
                                 <p className="text-slate-500">Tente buscar por outro nome ou bairro.</p>
                             </div>
                         ) : (
-                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                                 {filteredRevistas.map((revista, cardIdx) => (
                                     <div key={revista.id}
                                         className="card-entry overflow-hidden flex flex-col group"
                                         style={{
-                                            animationDelay: `${cardIdx * 70}ms`,
-                                            transition: 'transform 0.35s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.35s ease',
+                                            animationDelay: `${cardIdx * 90}ms`,
+                                            transition: 'transform 0.45s cubic-bezier(0.25,0.46,0.45,0.94), box-shadow 0.45s ease, background 0.45s ease',
                                             position: 'relative',
                                             borderRadius: '24px',
-                                            /* Liquid glass base */
-                                            background: modoNoturno
-                                                ? 'rgba(255,255,255,0.07)'
-                                                : 'rgba(255,255,255,0.45)',
+                                            background: modoNoturno ? 'rgba(255,255,255,0.07)' : 'rgba(255,255,255,0.55)',
                                             backdropFilter: 'blur(28px) saturate(200%) brightness(1.02)',
                                             WebkitBackdropFilter: 'blur(28px) saturate(200%) brightness(1.02)',
-                                            /* Borda refletiva — outline duplo */
-                                            border: modoNoturno
-                                                ? '1px solid rgba(255,255,255,0.12)'
-                                                : '1px solid rgba(255,255,255,0.90)',
-                                            outline: modoNoturno
-                                                ? '1px solid rgba(99,179,248,0.08)'
-                                                : '1.5px solid rgba(160,185,230,0.40)',
+                                            border: modoNoturno ? '1px solid rgba(255,255,255,0.12)' : '1px solid rgba(255,255,255,0.90)',
+                                            outline: modoNoturno ? '1px solid rgba(99,179,248,0.08)' : '1.5px solid rgba(160,185,230,0.40)',
                                             outlineOffset: '-1px',
-                                            /* Sombra multicamada iOS */
                                             boxShadow: modoNoturno
                                                 ? '0 2px 8px rgba(0,0,0,0.30), 0 8px 32px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.14), inset 0 -1px 0 rgba(0,0,0,0.12)'
-                                                : '0 2px 6px rgba(100,130,200,0.10), 0 8px 28px rgba(100,130,200,0.14), 0 1px 0 rgba(255,255,255,1) inset, 0 -1px 0 rgba(100,130,200,0.10) inset',
+                                                : '0 2px 6px rgba(100,130,200,0.10), 0 8px 28px rgba(100,130,200,0.14), inset 0 1.5px 0 rgba(255,255,255,1), inset 0 -1px 0 rgba(100,130,200,0.10)',
                                         }}
                                         onMouseEnter={e => {
-                                            e.currentTarget.style.transform = 'translateY(-8px) scale(1.05)';
-                                            e.currentTarget.style.boxShadow = modoNoturno
-                                                ? '0 4px 16px rgba(0,0,0,0.35), 0 20px 48px rgba(0,0,0,0.40), inset 0 1px 0 rgba(255,255,255,0.18), inset 0 -1px 0 rgba(0,0,0,0.12)'
-                                                : '0 4px 12px rgba(100,130,200,0.14), 0 20px 48px rgba(100,130,200,0.18), inset 0 1.5px 0 rgba(255,255,255,1), inset 0 -1px 0 rgba(100,130,200,0.12)';
+                                            const el = e.currentTarget;
+                                            el.style.transform = 'translateY(-10px)';
+                                            el.style.boxShadow = modoNoturno
+                                                ? '0 8px 24px rgba(0,0,0,0.40), 0 24px 64px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.18)'
+                                                : '0 8px 24px rgba(100,130,200,0.18), 0 24px 64px rgba(100,130,200,0.22), inset 0 1.5px 0 rgba(255,255,255,1)';
                                         }}
                                         onMouseLeave={e => {
-                                            e.currentTarget.style.transform = 'translateY(0) scale(1)';
-                                            e.currentTarget.style.boxShadow = modoNoturno
+                                            const el = e.currentTarget;
+                                            el.style.transform = 'translateY(0)';
+                                            el.style.boxShadow = modoNoturno
                                                 ? '0 2px 8px rgba(0,0,0,0.30), 0 8px 32px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.14), inset 0 -1px 0 rgba(0,0,0,0.12)'
-                                                : '0 2px 6px rgba(100,130,200,0.10), 0 8px 28px rgba(100,130,200,0.14), 0 1px 0 rgba(255,255,255,1) inset, 0 -1px 0 rgba(100,130,200,0.10) inset';
+                                                : '0 2px 6px rgba(100,130,200,0.10), 0 8px 28px rgba(100,130,200,0.14), inset 0 1.5px 0 rgba(255,255,255,1), inset 0 -1px 0 rgba(100,130,200,0.10)';
                                         }}
                                     >
-                                        {/* Specular highlight — reflexo de luz no topo */}
-                                        <div aria-hidden="true" style={{
-                                            position: 'absolute', top: 0, left: 0, right: 0,
-                                            height: '38%', zIndex: 1, pointerEvents: 'none',
-                                            background: modoNoturno
-                                                ? 'linear-gradient(180deg, rgba(255,255,255,0.10) 0%, rgba(255,255,255,0.03) 60%, transparent 100%)'
-                                                : 'linear-gradient(180deg, rgba(255,255,255,0.72) 0%, rgba(255,255,255,0.22) 55%, transparent 100%)',
-                                            borderRadius: '24px 24px 0 0',
-                                        }}/>
-                                        {/* Refração lateral — borda luminosa esquerda */}
-                                        <div aria-hidden="true" style={{
-                                            position: 'absolute', top: '10%', left: 0, bottom: '10%',
-                                            width: '1px', zIndex: 1, pointerEvents: 'none',
-                                            background: modoNoturno
-                                                ? 'linear-gradient(180deg, transparent 0%, rgba(255,255,255,0.20) 35%, rgba(255,255,255,0.28) 65%, transparent 100%)'
-                                                : 'linear-gradient(180deg, transparent 0%, rgba(255,255,255,0.90) 35%, rgba(255,255,255,0.95) 65%, transparent 100%)',
-                                        }}/>
-                                        <div
-                                            className="relative overflow-hidden bg-slate-100"
-                                            style={{ height: window.innerWidth < 640 ? 'calc(100vw - 48px)' : '192px' }}
-                                        >
-                                            <img src={revista.cover} onError={(e) => { e.target.onerror = null; e.target.src = 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&q=80&w=400'; }} alt={`Capa ${revista.title}`} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out" />
-                                            {/* Shimmer sobre a capa no hover */}
-                                            <div className="cover-shine-layer absolute inset-0 pointer-events-none z-10" style={{background:'linear-gradient(105deg, transparent 30%, rgba(255,255,255,0.28) 50%, transparent 70%)', transform:'translateX(-120%) skewX(-15deg)'}} />
-                                            {/* Badge logo */}
+                                        <div aria-hidden="true" style={{ position:'absolute', top:0, left:0, right:0, height:'38%', zIndex:1, pointerEvents:'none', background: modoNoturno ? 'linear-gradient(180deg, rgba(255,255,255,0.10) 0%, rgba(255,255,255,0.03) 60%, transparent 100%)' : 'linear-gradient(180deg, rgba(255,255,255,0.72) 0%, rgba(255,255,255,0.22) 55%, transparent 100%)', borderRadius:'24px 24px 0 0' }}/>
+                                        <div aria-hidden="true" style={{ position:'absolute', top:'10%', left:0, bottom:'10%', width:'1px', zIndex:1, pointerEvents:'none', background: modoNoturno ? 'linear-gradient(180deg, transparent 0%, rgba(255,255,255,0.20) 35%, rgba(255,255,255,0.28) 65%, transparent 100%)' : 'linear-gradient(180deg, transparent 0%, rgba(255,255,255,0.90) 35%, rgba(255,255,255,0.95) 65%, transparent 100%)' }}/>
+                                        <div className="relative h-48 overflow-hidden bg-slate-100">
+                                            <img src={revista.cover} onError={(e) => { e.target.onerror = null; e.target.src = 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&q=80&w=400'; }} alt={`Capa ${revista.title}`} className="w-full h-full object-cover group-hover:scale-115 transition-transform duration-700 ease-out" style={{ transformOrigin: 'center center', willChange: 'transform' }} />
+                                            {/* Shimmer sweep no hover */}
+                                            <div className="absolute inset-0 pointer-events-none z-10 overflow-hidden">
+                                                <div className="card-shimmer-sweep" style={{ position:'absolute', top:0, left:0, width:'55%', height:'100%', background:'linear-gradient(105deg, transparent 0%, rgba(255,255,255,0.38) 50%, transparent 100%)', transform:'translateX(-150%) skewX(-18deg)', transition:'none' }} />
+                                            </div>
+                                            {/* Badge NOVO */}
+                                            {/* Logo — sempre visível */}
                                             <div className="absolute top-3 left-3 z-10">
-                                                <div className="px-3 py-1.5 rounded-lg flex items-center justify-center h-10 min-w-[100px]"
+                                                <div className="px-3 py-1.5 flex items-center justify-center h-10 min-w-[100px]"
                                                     style={{
+                                                        borderRadius: 16,
                                                         background: 'rgba(255,255,255,0.82)',
                                                         backdropFilter: 'blur(8px) saturate(140%)',
                                                         WebkitBackdropFilter: 'blur(8px) saturate(140%)',
@@ -1952,10 +2034,10 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg_verso","label":"RG Verso"}`;
                                                             .replace(/\/view(\?.*)?$/, '/preview');
                                                         setPdfLeitor({ title: revista.title, url: previewUrl, brand: revista.brand });
                                                     }}
-                                                    className={`w-full flex items-center justify-center gap-2 py-3 rounded-lg font-semibold transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg ${revista.brand === 'Direcional' ? 'bg-gradient-to-r from-orange-500 via-red-500 to-orange-600 hover:from-orange-600 hover:to-red-600 shadow-orange-300/30 text-white' : 'bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 hover:from-blue-700 hover:to-indigo-700 shadow-blue-300/30 text-white'}`}>
+                                                    className={`w-full flex items-center justify-center gap-2 py-3 rounded-2xl font-semibold transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg ${revista.brand === 'Direcional' ? 'bg-gradient-to-r from-orange-500 via-red-500 to-orange-600 hover:from-orange-600 hover:to-red-600 shadow-orange-300/30 text-white' : 'bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 hover:from-blue-700 hover:to-indigo-700 shadow-blue-300/30 text-white'}`}>
                                                     <BookOpen size={18} /> Ver Revista
                                                 </RippleButton>
-                                                <RippleButton onClick={() => { haptic(); setSelectedPois(revista); }} className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-lg font-semibold transition-colors duration-200 border text-sm ${modoNoturno ? 'bg-slate-700 border-slate-600 text-slate-200 hover:bg-slate-600' : 'bg-slate-100 border-slate-200 text-slate-700 hover:bg-slate-200'}`}>
+                                                <RippleButton onClick={() => { haptic(); setSelectedPois(revista); }} className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-2xl font-semibold transition-colors duration-200 border text-sm ${modoNoturno ? 'bg-slate-700 border-slate-600 text-slate-200 hover:bg-slate-600' : 'bg-slate-100 border-slate-200 text-slate-700 hover:bg-slate-200'}`}>
                                                     <MapPin size={16} className="text-rose-500" /> Ver Pontos de Referência
                                                 </RippleButton>
                                             </div>
@@ -1970,7 +2052,9 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg_verso","label":"RG Verso"}`;
                 {activeBrand === 'Utilitarios' && (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                         {utilitariosData.map((item, index) => (
-                            <a key={index} href={item.link} target="_blank" rel="noopener noreferrer" className={`p-5 rounded-xl border shadow-sm hover:shadow-md hover:border-orange-300 transition-all flex items-start gap-4 group ${modoNoturno ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}>
+                            <a key={index} href={item.link} target="_blank" rel="noopener noreferrer"
+                                className={`card-entry p-5 rounded-xl border shadow-sm hover:shadow-md hover:border-orange-300 transition-all flex items-start gap-4 group ${modoNoturno ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}
+                                style={{ animationDelay: `${index * 90}ms` }}>
                                 <div className="bg-orange-100 p-3 rounded-lg text-orange-600 group-hover:bg-orange-600 group-hover:text-white transition-colors shrink-0"><FileText size={24} /></div>
                                 <div className="flex-1">
                                     <h3 className={`font-bold text-sm leading-snug group-hover:text-orange-700 transition-colors ${modoNoturno ? 'text-slate-200' : 'text-slate-700'}`}>{item.title}</h3>
@@ -1982,9 +2066,9 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg_verso","label":"RG Verso"}`;
                 )}
 
                 {activeBrand === 'Guia' && (
-                    <div className="max-w-4xl mx-auto space-y-6">
+                    <div className="max-w-4xl mx-auto space-y-4">
                         {/* ITEM 1: CÓDIGO DAS FAIXAS */}
-                        <div className={`border rounded-xl overflow-hidden shadow-sm transition-colors ${modoNoturno ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}>
+                        <div className={`card-entry border rounded-xl overflow-hidden shadow-sm transition-colors ${modoNoturno ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`} style={{ animationDelay: '0ms' }}>
                             <button onClick={() => { haptic(); setOpenGuiaIndex(openGuiaIndex === 0 ? null : 0); }} className={`w-full text-left p-5 flex justify-between items-center transition-colors ${modoNoturno ? 'bg-slate-800 hover:bg-slate-700' : 'bg-white hover:bg-slate-50'}`}>
                                 <h3 className={`font-bold text-lg flex items-center gap-2 ${modoNoturno ? 'text-white' : 'text-slate-800'}`}><HelpCircle className="text-blue-500" size={20} /> CÓDIGO DAS FAIXAS DE RENDA</h3>
                                 {openGuiaIndex === 0 ? <ChevronUp className="text-slate-400" /> : <ChevronDown className="text-slate-400" />}
@@ -2013,7 +2097,7 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg_verso","label":"RG Verso"}`;
                         </div>
 
                         {/* ITEM 2: PROBLEMAS COM CADASTRO/OPORTUNIDADE */}
-                        <div className={`border rounded-xl overflow-hidden shadow-sm transition-colors ${modoNoturno ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}>
+                        <div className={`card-entry border rounded-xl overflow-hidden shadow-sm transition-colors ${modoNoturno ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`} style={{ animationDelay: '80ms' }}>
                             <button onClick={() => { haptic(); setOpenGuiaIndex(openGuiaIndex === 1 ? null : 1); }} className={`w-full text-left p-5 flex justify-between items-center transition-colors ${modoNoturno ? 'bg-slate-800 hover:bg-slate-700' : 'bg-white hover:bg-slate-50'}`}>
                                 <h3 className={`font-bold text-lg flex items-center gap-2 ${modoNoturno ? 'text-white' : 'text-slate-800'}`}><AlertTriangle className="text-rose-500" size={20} /> PROBLEMAS COM CADASTRO OU OPORTUNIDADE</h3>
                                 {openGuiaIndex === 1 ? <ChevronUp className="text-slate-400" /> : <ChevronDown className="text-slate-400" />}
@@ -2046,7 +2130,7 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg_verso","label":"RG Verso"}`;
                         </div>
 
                         {/* ITEM 3: TERMOS TÉCNICOS */}
-                        <div className={`border rounded-xl overflow-hidden shadow-sm transition-colors ${modoNoturno ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}>
+                        <div className={`card-entry border rounded-xl overflow-hidden shadow-sm transition-colors ${modoNoturno ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`} style={{ animationDelay: '160ms' }}>
                             <button onClick={() => { haptic(); setOpenGuiaIndex(openGuiaIndex === 2 ? null : 2); }} className={`w-full text-left p-5 flex justify-between items-center transition-colors ${modoNoturno ? 'bg-slate-800 hover:bg-slate-700' : 'bg-white hover:bg-slate-50'}`}>
                                 <h3 className={`font-bold text-lg flex items-center gap-2 ${modoNoturno ? 'text-white' : 'text-slate-800'}`}><Book className="text-emerald-500" size={20} /> TERMOS TÉCNICOS ATUALMENTE USADOS</h3>
                                 {openGuiaIndex === 2 ? <ChevronUp className="text-slate-400" /> : <ChevronDown className="text-slate-400" />}
@@ -2395,6 +2479,12 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg_verso","label":"RG Verso"}`;
                 </button>
                 <style dangerouslySetInnerHTML={{ __html: `
 
+                    /* ── FONTE SF PRO — SISTEMA iOS/macOS ── */
+                    *, *::before, *::after, input, textarea, button, select {
+                        font-family: -apple-system, 'SF Pro Display', 'SF Pro Text', 'Helvetica Neue', Arial, sans-serif !important;
+                        -webkit-font-smoothing: antialiased;
+                        -moz-osx-font-smoothing: grayscale;
+                    }
 
                     /* ── HEADER ANIMATION ── */
                     @keyframes header-slide-in {
@@ -2445,17 +2535,19 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg_verso","label":"RG Verso"}`;
                     /* ── BANNER ANIMATIONS ── */
                     @keyframes banner-reveal { from { opacity:0; transform:scale(1.03); } to { opacity:1; transform:scale(1); } }
                     .banner-reveal { animation: banner-reveal 0.9s cubic-bezier(0.22,1,0.36,1) both; }
-                    @keyframes ken-burns { 0% { transform:scale(1); } 100% { transform:scale(1.06); } }
+                    @keyframes tab-brighten { 0% { background:rgba(255,255,255,0.07); box-shadow:none; } 100% { background:rgba(255,255,255,0.28); box-shadow:0 2px 14px rgba(0,0,0,0.28), inset 0 1px 0 rgba(255,255,255,0.35); } }
+                    @keyframes poi-ring-pulse { 0%,100%{transform:scale(1);opacity:.5} 50%{transform:scale(1.18);opacity:.2} }
+                    @keyframes ken-burns { 0% { transform:scale(1); } 100% { transform:scale(1.03); } }
                     .banner-ken-burns { animation: ken-burns 12s ease-in-out infinite alternate; }
                     @keyframes banner-text-up { from { opacity:0; transform:translateY(14px); } to { opacity:1; transform:translateY(0); } }
                     .banner-text-1 { animation: banner-text-up 0.7s cubic-bezier(0.22,1,0.36,1) 0.3s both; }
                     .banner-text-2 { animation: banner-text-up 0.7s cubic-bezier(0.22,1,0.36,1) 0.5s both; }
                     @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
                     @keyframes ripple-anim { 0% { transform: translate(-50%,-50%) scale(0); opacity:1; } 100% { transform: translate(-50%,-50%) scale(1); opacity:0; } }
-                    @keyframes card-entry { 0% { opacity:0; transform:translateY(16px); } 100% { opacity:1; transform:translateY(0); } }
+                    @keyframes card-entry { 0% { opacity:0; transform:translateY(4px) scale(.97); } 100% { opacity:1; transform:translateY(0) scale(1); } }
                     @keyframes badge-pulse { 0%,100% { box-shadow:0 0 0 0 rgba(249,115,22,0.6), 0 0 0 0 rgba(249,115,22,0.3); } 50% { box-shadow:0 0 0 5px rgba(249,115,22,0.0), 0 0 0 10px rgba(249,115,22,0.0); } }
                     
-                    .card-entry { opacity:0; animation: card-entry 0.5s cubic-bezier(0.22,1,0.36,1) both; }
+                    .card-entry { opacity:0; animation: card-entry 0.55s cubic-bezier(.25,.46,.45,.94) both; }
                     .animate-float { animation: float 4s ease-in-out infinite; }
                     @keyframes logo-flip {
                         0%   { transform: rotateY(0deg);   }
@@ -2569,11 +2661,7 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg_verso","label":"RG Verso"}`;
                 ${isCreatingFolder
                     ? 'left-0 right-0 bottom-0 rounded-none'
                     : 'left-0 right-0 bottom-0 rounded-none md:bottom-6 md:right-6 md:left-auto md:rounded-3xl md:w-[350px] lg:w-[420px] md:h-[600px] md:max-h-[85vh] origin-bottom-right'}
-                `}
-                style={modoNoturno
-                    ? { background: '#0B1120' }
-                    : { background: '#f2f2f7' }
-                }>
+                ${modoNoturno ? 'bg-[#0B1120]' : 'bg-slate-50'}`}>
 
                 {/* ── HEADER CHATBOT ── */}
                 <div className="relative overflow-hidden shrink-0"
@@ -2627,7 +2715,7 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg_verso","label":"RG Verso"}`;
                 </div>
 
                 {!isCreatingFolder && (
-                    <div ref={chatScrollRef} className={`overflow-y-auto px-4 py-5 space-y-4 custom-scrollbar flex-1 transition-colors ${modoNoturno ? 'bg-[#0B1120]' : 'bg-[#f2f2f7]'}`}>
+                    <div ref={chatScrollRef} className={`overflow-y-auto px-4 py-5 space-y-4 custom-scrollbar flex-1 transition-colors ${modoNoturno ? 'bg-[#0B1120]' : 'bg-slate-50'}`}>
                         {chatMessages.map((msg, idx) => (
                             <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                                 {msg.role === 'bot' && (
@@ -2652,7 +2740,7 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg_verso","label":"RG Verso"}`;
                                     style={{ background: 'linear-gradient(135deg, #6366f1 0%, #7c3aed 100%)', boxShadow: '0 2px 8px rgba(99,102,241,0.4)' }}>
                                     <Sparkles size={12} className="text-white" style={{animation:'spin 2s linear infinite'}} />
                                 </div>
-                                <div className={`border rounded-2xl rounded-tl-sm px-4 py-3 shadow-sm flex gap-1.5 items-center `} style={{ background: modoNoturno ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.65)', border: modoNoturno ? '1px solid rgba(255,255,255,0.10)' : '1px solid rgba(255,255,255,0.80)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)' }}>
+                                <div className={`border rounded-2xl rounded-tl-sm px-4 py-3 shadow-sm flex gap-1.5 items-center ${modoNoturno ? 'bg-slate-800/80 border-slate-700/60' : 'bg-white border-slate-100'}`}>
                                     <div className="w-1.5 h-1.5 rounded-full animate-bounce" style={{background:'#818cf8'}}></div>
                                     <div className="w-1.5 h-1.5 rounded-full animate-bounce" style={{background:'#818cf8', animationDelay:'0.2s'}}></div>
                                     <div className="w-1.5 h-1.5 rounded-full animate-bounce" style={{background:'#818cf8', animationDelay:'0.4s'}}></div>
@@ -2664,7 +2752,7 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg_verso","label":"RG Verso"}`;
                 )}
 
                 {isCreatingFolder && (
-                    <div className={`flex-1 overflow-hidden flex flex-col transition-colors ${closingFolder ? 'folder-collapsing' : 'folder-expanding'} `}>
+                    <div className={`flex-1 overflow-hidden flex flex-col transition-colors ${closingFolder ? 'folder-collapsing' : 'folder-expanding'} ${modoNoturno ? 'bg-[#0B1120]' : 'bg-slate-50'}`}>
 
                         {/* Subheader da pasta */}
                         <div className={`shrink-0 border-b backdrop-blur-xl transition-colors ${modoNoturno ? 'bg-slate-900/60 border-slate-800' : 'bg-white/80 border-slate-100'}`}>
@@ -2793,7 +2881,8 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg_verso","label":"RG Verso"}`;
                         </div>
 
                         {pendingDocs.length > 0 && (
-                            <div className={`shrink-0 border-t flex justify-end transition-colors ${modoNoturno ? 'bg-[#0B1120] border-slate-800' : 'bg-[#f2f2f7] border-slate-200'}`} style={{ padding: '10px 12px', paddingBottom: 'max(10px, calc(env(safe-area-inset-bottom) + 6px))' }}>
+                            <div className={`shrink-0 border-t flex justify-end transition-colors ${modoNoturno ? 'bg-[#0B1120] border-slate-800' : 'bg-white border-slate-100'}`}
+                                style={{ padding: '10px 12px', paddingBottom: 'max(10px, calc(env(safe-area-inset-bottom) + 6px))' }}>
                                 <button onClick={() => { haptic('medium'); setIsFinalizingFolder(true); }}
                                     className="text-white px-6 py-2.5 rounded-2xl font-black text-xs uppercase tracking-widest shadow-lg transition-all flex items-center gap-2 relative overflow-hidden active:scale-95"
                                     style={folderSource === 'rapida'
@@ -2810,7 +2899,7 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg_verso","label":"RG Verso"}`;
                     </div>
                 )}
 
-                <div className={`border-t rounded-b-3xl shrink-0 flex flex-col transition-colors ${isCreatingFolder ? 'hidden' : ''} ${modoNoturno ? 'bg-[#0B1120] border-slate-800' : 'bg-[#f2f2f7] border-slate-200'}`}>
+                <div className={`border-t rounded-b-3xl shrink-0 flex flex-col transition-colors ${isCreatingFolder ? 'hidden' : ''} ${modoNoturno ? 'bg-[#0B1120] border-slate-800' : 'bg-white border-slate-100'}`}>
                     <div className="px-3 pt-2.5 pb-2 flex gap-1.5 items-center overflow-x-auto custom-scrollbar">
                         <button onClick={() => { haptic(); setFolderSource('manual'); setIsCreatingFolder(true); fileInputRef.current?.click(); }}
                             className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider transition-all text-white relative overflow-hidden"
@@ -2925,11 +3014,19 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg_verso","label":"RG Verso"}`;
                     style={{ background: 'rgba(7,11,22,0.65)', backdropFilter: 'blur(20px) saturate(180%)', WebkitBackdropFilter: 'blur(20px) saturate(180%)' }}
                     onClick={() => setIsFinalizingFolder(false)}>
                     <div
-                        className="animate-slide-up w-full sm:max-w-sm overflow-hidden flex flex-col"
+                        className="animate-slide-up w-full sm:max-w-sm rounded-t-3xl sm:rounded-3xl overflow-hidden shadow-2xl flex flex-col"
                         style={modoNoturno ? {
-                            borderRadius:'24px', background:'rgba(10,15,30,0.72)', backdropFilter:'blur(40px) saturate(180%)', WebkitBackdropFilter:'blur(40px) saturate(180%)', border:'1.5px solid rgba(249,115,22,0.25)', outline:'1px solid rgba(255,255,255,0.10)', outlineOffset:'-2px', boxShadow:'0 8px 32px rgba(0,0,0,0.6), 0 32px 80px rgba(0,0,0,0.5), inset 0 1.5px 0 rgba(255,255,255,0.18), inset 0 -1px 0 rgba(0,0,0,0.2)'
+                            background: 'rgba(15,23,42,0.95)',
+                            backdropFilter: 'blur(28px) saturate(180%)',
+                            WebkitBackdropFilter: 'blur(28px) saturate(180%)',
+                            border: '1px solid rgba(249,115,22,0.2)',
+                            boxShadow: '0 -8px 48px rgba(249,115,22,0.15), 0 24px 64px rgba(0,0,0,0.5)',
                         } : {
-                            borderRadius:'24px', background:'rgba(255,255,255,0.52)', backdropFilter:'blur(40px) saturate(220%) brightness(1.05)', WebkitBackdropFilter:'blur(40px) saturate(220%) brightness(1.05)', border:'1.5px solid rgba(255,255,255,0.92)', outline:'1.5px solid rgba(150,175,230,0.45)', outlineOffset:'-2px', boxShadow:'0 4px 16px rgba(80,110,200,0.12), 0 16px 48px rgba(80,110,200,0.18), inset 0 2px 0 rgba(255,255,255,1), inset 0 -1px 0 rgba(100,130,200,0.12)'
+                            background: 'rgba(255,255,255,0.97)',
+                            backdropFilter: 'blur(28px) saturate(200%)',
+                            WebkitBackdropFilter: 'blur(28px) saturate(200%)',
+                            border: '1px solid rgba(255,255,255,0.95)',
+                            boxShadow: '0 -8px 48px rgba(249,115,22,0.12), 0 24px 64px rgba(0,0,0,0.1)',
                         }}
                         onClick={e => e.stopPropagation()}>
 
@@ -2966,7 +3063,7 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg_verso","label":"RG Verso"}`;
                         {/* Body */}
                         <div className="px-5 pt-4 pb-2">
                             <label className={`text-[9px] font-black uppercase tracking-[0.18em] mb-2 block ${modoNoturno ? 'text-slate-500' : 'text-slate-400'}`}>Nome do Arquivo</label>
-                            <div style={{ borderRadius:16, border: modoNoturno ? '1px solid rgba(255,255,255,0.10)' : '1px solid rgba(255,255,255,0.85)', background: modoNoturno ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.70)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)' }}>
+                            <div className={`rounded-2xl overflow-hidden border ${modoNoturno ? 'bg-slate-800/80 border-slate-700/60' : 'bg-white border-slate-100 shadow-sm'}`}>
                                 <input 
                                     type="text" 
                                     value={pdfFileName} 
@@ -3127,25 +3224,29 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg_verso","label":"RG Verso"}`;
                 </div>
             )}
 
+            {/* MODAL PASTA RÁPIDA — ATENÇÃO, LEIA! (5 primeiros cliques) */}
             {showPastaRapidaInfo && (
                 <div className="fixed inset-0 z-[70] flex items-end sm:items-center justify-center p-0 sm:p-4"
                     style={{ background: 'rgba(7,11,22,0.65)', backdropFilter: 'blur(16px) saturate(180%)', WebkitBackdropFilter: 'blur(16px) saturate(180%)' }}>
-                    <div className="animate-slide-up w-full sm:max-w-sm overflow-hidden"
-                        style={{
-                            borderRadius: '24px',
-                            background: modoNoturno ? 'rgba(13,18,36,0.90)' : 'rgba(255,255,255,0.88)',
-                            backdropFilter: 'blur(40px) saturate(200%)',
-                            WebkitBackdropFilter: 'blur(40px) saturate(200%)',
-                            border: modoNoturno ? '1px solid rgba(255,255,255,0.10)' : '1px solid rgba(255,255,255,0.95)',
-                            boxShadow: modoNoturno
-                                ? '0 8px 32px rgba(0,0,0,0.6), 0 32px 80px rgba(0,0,0,0.5)'
-                                : '0 8px 32px rgba(0,0,0,0.12), 0 32px 80px rgba(0,0,0,0.08)',
+                    <div className={`animate-slide-up w-full sm:max-w-sm rounded-t-3xl sm:rounded-3xl overflow-hidden shadow-2xl`}
+                        style={modoNoturno ? {
+                            background: 'rgba(15,23,42,0.95)',
+                            backdropFilter: 'blur(28px) saturate(180%)',
+                            WebkitBackdropFilter: 'blur(28px) saturate(180%)',
+                            border: '1px solid rgba(99,102,241,0.2)',
+                            boxShadow: '0 -8px 48px rgba(99,102,241,0.2), 0 24px 64px rgba(0,0,0,0.5)',
+                        } : {
+                            background: 'rgba(255,255,255,0.96)',
+                            backdropFilter: 'blur(28px) saturate(200%)',
+                            WebkitBackdropFilter: 'blur(28px) saturate(200%)',
+                            border: '1px solid rgba(255,255,255,0.95)',
+                            boxShadow: '0 -8px 48px rgba(99,102,241,0.15), 0 24px 64px rgba(0,0,0,0.1)',
                         }}
                         onClick={e => e.stopPropagation()}>
 
                         {/* Header com shimmer */}
                         <div className="relative overflow-hidden px-5 pt-5 pb-4"
-                            style={{ background: 'linear-gradient(135deg, #f97316 0%, #ef4444 45%, #f59e0b 100%)', borderRadius: '24px 24px 0 0', boxShadow: '0 4px 24px rgba(249,115,22,0.4)' }}>
+                            style={{ background: 'linear-gradient(135deg, #f97316 0%, #ef4444 45%, #f59e0b 100%)', boxShadow: '0 4px 24px rgba(249,115,22,0.4)' }}>
                             <div className="absolute inset-0 pointer-events-none overflow-hidden">
                                 <div style={{ position:'absolute', top:'-20%', left:0, width:'60%', height:'140%', background:'linear-gradient(105deg, transparent 10%, rgba(255,255,255,0.22) 50%, transparent 90%)', animation:'light-sweep 1.6s ease-in-out infinite', transform:'skewX(-18deg)' }}></div>
                             </div>
@@ -3160,10 +3261,14 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg_verso","label":"RG Verso"}`;
                             </div>
                         </div>
 
+                        {/* Drag pill (mobile) */}
+                        <div className="sm:hidden flex justify-center pt-2">
+                            <div className={`w-10 h-1 rounded-full ${modoNoturno ? 'bg-slate-700' : 'bg-slate-200'}`}></div>
+                        </div>
+
                         {/* Conteúdo */}
-                        <div className="px-5 pt-5 pb-2">
-                            <div className={`rounded-2xl p-4 ${modoNoturno ? 'bg-white/5 border border-orange-500/20' : 'bg-orange-50 border border-orange-100'}`}
-                                style={{ border: modoNoturno ? '1px solid rgba(249,115,22,0.22)' : '1px solid rgba(249,115,22,0.15)' }}>
+                        <div className="px-5 pt-4 pb-2">
+                            <div className={`rounded-2xl p-4 border ${modoNoturno ? 'bg-slate-800/60 border-orange-500/20' : 'bg-orange-50 border-orange-100'}`}>
                                 <p className={`font-black text-sm mb-2 uppercase tracking-widest ${modoNoturno ? 'text-orange-400' : 'text-orange-600'}`}>O que é a Pasta Rápida?</p>
                                 <p className={`text-sm leading-relaxed ${modoNoturno ? 'text-slate-300' : 'text-slate-700'}`}>
                                     Envie os documentos em <strong>qualquer formato</strong> e a IA <strong>identifica e organiza</strong> tudo automaticamente na ordem certa.
@@ -3211,12 +3316,23 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg_verso","label":"RG Verso"}`;
             {showCotacaoInfo && (
                 <div className="fixed inset-0 z-[70] flex items-end sm:items-center justify-center p-0 sm:p-4"
                     style={{ background: 'rgba(7,11,22,0.72)', backdropFilter: 'blur(18px) saturate(180%)', WebkitBackdropFilter: 'blur(18px) saturate(180%)' }}>
-                    <div className="animate-slide-up w-full sm:max-w-md flex flex-col"
-                        style={{ maxHeight:'92dvh', ...(modoNoturno ? {
-                            borderRadius:'24px', background:'rgba(10,15,30,0.72)', backdropFilter:'blur(40px) saturate(180%)', WebkitBackdropFilter:'blur(40px) saturate(180%)', border:'1.5px solid rgba(255,255,255,0.16)', outline:'1px solid rgba(99,102,241,0.15)', outlineOffset:'-2px', boxShadow:'0 8px 32px rgba(0,0,0,0.6), 0 32px 80px rgba(0,0,0,0.5), inset 0 1.5px 0 rgba(255,255,255,0.18), inset 0 -1px 0 rgba(0,0,0,0.2)'
-                        } : {
-                            borderRadius:'24px', background:'rgba(255,255,255,0.52)', backdropFilter:'blur(40px) saturate(220%) brightness(1.05)', WebkitBackdropFilter:'blur(40px) saturate(220%) brightness(1.05)', border:'1.5px solid rgba(255,255,255,0.92)', outline:'1.5px solid rgba(150,175,230,0.45)', outlineOffset:'-2px', boxShadow:'0 4px 16px rgba(80,110,200,0.12), 0 16px 48px rgba(80,110,200,0.18), inset 0 2px 0 rgba(255,255,255,1), inset 0 -1px 0 rgba(100,130,200,0.12)'
-                        }) }}
+                    <div className={`animate-slide-up w-full sm:max-w-md flex flex-col rounded-t-3xl sm:rounded-3xl shadow-2xl`}
+                        style={{
+                            maxHeight: '92dvh',
+                            ...(modoNoturno ? {
+                                background: 'rgba(13,18,36,0.97)',
+                                backdropFilter: 'blur(28px) saturate(180%)',
+                                WebkitBackdropFilter: 'blur(28px) saturate(180%)',
+                                border: '1px solid rgba(99,102,241,0.25)',
+                                boxShadow: '0 -8px 48px rgba(99,102,241,0.25), 0 24px 64px rgba(0,0,0,0.6)',
+                            } : {
+                                background: 'rgba(255,255,255,0.97)',
+                                backdropFilter: 'blur(28px) saturate(200%)',
+                                WebkitBackdropFilter: 'blur(28px) saturate(200%)',
+                                border: '1px solid rgba(255,255,255,0.95)',
+                                boxShadow: '0 -8px 48px rgba(99,102,241,0.18), 0 24px 64px rgba(0,0,0,0.12)',
+                            })
+                        }}
                         onClick={e => e.stopPropagation()}>
 
                         {/* Header fixo com shimmer */}
@@ -3359,15 +3475,8 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg_verso","label":"RG Verso"}`;
                 <div className="fixed inset-0 z-[80] flex items-center justify-center p-5"
                     style={{ background: 'rgba(7,11,22,0.75)', backdropFilter: 'blur(18px)', WebkitBackdropFilter: 'blur(18px)' }}
                     onClick={(e) => { if (e.target === e.currentTarget) { setShowCotacaoSenha(false); setCotacaoSenhaInput(''); setCotacaoSenhaErro(false); } }}>
-                    <div className="w-full max-w-xs p-7 flex flex-col gap-5"
-                        style={{ animation:'poi-modal-in 0.35s cubic-bezier(0.34,1.3,0.64,1) both',
-                            borderRadius: '24px',
-                            background: modoNoturno ? 'rgba(13,18,36,0.95)' : '#ffffff',
-                            border: modoNoturno ? '1px solid rgba(255,255,255,0.10)' : '1px solid rgba(0,0,0,0.06)',
-                            boxShadow: modoNoturno
-                                ? '0 8px 32px rgba(0,0,0,0.6), 0 32px 80px rgba(0,0,0,0.5)'
-                                : '0 8px 32px rgba(0,0,0,0.12), 0 32px 80px rgba(0,0,0,0.08)',
-                        }}>
+                    <div className={`w-full max-w-xs rounded-3xl p-7 flex flex-col gap-5 shadow-2xl ${modoNoturno ? 'bg-[#0f1829] border border-slate-700/50' : 'bg-white border border-slate-200'}`}
+                        style={{ animation: 'poi-modal-in 0.35s cubic-bezier(0.34,1.3,0.64,1) both' }}>
                         {/* Ícone */}
                         <div className="flex flex-col items-center gap-2">
                             <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-1"
@@ -3449,8 +3558,8 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg_verso","label":"RG Verso"}`;
             {showCotacaoModal && (
                 <div className="fixed inset-0 z-[70] flex flex-col"
                     style={{ background: modoNoturno ? 'rgba(7,11,22,0.82)' : 'rgba(15,23,42,0.55)', backdropFilter: 'blur(20px) saturate(180%)', WebkitBackdropFilter: 'blur(20px) saturate(180%)' }}>
-                    <div className="cotacao-modal-open flex flex-col h-full w-full"
-                        style={{ paddingTop: 'env(safe-area-inset-top, 0px)', background: modoNoturno ? '#0B1120' : 'rgba(242,242,247,0.95)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)' }}>
+                    <div className={`cotacao-modal-open flex flex-col h-full w-full ${modoNoturno ? 'bg-[#0B1120]' : 'bg-slate-50'}`}
+                        style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}>
 
                         {/* ── HEADER ── */}
                         <div className="shrink-0 relative overflow-hidden"
@@ -3723,7 +3832,7 @@ Responda SOMENTE com JSON puro (sem markdown, sem texto antes ou depois):
                                         {/* Card Perfil */}
                                         <div className="flex flex-col">
                                             <p className={`text-[9px] font-black uppercase tracking-[0.18em] mb-2 ml-1 ${modoNoturno ? 'text-slate-500' : 'text-slate-400'}`}>Perfil Comercial</p>
-                                            <div className={`flex-1 rounded-3xl border transition-colors flex flex-col justify-center px-4 py-4 `} style={{ background: modoNoturno ? 'rgba(255,255,255,0.05)' : 'rgba(255,255,255,0.60)', border: modoNoturno ? '1px solid rgba(255,255,255,0.09)' : '1px solid rgba(255,255,255,0.80)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)' }}>
+                                            <div className={`flex-1 rounded-3xl border transition-colors flex flex-col justify-center px-4 py-4 ${modoNoturno ? 'bg-slate-800/80 border-slate-700/60' : 'bg-white border-slate-100 shadow-sm'}`}>
                                                 <label className={`block text-[9px] font-black uppercase tracking-widest mb-1 ${modoNoturno ? 'text-slate-500' : 'text-slate-400'}`}>👤 Perfil Comercial do Cliente</label>
                                                 <p className={`text-[9px] mb-3 ${modoNoturno ? 'text-slate-600' : 'text-slate-400'}`}>Define as condições de PS e comprometimento — não é baseado na renda</p>
                                                 {/* Pílulas de perfil — overflow:hidden no container, cada pílula cresce/encolhe */}
@@ -3803,7 +3912,7 @@ Responda SOMENTE com JSON puro (sem markdown, sem texto antes ou depois):
                             {/* CARD EMPREENDIMENTO */}
                             <div>
                                 <p className={`text-[9px] font-black uppercase tracking-[0.18em] mb-2 ml-1 ${modoNoturno ? 'text-slate-500' : 'text-slate-400'}`}>Empreendimento</p>
-                                <div className={`rounded-3xl overflow-hidden border `} style={{ background: modoNoturno ? 'rgba(255,255,255,0.05)' : 'rgba(255,255,255,0.60)', border: modoNoturno ? '1px solid rgba(255,255,255,0.09)' : '1px solid rgba(255,255,255,0.80)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)' }}>
+                                <div className={`rounded-3xl overflow-hidden border ${modoNoturno ? 'bg-slate-800/80 border-slate-700/60' : 'bg-white border-slate-100 shadow-sm'}`}>
                                     <div className="px-4 pt-3.5 pb-2 flex items-center gap-3">
                                         <span className="text-base shrink-0 w-6 text-center">🏗️</span>
                                         <div className="flex-1 min-w-0">
@@ -3901,7 +4010,7 @@ Responda SOMENTE com JSON puro (sem markdown, sem texto antes ou depois):
                                     {/* GRUPO: FINANCEIRO */}
                                     <div>
                                         <p className={`text-[9px] font-black uppercase tracking-[0.18em] mb-2 ml-1 ${modoNoturno ? 'text-slate-500' : 'text-slate-400'}`}>Financeiro</p>
-                                        <div className={`rounded-3xl overflow-hidden border `} style={{ background: modoNoturno ? 'rgba(255,255,255,0.05)' : 'rgba(255,255,255,0.60)', border: modoNoturno ? '1px solid rgba(255,255,255,0.09)' : '1px solid rgba(255,255,255,0.80)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)' }}>
+                                        <div className={`rounded-3xl overflow-hidden border ${modoNoturno ? 'bg-slate-800/80 border-slate-700/60' : 'bg-white border-slate-100 shadow-sm'}`}>
 
                                             {/* ATO DO CLIENTE — destaque no topo */}
                                             <div className={`px-4 py-3 ${modoNoturno ? 'bg-indigo-950/60 border-b border-indigo-800/40' : 'bg-indigo-50 border-b border-indigo-100'}`}>
@@ -3939,7 +4048,7 @@ Responda SOMENTE com JSON puro (sem markdown, sem texto antes ou depois):
                                     {/* GRUPO: BENEFÍCIOS & PARCELA */}
                                     <div>
                                         <p className={`text-[9px] font-black uppercase tracking-[0.18em] mb-2 ml-1 ${modoNoturno ? 'text-slate-500' : 'text-slate-400'}`}>Benefícios & Parcela</p>
-                                        <div className={`rounded-3xl overflow-hidden border divide-y `} style={{ background: modoNoturno ? 'rgba(255,255,255,0.05)' : 'rgba(255,255,255,0.60)', border: modoNoturno ? '1px solid rgba(255,255,255,0.09)' : '1px solid rgba(255,255,255,0.80)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)' }}>
+                                        <div className={`rounded-3xl overflow-hidden border divide-y ${modoNoturno ? 'bg-slate-800/80 border-slate-700/60 divide-slate-700/60' : 'bg-white border-slate-100 divide-slate-100 shadow-sm'}`}>
                                             {[
                                                 { key: 'subsidio',            label: 'Subsídio',                  placeholder: 'R$ 55.000,00',    icon: '🎁' },
                                                 { key: 'fgts',                label: 'FGTS',                      placeholder: 'R$ 12.000,00',    icon: '📋' },
@@ -4589,7 +4698,7 @@ Responda em português, direto ao ponto.`;
                 <div className="fixed inset-0 z-[70] flex flex-col"
                     style={{ background: modoNoturno ? 'rgba(7,11,22,0.82)' : 'rgba(15,23,42,0.55)', backdropFilter: 'blur(20px) saturate(180%)', WebkitBackdropFilter: 'blur(20px) saturate(180%)' }}>
                     <div className="cotacao-modal-open flex flex-col w-full"
-                        style={{ height: '100%', background: modoNoturno ? '#0B1120' : 'rgba(242,242,247,0.95)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)' }}>
+                        style={{ height: '100%', background: modoNoturno ? '#0B1120' : '#f8fafc' }}>
                         <div className="shrink-0 relative overflow-hidden"
                             style={{
                                 background: 'linear-gradient(135deg, #0ea5e9 0%, #0284c7 40%, #0369a1 100%)',

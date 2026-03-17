@@ -1,26 +1,188 @@
 import React, { useState, useEffect, useLayoutEffect, useRef } from 'react';
-import { Search, Building, ExternalLink, MapPin, BookOpen, Maximize, Bed, LayoutGrid, Rocket, Quote, Sparkles, ChevronDown, ChevronUp, ChevronLeft, FileText, TableProperties, BookMarked, HelpCircle, Calculator, Bot, X, Send, Wand2, Paperclip, File as FileIcon, Trash2, FolderPlus, GripVertical, Plus, MessageCircle, Moon, Sun, AlertTriangle, Book } from 'lucide-react';
+import { Search, Building, ExternalLink, MapPin, BookOpen, Maximize, Bed, LayoutGrid, Rocket, Quote, Sparkles, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, FileText, TableProperties, BookMarked, HelpCircle, Calculator, Bot, X, Send, Wand2, Paperclip, File as FileIcon, Trash2, FolderPlus, GripVertical, Plus, MessageCircle, Moon, Sun, AlertTriangle, Book, GalleryHorizontal, Clock } from 'lucide-react';
 import { buscarRespostaDoRobo, buscarRespostaGemini } from './bot/dadosFinanciamento.js';
 
 
 // === DADOS DAS REVISTAS E BASE DE CONHECIMENTO DO CHATBOT ===
+const D = 'https://www.direcional.com.br/wp-content/uploads';
+const R = 'https://www.rivaincorporadora.com.br/wp-content/uploads';
+
 const revistasDataLocal = [
-    { id: 1, title: "Brisas do Horizonte", brand: "Direcional", region: "Coroado - Zona Leste", size: "43m² a 45m²", bedrooms: "2 quartos", flooring: "Todo o apê", entrega: "08/2028", cover: "https://www.direcional.com.br/wp-content/uploads/2025/06/Perspectiva-Guarita-BrisasdoHorizonte.jpg.webp", link: "https://drive.google.com/file/d/18IXtAt9PLVjIsk2PkXIHXnVCaduVkGu2/view?usp=drive_link", aliases: ["brisas", "brisas do horizonte", "horizonte"], pois: ["Supermercado Vitória (1 min)", "Escola Mun. Profª Maria Rodrigues Tapajós (2 min)", "SPA Coroado (3 min)", "Estádio Carlos Zamith (5 min)", "Park Mall Ephigênio Salles (6 min)", "UFAM - Universidade Federal do Amazonas (7 min)", "Hospital Dr. João Lúcio (7 min)", "Samel São José Medical Center (7 min)", "Sesi Clube do Trabalhador (8 min)", "Manauara Shopping (14 min)"] },
-    { id: 2, title: "Parque Ville Orquídea", brand: "Direcional", region: "Lago Azul - Zona Norte", size: "41m²", bedrooms: "2 quartos", flooring: "Todo o apê", entrega: "04/2027", cover: "https://www.direcional.com.br/wp-content/uploads/2024/05/Perspectiva_PARQUEVILLEORQUIDEA_GUARITA.jpg.webp", link: "https://drive.google.com/file/d/1F_BeT2jceDM8u4kCbSXN8kp2rk7boQTG/view?usp=drive_link", aliases: ["orquidea", "orquídea", "parque ville", "parque ville orquidea"], pois: ["Escola Mun. Viviane Estrela (1-2 min)", "Clínica da Família C. Nicolau (1-2 min)", "Veneza Express (3-4 min)", "Nova Era Supermercado (3-4 min)", "Terminal 6 (3-4 min)", "Colégio Militar da PM VI (3-4 min)", "Shopping Via Norte (7 min)", "Hospital Delphina Aziz (10 min)", "Sumaúma Park Shopping (12 min)"] },
-    { id: 3, title: "Village Torres", brand: "Direcional", region: "Lago Azul - Zona Norte", size: "36m²", bedrooms: "2 quartos", flooring: "Cozinha, banheiro e lavatório", entrega: "04/2027", cover: "https://www.direcional.com.br/wp-content/uploads/2024/09/Perspectiva-Guarita-VillageTorres.jpg.webp", link: "https://drive.google.com/file/d/1blVconA5fjODxvXB7s8KT6dSlX8KpLLv/view?usp=drive_link", aliases: ["village", "village torres", "torres"], pois: ["Supermercado Nova Era", "Shopping Via Norte", "Sumaúma Park Shopping", "Atacadão"] },
-    { id: 4, title: "Conquista Jardim Botânico", brand: "Direcional", region: "Nova Cidade - Zona Norte", size: "40m²", bedrooms: "2 quartos", flooring: "Cozinha, banheiro e lavatório", entrega: "11/2026", cover: "https://www.direcional.com.br/wp-content/uploads/2024/03/Conquista-Jardim-Botanico-Guarita.jpg.webp", link: "https://drive.google.com/file/d/1TYzIq8RuGORXfxQpH8CGZejTjF_GlUz0/view?usp=drive_link", aliases: ["botanico", "botânico", "jardim botanico", "conquista jardim"], pois: ["MUSA (Museu da Amazônia / Jardim Botânico)", "Shopping Via Norte", "Supermercado DB Nova Cidade", "SPA Galiléia"] },
-    { id: 5, title: "Viva Vida Coral", brand: "Direcional", region: "Colônia Terra Nova - Zona Norte", size: "41m² a 51m²", bedrooms: "2 quartos", flooring: "Cozinha, banheiro e lavatório", entrega: "03/2028", cover: "https://www.direcional.com.br/wp-content/uploads/2025/05/Perspectiva-Guarita-VivaVidaCoral.jpg.webp", link: "https://drive.google.com/file/d/1lYo3otquzwdnD0r5f6JobBbW-6KmGOF4/view?usp=drive_link", aliases: ["coral", "viva vida coral", "viva vida"], pois: ["Shopping Via Norte", "Loja Havan", "Atacadão", "Hospital Delphina Aziz", "Posto Atem (famoso na entrada do bairro)"] },
-    { id: 6, title: "Conquista Jardim Norte", brand: "Direcional", region: "Santa Etelvina - Zona Norte", size: "36m²", bedrooms: "2 quartos", flooring: "Cozinha, banheiro e lavatório", entrega: "06/2027", cover: "https://www.direcional.com.br/wp-content/uploads/2024/12/Perspectiva-Guarita-ConquistaJardimNorte.jpg.webp", link: "https://drive.google.com/file/d/1_Hyb72NWl1HjEiabKLL9m5ZMutHExesY/view?usp=drive_link", aliases: ["jardim norte", "santa etelvina", "conquista norte"], pois: ["Shopping Via Norte (1 min)", "Havan (1 min)", "Fun Park (1 min)", "Nova Era Supermercado (1 min)", "UBS Sálvio Belota (2 min)", "Feira do Santa Etelvina (2 min)", "Terminal 06 (5 min)", "15º Distrito Policial (5-7 min)", "Hiper DB (5-7 min)", "Hospital Delphina Aziz", "Escola Dra. Viviane Estrela"] },
-    { id: 7, title: "Viva Vida Rio Amazonas", brand: "Direcional", region: "Tarumã - Zona Oeste", size: "36m²", bedrooms: "2 quartos", flooring: "Cozinha, banheiro e lavatório", entrega: "03/2026", cover: "https://www.direcional.com.br/wp-content/uploads/2023/07/Guarita-Viva-Vida-Rio-Amazonas-Direcional.jpg.webp", link: "https://drive.google.com/", aliases: ["amazonas", "rio amazonas", "viva vida rio amazonas"], pois: ["Aeroporto Internacional Eduardo Gomes", "Orla da Ponta Negra", "Sivam (Sistema de Vigilância da Amazônia)", "Sipam", "Supermercado Veneza"] },
-    { id: 8, title: "Bosque das Torres", brand: "Direcional", region: "Lago Azul - Zona Norte", size: "36m²", bedrooms: "2 quartos", flooring: "Cozinha, banheiro e lavatório", entrega: "06/2028", cover: "https://www.direcional.com.br/wp-content/uploads/2025/10/portaria-bosque-das-torres.jpg.webp", link: "https://drive.google.com/file/d/1lPnNQuxlPkKOcW2JqOB7KEWsaQVpZzcU/view?usp=drive_link", aliases: ["bosque", "bosque das torres"], pois: ["Supermercado Nova Era (Torres)", "Sumaúma Park Shopping", "Parque do Mindu", "Faculdade Estácio (polo próximo)"] },
-    { id: 9, title: "Parque Ville Lírio Azul", brand: "Direcional", region: "Lago Azul - Zona Norte", size: "41m²", bedrooms: "2 quartos", flooring: "Cozinha, banheiro e lavatório", entrega: "11/2028", cover: "https://www.direcional.com.br/wp-content/uploads/2025/11/fachada-noturna-parque-ville-lirio-azul.jpg.webp", link: "https://drive.google.com/file/d/1fc7AXap6nhkpTlxONsm46WJCKxIWIhwe/view?usp=drive_link", aliases: ["lirio", "lírio", "lirio azul", "parque ville lirio"], pois: ["Escola Integral João S. Braga (1 min)", "Colégio Militar da PM VI (2 min)", "Escola Est. Eliana Braga (2 min)", "Nova Era Supermercado (2 min)", "Clínica da Família C. Gracie (2 min)", "UBS José Fligliuolo (4 min)", "Clínica da Família C. Nicolau (4 min)", "Terminal 6 e 7 (4 min)", "Shopping Via Norte / Havan / Fun Park (7 min)", "Hospital Delphina Aziz (8 min)"] },
-    { id: 10, title: "Amazon Boulevard Classic", brand: "Riva", region: "Bairro da Paz - Zona Centro-Oeste", size: "44m² a 69,78m²", bedrooms: "2 quartos", flooring: "Todo o apê", entrega: "12/2026", cover: "https://www.rivaincorporadora.com.br/wp-content/uploads/2023/11/fachada-noturna_amazon-boulevard-classic.jpg.webp", link: "https://drive.google.com/file/d/1ZX37T2S8FlHnSiO-yeAjlFyqq_5-dVzx/view?usp=drive_link", aliases: ["classic", "amazon boulevard", "boulevard", "boulevard classic"], pois: ["Arena da Amazônia", "Amazonas Shopping", "Carrefour Hipermercado", "UNIP (Universidade Paulista)", "Terminal Rodoviário de Manaus", "Hospital Tropical (Fundação de Medicina Tropical)"] },
-    { id: 11, title: "Amazon Boulevard Prime", brand: "Riva", region: "Bairro da Paz - Zona Centro-Oeste", size: "51m² a 90,39m²", bedrooms: "2 e 3 quartos", flooring: "Todo o apê", entrega: "06/2028", cover: "https://www.rivaincorporadora.com.br/wp-content/uploads/2025/06/guarita-Amazon-prime-boulevard-riva.jpg.webp", link: "https://drive.google.com/file/d/1aIuBlwLYGStUm7DNE3gCbfu3Ty2JmkGM/view?usp=drive_link", aliases: ["prime", "amazon prime", "boulevard prime"], pois: ["Arena da Amazônia", "Sambódromo", "Hipermercado Carrefour", "La Parilla Restaurante", "Aeroclub", "Petz", "Clube Municipal (ao lado)", "Vila Olímpica", "Drogaria Bom Preço", "Drogaria Santo Remédio"] },
-    { id: 12, title: "Città Oasis Azzure", brand: "Riva", region: "Flores - Zona Centro-Sul", size: "48m² a 75m²", bedrooms: "2 e 3 quartos", flooring: "Todo o apê", entrega: "11/2028", cover: "https://www.rivaincorporadora.com.br/wp-content/uploads/2025/08/citta-azzure_GUARITA.jpg.webp", link: "https://drive.google.com/file/d/1Y-fT6UbQ-OopqVaV0POgHRIdlayMXMOB/view?usp=sharing", aliases: ["citta", "città", "azzure", "oasis", "oasis azzure"], pois: ["Universidade Nilton Lins", "Laranjeiras Restaurante (polo gastronômico)", "Sushi Ponta Negra", "Domes Burgers", "Di Fiori - Casa de Massas e Pizzas", "Na Lenha Pizzaria", "Drogaria Santo Remédio", "Supermercado Atack (Laranjeiras)", "Sollarium Mall"] },
-    { id: 13, title: "Zenith Condomínio Clube", brand: "Riva", region: "São Francisco - Zona Sul", size: "48m² a 49m²", bedrooms: "2 e 3 quartos", flooring: "Todo o apê", entrega: "03/2028", cover: "https://www.rivaincorporadora.com.br/wp-content/uploads/2024/08/Perspectiva-Guarita-ZenithCondominioClube.webp", link: "https://drive.google.com/file/d/1wv_v56T2ACEHtPZF-iRBvEWY2VVdUXxu/view?usp=drive_link", aliases: ["zenith", "zenith condominio"], pois: ["Manauara Shopping", "Fórum Ministro Henoch Reis", "Tribunal de Justiça (TJ-AM)", "Hospital Check Up", "Colégio Martha Falcão", "Faculdade Martha Falcão", "Faculdade Estácio"] },
-    { id: 14, title: "Conquista Topázio", brand: "Direcional", region: "Colônia Terra Nova - Zona Norte", size: "41m² a 51m²", bedrooms: "1 e 2 quartos", flooring: "Todo o apê", entrega: "Entregue", cover: "https://www.direcional.com.br/wp-content/uploads/2023/04/Guarita-Conquista-Topazio-Direcional.jpg.webp", link: "https://drive.google.com/file/d/1SMIfr9HbfLd06UaDLKbMUxxtuh4cPPEM/view?usp=drive_link", aliases: ["topazio", "topázio", "conquista topazio"], pois: ["Allegro Mall (vizinho)", "Shopping Via Norte", "Atacadão", "Loja Havan", "SPA da Colônia Terra Nova"] },
-    { id: 16, title: "Conquista Rio Negro", brand: "Direcional", region: "Ponta Negra - Zona Oeste", size: "41m²", bedrooms: "2 quartos", flooring: "Todo o apê", entrega: "Entregue", cover: "https://www.direcional.com.br/wp-content/uploads/2022/11/Guarita-Conquista-Rio-Negro-Direcional.jpg.webp", link: "https://drive.google.com/file/d/1pHLQwUSn6BDMfLo7fFGonyyWlgtXwNmy/view?usp=drive_link", aliases: ["negro", "rio negro", "conquista rio negro"], pois: ["Shopping Ponta Negra", "DB Ponta Negra", "Orla 92 Mall", "Supermercado Veneza", "Orla da Ponta Negra", "Praia Dourada", "Marina Tauá", "Balneário do SESC", "Aeroporto Eduardo Gomes", "Policlínica José Lins", "Colégio Século"] },
-    { id: 17, title: "Viva Vida Rio Tapajós", brand: "Direcional", region: "Tarumã - Zona Oeste", size: "36m²", bedrooms: "2 quartos", flooring: "Cozinha, banheiro e lavatório", entrega: "08/2027", cover: "https://www.direcional.com.br/wp-content/uploads/2025/02/Perspectiva-Guarita-VivaVidaRioTapajos.jpg.webp", link: "https://drive.google.com/file/d/1k3TOypf5bm_zXPfc-ulb7vY9e7MKxmlk/view?usp=drive_link", aliases: ["tapajos", "tapajós", "rio tapajos", "viva vida rio tapajos"], pois: ["Aeroporto Internacional de Manaus", "Tarumã (área de balneários famosos)", "Sivam", "proximidade com a entrada da Ponta Negra"] }
+    { id: 1, title: "Brisas do Horizonte", brand: "Direcional", region: "Coroado - Zona Leste", size: "43m² a 45m²", bedrooms: "2 quartos", flooring: "Todo o apê", entrega: "08/2028",
+      cover: `${D}/2025/06/Perspectiva-Guarita-BrisasdoHorizonte.jpg.webp`,
+            fotosExtras: [
+        `https://api.apto.vc/images/realties/9440/brisas-do-horizonte-condominio-2.webp`,
+        `https://api.apto.vc/images/realties/9440/brisas-do-horizonte-condominio-3.webp`,
+        `https://api.apto.vc/images/realties/9440/brisas-do-horizonte-condominio-4.webp`,
+        `https://api.apto.vc/images/realties/9440/brisas-do-horizonte-condominio-5.webp`,
+        `https://api.apto.vc/images/realties/9440/brisas-do-horizonte-condominio-6.webp`,
+      ],
+      link: "https://drive.google.com/file/d/18IXtAt9PLVjIsk2PkXIHXnVCaduVkGu2/view?usp=drive_link", aliases: ["brisas", "brisas do horizonte", "horizonte"], pois: ["Supermercado Vitória (1 min)", "Escola Mun. Profª Maria Rodrigues Tapajós (2 min)", "SPA Coroado (3 min)", "Estádio Carlos Zamith (5 min)", "Park Mall Ephigênio Salles (6 min)", "UFAM - Universidade Federal do Amazonas (7 min)", "Hospital Dr. João Lúcio (7 min)", "Samel São José Medical Center (7 min)", "Sesi Clube do Trabalhador (8 min)", "Manauara Shopping (14 min)"] },
+
+    { id: 2, title: "Parque Ville Orquídea", brand: "Direcional", region: "Lago Azul - Zona Norte", size: "41m²", bedrooms: "2 quartos", flooring: "Todo o apê", entrega: "04/2027",
+      cover: `${D}/2024/05/Perspectiva_PARQUEVILLEORQUIDEA_GUARITA.jpg.webp`,
+            fotosExtras: [
+        `https://api.apto.vc/images/realties/7259/parque-ville-orquidea-condominio-2.webp`,
+        `https://api.apto.vc/images/realties/7259/parque-ville-orquidea-condominio-3.webp`,
+        `https://api.apto.vc/images/realties/7259/parque-ville-orquidea-condominio-4.webp`,
+        `https://api.apto.vc/images/realties/7259/parque-ville-orquidea-condominio-5.webp`,
+        `https://api.apto.vc/images/realties/7259/parque-ville-orquidea-condominio-6.webp`,
+      ],
+      link: "https://drive.google.com/file/d/1F_BeT2jceDM8u4kCbSXN8kp2rk7boQTG/view?usp=drive_link", aliases: ["orquidea", "orquídea", "parque ville", "parque ville orquidea"], pois: ["Escola Mun. Viviane Estrela (1-2 min)", "Clínica da Família C. Nicolau (1-2 min)", "Veneza Express (3-4 min)", "Nova Era Supermercado (3-4 min)", "Terminal 6 (3-4 min)", "Colégio Militar da PM VI (3-4 min)", "Shopping Via Norte (7 min)", "Hospital Delphina Aziz (10 min)", "Sumaúma Park Shopping (12 min)"] },
+
+    { id: 3, title: "Village Torres", brand: "Direcional", region: "Lago Azul - Zona Norte", size: "36m²", bedrooms: "2 quartos", flooring: "Cozinha, banheiro e lavatório", entrega: "04/2027",
+      cover: `${D}/2024/09/Perspectiva-Guarita-VillageTorres.jpg.webp`,
+            fotosExtras: [
+        `https://api.apto.vc/images/realties/7672/village-torres-condominio-2.webp`,
+        `https://api.apto.vc/images/realties/7672/village-torres-condominio-3.webp`,
+        `https://api.apto.vc/images/realties/7672/village-torres-condominio-4.webp`,
+        `https://api.apto.vc/images/realties/7672/village-torres-condominio-5.webp`,
+        `https://api.apto.vc/images/realties/7672/village-torres-condominio-6.webp`,
+      ],
+      link: "https://drive.google.com/file/d/1blVconA5fjODxvXB7s8KT6dSlX8KpLLv/view?usp=drive_link", aliases: ["village", "village torres", "torres"], pois: ["Supermercado Nova Era", "Shopping Via Norte", "Sumaúma Park Shopping", "Atacadão"] },
+
+    { id: 4, title: "Conquista Jardim Botânico", brand: "Direcional", region: "Nova Cidade - Zona Norte", size: "40m²", bedrooms: "2 quartos", flooring: "Cozinha, banheiro e lavatório", entrega: "11/2026",
+      cover: `${D}/2024/03/Conquista-Jardim-Botanico-Guarita.jpg.webp`,
+            fotosExtras: [
+        `https://api.apto.vc/images/realties/7260/conquista-jardim-botanico-condominio-2.webp`,
+        `https://api.apto.vc/images/realties/7260/conquista-jardim-botanico-condominio-3.webp`,
+        `https://api.apto.vc/images/realties/7260/conquista-jardim-botanico-condominio-4.webp`,
+        `https://api.apto.vc/images/realties/7260/conquista-jardim-botanico-condominio-5.webp`,
+        `https://api.apto.vc/images/realties/7260/conquista-jardim-botanico-condominio-6.webp`,
+      ],
+      link: "https://drive.google.com/file/d/1TYzIq8RuGORXfxQpH8CGZejTjF_GlUz0/view?usp=drive_link", aliases: ["botanico", "botânico", "jardim botanico", "conquista jardim"], pois: ["MUSA (Museu da Amazônia / Jardim Botânico)", "Shopping Via Norte", "Supermercado DB Nova Cidade", "SPA Galiléia"] },
+
+    { id: 5, title: "Viva Vida Coral", brand: "Direcional", region: "Colônia Terra Nova - Zona Norte", size: "41m² a 51m²", bedrooms: "2 quartos", flooring: "Cozinha, banheiro e lavatório", entrega: "03/2028",
+      cover: `${D}/2025/05/Perspectiva-Guarita-VivaVidaCoral.jpg.webp`,
+            fotosExtras: [
+        `https://api.apto.vc/images/realties/8667/viva-vida-coral-condominio-2.webp`,
+        `https://api.apto.vc/images/realties/8667/viva-vida-coral-condominio-3.webp`,
+        `https://api.apto.vc/images/realties/8667/viva-vida-coral-condominio-4.webp`,
+        `https://api.apto.vc/images/realties/8667/viva-vida-coral-condominio-5.webp`,
+        `https://api.apto.vc/images/realties/8667/viva-vida-coral-condominio-6.webp`,
+      ],
+      link: "https://drive.google.com/file/d/1lYo3otquzwdnD0r5f6JobBbW-6KmGOF4/view?usp=drive_link", aliases: ["coral", "viva vida coral", "viva vida"], pois: ["Shopping Via Norte", "Loja Havan", "Atacadão", "Hospital Delphina Aziz", "Posto Atem (famoso na entrada do bairro)"] },
+
+    { id: 6, title: "Conquista Jardim Norte", brand: "Direcional", region: "Santa Etelvina - Zona Norte", size: "36m²", bedrooms: "2 quartos", flooring: "Cozinha, banheiro e lavatório", entrega: "06/2027",
+      cover: `${D}/2024/12/Perspectiva-Guarita-ConquistaJardimNorte.jpg.webp`,
+            fotosExtras: [
+        `https://api.apto.vc/images/realties/8191/conquista-jardim-norte-condominio-2.webp`,
+        `https://api.apto.vc/images/realties/8191/conquista-jardim-norte-condominio-3.webp`,
+        `https://api.apto.vc/images/realties/8191/conquista-jardim-norte-condominio-4.webp`,
+        `https://api.apto.vc/images/realties/8191/conquista-jardim-norte-condominio-5.webp`,
+        `https://api.apto.vc/images/realties/8191/conquista-jardim-norte-condominio-6.webp`,
+      ],
+      link: "https://drive.google.com/file/d/1_Hyb72NWl1HjEiabKLL9m5ZMutHExesY/view?usp=drive_link", aliases: ["jardim norte", "santa etelvina", "conquista norte"], pois: ["Shopping Via Norte (1 min)", "Havan (1 min)", "Fun Park (1 min)", "Nova Era Supermercado (1 min)", "UBS Sálvio Belota (2 min)", "Feira do Santa Etelvina (2 min)", "Terminal 06 (5 min)", "15º Distrito Policial (5-7 min)", "Hiper DB (5-7 min)", "Hospital Delphina Aziz", "Escola Dra. Viviane Estrela"] },
+
+    { id: 7, title: "Viva Vida Rio Amazonas", brand: "Direcional", region: "Tarumã - Zona Oeste", size: "36m²", bedrooms: "2 quartos", flooring: "Cozinha, banheiro e lavatório", entrega: "03/2026",
+      cover: `${D}/2023/07/Guarita-Viva-Vida-Rio-Amazonas-Direcional.jpg.webp`,
+      fotosExtras: [
+        `${D}/2023/07/Fachada-Viva-Vida-Rio-Amazonas-Direcional.jpg.webp`,
+        `${D}/2023/07/Lazer-Viva-Vida-Rio-Amazonas-Direcional.jpg.webp`,
+        `${D}/2023/07/Piscina-Viva-Vida-Rio-Amazonas-Direcional.jpg.webp`,
+        `${D}/2023/07/Fitness-Viva-Vida-Rio-Amazonas-Direcional.jpg.webp`,
+        `${D}/2023/07/Playground-Viva-Vida-Rio-Amazonas-Direcional.jpg.webp`,
+      ],
+      link: "https://drive.google.com/", aliases: ["amazonas", "rio amazonas", "viva vida rio amazonas"], pois: ["Aeroporto Internacional Eduardo Gomes", "Orla da Ponta Negra", "Sivam (Sistema de Vigilância da Amazônia)", "Sipam", "Supermercado Veneza"] },
+
+    { id: 8, title: "Bosque das Torres", brand: "Direcional", region: "Lago Azul - Zona Norte", size: "36m²", bedrooms: "2 quartos", flooring: "Cozinha, banheiro e lavatório", entrega: "06/2028",
+      cover: `${D}/2025/10/portaria-bosque-das-torres.jpg.webp`,
+            fotosExtras: [
+        `https://api.apto.vc/images/realties/11153/bosque-das-torres-condominio-2.webp`,
+        `https://api.apto.vc/images/realties/11153/bosque-das-torres-condominio-3.webp`,
+        `https://api.apto.vc/images/realties/11153/bosque-das-torres-condominio-4.webp`,
+        `https://api.apto.vc/images/realties/11153/bosque-das-torres-condominio-5.webp`,
+        `https://api.apto.vc/images/realties/11153/bosque-das-torres-condominio-6.webp`,
+      ],
+      link: "https://drive.google.com/file/d/1lPnNQuxlPkKOcW2JqOB7KEWsaQVpZzcU/view?usp=drive_link", aliases: ["bosque", "bosque das torres"], pois: ["Supermercado Nova Era (Torres)", "Sumaúma Park Shopping", "Parque do Mindu", "Faculdade Estácio (polo próximo)"] },
+
+    { id: 9, title: "Parque Ville Lírio Azul", brand: "Direcional", region: "Lago Azul - Zona Norte", size: "41m²", bedrooms: "2 quartos", flooring: "Cozinha, banheiro e lavatório", entrega: "11/2028",
+      cover: `${D}/2025/11/fachada-noturna-parque-ville-lirio-azul.jpg.webp`,
+            fotosExtras: [
+        `https://api.apto.vc/images/realties/12749/parque-ville-lirio-azul-condominio-2.webp`,
+        `https://api.apto.vc/images/realties/12749/parque-ville-lirio-azul-condominio-3.webp`,
+        `https://api.apto.vc/images/realties/12749/parque-ville-lirio-azul-condominio-4.webp`,
+        `https://api.apto.vc/images/realties/12749/parque-ville-lirio-azul-condominio-5.webp`,
+        `https://api.apto.vc/images/realties/12749/parque-ville-lirio-azul-condominio-6.webp`,
+      ],
+      link: "https://drive.google.com/file/d/1fc7AXap6nhkpTlxONsm46WJCKxIWIhwe/view?usp=drive_link", aliases: ["lirio", "lírio", "lirio azul", "parque ville lirio"], pois: ["Escola Integral João S. Braga (1 min)", "Colégio Militar da PM VI (2 min)", "Escola Est. Eliana Braga (2 min)", "Nova Era Supermercado (2 min)", "Clínica da Família C. Gracie (2 min)", "UBS José Fligliuolo (4 min)", "Clínica da Família C. Nicolau (4 min)", "Terminal 6 e 7 (4 min)", "Shopping Via Norte / Havan / Fun Park (7 min)", "Hospital Delphina Aziz (8 min)"] },
+
+    { id: 10, title: "Amazon Boulevard Classic", brand: "Riva", region: "Bairro da Paz - Zona Centro-Oeste", size: "44m² a 69,78m²", bedrooms: "2 quartos", flooring: "Todo o apê", entrega: "12/2026",
+      cover: `${R}/2023/11/fachada-noturna_amazon-boulevard-classic.jpg.webp`,
+            fotosExtras: [
+        `https://api.apto.vc/images/realties/6845/amazon-boulevard-classic-condominio-2.webp`,
+        `https://api.apto.vc/images/realties/6845/amazon-boulevard-classic-condominio-3.webp`,
+        `https://api.apto.vc/images/realties/6845/amazon-boulevard-classic-condominio-4.webp`,
+        `https://api.apto.vc/images/realties/6845/amazon-boulevard-classic-condominio-5.webp`,
+        `https://api.apto.vc/images/realties/6845/amazon-boulevard-classic-condominio-6.webp`,
+      ],
+      link: "https://drive.google.com/file/d/1ZX37T2S8FlHnSiO-yeAjlFyqq_5-dVzx/view?usp=drive_link", aliases: ["classic", "amazon boulevard", "boulevard", "boulevard classic"], pois: ["Arena da Amazônia", "Amazonas Shopping", "Carrefour Hipermercado", "UNIP (Universidade Paulista)", "Terminal Rodoviário de Manaus", "Hospital Tropical (Fundação de Medicina Tropical)"] },
+
+    { id: 11, title: "Amazon Boulevard Prime", brand: "Riva", region: "Bairro da Paz - Zona Centro-Oeste", size: "51m² a 90,39m²", bedrooms: "2 e 3 quartos", flooring: "Todo o apê", entrega: "06/2028",
+      cover: `${R}/2025/06/guarita-Amazon-prime-boulevard-riva.jpg.webp`,
+            fotosExtras: [
+        `https://api.apto.vc/images/realties/9089/amazon-boulevard-prime-condominio-2.webp`,
+        `https://api.apto.vc/images/realties/9089/amazon-boulevard-prime-condominio-3.webp`,
+        `https://api.apto.vc/images/realties/9089/amazon-boulevard-prime-condominio-4.webp`,
+        `https://api.apto.vc/images/realties/9089/amazon-boulevard-prime-condominio-5.webp`,
+        `https://api.apto.vc/images/realties/9089/amazon-boulevard-prime-condominio-6.webp`,
+      ],
+      link: "https://drive.google.com/file/d/1aIuBlwLYGStUm7DNE3gCbfu3Ty2JmkGM/view?usp=drive_link", aliases: ["prime", "amazon prime", "boulevard prime"], pois: ["Arena da Amazônia", "Sambódromo", "Hipermercado Carrefour", "La Parilla Restaurante", "Aeroclub", "Petz", "Clube Municipal (ao lado)", "Vila Olímpica", "Drogaria Bom Preço", "Drogaria Santo Remédio"] },
+
+    { id: 12, title: "Città Oasis Azzure", brand: "Riva", region: "Flores - Zona Centro-Sul", size: "48m² a 75m²", bedrooms: "2 e 3 quartos", flooring: "Todo o apê", entrega: "11/2028",
+      cover: `${R}/2025/08/citta-azzure_GUARITA.jpg.webp`,
+            fotosExtras: [
+        `https://api.apto.vc/images/realties/10744/citta-oasis-azzure-home-riva-condominio-2.webp`,
+        `https://api.apto.vc/images/realties/10744/citta-oasis-azzure-home-riva-condominio-3.webp`,
+        `https://api.apto.vc/images/realties/10744/citta-oasis-azzure-home-riva-condominio-4.webp`,
+        `https://api.apto.vc/images/realties/10744/citta-oasis-azzure-home-riva-condominio-5.webp`,
+        `https://api.apto.vc/images/realties/10744/citta-oasis-azzure-home-riva-condominio-6.webp`,
+      ],
+      link: "https://drive.google.com/file/d/1Y-fT6UbQ-OopqVaV0POgHRIdlayMXMOB/view?usp=sharing", aliases: ["citta", "città", "azzure", "oasis", "oasis azzure"], pois: ["Universidade Nilton Lins", "Laranjeiras Restaurante (polo gastronômico)", "Sushi Ponta Negra", "Domes Burgers", "Di Fiori - Casa de Massas e Pizzas", "Na Lenha Pizzaria", "Drogaria Santo Remédio", "Supermercado Atack (Laranjeiras)", "Sollarium Mall"] },
+
+    { id: 13, title: "Zenith Condomínio Clube", brand: "Riva", region: "São Francisco - Zona Sul", size: "48m² a 49m²", bedrooms: "2 e 3 quartos", flooring: "Todo o apê", entrega: "03/2028",
+      cover: `${R}/2024/08/Perspectiva-Guarita-ZenithCondominioClube.webp`,
+            fotosExtras: [
+        `https://api.apto.vc/images/realties/7605/zenith-condominio-clube-condominio-2.webp`,
+        `https://api.apto.vc/images/realties/7605/zenith-condominio-clube-condominio-3.webp`,
+        `https://api.apto.vc/images/realties/7605/zenith-condominio-clube-condominio-4.webp`,
+        `https://api.apto.vc/images/realties/7605/zenith-condominio-clube-condominio-5.webp`,
+        `https://api.apto.vc/images/realties/7605/zenith-condominio-clube-condominio-6.webp`,
+      ],
+      link: "https://drive.google.com/file/d/1wv_v56T2ACEHtPZF-iRBvEWY2VVdUXxu/view?usp=drive_link", aliases: ["zenith", "zenith condominio"], pois: ["Manauara Shopping", "Fórum Ministro Henoch Reis", "Tribunal de Justiça (TJ-AM)", "Hospital Check Up", "Colégio Martha Falcão", "Faculdade Martha Falcão", "Faculdade Estácio"] },
+
+    { id: 14, title: "Conquista Topázio", brand: "Direcional", region: "Colônia Terra Nova - Zona Norte", size: "41m² a 51m²", bedrooms: "1 e 2 quartos", flooring: "Todo o apê", entrega: "Entregue",
+      cover: `${D}/2023/04/Guarita-Conquista-Topazio-Direcional.jpg.webp`,
+            fotosExtras: [
+        `https://api.apto.vc/images/realties/6507/conquista-topazio-condominio-2.webp`,
+        `https://api.apto.vc/images/realties/6507/conquista-topazio-condominio-3.webp`,
+        `https://api.apto.vc/images/realties/6507/conquista-topazio-condominio-4.webp`,
+        `https://api.apto.vc/images/realties/6507/conquista-topazio-condominio-5.webp`,
+        `https://api.apto.vc/images/realties/6507/conquista-topazio-condominio-6.webp`,
+      ],
+      link: "https://drive.google.com/file/d/1SMIfr9HbfLd06UaDLKbMUxxtuh4cPPEM/view?usp=drive_link", aliases: ["topazio", "topázio", "conquista topazio"], pois: ["Allegro Mall (vizinho)", "Shopping Via Norte", "Atacadão", "Loja Havan", "SPA da Colônia Terra Nova"] },
+
+    { id: 16, title: "Conquista Rio Negro", brand: "Direcional", region: "Ponta Negra - Zona Oeste", size: "41m²", bedrooms: "2 quartos", flooring: "Todo o apê", entrega: "Entregue",
+      cover: `${D}/2022/11/Guarita-Conquista-Rio-Negro-Direcional.jpg.webp`,
+            fotosExtras: [
+        `https://api.apto.vc/images/realties/6070/conquista-rio-negro-condominio-2.webp`,
+        `https://api.apto.vc/images/realties/6070/conquista-rio-negro-condominio-3.webp`,
+        `https://api.apto.vc/images/realties/6070/conquista-rio-negro-condominio-4.webp`,
+        `https://api.apto.vc/images/realties/6070/conquista-rio-negro-condominio-5.webp`,
+        `https://api.apto.vc/images/realties/6070/conquista-rio-negro-condominio-6.webp`,
+      ],
+      link: "https://drive.google.com/file/d/1pHLQwUSn6BDMfLo7fFGonyyWlgtXwNmy/view?usp=drive_link", aliases: ["negro", "rio negro", "conquista rio negro"], pois: ["Shopping Ponta Negra", "DB Ponta Negra", "Orla 92 Mall", "Supermercado Veneza", "Orla da Ponta Negra", "Praia Dourada", "Marina Tauá", "Balneário do SESC", "Aeroporto Eduardo Gomes", "Policlínica José Lins", "Colégio Século"] },
+
+    { id: 17, title: "Viva Vida Rio Tapajós", brand: "Direcional", region: "Tarumã - Zona Oeste", size: "36m²", bedrooms: "2 quartos", flooring: "Cozinha, banheiro e lavatório", entrega: "08/2027",
+      cover: `${D}/2025/02/Perspectiva-Guarita-VivaVidaRioTapajos.jpg.webp`,
+      fotosExtras: [
+        `${D}/2025/02/Perspectiva-Fachada-VivaVidaRioTapajos.jpg.webp`,
+        `${D}/2025/02/Perspectiva-Lazer-VivaVidaRioTapajos.jpg.webp`,
+        `${D}/2025/02/Perspectiva-Piscina-VivaVidaRioTapajos.jpg.webp`,
+        `${D}/2025/02/Perspectiva-Fitness-VivaVidaRioTapajos.jpg.webp`,
+        `${D}/2025/02/Perspectiva-Playground-VivaVidaRioTapajos.jpg.webp`,
+      ],
+      link: "https://drive.google.com/file/d/1k3TOypf5bm_zXPfc-ulb7vY9e7MKxmlk/view?usp=drive_link", aliases: ["tapajos", "tapajós", "rio tapajos", "viva vida rio tapajos"], pois: ["Aeroporto Internacional de Manaus", "Tarumã (área de balneários famosos)", "Sivam", "proximidade com a entrada da Ponta Negra"] }
 ];
 
 // === DADOS DE UTILITÁRIOS ===
@@ -76,19 +238,21 @@ const frasesMotivacionais = [
 
 // === IMAGENS DE EQUIPE (Muda Diariamente) ===
 const imagensEquipeDiarias = [
-    "https://i.postimg.cc/4xMnK7YP/Copia-de-IMG-3117.jpg",
-    "https://i.postimg.cc/sXP20TwK/Copia-de-IMG-1504.jpg",
-    "https://i.postimg.cc/tCc9D09Q/Copia-de-IMG-0779-(1).jpg",
-    "https://i.postimg.cc/fLvwvJRq/Copia-de-IMG-1017.jpg",
-    "https://i.postimg.cc/KzhzN6r5/Copia-de-IMG-1515.jpg",
-    "https://i.postimg.cc/hGT4fCWS/Copia-de-IMG-2336.jpg",
-    "https://i.postimg.cc/bvtr1yb8/Copia-de-IMG-2830.jpg",
-    "https://i.postimg.cc/1zqXDmFK/Copia-de-IMG-3048.jpg",
-    "https://i.postimg.cc/YSW0QrF3/Copia-de-IMG-3049.jpg",
-    "https://i.postimg.cc/mgqhczP5/Copia-de-IMG-3054.jpg",
-    "https://i.postimg.cc/2SJ3qb1V/Copia-de-IMG-5622-(1).jpg",
     "https://i.postimg.cc/QCxjYhBj/Copia-de-IMG-9585.jpg",
-    "https://i.postimg.cc/fWKLcg3X/Copia-de-IMG-9919.avif"
+    "https://i.postimg.cc/2SJ3qb1V/Copia-de-IMG-5622-(1).jpg",
+    "https://i.postimg.cc/mgqhczP5/Copia-de-IMG-3054.jpg",
+    "https://i.postimg.cc/YSW0QrF3/Copia-de-IMG-3049.jpg",
+    "https://i.postimg.cc/1zqXDmFK/Copia-de-IMG-3048.jpg",
+    "https://i.postimg.cc/bvtr1yb8/Copia-de-IMG-2830.jpg",
+    "https://i.postimg.cc/fbzc1rWb/Copia-de-IMG-1659.jpg",
+    "https://i.postimg.cc/KzhzN6r5/Copia-de-IMG-1515.jpg",
+    "https://i.postimg.cc/fLvwvJRq/Copia-de-IMG-1017.jpg",
+    "https://i.postimg.cc/VL86Lg4H/Copia-de-IMG-9690.jpg",
+    "https://i.postimg.cc/tCc9D09Q/Copia-de-IMG-0779-(1).jpg",
+    "https://i.postimg.cc/sXP20TwK/Copia-de-IMG-1504.jpg",
+    "https://i.postimg.cc/4xMnK7YP/Copia-de-IMG-3117.jpg",
+    "https://i.postimg.cc/hGT4fCWS/Copia-de-IMG-2336.jpg",
+    "https://i.postimg.cc/fWKLcg3X/Copia-de-IMG-9919.avif",
 ];
 
 // Cálculos para manter a mesma imagem e frase durante todo o dia
@@ -114,6 +278,365 @@ function RippleButton({ onClick, className, children, style }) {
         <button ref={btnRef} className={className} style={{ ...style, position: 'relative', overflow: 'hidden' }} onClick={handleClick}>
             {children}
         </button>
+    );
+}
+
+// ── BannerExpandido — modal grande, blur no fundo, sem X, animação de saída ───
+function BannerExpandido({ revista, onClose, modoNoturno, onVerRevista, onVerPois }) {
+    const [phase, setPhase] = useState('entering'); // 'entering' | 'in' | 'out'
+
+    // Fotos: começa com a cover e vai adicionando as extras que carregam
+    const [fotos, setFotos] = useState([revista.cover]);
+    const checkedRef = useRef(false);
+    useEffect(() => {
+        if (checkedRef.current) return;
+        checkedRef.current = true;
+        (revista.fotosExtras || []).forEach(url => {
+            const img = new Image();
+            img.onload = () => setFotos(prev => prev.includes(url) ? prev : [...prev, url]);
+            img.src = url;
+        });
+    }, []);
+
+    // Slide: idx atual + idx anterior (para animar a saída) + direção
+    const [idx, setIdx] = useState(0);
+    const [prevIdx, setPrevIdx] = useState(null);
+    const [dir, setDir] = useState(null); // 'left' | 'right'
+    const sliding = useRef(false);
+
+    const goTo = (newIdx, d) => {
+        if (sliding.current || newIdx === idx) return;
+        sliding.current = true;
+        setPrevIdx(idx);
+        setDir(d);
+        setIdx(newIdx);
+        setTimeout(() => {
+            setPrevIdx(null);
+            setDir(null);
+            sliding.current = false;
+        }, 380);
+    };
+    const goPrev = (e) => { e.stopPropagation(); goTo((idx - 1 + fotos.length) % fotos.length, 'right'); };
+    const goNext = (e) => { e.stopPropagation(); goTo((idx + 1) % fotos.length, 'left'); };
+    const goDot  = (i, e) => { e.stopPropagation(); if (i !== idx) goTo(i, i > idx ? 'left' : 'right'); };
+
+    const isDir = revista.brand === 'Direcional';
+    const accent     = isDir ? '#f97316' : '#2563eb';
+    const accentDark = isDir ? '#c2410c' : '#1d4ed8';
+    const bg      = modoNoturno ? '#0f172a' : '#ffffff';
+    const bgSub   = modoNoturno ? '#1e293b' : '#f1f5f9';
+    const text    = modoNoturno ? '#f1f5f9' : '#1e293b';
+    const sub     = modoNoturno ? '#94a3b8' : '#64748b';
+    const divider = modoNoturno ? '#1e293b' : '#e2e8f0';
+
+    const triggerClose = () => { setPhase('out'); setTimeout(onClose, 280); };
+
+    useEffect(() => {
+        const r1 = requestAnimationFrame(() => requestAnimationFrame(() => setPhase('in')));
+        const onKey = (e) => { if (e.key === 'Escape') triggerClose(); };
+        window.addEventListener('keydown', onKey);
+        return () => { cancelAnimationFrame(r1); window.removeEventListener('keydown', onKey); };
+    }, []);
+
+    const Chip = ({ icon, label }) => (
+        <div style={{ display:'flex', alignItems:'center', gap:5, padding:'4px 10px', borderRadius:99,
+            background:bgSub, border:`1px solid ${divider}`, color:sub, fontSize:12, fontWeight:600 }}>
+            <span style={{ color:accent, display:'flex', alignItems:'center' }}>{icon}</span>{label}
+        </div>
+    );
+
+    // Direções do slide: saindo vai para -100% (esq) ou +100% (dir); entrando vem do oposto
+    const outX = dir === 'left' ? '-100%' : '100%';
+    const inX  = dir === 'left' ? '100%'  : '-100%';
+    const DUR = '0.38s';
+    const EASE = 'cubic-bezier(0.4,0,0.2,1)';
+
+    return (
+        <>
+            {/* Backdrop com blur */}
+            <div onClick={triggerClose} style={{
+                position:'fixed', inset:0, zIndex:200,
+                background:'rgba(0,0,0,0.48)',
+                backdropFilter:'blur(10px)', WebkitBackdropFilter:'blur(10px)',
+                opacity: phase === 'in' ? 1 : 0,
+                transition: phase === 'entering' ? 'none' : 'opacity 0.28s ease',
+            }}/>
+
+            {/* Container centralizado */}
+            <div style={{ position:'fixed', inset:0, zIndex:201, display:'flex', alignItems:'center', justifyContent:'center', padding:'16px', pointerEvents:'none' }}>
+                <div
+                    onMouseLeave={triggerClose}
+                    onClick={e => e.stopPropagation()}
+                    style={{
+                        pointerEvents:'auto',
+                        width:'100%', maxWidth:1160,
+                        height:'min(90vh, 720px)',
+                        borderRadius:26, overflow:'hidden', display:'flex',
+                        background:bg,
+                        boxShadow:'0 32px 100px rgba(0,0,0,0.40), 0 8px 32px rgba(0,0,0,0.20)',
+                        opacity: phase === 'in' ? 1 : 0,
+                        transform: phase === 'in' ? 'scale(1) translateY(0)' : 'scale(0.93) translateY(28px)',
+                        transition: phase === 'entering' ? 'none' : `opacity 0.32s cubic-bezier(0.22,1,0.36,1), transform 0.32s cubic-bezier(0.22,1,0.36,1)`,
+                    }}
+                >
+                    {/* ── ESQUERDA — foto (58%) ── */}
+                    <div style={{ flex:'0 0 58%', position:'relative', overflow:'hidden' }}>
+
+                        {/* Imagem saindo */}
+                        {dir && prevIdx !== null && (
+                            <img key={`out-${prevIdx}`} src={fotos[prevIdx]} alt="" style={{
+                                position:'absolute', inset:0, width:'100%', height:'100%', objectFit:'cover',
+                                transform:`translateX(${outX})`,
+                                transition:`transform ${DUR} ${EASE}`,
+                                zIndex:1,
+                            }}/>
+                        )}
+                        {/* Imagem entrando */}
+                        <img key={`in-${idx}`} src={fotos[idx]} alt={revista.title} style={{
+                            position:'absolute', inset:0, width:'100%', height:'100%', objectFit:'cover',
+                            transform: dir ? `translateX(0)` : 'translateX(0)',
+                            animation: dir ? `slideIn-${dir} ${DUR} ${EASE} forwards` : 'none',
+                            zIndex:2,
+                        }}/>
+
+                        <div style={{ position:'absolute', inset:0, pointerEvents:'none', zIndex:3,
+                            background:'linear-gradient(to top, rgba(0,0,0,0.72) 0%, rgba(0,0,0,0.06) 50%, transparent 100%)' }}/>
+
+                        {/* Badge marca */}
+                        <div style={{ position:'absolute', top:16, left:16, zIndex:6,
+                            background:'rgba(255,255,255,0.94)', borderRadius:12, padding:'5px 14px',
+                            display:'flex', alignItems:'center', height:36, boxShadow:'0 2px 10px rgba(0,0,0,0.14)' }}>
+                            <img src={isDir ? 'https://i.postimg.cc/crYQS8mh/image.png' : 'https://i.postimg.cc/R3Q9f9Bc/image.png'}
+                                alt={revista.brand} style={{ height:19, maxWidth:84, objectFit:'contain' }}/>
+                        </div>
+
+                        {/* Setas */}
+                        {fotos.length > 1 && (<>
+                            <button onClick={goPrev} style={{ position:'absolute', left:14, top:'50%', transform:'translateY(-50%)', zIndex:7, width:38, height:38, borderRadius:'50%', border:'none', cursor:'pointer', background:'rgba(0,0,0,0.36)', display:'flex', alignItems:'center', justifyContent:'center', transition:'background 0.15s' }}
+                                onMouseEnter={e=>e.currentTarget.style.background='rgba(0,0,0,0.62)'} onMouseLeave={e=>e.currentTarget.style.background='rgba(0,0,0,0.36)'}><ChevronLeft size={20} color="#fff"/></button>
+                            <button onClick={goNext} style={{ position:'absolute', right:14, top:'50%', transform:'translateY(-50%)', zIndex:7, width:38, height:38, borderRadius:'50%', border:'none', cursor:'pointer', background:'rgba(0,0,0,0.36)', display:'flex', alignItems:'center', justifyContent:'center', transition:'background 0.15s' }}
+                                onMouseEnter={e=>e.currentTarget.style.background='rgba(0,0,0,0.62)'} onMouseLeave={e=>e.currentTarget.style.background='rgba(0,0,0,0.36)'}><ChevronRight size={20} color="#fff"/></button>
+                            <div style={{ position:'absolute', bottom:18, left:0, right:0, display:'flex', justifyContent:'center', gap:5, zIndex:7 }}>
+                                {fotos.map((_,i) => <button key={i} onClick={e=>goDot(i,e)} style={{ width:i===idx?22:6, height:6, borderRadius:99, padding:0, border:'none', cursor:'pointer', background:i===idx?'#fff':'rgba(255,255,255,0.36)', transition:'width 0.25s, background 0.25s' }}/>)}
+                            </div>
+                        </>)}
+
+                        {/* Título + região */}
+                        <div style={{ position:'absolute', bottom:0, left:0, right:0, padding:'0 24px 24px', zIndex:5 }}>
+                            <h2 style={{ margin:0, fontSize:24, fontWeight:900, color:'#fff', lineHeight:1.2, textShadow:'0 2px 14px rgba(0,0,0,0.6)' }}>{revista.title}</h2>
+                            <div style={{ display:'flex', alignItems:'center', gap:5, marginTop:6 }}>
+                                <MapPin size={13} color="rgba(255,255,255,0.68)"/>
+                                <span style={{ fontSize:13, color:'rgba(255,255,255,0.76)', fontWeight:500 }}>{revista.region}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* ── DIREITA — infos ── */}
+                    <div style={{ flex:1, display:'flex', flexDirection:'column', overflow:'hidden' }}>
+
+                        {/* Cabeçalho */}
+                        <div style={{ padding:'22px 24px 14px', borderBottom:`1px solid ${divider}`, flexShrink:0 }}>
+                            <h3 style={{ margin:0, fontSize:18, fontWeight:800, color:text, lineHeight:1.2 }}>{revista.title}</h3>
+                            <div style={{ display:'flex', alignItems:'center', gap:5, marginTop:5 }}>
+                                <MapPin size={12} color={accent}/>
+                                <span style={{ fontSize:12, color:sub, fontWeight:500 }}>{revista.region}</span>
+                            </div>
+                        </div>
+
+                        {/* Chips */}
+                        <div style={{ display:'flex', flexWrap:'wrap', gap:6, padding:'14px 24px 12px', borderBottom:`1px solid ${divider}`, flexShrink:0 }}>
+                            <Chip icon={<Maximize size={12}/>} label={revista.size}/>
+                            <Chip icon={<Bed size={12}/>} label={revista.bedrooms}/>
+                            <Chip icon={<LayoutGrid size={12}/>} label={revista.flooring}/>
+                            {revista.entrega && <Chip icon={<Clock size={12}/>} label={revista.entrega === 'Entregue' ? '✅ Entregue' : `Entrega ${revista.entrega}`}/>}
+                        </div>
+
+                        {/* POIs */}
+                        <div style={{ flex:1, overflowY:'auto', padding:'14px 24px 10px', scrollbarWidth:'thin' }}>
+                            {revista.pois?.length > 0 && (<>
+                                <div style={{ display:'flex', alignItems:'center', gap:5, marginBottom:10 }}>
+                                    <MapPin size={11} color={accent}/>
+                                    <span style={{ fontSize:10, fontWeight:800, color:sub, textTransform:'uppercase', letterSpacing:'0.12em' }}>Pontos de referência</span>
+                                </div>
+                                <div style={{ display:'flex', flexDirection:'column', gap:7 }}>
+                                    {revista.pois.map((poi,i) => (
+                                        <div key={i} style={{ display:'flex', alignItems:'flex-start', gap:9 }}>
+                                            <div style={{ width:6, height:6, borderRadius:'50%', background:accent, flexShrink:0, marginTop:5 }}/>
+                                            <span style={{ fontSize:13, color:text, lineHeight:1.45 }}>{poi}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </>)}
+                        </div>
+
+                        {/* Botões */}
+                        <div style={{ padding:'14px 24px 20px', display:'flex', flexDirection:'column', gap:9, flexShrink:0, borderTop:`1px solid ${divider}` }}>
+                            <button onClick={()=>{triggerClose();setTimeout(onVerRevista,300);}} style={{
+                                width:'100%', padding:'13px 0', borderRadius:16, border:'none', cursor:'pointer',
+                                display:'flex', alignItems:'center', justifyContent:'center', gap:8,
+                                background:accent, color:'#fff', fontSize:14, fontWeight:800,
+                                boxShadow:`0 4px 16px ${accent}44`,
+                                transition:'background 0.15s, transform 0.12s',
+                            }}
+                                onMouseEnter={e=>{e.currentTarget.style.background=accentDark;e.currentTarget.style.transform='scale(1.01)';}}
+                                onMouseLeave={e=>{e.currentTarget.style.background=accent;e.currentTarget.style.transform='scale(1)';}}
+                            ><BookOpen size={16}/> Ver Revista Digital</button>
+
+                            <button onClick={()=>{triggerClose();setTimeout(onVerPois,300);}} style={{
+                                width:'100%', padding:'11px 0', borderRadius:16, cursor:'pointer',
+                                display:'flex', alignItems:'center', justifyContent:'center', gap:7,
+                                background:'transparent', border:`1.5px solid ${divider}`,
+                                color:sub, fontSize:13, fontWeight:700,
+                                transition:'border-color 0.15s, color 0.15s, transform 0.12s',
+                            }}
+                                onMouseEnter={e=>{e.currentTarget.style.borderColor=accent;e.currentTarget.style.color=accent;e.currentTarget.style.transform='scale(1.01)';}}
+                                onMouseLeave={e=>{e.currentTarget.style.borderColor=divider;e.currentTarget.style.color=sub;e.currentTarget.style.transform='scale(1)';}}
+                            ><MapPin size={14} color="#f43f5e"/> Ver pontos de referência</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <style>{`
+                @keyframes slideIn-left  { from { transform: translateX(100%);  } to { transform: translateX(0); } }
+                @keyframes slideIn-right { from { transform: translateX(-100%); } to { transform: translateX(0); } }
+            `}</style>
+        </>
+    );
+}
+
+// ── CardRevista — hover 1.7s desktop apenas abre modal ───────────────────────
+function CardRevista({ revista, cardIdx, modoNoturno, haptic, setPdfLeitor, setSelectedPois }) {
+    const DELAY = 1700;
+    const [expanded, setExpanded] = useState(false);
+    const timerRef = useRef(null);
+    const isDir = revista.brand === 'Direcional';
+
+    // Detecta se é touch device — não ativa o hover expand no mobile
+    const isTouchDevice = () => window.matchMedia('(hover: none) and (pointer: coarse)').matches;
+
+    const startHover = () => {
+        if (isTouchDevice()) return;
+        timerRef.current = setTimeout(() => { haptic('medium'); setExpanded(true); }, DELAY);
+    };
+    const stopHover = () => { clearTimeout(timerRef.current); };
+
+    useEffect(() => () => clearTimeout(timerRef.current), []);
+
+    const handleVerRevista = () => {
+        haptic('medium');
+        const previewUrl = revista.link.replace(/\/view(\?.*)?$/, '/preview');
+        setPdfLeitor({ title: revista.title, url: previewUrl, brand: revista.brand });
+    };
+    const handleVerPois = () => { haptic(); setSelectedPois(revista); };
+
+    return (
+        <>
+            {expanded && (
+                <BannerExpandido
+                    revista={revista}
+                    onClose={() => setExpanded(false)}
+                    modoNoturno={modoNoturno}
+                    onVerRevista={handleVerRevista}
+                    onVerPois={handleVerPois}
+                />
+            )}
+
+            <div
+                className="card-entry overflow-hidden flex flex-col group"
+                style={{
+                    animationDelay:`${cardIdx*90}ms`,
+                    position:'relative',
+                    borderRadius:'24px',
+                    background: modoNoturno ? 'rgba(255,255,255,0.07)' : 'rgba(255,255,255,0.55)',
+                    backdropFilter:'blur(28px) saturate(200%) brightness(1.02)',
+                    WebkitBackdropFilter:'blur(28px) saturate(200%) brightness(1.02)',
+                    border: modoNoturno ? '1px solid rgba(255,255,255,0.12)' : '1px solid rgba(255,255,255,0.90)',
+                    outline: modoNoturno ? '1px solid rgba(99,179,248,0.08)' : '1.5px solid rgba(160,185,230,0.40)',
+                    outlineOffset:'-1px',
+                    boxShadow: modoNoturno
+                        ? '0 2px 8px rgba(0,0,0,0.30), 0 8px 32px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.14)'
+                        : '0 2px 6px rgba(100,130,200,0.10), 0 8px 28px rgba(100,130,200,0.14), inset 0 1.5px 0 rgba(255,255,255,1)',
+                    transition:'transform 0.45s cubic-bezier(0.25,0.46,0.45,0.94), box-shadow 0.45s ease',
+                }}
+                onMouseEnter={e => {
+                    if (isTouchDevice()) return;
+                    e.currentTarget.style.transform = 'translateY(-10px)';
+                    e.currentTarget.style.boxShadow = modoNoturno
+                        ? '0 8px 24px rgba(0,0,0,0.40), 0 24px 64px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.18)'
+                        : '0 8px 24px rgba(100,130,200,0.18), 0 24px 64px rgba(100,130,200,0.22), inset 0 1.5px 0 rgba(255,255,255,1)';
+                    startHover();
+                }}
+                onMouseLeave={e => {
+                    if (isTouchDevice()) return;
+                    e.currentTarget.style.transform = 'translateY(0)';
+                    e.currentTarget.style.boxShadow = modoNoturno
+                        ? '0 2px 8px rgba(0,0,0,0.30), 0 8px 32px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.14)'
+                        : '0 2px 6px rgba(100,130,200,0.10), 0 8px 28px rgba(100,130,200,0.14), inset 0 1.5px 0 rgba(255,255,255,1)';
+                    stopHover();
+                }}
+            >                {/* ── IMAGEM ── */}
+                <div className="relative h-48 overflow-hidden bg-slate-100">
+                    <img src={revista.cover}
+                        onError={(e)=>{e.target.onerror=null;e.target.src='https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&q=80&w=400';}}
+                        alt={`Capa ${revista.title}`}
+                        className="w-full h-full object-cover group-hover:scale-115 transition-transform duration-700 ease-out"
+                        style={{ transformOrigin:'center center', willChange:'transform' }}/>
+                    <div className="absolute inset-0 pointer-events-none z-10 overflow-hidden">
+                        <div className="card-shimmer-sweep" style={{ position:'absolute', top:0, left:0, width:'55%', height:'100%', background:'linear-gradient(105deg, transparent 0%, rgba(255,255,255,0.38) 50%, transparent 100%)', transform:'translateX(-150%) skewX(-18deg)' }}/>
+                    </div>
+                    {/* Logo */}
+                    <div className="absolute top-3 left-3 z-10">
+                        <div style={{ borderRadius:16, background:'rgba(255,255,255,0.82)', backdropFilter:'blur(8px) saturate(140%)', border:'1px solid rgba(255,255,255,0.9)', boxShadow:'0 2px 8px rgba(0,0,0,0.08)', padding:'6px 12px', display:'flex', alignItems:'center', height:40, minWidth:100, justifyContent:'center' }}>
+                            <img src={isDir?'https://i.postimg.cc/crYQS8mh/image.png':'https://i.postimg.cc/R3Q9f9Bc/image.png'} alt={revista.brand} style={{ height:22, maxWidth:85, objectFit:'contain' }}/>
+                        </div>
+                    </div>
+                    {/* Overlay entrega */}
+                    {revista.entrega && (
+                        <div className="absolute inset-0 z-20 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+                            style={{ background:'rgba(255,255,255,0.18)', backdropFilter:'blur(18px) saturate(180%)', WebkitBackdropFilter:'blur(18px) saturate(180%)' }}>
+                            {(()=>{
+                                const meses=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+                                if(revista.entrega==='Entregue') return(<div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:4}}><span style={{fontSize:24,fontWeight:900,color:'#fff',textShadow:'0 2px 16px rgba(0,0,0,0.6)',lineHeight:1.1}}>Entregue!</span><span style={{fontSize:11,fontWeight:600,color:'rgba(255,255,255,0.8)',letterSpacing:'0.15em',textTransform:'uppercase'}}>pronto pra morar</span></div>);
+                                const p=revista.entrega.split('/');
+                                const mes=meses[parseInt(p[0])-1]||'';
+                                const ano=p[1]||p[0];
+                                const hoje=new Date();
+                                const diff=(parseInt(p[1])-hoje.getFullYear())*12+(parseInt(p[0])-(hoje.getMonth()+1));
+                                const restante=diff>0?`faltam ${diff} ${diff===1?'mês':'meses'}`:'chegando!';
+                                return(<div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:1}}><span style={{fontSize:10,fontWeight:700,color:'rgba(255,255,255,0.55)',letterSpacing:'0.3em',textTransform:'uppercase'}}>entrega</span><span style={{fontSize:46,fontWeight:900,color:'#fff',letterSpacing:'-0.04em',textShadow:'0 4px 24px rgba(0,0,0,0.5)',lineHeight:0.95}}>{ano}</span><span style={{fontSize:14,fontWeight:800,color:'rgba(255,255,255,0.9)',letterSpacing:'0.08em',textTransform:'uppercase'}}>{mes}</span><div style={{marginTop:10,padding:'4px 12px',borderRadius:999,background:'rgba(255,255,255,0.22)',backdropFilter:'blur(8px)',border:'1px solid rgba(255,255,255,0.3)'}}><span style={{fontSize:11,fontWeight:800,color:'#fff'}}>{restante}</span></div></div>);
+                            })()}
+                        </div>
+                    )}
+                </div>
+
+                {/* ── INFOS ── */}
+                <div className="p-5 flex flex-col flex-grow">
+                    <h3 className={`text-xl font-bold mb-2 ${modoNoturno?'text-white':'text-slate-800'}`}>{revista.title}</h3>
+                    <div className="flex flex-col gap-2 mb-6">
+                        <div className="flex items-center text-slate-500 text-sm gap-2">
+                            <MapPin size={16} className="text-slate-400 shrink-0"/>
+                            <span className={`line-clamp-1 ${modoNoturno?'text-slate-400':''}`}>{revista.region}</span>
+                        </div>
+                        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mt-1">
+                            <div className="flex items-center text-slate-500 text-sm gap-1.5"><Maximize size={16} className="text-slate-400 shrink-0"/><span className={modoNoturno?'text-slate-400':''}>{revista.size}</span></div>
+                            <div className="flex items-center text-slate-500 text-sm gap-1.5"><Bed size={16} className="text-slate-400 shrink-0"/><span className={modoNoturno?'text-slate-400':''}>{revista.bedrooms}</span></div>
+                            <div className="flex items-center text-slate-500 text-sm gap-1.5"><LayoutGrid size={16} className="text-slate-400 shrink-0"/><span className={modoNoturno?'text-slate-400':''}>{revista.flooring}</span></div>
+                        </div>
+                    </div>
+                    <div className="mt-auto flex flex-col gap-2">
+                        <RippleButton onClick={handleVerRevista}
+                            className={`w-full flex items-center justify-center gap-2 py-3 rounded-2xl font-semibold transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg ${isDir?'bg-gradient-to-r from-orange-500 via-red-500 to-orange-600 hover:from-orange-600 hover:to-red-600 shadow-orange-300/30 text-white':'bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 hover:from-blue-700 hover:to-indigo-700 shadow-blue-300/30 text-white'}`}>
+                            <BookOpen size={18}/> Ver Revista
+                        </RippleButton>
+                        <RippleButton onClick={handleVerPois}
+                            className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-2xl font-semibold transition-colors duration-200 border text-sm ${modoNoturno?'bg-slate-700 border-slate-600 text-slate-200 hover:bg-slate-600':'bg-slate-100 border-slate-200 text-slate-700 hover:bg-slate-200'}`}>
+                            <MapPin size={16} className="text-rose-500"/> Ver Pontos de Referência
+                        </RippleButton>
+                    </div>
+                </div>
+            </div>
+        </>
     );
 }
 
@@ -214,7 +737,7 @@ export default function App() {
     const [revistasData] = useState(revistasDataLocal);
     const [activeBrand, setActiveBrand] = useState('Direcional');
     const [fraseDoDia] = useState(frasesMotivacionais[dayIndex % frasesMotivacionais.length]);
-    const [imagemDoDia] = useState("https://i.postimg.cc/fbzc1rWb/Copia-de-IMG-1659.jpg");
+    const [imagemDoDia] = useState(imagensEquipeDiarias[dayIndex % imagensEquipeDiarias.length]);
     const [modoNoturno, setModoNoturno] = useState(() => localStorage.getItem('modoNoturno') === 'true');
     const [bannerFocusY, setBannerFocusY] = useState('30%');
 
@@ -2074,131 +2597,15 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
                         ) : (
                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                                 {filteredRevistas.map((revista, cardIdx) => (
-                                    <div key={revista.id}
-                                        className="card-entry overflow-hidden flex flex-col group"
-                                        style={{
-                                            animationDelay: `${cardIdx * 90}ms`,
-                                            transition: 'transform 0.45s cubic-bezier(0.25,0.46,0.45,0.94), box-shadow 0.45s ease, background 0.45s ease',
-                                            position: 'relative',
-                                            borderRadius: '24px',
-                                            background: modoNoturno ? 'rgba(255,255,255,0.07)' : 'rgba(255,255,255,0.55)',
-                                            backdropFilter: 'blur(28px) saturate(200%) brightness(1.02)',
-                                            WebkitBackdropFilter: 'blur(28px) saturate(200%) brightness(1.02)',
-                                            border: modoNoturno ? '1px solid rgba(255,255,255,0.12)' : '1px solid rgba(255,255,255,0.90)',
-                                            outline: modoNoturno ? '1px solid rgba(99,179,248,0.08)' : '1.5px solid rgba(160,185,230,0.40)',
-                                            outlineOffset: '-1px',
-                                            boxShadow: modoNoturno
-                                                ? '0 2px 8px rgba(0,0,0,0.30), 0 8px 32px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.14), inset 0 -1px 0 rgba(0,0,0,0.12)'
-                                                : '0 2px 6px rgba(100,130,200,0.10), 0 8px 28px rgba(100,130,200,0.14), inset 0 1.5px 0 rgba(255,255,255,1), inset 0 -1px 0 rgba(100,130,200,0.10)',
-                                        }}
-                                        onMouseEnter={e => {
-                                            const el = e.currentTarget;
-                                            el.style.transform = 'translateY(-10px)';
-                                            el.style.boxShadow = modoNoturno
-                                                ? '0 8px 24px rgba(0,0,0,0.40), 0 24px 64px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.18)'
-                                                : '0 8px 24px rgba(100,130,200,0.18), 0 24px 64px rgba(100,130,200,0.22), inset 0 1.5px 0 rgba(255,255,255,1)';
-                                        }}
-                                        onMouseLeave={e => {
-                                            const el = e.currentTarget;
-                                            el.style.transform = 'translateY(0)';
-                                            el.style.boxShadow = modoNoturno
-                                                ? '0 2px 8px rgba(0,0,0,0.30), 0 8px 32px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.14), inset 0 -1px 0 rgba(0,0,0,0.12)'
-                                                : '0 2px 6px rgba(100,130,200,0.10), 0 8px 28px rgba(100,130,200,0.14), inset 0 1.5px 0 rgba(255,255,255,1), inset 0 -1px 0 rgba(100,130,200,0.10)';
-                                        }}
-                                    >
-                                        <div aria-hidden="true" style={{ position:'absolute', top:0, left:0, right:0, height:'38%', zIndex:1, pointerEvents:'none', background: modoNoturno ? 'linear-gradient(180deg, rgba(255,255,255,0.10) 0%, rgba(255,255,255,0.03) 60%, transparent 100%)' : 'linear-gradient(180deg, rgba(255,255,255,0.72) 0%, rgba(255,255,255,0.22) 55%, transparent 100%)', borderRadius:'24px 24px 0 0' }}/>
-                                        <div aria-hidden="true" style={{ position:'absolute', top:'10%', left:0, bottom:'10%', width:'1px', zIndex:1, pointerEvents:'none', background: modoNoturno ? 'linear-gradient(180deg, transparent 0%, rgba(255,255,255,0.20) 35%, rgba(255,255,255,0.28) 65%, transparent 100%)' : 'linear-gradient(180deg, transparent 0%, rgba(255,255,255,0.90) 35%, rgba(255,255,255,0.95) 65%, transparent 100%)' }}/>
-                                        <div className="relative h-48 overflow-hidden bg-slate-100">
-                                            <img src={revista.cover} onError={(e) => { e.target.onerror = null; e.target.src = 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&q=80&w=400'; }} alt={`Capa ${revista.title}`} className="w-full h-full object-cover group-hover:scale-115 transition-transform duration-700 ease-out" style={{ transformOrigin: 'center center', willChange: 'transform' }} />
-                                            {/* Shimmer sweep no hover */}
-                                            <div className="absolute inset-0 pointer-events-none z-10 overflow-hidden">
-                                                <div className="card-shimmer-sweep" style={{ position:'absolute', top:0, left:0, width:'55%', height:'100%', background:'linear-gradient(105deg, transparent 0%, rgba(255,255,255,0.38) 50%, transparent 100%)', transform:'translateX(-150%) skewX(-18deg)', transition:'none' }} />
-                                            </div>
-                                            {/* Badge NOVO */}
-                                            {/* Logo — sempre visível */}
-                                            <div className="absolute top-3 left-3 z-10">
-                                                <div className="px-3 py-1.5 flex items-center justify-center h-10 min-w-[100px]"
-                                                    style={{
-                                                        borderRadius: 16,
-                                                        background: 'rgba(255,255,255,0.82)',
-                                                        backdropFilter: 'blur(8px) saturate(140%)',
-                                                        WebkitBackdropFilter: 'blur(8px) saturate(140%)',
-                                                        border: '1px solid rgba(255,255,255,0.9)',
-                                                        boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
-                                                    }}>
-                                                    <img src={revista.brand === 'Direcional' ? 'https://i.postimg.cc/crYQS8mh/image.png' : 'https://i.postimg.cc/R3Q9f9Bc/image.png'} alt={revista.brand} className="h-full max-h-[22px] w-auto max-w-[85px] object-contain" />
-                                                </div>
-                                            </div>
-                                            {/* Overlay data de entrega — aparece no hover */}
-                                            {revista.entrega && (
-                                                <div className="absolute inset-0 z-20 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-500"
-                                                    style={{
-                                                        background: 'rgba(255,255,255,0.18)',
-                                                        backdropFilter: 'blur(18px) saturate(180%)',
-                                                        WebkitBackdropFilter: 'blur(18px) saturate(180%)',
-                                                    }}>
-                                                    {(() => {
-                                                        const meses = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
-                                                        if (revista.entrega === 'Entregue') return (
-                                                            <div style={{display:'flex', flexDirection:'column', alignItems:'center', gap:'4px'}}>
-                                                                
-                                                                <span style={{fontSize:'24px', fontWeight:900, color:'#fff', textShadow:'0 2px 16px rgba(0,0,0,0.6)', lineHeight:1.1}}>Entregue!</span>
-                                                                <span style={{fontSize:'11px', fontWeight:600, color:'rgba(255,255,255,0.8)', letterSpacing:'0.15em', textTransform:'uppercase', marginTop:'2px'}}>pronto pra morar</span>
-                                                            </div>
-                                                        );
-                                                        const partes = revista.entrega.split('/');
-                                                        const mesIdx = parseInt(partes[0]) - 1;
-                                                        const mes = meses[mesIdx] || '';
-                                                        const ano = partes[1] || partes[0];
-                                                        const hoje = new Date();
-                                                        const diff = (parseInt(partes[1]) - hoje.getFullYear()) * 12 + (parseInt(partes[0]) - (hoje.getMonth()+1));
-                                                        
-                                                        const restante = diff > 0 ? `faltam ${diff} ${diff === 1 ? 'mês' : 'meses'}` : 'chegando!';
-                                                        return (
-                                                            <div style={{display:'flex', flexDirection:'column', alignItems:'center', gap:'1px'}}>
-                                                                <span style={{fontSize:'10px', fontWeight:700, color:'rgba(255,255,255,0.55)', letterSpacing:'0.3em', textTransform:'uppercase'}}>entrega</span>
-                                                                <span style={{fontSize:'46px', fontWeight:900, color:'#fff', letterSpacing:'-0.04em', textShadow:'0 4px 24px rgba(0,0,0,0.5)', lineHeight:0.95}}>{ano}</span>
-                                                                <span style={{fontSize:'14px', fontWeight:800, color:'rgba(255,255,255,0.9)', letterSpacing:'0.08em', textTransform:'uppercase', textShadow:'0 1px 8px rgba(0,0,0,0.4)'}}>{mes}</span>
-                                                                <div style={{marginTop:'10px', padding:'4px 12px', borderRadius:'999px', background:'rgba(255,255,255,0.22)', backdropFilter:'blur(8px)', border:'1px solid rgba(255,255,255,0.3)', display:'flex', alignItems:'center', justifyContent:'center'}}>
-                                                                    <span style={{fontSize:'11px', fontWeight:800, color:'#fff', letterSpacing:'0.04em'}}>{restante}</span>
-                                                                </div>
-                                                            </div>
-                                                        );
-                                                    })()}
-                                                </div>
-                                            )}
-                                        </div>
-                                        <div className="p-5 flex flex-col flex-grow">
-                                            <h3 className={`text-xl font-bold mb-2 ${modoNoturno ? 'text-white' : 'text-slate-800'}`}>{revista.title}</h3>
-                                            <div className="flex flex-col gap-2 mb-6">
-                                                <div className="flex items-center text-slate-500 text-sm gap-2">
-                                                    <MapPin size={16} className="text-slate-400 shrink-0" />
-                                                    <span className={`line-clamp-1 ${modoNoturno ? 'text-slate-400' : ''}`}>{revista.region}</span>
-                                                </div>
-                                                <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mt-1">
-                                                    <div className="flex items-center text-slate-500 text-sm gap-1.5"><Maximize size={16} className="text-slate-400 shrink-0" /><span className={modoNoturno ? 'text-slate-400' : ''}>{revista.size}</span></div>
-                                                    <div className="flex items-center text-slate-500 text-sm gap-1.5"><Bed size={16} className="text-slate-400 shrink-0" /><span className={modoNoturno ? 'text-slate-400' : ''}>{revista.bedrooms}</span></div>
-                                                    <div className="flex items-center text-slate-500 text-sm gap-1.5"><LayoutGrid size={16} className="text-slate-400 shrink-0" /><span className={modoNoturno ? 'text-slate-400' : ''}>{revista.flooring}</span></div>
-                                                </div>
-
-                                            </div>
-                                            <div className="mt-auto flex flex-col gap-2">
-                                                <RippleButton
-                                                    onClick={() => {
-                                                        haptic('medium');
-                                                        const previewUrl = revista.link
-                                                            .replace(/\/view(\?.*)?$/, '/preview');
-                                                        setPdfLeitor({ title: revista.title, url: previewUrl, brand: revista.brand });
-                                                    }}
-                                                    className={`w-full flex items-center justify-center gap-2 py-3 rounded-2xl font-semibold transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg ${revista.brand === 'Direcional' ? 'bg-gradient-to-r from-orange-500 via-red-500 to-orange-600 hover:from-orange-600 hover:to-red-600 shadow-orange-300/30 text-white' : 'bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 hover:from-blue-700 hover:to-indigo-700 shadow-blue-300/30 text-white'}`}>
-                                                    <BookOpen size={18} /> Ver Revista
-                                                </RippleButton>
-                                                <RippleButton onClick={() => { haptic(); setSelectedPois(revista); }} className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-2xl font-semibold transition-colors duration-200 border text-sm ${modoNoturno ? 'bg-slate-700 border-slate-600 text-slate-200 hover:bg-slate-600' : 'bg-slate-100 border-slate-200 text-slate-700 hover:bg-slate-200'}`}>
-                                                    <MapPin size={16} className="text-rose-500" /> Ver Pontos de Referência
-                                                </RippleButton>
-                                            </div>
-                                        </div>
-                                    </div>
+                                    <CardRevista
+                                        key={revista.id}
+                                        revista={revista}
+                                        cardIdx={cardIdx}
+                                        modoNoturno={modoNoturno}
+                                        haptic={haptic}
+                                        setPdfLeitor={setPdfLeitor}
+                                        setSelectedPois={setSelectedPois}
+                                    />
                                 ))}
                             </div>
                         )}

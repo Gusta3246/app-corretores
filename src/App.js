@@ -2448,6 +2448,127 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
             </header>
 
             <main className="main-content max-w-5xl mx-auto px-4 sm:px-6 lg:px-8" style={{ paddingTop: `${headerHeight}px` }}>
+
+            {/* ── RANKING SIDEBAR ── */}
+            <style>{`
+                .dst-rank { display:none !important; }
+                @media (min-width:1500px) { .dst-rank { display:flex !important; } }
+                .dst-rank::-webkit-scrollbar { display:none; }
+                @keyframes dst-shine {
+                    0%   { transform: translateX(-150%) skewX(-18deg); }
+                    100% { transform: translateX(280%)  skewX(-18deg); }
+                }
+                @keyframes dst-bar-load {
+                    0%   { width: 0%; }
+                    100% { width: var(--bar-w); }
+                }
+                .dst-bar-fill {
+                    animation: dst-bar-load 1.2s cubic-bezier(0.22,1,0.36,1) both;
+                }
+                .dst-rc { transition: border-color 0.22s ease; position:relative; overflow:hidden; cursor:default; }
+                .dst-rc:hover { border-color: ${modoNoturno ? 'rgba(255,255,255,.18)' : 'rgba(0,0,0,.18)'} !important; }
+                .dst-rc:hover .dst-shine { animation: dst-shine 0.65s cubic-bezier(0.25,0.46,0.45,0.94) forwards; }
+            `}</style>
+            <div className="dst-rank" style={{
+                position:'fixed',
+                right: 'calc(50% + 520px)',
+                top: headerHeight + 16,
+                width: 220,
+                height: `calc(100vh - ${headerHeight + 32}px)`,
+                zIndex: 20,
+                flexDirection:'column',
+            }}>
+                {/* título */}
+                <div style={{ display:'flex', alignItems:'center', gap:7, marginBottom:10, flexShrink:0 }}>
+                    <div style={{ flex:1, height:1, background: modoNoturno ? 'rgba(255,255,255,.07)' : 'rgba(0,0,0,.07)' }}/>
+                    <span style={{ fontSize:8, fontWeight:700, letterSpacing:'.26em', textTransform:'uppercase', color: modoNoturno ? 'rgba(255,255,255,.20)' : 'rgba(0,0,0,.25)' }}>RANKING</span>
+                    <div style={{ flex:1, height:1, background: modoNoturno ? 'rgba(255,255,255,.07)' : 'rgba(0,0,0,.07)' }}/>
+                </div>
+
+                {[
+                    { label:'DIAMANTE', topColor:'#60a5fa', bar:1.00, barH:2,
+                        rows:[['PRO SOLUTO','25%'],['FINANC. 84X','50%'],['COMP. RENDA','20%']] },
+                    { label:'OURO',     topColor:'#fbbf24', bar:.80,  barH:2,
+                        rows:[['PRO SOLUTO','20%'],['FINANC. 84X','50%'],['COMP. RENDA','20%']] },
+                    { label:'PRATA',    topColor:'#94a3b8', bar:.72,  barH:2,
+                        rows:[['PRO SOLUTO','18%'],['FINANC. 84X','48%'],['COMP. RENDA','18%']] },
+                    { label:'BRONZE',   topColor:'#fb923c', bar:.60,  barH:2,
+                        rows:[['PRO SOLUTO','15%'],['FINANC. 84X','45%'],['COMP. RENDA','15%']] },
+                    { label:'AÇO',      topColor:'#64748b', bar:.48,  barH:2,
+                        rows:[['PRO SOLUTO','12%'],['FINANC. 84X','40%'],['COMP. RENDA','10%']] },
+                ].map((r, i) => {
+                    const c  = modoNoturno ? 'rgba(255,255,255,' : 'rgba(0,0,0,';
+                    const lightGradients = {
+                        'DIAMANTE': 'linear-gradient(135deg, rgba(255,255,255,0.90) 0%, rgba(255,255,255,0.30) 50%, rgba(255,255,255,0.05) 100%)',
+                        'OURO':     'linear-gradient(135deg, rgba(255,255,255,0.90) 0%, rgba(255,255,255,0.30) 50%, rgba(255,255,255,0.05) 100%)',
+                        'PRATA':    'linear-gradient(135deg, rgba(255,255,255,0.90) 0%, rgba(255,255,255,0.30) 50%, rgba(255,255,255,0.05) 100%)',
+                        'BRONZE':   'linear-gradient(135deg, rgba(255,255,255,0.90) 0%, rgba(255,255,255,0.30) 50%, rgba(255,255,255,0.05) 100%)',
+                        'AÇO':      'linear-gradient(135deg, rgba(255,255,255,0.90) 0%, rgba(255,255,255,0.30) 50%, rgba(255,255,255,0.05) 100%)',
+                    };
+                    const fixedLight = modoNoturno
+                        ? 'linear-gradient(135deg, rgba(255,255,255,0.07) 0%, rgba(255,255,255,0.02) 45%, rgba(0,0,0,0.08) 100%)'
+                        : 'linear-gradient(135deg, rgba(255,255,255,0.85) 0%, rgba(255,255,255,0.25) 45%, rgba(0,0,0,0.03) 100%)';
+                    const bg = modoNoturno
+                        ? `${c}.045)`
+                        : lightGradients[r.label];
+                    const borderColor = modoNoturno ? `${c}.08)` : `${r.topColor}44`;
+                    return (
+                        <div key={r.label} className="dst-rc" style={{
+                            flex: '1 1 0%',
+                            marginBottom: 7,
+                            borderRadius: 16,
+                            background: bg,
+                            border: `0.5px solid ${borderColor}`,
+                            padding: '0',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            overflow: 'hidden',
+                            boxShadow: modoNoturno
+                                ? 'none'
+                                : '0 1px 3px rgba(0,0,0,0.06), 0 4px 12px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255,255,255,0.90)',
+                        }}>
+                            {/* linha colorida no topo */}
+                            <div style={{ height: 3, background: r.topColor, flexShrink:0, opacity: modoNoturno ? 0.70 : 0.55 }}/>
+                            {/* conteúdo centralizado */}
+                            <div style={{ display:'flex', flexDirection:'column', alignItems:'center', padding:'10px 12px', flex:1, position:'relative', gap:5 }}>
+                            {/* efeito de luz fixo */}
+                            <div style={{
+                                position:'absolute', inset:0, pointerEvents:'none', zIndex:1,
+                                background: fixedLight,
+                                borderRadius: '0 0 16px 16px',
+                            }}/>
+                            {/* shine sweep */}
+                            <div className="dst-shine" style={{
+                                position:'absolute', top:0, left:0,
+                                width:'55%', height:'100%',
+                                background:'linear-gradient(105deg, transparent 0%, rgba(255,255,255,0.22) 50%, transparent 100%)',
+                                transform:'translateX(-150%) skewX(-18deg)',
+                                pointerEvents:'none', zIndex:10,
+                            }}/>
+                            {/* nome + emoji + barra */}
+                            <div style={{ width:'100%', zIndex:2 }}>
+                                <div style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:6, marginBottom:5 }}>
+                                    <div style={{ width:7, height:7, borderRadius:'50%', background:r.topColor, flexShrink:0 }}/>
+                                    <span style={{ fontSize:11, fontWeight:900, letterSpacing:'.10em', textTransform:'uppercase', color:`${c}.82)`, lineHeight:1 }}>{r.label}</span>
+                                </div>
+                                <div style={{ height:r.barH, borderRadius:2, overflow:'hidden', background:`${c}.08)` }}>
+                                    <div className="dst-bar-fill" style={{ '--bar-w':`${r.bar*100}%`, width:`${r.bar*100}%`, height:'100%', borderRadius:2, background:r.topColor, opacity: modoNoturno ? 0.70 : 0.60, animationDelay:`${0.3 + i*0.12}s` }}/>
+                                </div>
+                            </div>
+                            {/* 3 métricas centralizadas */}
+                            <div style={{ width:'100%', display:'flex', flexDirection:'column', gap:3, zIndex:2, marginTop:1 }}>
+                                {r.rows.map(([lbl,val]) => (
+                                    <div key={lbl} style={{ display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+                                        <span style={{ fontSize:7.5, fontWeight:600, letterSpacing:'.07em', textTransform:'uppercase', color:`${c}.30)` }}>{lbl}</span>
+                                        <span style={{ fontSize:13, fontWeight:900, color:`${c}.82)`, letterSpacing:'-.01em', lineHeight:1 }}>{val}</span>
+                                    </div>
+                                ))}
+                            </div>
+                            </div>{/* fim conteúdo inner */}
+                        </div>
+                    );
+                })}
+            </div>
                 {/* BANNER INSPIRAÇÃO DIÁRIA */}
                 {/* ── BANNER + ABAS ── */}
                 <div className="relative shadow-lg banner-reveal" style={{

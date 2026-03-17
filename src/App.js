@@ -2528,7 +2528,7 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
                                 : '0 1px 3px rgba(0,0,0,0.06), 0 4px 12px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255,255,255,0.90)',
                         }}>
                             {/* linha colorida no topo */}
-                            <div style={{ height: 3, background: r.topColor, flexShrink:0, opacity: modoNoturno ? 0.70 : 0.55 }}/>
+                            <div style={{ height: 2, background: r.topColor, flexShrink:0, opacity: modoNoturno ? 0.70 : 0.55 }}/>
                             {/* conteúdo centralizado */}
                             <div style={{ display:'flex', flexDirection:'column', alignItems:'center', padding:'10px 12px', flex:1, position:'relative', gap:5 }}>
                             {/* efeito de luz fixo */}
@@ -2551,7 +2551,7 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
                                     <div style={{ width:7, height:7, borderRadius:'50%', background:r.topColor, flexShrink:0 }}/>
                                     <span style={{ fontSize:11, fontWeight:900, letterSpacing:'.10em', textTransform:'uppercase', color:`${c}.82)`, lineHeight:1 }}>{r.label}</span>
                                 </div>
-                                <div style={{ height:r.barH, borderRadius:2, overflow:'hidden', background:`${c}.08)` }}>
+                                <div style={{ height:r.barH, borderRadius:2, overflow:'hidden', background: r.bar === 1.00 ? 'transparent' : `${c}.08)` }}>
                                     <div className="dst-bar-fill" style={{ '--bar-w':`${r.bar*100}%`, width:`${r.bar*100}%`, height:'100%', borderRadius:2, background:r.topColor, opacity: modoNoturno ? 0.70 : 0.60, animationDelay:`${0.3 + i*0.12}s` }}/>
                                 </div>
                             </div>

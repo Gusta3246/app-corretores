@@ -2,6 +2,47 @@ import React, { useState, useEffect, useLayoutEffect, useRef } from 'react';
 import { Search, Building, ExternalLink, MapPin, BookOpen, Maximize, Bed, LayoutGrid, Rocket, Quote, Sparkles, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, FileText, TableProperties, BookMarked, HelpCircle, Calculator, Bot, X, Send, Wand2, Paperclip, File as FileIcon, Trash2, FolderPlus, GripVertical, Plus, MessageCircle, Moon, Sun, AlertTriangle, Book, GalleryHorizontal, Clock } from 'lucide-react';
 import { buscarRespostaDoRobo, buscarRespostaGemini } from './bot/dadosFinanciamento.js';
 
+// === LOGOS DOS EMPREENDIMENTOS ===
+const LOGOS_EMPREENDIMENTO = {
+  brisas: "https://i.postimg.cc/CxkWjBFf/Copia-de-LOGO-COLORIDO-PREFERENCIAL.png",
+  orquidea: "https://i.postimg.cc/nhbz1mt3/Copia-de-DIR-Orquidea-Logo-FINAL.png",
+  village_torres: "https://i.postimg.cc/fyVL8jL3/Logo-Village-Torres.png",
+  conquista_jb: "https://i.postimg.cc/7h56KM6G/Ativo-1.png",
+  viva_coral: "https://i.postimg.cc/3RSNjbKh/Copia-de-Logo-Viva-Vida-Coral.png",
+  jardim_norte: "https://i.postimg.cc/zv4f6bbp/Copia-de-DIR-Jd-Norte-Logo-FINAL-Prancheta-1.png",
+  rio_amazonas: "https://i.postimg.cc/D0SZxdZP/DIR-Rio-AM-logo-AZUL.png",
+  bosque_torres: "https://i.postimg.cc/Kj1z0rzs/Copia-de-Logo-Bosque-das-Torres-Prancheta-1.png",
+  lirio_azul: "https://i.postimg.cc/Wzd3563y/Copia-de-DIR-PVLirio-Azul-Logo.png",
+  boulevard_classic: "https://i.postimg.cc/6qbHXwBJ/Logo-AMAZOM-BOULEVARD-CLASSIC.png",
+  boulevard_prime: "https://i.postimg.cc/PJV6jhdG/Copia-de-LOGO-AMAZON-BOULEVARD-PRIME-OK-01.png",
+  oasis_azzure: "https://i.postimg.cc/bJCr0Fzk/Copia-de-LOGO-OASIS-AZZURE-BRANCA.png",
+  zenith: "https://i.postimg.cc/gjtMWdGb/ZENITH-LOGO-ORIGINAL.png",
+  topazio: "https://i.postimg.cc/qqNR1XRR/DIR-CTopazio-Logo-Prancheta-1.png",
+  rio_negro: "https://i.postimg.cc/NFKMd7M6/DIR-Conquista-Rio-Negro-Logo.png",
+  rio_tapajos: "https://i.postimg.cc/xCx8GF0c/Copia-de-DIR-Rio-Tapajos-logo.png",
+};
+
+// Map revista id -> logo key
+const REVISTA_LOGO_MAP = {
+  1: 'brisas',
+  2: 'orquidea',
+  3: 'village_torres',
+  4: 'conquista_jb',
+  5: 'viva_coral',
+  6: 'jardim_norte',
+  7: 'rio_amazonas',
+  8: 'bosque_torres',
+  9: 'lirio_azul',
+  10: 'boulevard_classic',
+  11: 'boulevard_prime',
+  12: 'oasis_azzure',
+  13: 'zenith',
+  14: 'topazio',
+  16: 'rio_negro',
+  17: 'rio_tapajos',
+};
+
+
 
 // === DADOS DAS REVISTAS E BASE DE CONHECIMENTO DO CHATBOT ===
 const D = 'https://www.direcional.com.br/wp-content/uploads';
@@ -502,13 +543,17 @@ function BannerExpandido({ revista, onClose, modoNoturno, onVerRevista, onVerPoi
                         <div style={{ position:'absolute', inset:0, pointerEvents:'none', zIndex:3,
                             background:'linear-gradient(to top, rgba(0,0,0,0.72) 0%, rgba(0,0,0,0.06) 50%, transparent 100%)' }}/>
 
-                        {/* Badge marca */}
-                        <div style={{ position:'absolute', top:16, left:16, zIndex:6,
-                            background:'rgba(255,255,255,0.94)', borderRadius:12, padding:'5px 14px',
-                            display:'flex', alignItems:'center', height:36, boxShadow:'0 2px 10px rgba(0,0,0,0.14)' }}>
-                            <img src={isDir ? 'https://i.postimg.cc/crYQS8mh/image.png' : 'https://i.postimg.cc/R3Q9f9Bc/image.png'}
-                                alt={revista.brand} style={{ height:19, maxWidth:84, objectFit:'contain' }}/>
-                        </div>
+                        {/* Badge logo empreendimento */}
+                        {(() => {
+                            const logoKey = REVISTA_LOGO_MAP[revista.id];
+                            const logoSrc = logoKey ? LOGOS_EMPREENDIMENTO[logoKey] : null;
+                            if (!logoSrc) return null;
+                            return (
+                                <div style={{ position:'absolute', top:16, left:16, zIndex:6, width:150, height:90, display:'flex', alignItems:'flex-start', justifyContent:'flex-start' }}>
+                                    <img src={logoSrc} alt={revista.title} style={{ maxHeight: logoKey === 'brisas' ? 76 : 88, maxWidth: logoKey === 'brisas' ? 148 : 145, width:'auto', height:'auto', objectFit:'contain', objectPosition:'top left', filter:'drop-shadow(0 0 10px rgba(0,0,0,0.95)) drop-shadow(0 3px 16px rgba(0,0,0,0.8)) drop-shadow(0 0 4px rgba(255,255,255,0.3))' }}/>
+                                </div>
+                            );
+                        })()}
 
                         {/* Setas */}
                         {fotos.length > 1 && (<>
@@ -685,11 +730,16 @@ function CardRevista({ revista, cardIdx, modoNoturno, haptic, setPdfLeitor, setS
                     <div className="absolute inset-0 pointer-events-none z-10 overflow-hidden">
                         <div className="card-shimmer-sweep" style={{ position:'absolute', top:0, left:0, width:'55%', height:'100%', background:'linear-gradient(105deg, transparent 0%, rgba(255,255,255,0.38) 50%, transparent 100%)', transform:'translateX(-150%) skewX(-18deg)' }}/>
                     </div>
-                    {/* Logo */}
-                    <div className="absolute top-3 left-3 z-10">
-                        <div style={{ borderRadius:16, background:'rgba(255,255,255,0.82)', backdropFilter:'blur(8px) saturate(140%)', border:'1px solid rgba(255,255,255,0.9)', boxShadow:'0 2px 8px rgba(0,0,0,0.08)', padding:'6px 12px', display:'flex', alignItems:'center', height:40, minWidth:100, justifyContent:'center' }}>
-                            <img src={isDir?'https://i.postimg.cc/crYQS8mh/image.png':'https://i.postimg.cc/R3Q9f9Bc/image.png'} alt={revista.brand} style={{ height:22, maxWidth:85, objectFit:'contain' }}/>
-                        </div>
+                    {/* Logo Empreendimento */}
+                    <div style={{ position:'absolute', top:10, left:10, zIndex:10, width:110, height:70, display:'flex', alignItems:'flex-start', justifyContent:'flex-start' }}>
+                        {(() => {
+                            const logoKey = REVISTA_LOGO_MAP[revista.id];
+                            const logoSrc = logoKey ? LOGOS_EMPREENDIMENTO[logoKey] : null;
+                            if (!logoSrc) return null;
+                            return (
+                                <img src={logoSrc} alt={revista.title} style={{ maxHeight: logoKey === 'brisas' ? 62 : 68, maxWidth: logoKey === 'brisas' ? 108 : 105, width:'auto', height:'auto', objectFit:'contain', objectPosition:'top left', filter:'drop-shadow(0 0 8px rgba(0,0,0,0.9)) drop-shadow(0 2px 12px rgba(0,0,0,0.7)) drop-shadow(0 0 3px rgba(255,255,255,0.25))' }}/>
+                            );
+                        })()}
                     </div>
                     {/* Overlay entrega */}
                     {revista.entrega && (

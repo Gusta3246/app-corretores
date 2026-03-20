@@ -651,7 +651,7 @@ function BannerExpandido({ revista, onClose, modoNoturno, onVerRevista, onVerPoi
 }
 
 // ── CardRevista — hover 1.7s desktop apenas abre modal ───────────────────────
-function CardRevista({ revista, cardIdx, modoNoturno, haptic, setPdfLeitor, setSelectedPois }) {
+function CardRevista({ revista, cardIdx, modoNoturno, haptic, setPdfLeitor, setSelectedPois, setPdfLeitorLogoAnim }) {
     const DELAY = 1700;
     const [expanded, setExpanded] = useState(false);
     const timerRef = useRef(null);
@@ -671,7 +671,17 @@ function CardRevista({ revista, cardIdx, modoNoturno, haptic, setPdfLeitor, setS
     const handleVerRevista = () => {
         haptic('medium');
         const previewUrl = revista.link.replace(/\/view(\?.*)?$/, '/preview');
-        setPdfLeitor({ title: revista.title, url: previewUrl, brand: revista.brand });
+        const logoKey = REVISTA_LOGO_MAP[revista.id];
+        const logoSrc = logoKey ? LOGOS_EMPREENDIMENTO[logoKey] : null;
+        if (logoSrc && setPdfLeitorLogoAnim) {
+            setPdfLeitorLogoAnim({ logoSrc, brand: revista.brand, title: revista.title });
+            setTimeout(() => {
+                setPdfLeitorLogoAnim(null);
+                setPdfLeitor({ title: revista.title, url: previewUrl, brand: revista.brand });
+            }, 2200);
+        } else {
+            setPdfLeitor({ title: revista.title, url: previewUrl, brand: revista.brand });
+        }
     };
     const handleVerPois = () => { haptic(); setSelectedPois(revista); };
 
@@ -790,8 +800,231 @@ function CardRevista({ revista, cardIdx, modoNoturno, haptic, setPdfLeitor, setS
     );
 }
 
+// ── HintPills — aparecem uma vez e voam pro botão do chat ──────────────────────
+const HINT_PILLS_DATA = [
+    {
+        label: 'Pasta',
+        color: 'linear-gradient(135deg,#6366f1,#4f46e5)',
+        glow: 'rgba(99,102,241,0.7)',
+        icon: <path d="M3 7a2 2 0 012-2h3.586a1 1 0 01.707.293L10.707 6.7A1 1 0 0011.414 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V7z" fill="white"/>,
+    },
+    {
+        label: 'Pasta Rápida IA',
+        color: 'linear-gradient(135deg,#f97316,#ef4444)',
+        glow: 'rgba(249,115,22,0.7)',
+        icon: <polygon points="13,2 3,14 12,14 11,22 21,10 12,10" fill="white"/>,
+    },
+    {
+        label: 'Taxas Docs',
+        color: 'linear-gradient(135deg,#0ea5e9,#0369a1)',
+        glow: 'rgba(14,165,233,0.7)',
+        icon: <><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" fill="white"/><polyline points="14,2 14,8 20,8" fill="none" stroke="rgba(255,255,255,0.5)" strokeWidth="2"/></>,
+    },
+];
+
+function HintPills({ onPhaseChange }) {
+    const [phase, setPhase] = useState('idle'); // idle → show → fly → gone
+
+    useEffect(() => {
+        if (sessionStorage.getItem('dst_hint_done')) return;
+        // Sequência:
+        // 5.8s  — começa a entrar (escalonado por pill)
+        // 8.5s  — inicia saída voando pro chat
+        // 9.4s  — remove do DOM e grava sessão
+        const t1 = setTimeout(() => { setPhase('show'); onPhaseChange && onPhaseChange('show'); }, 5800);
+        const t2 = setTimeout(() => { setPhase('fly'); onPhaseChange && onPhaseChange('fly'); }, 8500);
+        const t3 = setTimeout(() => {
+            setPhase('gone');
+            onPhaseChange && onPhaseChange('gone');
+            sessionStorage.setItem('dst_hint_done', '1');
+        }, 9400);
+        return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); };
+    }, []);
+
+    if (phase === 'idle' || phase === 'gone') return null;
+
+    // Cada pill tem sua própria animação CSS via keyframes nomeadas
+    // Entrada: cai de cima com bounce + brilho
+    // Saída: voa para o canto inferior direito encolhendo
+    const pillAnims = HINT_PILLS_DATA.map((_, i) => ({
+        enter: `hint-enter-${i}`,
+        delay: `${i * 0.18}s`,
+    }));
+
+    return (
+        <>
+            <style>{`
+                /* ── ENTRADA — cada pill cai do topo com bounce e brilho ── */
+                @keyframes hint-enter-0 {
+                    0%   { opacity:0; transform: translateX(120px) translateY(-30px) rotate(12deg) scale(0.4); }
+                    55%  { opacity:1; transform: translateX(-8px)  translateY(4px)   rotate(-2deg) scale(1.08); }
+                    75%  { transform: translateX(4px) translateY(-2px) rotate(1deg)  scale(0.97); }
+                    100% { opacity:1; transform: translateX(0)      translateY(0)     rotate(0deg)  scale(1); }
+                }
+                @keyframes hint-enter-1 {
+                    0%   { opacity:0; transform: translateX(140px) translateY(-20px) rotate(8deg)  scale(0.35); }
+                    55%  { opacity:1; transform: translateX(-6px)  translateY(3px)   rotate(-2deg) scale(1.06); }
+                    75%  { transform: translateX(3px) translateY(-1px) rotate(1deg)  scale(0.98); }
+                    100% { opacity:1; transform: translateX(0)      translateY(0)     rotate(0deg)  scale(1); }
+                }
+                @keyframes hint-enter-2 {
+                    0%   { opacity:0; transform: translateX(160px) translateY(-10px) rotate(5deg)  scale(0.3); }
+                    55%  { opacity:1; transform: translateX(-5px)  translateY(2px)   rotate(-1deg) scale(1.05); }
+                    75%  { transform: translateX(2px) translateY(-1px) rotate(0deg)  scale(0.98); }
+                    100% { opacity:1; transform: translateX(0)      translateY(0)     rotate(0deg)  scale(1); }
+                }
+                /* ── SAÍDA — pills voam para o botão do chat ── */
+                @keyframes hint-fly-0 {
+                    0%   { opacity:1; transform: translateX(0)    translateY(0)    scale(1);    filter: brightness(1); }
+                    30%  {            transform: translateX(10px) translateY(-8px) scale(1.1);  filter: brightness(1.4); }
+                    100% { opacity:0; transform: translateX(60px) translateY(90px) scale(0.05); filter: brightness(2); }
+                }
+                @keyframes hint-fly-1 {
+                    0%   { opacity:1; transform: translateX(0)    translateY(0)    scale(1);    filter: brightness(1); }
+                    30%  {            transform: translateX(8px)  translateY(-5px) scale(1.08); filter: brightness(1.4); }
+                    100% { opacity:0; transform: translateX(55px) translateY(75px) scale(0.05); filter: brightness(2); }
+                }
+                @keyframes hint-fly-2 {
+                    0%   { opacity:1; transform: translateX(0)    translateY(0)    scale(1);    filter: brightness(1); }
+                    30%  {            transform: translateX(6px)  translateY(-4px) scale(1.06); filter: brightness(1.4); }
+                    100% { opacity:0; transform: translateX(50px) translateY(60px) scale(0.05); filter: brightness(2); }
+                }
+                /* ── SHINE sweep nas pills ── */
+                @keyframes hint-shine {
+                    0%   { left: -80%; }
+                    100% { left: 160%; }
+                }
+            `}</style>
+
+            <div style={{
+                position: 'fixed',
+                bottom: 108,
+                right: 36,
+                zIndex: 44,
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'flex-end',
+                gap: 10,
+                pointerEvents: 'none',
+            }}>
+                {HINT_PILLS_DATA.map((p, i) => (
+                    <div key={i} style={{
+                        position: 'relative',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 8,
+                        padding: '9px 16px 9px 10px',
+                        borderRadius: 99,
+                        background: p.color,
+                        color: '#fff',
+                        fontSize: 11.5,
+                        fontWeight: 800,
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.08em',
+                        boxShadow: `0 0 0 1.5px rgba(255,255,255,0.15), 0 4px 20px ${p.glow}, 0 2px 6px rgba(0,0,0,0.3)`,
+                        whiteSpace: 'nowrap',
+                        overflow: 'hidden',
+                        // Animação: entrada ou saída dependendo da fase
+                        animation: phase === 'show'
+                            ? `hint-enter-${i} 0.65s cubic-bezier(0.22,1,0.36,1) ${pillAnims[i].delay} both`
+                            : `hint-fly-${i} 0.65s cubic-bezier(0.55,0,1,0.45) ${i * 0.07}s both`,
+                    }}>
+                        {/* Ícone em bolinha */}
+                        <div style={{
+                            width: 22, height: 22, borderRadius: '50%',
+                            background: 'rgba(255,255,255,0.22)',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            flexShrink: 0,
+                        }}>
+                            <svg width="11" height="11" viewBox="0 0 24 24">{p.icon}</svg>
+                        </div>
+                        {p.label}
+                        {/* Shine sweep */}
+                        <div style={{
+                            position: 'absolute', top: 0, width: '45%', height: '100%',
+                            background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.28), transparent)',
+                            transform: 'skewX(-18deg)',
+                            animation: `hint-shine 2.2s ease-in-out ${0.8 + i * 0.4}s infinite`,
+                            pointerEvents: 'none',
+                        }}/>
+                    </div>
+                ))}
+            </div>
+        </>
+    );
+}
+
+// ── RevistaCloseButton — bloqueia zoom de pinça enquanto revista estiver aberta ──
+function RevistaCloseButton({ onClose }) {
+    useEffect(() => {
+        // Bloqueia pinça no trackpad (wheel+ctrlKey) e gestos nativos Safari
+        const blockZoom = (e) => {
+            if (e.ctrlKey || e.metaKey) { e.preventDefault(); e.stopPropagation(); }
+        };
+        const blockGesture = (e) => { e.preventDefault(); };
+        document.addEventListener('wheel',         blockZoom,    { passive: false, capture: true });
+        document.addEventListener('gesturestart',  blockGesture, { passive: false, capture: true });
+        document.addEventListener('gesturechange', blockGesture, { passive: false, capture: true });
+        document.addEventListener('gestureend',    blockGesture, { passive: false, capture: true });
+        return () => {
+            document.removeEventListener('wheel',         blockZoom,    { capture: true });
+            document.removeEventListener('gesturestart',  blockGesture, { capture: true });
+            document.removeEventListener('gesturechange', blockGesture, { capture: true });
+            document.removeEventListener('gestureend',    blockGesture, { capture: true });
+        };
+    }, []);
+
+    return (
+        <div style={{
+            position: 'fixed', top: 0, left: 0,
+            width: '100vw', height: '0',
+            pointerEvents: 'none',
+            zIndex: 99999,
+        }}>
+            <button
+                onClick={onClose}
+                style={{
+                    pointerEvents: 'all',
+                    position: 'absolute',
+                    top: 'calc(env(safe-area-inset-top, 0px) + 14px)',
+                    left: '14px',
+                    width: 48, height: 48,
+                    borderRadius: '50%',
+                    border: '1.5px solid rgba(255,255,255,0.30)',
+                    background: 'rgba(0,0,0,0.55)',
+                    backdropFilter: 'blur(20px) saturate(180%)',
+                    WebkitBackdropFilter: 'blur(20px) saturate(180%)',
+                    boxShadow: '0 2px 12px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.12)',
+                    cursor: 'pointer',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    color: '#fff',
+                    transition: 'background 0.15s, transform 0.12s',
+                }}
+                onMouseEnter={e => { e.currentTarget.style.background = 'rgba(30,30,30,0.75)'; }}
+                onMouseLeave={e => { e.currentTarget.style.background = 'rgba(0,0,0,0.55)'; }}
+                onMouseDown={e  => { e.currentTarget.style.transform = 'scale(0.90)'; }}
+                onMouseUp={e    => { e.currentTarget.style.transform = 'scale(1)'; }}
+            >
+                <X size={22} strokeWidth={2.5} />
+            </button>
+        </div>
+    );
+}
+
 export default function App() {
     const [headerHeight, setHeaderHeight] = useState(0);
+    // ── HintPills phase — sincroniza estado do botão do chat ──
+    const [hintPhase, setHintPhase] = useState('idle'); // idle | show | fly | gone
+    // ── Splash screen ao entrar no site ──
+    const [splashDone, setSplashDone] = useState(() => sessionStorage.getItem('dst_splash') === '1');
+    const [splashLeaving, setSplashLeaving] = useState(false);
+    useEffect(() => {
+        if (splashDone) return;
+        // Fase 1: mostra logo por 1.8s, depois anima saída
+        const t1 = setTimeout(() => setSplashLeaving(true), 1900);
+        const t2 = setTimeout(() => { setSplashDone(true); sessionStorage.setItem('dst_splash','1'); }, 2550);
+        return () => { clearTimeout(t1); clearTimeout(t2); };
+    }, []);
     // Sticky tabs — abas grudam no header quando banner sai da tela
     const [tabsSticky, setTabsSticky] = useState(false);
     const bannerNavRef = useRef(null);
@@ -856,6 +1089,7 @@ export default function App() {
         const p = { light: 10, medium: 25, heavy: 40, success: [10, 50, 10] };
         navigator.vibrate(p[style] || 10);
     };
+
     // --- LÓGICA DO ROBÔ DE VENDAS ---
   const obterRespostaDoBot = (mensagem) => {
     const texto = mensagem.toLowerCase();
@@ -950,6 +1184,15 @@ export default function App() {
     // Estados para a aba Guia e Modal de POIs
     const [openGuiaIndex, setOpenGuiaIndex] = useState(null);
     const [rankingExpandido, setRankingExpandido] = useState(false);
+    const rankingAnimDoneRef = useRef(false);
+    useEffect(() => {
+        if (rankingAnimDoneRef.current) return;
+        rankingAnimDoneRef.current = true;
+        // Aguarda splash + um momento, depois abre e fecha o ranking para mostrar o recurso
+        const t1 = setTimeout(() => setRankingExpandido(true),  2900);
+        const t2 = setTimeout(() => setRankingExpandido(false), 5200);
+        return () => { clearTimeout(t1); clearTimeout(t2); };
+    }, []);
     const [selectedPois, setSelectedPois] = useState(null);
     const [closingPoi, setClosingPoi] = useState(false);
 
@@ -974,26 +1217,7 @@ export default function App() {
     const [showTaxasDocsModal, setShowTaxasDocsModal] = useState(false);
     const TAXAS_BASE_URL = "https://docs.google.com/spreadsheets/d/1PKNdiepf9c6q2MDQjROS62JNpaW77sN1FbyHN4yDD5g/edit?usp=sharing&rm=minimal";
     const [taxasIframeSrc, setTaxasIframeSrc] = useState(TAXAS_BASE_URL);
-    const [showCotacaoModal, setShowCotacaoModal] = useState(false);
-    const [showCotacaoGate, setShowCotacaoGate] = useState(false);
-    const [showCotacaoSenha, setShowCotacaoSenha] = useState(false);
-    const [cotacaoSenhaInput, setCotacaoSenhaInput] = useState('');
-    const [cotacaoSenhaErro, setCotacaoSenhaErro] = useState(false);
-    const isCotacaoUnlocked = () => {
-        const ts = parseInt(localStorage.getItem('dst_cot_unlock') || '0');
-        return Date.now() - ts < 60 * 60 * 1000; // 1 hora
-    };
 
-
-    const [cotacaoGateSenha, setCotacaoGateSenha] = useState("");
-    const [cotacaoGateErro, setCotacaoGateErro] = useState(false);
-    const cotacaoUnlockedAtRef = useRef(null);
-    const [cotacaoData, setCotacaoData] = useState({ perfil: '', empreendimento: '', valorImovel: '', renda: '', financiamentoBanco: '', subsidio: '', fgts: '', atoCliente: '', parcelaFinanciamento: '', entrega: '', mesesCorrecao: '' });
-    const [cotacaoFile, setCotacaoFile] = useState(null);
-    const [cotacaoLoading, setCotacaoLoading] = useState(false);
-    const [cotacaoResult, setCotacaoResult] = useState(null);
-    const [openRegra, setOpenRegra] = useState(null); // 'planIdx-regraIdx'
-    const cotacaoFileRef = useRef(null);
     const tabRefs = {
         Direcional:  useRef(null),
         Riva:        useRef(null),
@@ -1029,10 +1253,8 @@ export default function App() {
     const [perfilExpandido, setPerfilExpandido] = useState(null);
     const [pastaRapidaCountdown, setPastaRapidaCountdown] = useState(10);
     const pastaRapidaClicksRef = useRef(parseInt(localStorage.getItem('dst_pr_clicks') || '0'));
-    const [showCotacaoInfo, setShowCotacaoInfo] = useState(false);
     const [pdfLeitor, setPdfLeitor] = useState(null); // { title, url, brand } — leitor de revista in-app
-    const [cotacaoInfoCountdown, setCotacaoInfoCountdown] = useState(10);
-    const cotacaoClicksRef = useRef(parseInt(localStorage.getItem('dst_cot_clicks') || '0'));
+    const [pdfLeitorLogoAnim, setPdfLeitorLogoAnim] = useState(null); // { logoSrc, brand } para animação de carregamento
 
     // Hide search bar on mobile scroll down, show on scroll up
     // Pull-to-refresh
@@ -1065,7 +1287,7 @@ export default function App() {
     // Trava scroll do body quando modais/chat estão abertos
     // Quando pdfLeitor está aberto NÃO trava touchAction — o iframe precisa de scroll livre
     useEffect(() => {
-        const shouldLock = isChatOpen || !!selectedPois || showPastaRapidaInfo || showCotacaoModal || !!pdfLeitor;
+        const shouldLock = isChatOpen || !!selectedPois || showPastaRapidaInfo || !!pdfLeitor;
         if (shouldLock) {
             document.body.style.overflow = 'hidden';
             // Se for o leitor de revista, deixa touch livre para o iframe funcionar
@@ -1078,7 +1300,7 @@ export default function App() {
             document.body.style.overflow = '';
             document.body.style.touchAction = '';
         };
-    }, [isChatOpen, selectedPois, showPastaRapidaInfo, showCotacaoModal, pdfLeitor]);
+    }, [isChatOpen, selectedPois, showPastaRapidaInfo, pdfLeitor]);
 
     // Countdown de 10s para o botão "Entendi" do modal Pasta Rápida
     useEffect(() => {
@@ -1093,18 +1315,7 @@ export default function App() {
         return () => clearInterval(interval);
     }, [showPastaRapidaInfo]);
 
-    // Countdown de 10s para o botão "Entendi" do modal Cotação
-    useEffect(() => {
-        if (!showCotacaoInfo) { setCotacaoInfoCountdown(10); return; }
-        setCotacaoInfoCountdown(10);
-        const interval = setInterval(() => {
-            setCotacaoInfoCountdown(prev => {
-                if (prev <= 1) { clearInterval(interval); return 0; }
-                return prev - 1;
-            });
-        }, 1000);
-        return () => clearInterval(interval);
-    }, [showCotacaoInfo]);
+
 
     // ESTADO PARA AS FRASES AMIGÁVEIS DO ROBÔ E CONTROLE DE SCROLL
     const [robotPhraseIndex, setRobotPhraseIndex] = useState(0);
@@ -1362,7 +1573,7 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
         }
     };
 
-    // Versão para cotação: renderiza TODAS as páginas empilhadas num único canvas
+    // Versão alternativa: renderiza TODAS as páginas empilhadas num único can
     // para a IA ver o documento inteiro (parcela, entrega costumam ficar em pág 2+)
     const generatePdfAllPages = async (file) => {
         try {
@@ -2240,30 +2451,8 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }, [chatMessages]);
 
-    // Ctrl+V no modal de cotação — captura imagem da área de transferência
-    useEffect(() => {
-        if (!showCotacaoModal) return;
-        const handlePaste = async (e) => {
-            const items = e.clipboardData?.items;
-            if (!items) return;
-            for (const item of items) {
-                if (item.type.startsWith('image/')) {
-                    const blob = item.getAsFile();
-                    if (!blob) continue;
-                    const file = new File([blob], 'print_colado.png', { type: item.type });
-                    const dt = new DataTransfer();
-                    dt.items.add(file);
-                    if (cotacaoFileRef.current) {
-                        cotacaoFileRef.current.files = dt.files;
-                        cotacaoFileRef.current.dispatchEvent(new Event('change', { bubbles: true }));
-                    }
-                    return;
-                }
-            }
-        };
-        document.addEventListener('paste', handlePaste);
-        return () => document.removeEventListener('paste', handlePaste);
-    }, [showCotacaoModal]);
+    // Ctrl+V — captura imagem da área de transferência
+
 
     // Reset do resultado é feito diretamente no onClick do botão calcular
     // (useEffect foi removido pois causava reset após o cálculo)
@@ -2311,6 +2500,41 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
 
     return (
         <>
+            {/* ── SPLASH SCREEN — logo Destemidos ── */}
+            {!splashDone && (
+                <div style={{
+                    position: 'fixed', inset: 0, zIndex: 99999,
+                    background: '#060d1a',
+                    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 28,
+                    opacity: splashLeaving ? 0 : 1,
+                    transform: splashLeaving ? 'scale(1.06)' : 'scale(1)',
+                    transition: 'opacity 0.6s cubic-bezier(0.4,0,1,1), transform 0.6s cubic-bezier(0.4,0,1,1)',
+                    pointerEvents: splashLeaving ? 'none' : 'all',
+                }}>
+                    {/* Brilho de fundo */}
+                    <div style={{
+                        position:'absolute', width:500, height:500, borderRadius:'50%',
+                        background:'radial-gradient(circle, rgba(15,76,160,0.75) 0%, rgba(30,58,138,0.45) 45%, transparent 70%)',
+                        filter:'blur(60px)',
+                        animation:'splash-glow 2.4s ease-in-out infinite alternate',
+                    }}/>
+                    {/* Só o logo — sem texto */}
+                    <img
+                        src="https://i.postimg.cc/XpWRf9pj/logo.png"
+                        alt="Destemidos"
+                        style={{
+                            height: 120, width: 'auto', objectFit: 'contain',
+                            filter: 'drop-shadow(0 0 48px rgba(29,78,216,0.80)) drop-shadow(0 0 28px rgba(59,130,246,0.55)) drop-shadow(0 4px 32px rgba(0,0,0,0.85))',
+                            animation: 'splash-logo-in 0.75s cubic-bezier(0.34,1.3,0.64,1) both',
+                        }}
+                    />
+                    <style>{`
+                        @keyframes splash-logo-in { from { opacity:0; transform:scale(0.5); } to { opacity:1; transform:scale(1); } }
+                        @keyframes splash-glow    { from { opacity:0.5; transform:scale(0.85); } to { opacity:1; transform:scale(1.2); } }
+                    `}</style>
+                </div>
+            )}
+
             {/* Pull-to-refresh indicator */}
         <div ref={mainContainerRef}
             className={`min-h-screen font-sans pb-12 relative transition-colors duration-500 ${modoNoturno ? 'bg-[#0B1120] text-slate-100' : 'text-slate-800'}`}
@@ -3049,6 +3273,7 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
                                             haptic={haptic}
                                             setPdfLeitor={setPdfLeitor}
                                             setSelectedPois={setSelectedPois}
+                                            setPdfLeitorLogoAnim={setPdfLeitorLogoAnim}
                                         />
                                     ))}
                                 </div>
@@ -3179,6 +3404,67 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
                 )}
             </main>
 
+            {/* OVERLAY ANIMAÇÃO LOGO — carregando revista */}
+            {pdfLeitorLogoAnim && (() => {
+                const isDir = pdfLeitorLogoAnim.brand === 'Direcional';
+                return (
+                    <div style={{
+                        position: 'fixed', inset: 0, zIndex: 65,
+                        background: '#0a0a0a',
+                        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 32,
+                        animation: 'logo-anim-in 0.38s cubic-bezier(0.22,1,0.36,1) both',
+                    }}>
+                        {/* Brilho de fundo */}
+                        <div style={{
+                            position: 'absolute', width: 340, height: 340, borderRadius: '50%',
+                            background: isDir
+                                ? 'radial-gradient(circle, rgba(249,115,22,0.18) 0%, transparent 70%)'
+                                : 'radial-gradient(circle, rgba(59,130,246,0.18) 0%, transparent 70%)',
+                            filter: 'blur(40px)',
+                            animation: 'logo-glow-pulse 1.6s ease-in-out infinite alternate',
+                        }}/>
+                        {/* Logo */}
+                        <div style={{
+                            position: 'relative', zIndex: 1,
+                            animation: 'logo-zoom-in 0.55s cubic-bezier(0.34,1.56,0.64,1) 0.15s both',
+                        }}>
+                            <img
+                                src={pdfLeitorLogoAnim.logoSrc}
+                                alt={pdfLeitorLogoAnim.title}
+                                style={{
+                                    maxWidth: 260, maxHeight: 160, width: 'auto', height: 'auto',
+                                    objectFit: 'contain',
+                                    filter: 'drop-shadow(0 0 32px rgba(255,255,255,0.25)) drop-shadow(0 4px 24px rgba(0,0,0,0.8))',
+                                }}
+                            />
+                        </div>
+                        {/* Texto + loading dots */}
+                        <div style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, animation: 'logo-fade-up 0.5s ease 0.4s both' }}>
+                            <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: 13, fontWeight: 600, letterSpacing: '0.08em' }}>Carregando revista digital...</p>
+                            <div style={{ display: 'flex', gap: 7 }}>
+                                {[0,1,2].map(i => (
+                                    <div key={i} style={{
+                                        width: 8, height: 8, borderRadius: '50%',
+                                        background: isDir ? '#f97316' : '#3b82f6',
+                                        animation: `logo-dot-bounce 0.9s ease-in-out ${i * 0.18}s infinite alternate`,
+                                    }} />
+                                ))}
+                            </div>
+                        </div>
+                        <style>{`
+                            @keyframes logo-anim-in { from { opacity:0; } to { opacity:1; } }
+                            @keyframes logo-zoom-in { from { opacity:0; transform:scale(0.65); } to { opacity:1; transform:scale(1); } }
+                            @keyframes logo-fade-up { from { opacity:0; transform:translateY(14px); } to { opacity:1; transform:translateY(0); } }
+                            @keyframes logo-glow-pulse { from { opacity:0.5; transform:scale(0.9); } to { opacity:1; transform:scale(1.1); } }
+                            @keyframes logo-dot-bounce { from { transform:translateY(0); opacity:0.5; } to { transform:translateY(-8px); opacity:1; } }
+                        `}</style>
+                    </div>
+                );
+            })()}
+
+            {/* BOTÃO X DA REVISTA — componente dedicado que bloqueia zoom de pinça */}
+            {pdfLeitor && <RevistaCloseButton onClose={() => setPdfLeitor(null)} />}
+
             {/* MODAL LEITOR DE REVISTA (PDF via Google Drive preview) */}
             {pdfLeitor && (() => {
                 const isDir = pdfLeitor.brand === 'Direcional';
@@ -3187,22 +3473,6 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
                 const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(whatsappMsg)}`;
                 return (
                     <div className="fixed inset-0 z-[60]" style={{background:'#0f0f0f'}}>
-
-                        {/* Botão X flutuante sobre o notch */}
-                        <button
-                            onClick={() => setPdfLeitor(null)}
-                            className="absolute z-20 w-9 h-9 flex items-center justify-center rounded-full text-white active:scale-95 transition-all"
-                            style={{
-                                top: 'calc(env(safe-area-inset-top, 0px) + 8px)',
-                                left: '12px',
-                                background:'rgba(0,0,0,0.55)',
-                                backdropFilter:'blur(10px)',
-                                WebkitBackdropFilter:'blur(10px)',
-                                border:'1px solid rgba(255,255,255,0.18)'
-                            }}
-                        >
-                            <X size={18} />
-                        </button>
 
                         {/* iframe — começa abaixo da status bar para o botão nativo do Drive ficar visível */}
                         <div className="absolute left-0 right-0 bottom-0 z-0"
@@ -3442,6 +3712,9 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
             })()}
 
             {/* --- ÍCONE DO ROBÔ E BALÃO AMIGÁVEL --- */}
+            {/* ── HINT PILLS — renderizado como componente fixo ── */}
+            <HintPills onPhaseChange={setHintPhase} />
+
             <div className={`fixed bottom-8 right-8 z-40 flex flex-row items-end gap-3 transition-all duration-500 ${isChatOpen ? 'scale-0 opacity-0 pointer-events-none' : 'scale-100 opacity-100'}`}>
                 <div 
                     className={`px-5 py-3 rounded-2xl shadow-xl border relative flex items-center gap-2 group cursor-pointer transition-all duration-500 origin-bottom-right ${
@@ -3462,7 +3735,7 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
 
                 <button
                     onClick={() => { haptic('medium'); setIsChatOpen(true); }}
-                    className="w-14 h-14 bg-gradient-to-br from-blue-500 via-blue-600 to-indigo-800 text-white rounded-[1.75rem] hover:rounded-[1rem] hover:scale-110 active:scale-95 transition-all duration-500 flex items-center justify-center relative group overflow-hidden border-2 border-white/20"
+                    className={`w-14 h-14 bg-gradient-to-br from-blue-500 via-blue-600 to-indigo-800 text-white rounded-[1.75rem] hover:rounded-[1rem] hover:scale-110 active:scale-95 transition-all duration-500 flex items-center justify-center relative group overflow-hidden border-2 border-white/20 ${hintPhase === 'show' ? 'chat-btn-calling' : ''} ${hintPhase === 'fly' ? 'chat-btn-absorb' : ''}`}
                     style={{ animation: 'ia-btn-enter 0.6s cubic-bezier(0.34,1.56,0.64,1) both' }}
                 >
                     <div className="absolute inset-0 bg-gradient-to-tr from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
@@ -3565,6 +3838,38 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
                         100% { transform: rotateY(360deg); }
                     }
                     @keyframes btn-glow-pulse { 0%,100% { box-shadow: 0 0 0 0 rgba(99,102,241,0), 0 8px 32px rgba(59,130,246,0.45); transform: scale(1); } 50% { box-shadow: 0 0 0 8px rgba(99,102,241,0.18), 0 8px 40px rgba(59,130,246,0.7); transform: scale(1.03); } }
+
+                    /* ── CHAT BTN: porta aberta enquanto pills visíveis ── */
+                    @keyframes chat-calling-pulse {
+                        0%,100% { box-shadow: 0 0 0 0   rgba(99,102,241,0.0), 0 8px 28px rgba(59,130,246,0.5); transform: scale(1); }
+                        40%     { box-shadow: 0 0 0 10px rgba(99,102,241,0.25), 0 8px 40px rgba(59,130,246,0.8); transform: scale(1.07); }
+                        70%     { box-shadow: 0 0 0 18px rgba(99,102,241,0.08), 0 8px 50px rgba(59,130,246,0.5); transform: scale(1.02); }
+                    }
+                    @keyframes chat-ring-fast {
+                        0%   { transform: rotate(0deg)   scaleX(1);    opacity: 0.9; }
+                        50%  { transform: rotate(180deg) scaleX(-1);   opacity: 1;   }
+                        100% { transform: rotate(360deg) scaleX(1);    opacity: 0.9; }
+                    }
+                    /* Absorção: botão estica e "engole" as pills */
+                    @keyframes chat-absorb {
+                        0%   { transform: scale(1);    border-radius: 1.75rem; box-shadow: 0 0 0 0   rgba(99,102,241,0),   0 8px 28px rgba(59,130,246,0.5); }
+                        25%  { transform: scale(1.22); border-radius: 50%;     box-shadow: 0 0 0 20px rgba(99,102,241,0.3), 0 8px 60px rgba(59,130,246,1.0); }
+                        55%  { transform: scale(0.88); border-radius: 50%;     box-shadow: 0 0 0 4px  rgba(99,102,241,0.1), 0 8px 20px rgba(59,130,246,0.4); }
+                        80%  { transform: scale(1.05); border-radius: 50%; }
+                        100% { transform: scale(1);    border-radius: 1.75rem; box-shadow: 0 0 0 0   rgba(99,102,241,0),   0 8px 28px rgba(59,130,246,0.45); }
+                    }
+                    .chat-btn-calling {
+                        animation: ia-btn-enter 0.6s cubic-bezier(0.34,1.56,0.64,1) both,
+                                   chat-calling-pulse 1.6s ease-in-out 0.6s infinite !important;
+                    }
+                    .chat-btn-calling .ia-ring {
+                        animation: chat-ring-fast 0.9s linear infinite !important;
+                        border-top-color: rgba(255,255,255,0.9) !important;
+                        border-right-color: rgba(165,180,252,0.6) !important;
+                    }
+                    .chat-btn-absorb {
+                        animation: chat-absorb 0.75s cubic-bezier(0.34,1.2,0.64,1) both !important;
+                    }
                     @keyframes btn-shine-sweep { 0% { transform: translateX(-180%) skewX(-18deg); opacity:0; } 10% { opacity:1; } 55% { transform: translateX(280%) skewX(-18deg); opacity:0.8; } 100% { transform: translateX(280%) skewX(-18deg); opacity:0; } }
                     .btn-shine-layer { position:absolute; inset:0; overflow:hidden; border-radius:inherit; pointer-events:none; }
                     .btn-shine-layer::after { content:''; position:absolute; top:-20%; left:0; width:60%; height:140%; background: linear-gradient(105deg, transparent 10%, rgba(255,255,255,0.32) 50%, transparent 90%); animation: btn-shine-sweep 3.8s ease-in-out infinite; }
@@ -3599,14 +3904,12 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
                     @keyframes pr-pulse { 0%, 100% { box-shadow: 0 0 0 3px rgba(249,115,22,0.35), 0 0 20px 6px rgba(249,115,22,0.45), 0 2px 8px rgba(0,0,0,0.2); transform: scale(1); } 50% { box-shadow: 0 0 0 5px rgba(249,115,22,0.2), 0 0 28px 10px rgba(249,115,22,0.6), 0 2px 8px rgba(0,0,0,0.2); transform: scale(1.04); } }
                     @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
                     @keyframes pr-pulse { 0%, 100% { box-shadow: 0 0 0 2px rgba(249,115,22,0.4), 0 0 12px rgba(249,115,22,0.5); transform: scale(1); } 50% { box-shadow: 0 0 0 4px rgba(249,115,22,0.25), 0 0 22px rgba(249,115,22,0.7); transform: scale(1.04); } }
-                    @keyframes cotacao-glow { 0%, 100% { box-shadow: 0 0 0 2px rgba(99,102,241,0.4), 0 0 12px rgba(99,102,241,0.5); } 50% { box-shadow: 0 0 0 4px rgba(99,102,241,0.2), 0 0 22px rgba(99,102,241,0.7); } }
-                    .cotacao-btn { animation: cotacao-glow 2.2s ease-in-out infinite; }
-                    @keyframes cotacao-shine { 0% { transform: translateX(-180%) skewX(-18deg); opacity:0; } 10% { opacity:1; } 55% { transform: translateX(280%) skewX(-18deg); opacity:0.8; } 100% { transform: translateX(280%) skewX(-18deg); opacity:0; } }
-                    .cotacao-btn-shine { position:absolute; inset:0; overflow:hidden; border-radius:inherit; pointer-events:none; }
-                    .cotacao-btn-shine::after { content:''; position:absolute; top:-20%; left:0; width:60%; height:140%; background: linear-gradient(105deg, transparent 10%, rgba(255,255,255,0.28) 50%, transparent 90%); animation: cotacao-shine 3.2s ease-in-out infinite; }
-                    @keyframes cotacao-modal-in { 0% { opacity:0; transform: translateY(100%); } 60% { opacity:1; transform: translateY(-4px); } 100% { opacity:1; transform: translateY(0); } }
-                    @keyframes cotacao-modal-out { 0% { opacity:1; transform: translateY(0); } 100% { opacity:0; transform: translateY(100%); } }
-                    .cotacao-modal-open { animation: cotacao-modal-in 0.45s cubic-bezier(0.34,1.2,0.64,1) both; }
+
+                    @keyframes btn-shine { 0% { transform: translateX(-180%) skewX(-18deg); opacity:0; } 10% { opacity:1; } 55% { transform: translateX(280%) skewX(-18deg); opacity:0.8; } 100% { transform: translateX(280%) skewX(-18deg); opacity:0; } }
+                    .btn-shine-anim { position:absolute; inset:0; overflow:hidden; border-radius:inherit; pointer-events:none; }
+                    .btn-shine-anim::after { content:''; position:absolute; top:-20%; left:0; width:60%; height:140%; background: linear-gradient(105deg, transparent 10%, rgba(255,255,255,0.28) 50%, transparent 90%); animation: btn-shine 3.2s ease-in-out infinite; }
+                    @keyframes modal-slide-in { 0% { opacity:0; transform: translateY(100%); } 60% { opacity:1; transform: translateY(-4px); } 100% { opacity:1; transform: translateY(0); } }
+                    .modal-slide-open { animation: modal-slide-in 0.45s cubic-bezier(0.34,1.2,0.64,1) both; }
                     @keyframes field-in { 0% { opacity:0; transform: translateY(10px); } 100% { opacity:1; transform: translateY(0); } }
                     .field-animate { animation: field-in 0.3s ease both; }
                     /* Chat panel open / close */
@@ -3683,7 +3986,7 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
                     }}>
                     {/* shimmer sweep */}
                     <div className="absolute inset-0 pointer-events-none overflow-hidden">
-                        <div style={{ position:'absolute', top:'-20%', left:0, width:'60%', height:'140%', background:'linear-gradient(105deg, transparent 10%, rgba(255,255,255,0.16) 50%, transparent 90%)', animation: isCreatingFolder && folderSource === 'rapida' ? 'light-sweep 1.8s ease-in-out infinite' : 'cotacao-shine 3.5s ease-in-out infinite', transform:'skewX(-18deg)' }}></div>
+                        <div style={{ position:'absolute', top:'-20%', left:0, width:'60%', height:'140%', background:'linear-gradient(105deg, transparent 10%, rgba(255,255,255,0.16) 50%, transparent 90%)', animation: isCreatingFolder && folderSource === 'rapida' ? 'light-sweep 1.8s ease-in-out infinite' : 'none', transform:'skewX(-18deg)' }}></div>
                     </div>
                     <div className="relative z-10 px-5 pt-5 pb-4 flex items-center justify-between pasta-header-safe">
                         <div className="flex items-center gap-3">
@@ -3898,7 +4201,7 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
                                         : { background: 'linear-gradient(135deg, #6366f1 0%, #4f46e5 40%, #7c3aed 100%)', boxShadow: '0 4px 20px rgba(99,102,241,0.4)' }
                                     }>
                                     {folderSource === 'rapida' && <span className="absolute inset-0 pasta-rapida-btn pointer-events-none" style={{borderRadius:'1rem'}}></span>}
-                                    {folderSource !== 'rapida' && <span className="absolute inset-0 cotacao-btn-shine pointer-events-none" style={{borderRadius:'1rem'}}></span>}
+                                    {folderSource !== 'rapida' && <span className="absolute inset-0 btn-shine-anim pointer-events-none" style={{borderRadius:'1rem'}}></span>}
                                     <Wand2 size={16} className="relative z-10" />
                                     <span className="relative z-10">Finalizar PDF</span>
                                 </button>
@@ -3908,92 +4211,67 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
                 )}
 
                 <div className={`border-t rounded-b-3xl shrink-0 flex flex-col transition-colors ${isCreatingFolder ? 'hidden' : ''} ${modoNoturno ? 'bg-[#0B1120] border-slate-800' : 'bg-white border-slate-100'}`}>
-                    <div className="px-3 pt-2.5 pb-2 flex gap-1.5 items-center overflow-x-auto custom-scrollbar">
-                        <button onClick={() => { haptic(); setFolderSource('manual'); setIsCreatingFolder(true); fileInputRef.current?.click(); }}
-                            className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider transition-all text-white relative overflow-hidden"
-                            style={{ background: 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)', boxShadow: '0 2px 8px rgba(99,102,241,0.4)' }}>
-                            <FolderPlus size={12} className="relative z-10" />
-                            <span className="relative z-10">Pasta</span>
-                        </button>
-                        <button
-                            onClick={(e) => {
-                                haptic('medium');
-                                const clicks = pastaRapidaClicksRef.current;
-                                if (clicks < 5) {
-                                    e.preventDefault();
-                                    e.stopPropagation();
-                                    pastaRapidaClicksRef.current = clicks + 1;
-                                    localStorage.setItem('dst_pr_clicks', String(clicks + 1));
-                                    setShowPastaRapidaInfo(true);
-                                } else {
-                                    setFolderSource('rapida');
-                                    quickFolderInputRef.current?.click();
-                                }
-                            }}
-                            className="shrink-0 flex items-center gap-1.5 px-4 py-2 rounded-full text-[11px] font-black uppercase tracking-wider transition-all text-white relative overflow-hidden"
-                            style={{
-                                background: 'linear-gradient(135deg, #f97316 0%, #ef4444 50%, #f59e0b 100%)',
-                                boxShadow: '0 0 0 3px rgba(249,115,22,0.35), 0 0 20px 6px rgba(249,115,22,0.45), 0 2px 8px rgba(0,0,0,0.2)',
-                                animation: 'pr-pulse 1.6s ease-in-out infinite',
-                            }}>
-                            <span className="absolute inset-0 pasta-rapida-btn pointer-events-none" style={{borderRadius:'9999px'}}></span>
-                            <Sparkles size={13} className="shrink-0 relative z-10" style={{filter:'drop-shadow(0 0 5px rgba(255,255,255,0.9))', animation:'spin 3s linear infinite'}} />
-                            <span className="relative z-10" style={{textShadow:'0 1px 6px rgba(0,0,0,0.35)', letterSpacing:'0.08em'}}>Pasta Rápida IA</span>
-                        </button>
-                        <input type="file" ref={quickFolderInputRef} onChange={handleQuickFolderUpload} multiple accept="image/*,application/pdf" className="hidden" />
-                        <div className={`shrink-0 w-px h-4 ${modoNoturno ? 'bg-slate-600' : 'bg-slate-200'}`}></div>
-                        <button
-                            onClick={() => { haptic('medium'); setShowTaxasDocsModal(true); }}
-                            className="shrink-0 flex items-center gap-1.5 px-4 py-2 rounded-full text-[11px] font-black uppercase tracking-wider transition-all text-white relative overflow-hidden"
-                            style={{
-                                background: 'linear-gradient(135deg, #0ea5e9 0%, #0284c7 50%, #0369a1 100%)',
-                                boxShadow: '0 0 0 2px rgba(14,165,233,0.4), 0 0 18px 4px rgba(14,165,233,0.4), 0 2px 8px rgba(0,0,0,0.2)',
-                            }}>
-                            <FileText size={12} className="shrink-0 relative z-10" />
-                            <span className="relative z-10" style={{textShadow:'0 1px 6px rgba(0,0,0,0.3)', letterSpacing:'0.08em'}}>Taxas Docs</span>
-                        </button>
-                        <div className={`shrink-0 w-px h-4 ${modoNoturno ? 'bg-slate-600' : 'bg-slate-200'}`}></div>
-                        <button
-                            onClick={() => {
-                                haptic('medium');
-                                if (isCotacaoUnlocked()) {
-                                    setShowCotacaoModal(true);
-                                } else {
-                                    setCotacaoSenhaInput('');
-                                    setCotacaoSenhaErro(false);
-                                    setShowCotacaoSenha(true);
-                                }
-                            }}
-                            className="shrink-0 flex items-center gap-1.5 px-4 py-2 rounded-full text-[11px] font-black uppercase tracking-wider transition-all text-white relative overflow-hidden cotacao-btn"
-                            style={{
-                                background: 'linear-gradient(135deg, #6366f1 0%, #4f46e5 45%, #7c3aed 100%)',
-                                boxShadow: '0 0 0 2px rgba(99,102,241,0.4), 0 0 18px 4px rgba(99,102,241,0.45), 0 2px 8px rgba(0,0,0,0.2)',
-                            }}>
-                            <span className="absolute inset-0 cotacao-btn-shine pointer-events-none" style={{borderRadius:'9999px'}}></span>
-                            <Calculator size={12} className="shrink-0 relative z-10" />
-                            <span className="relative z-10" style={{textShadow:'0 1px 6px rgba(0,0,0,0.3)', letterSpacing:'0.08em'}}>$ Cotação</span>
-                        </button>
-                        {clientName && (
-                            <span className={`shrink-0 flex items-center gap-1 text-[10px] font-bold px-2.5 py-1.5 rounded-full border ${modoNoturno ? 'bg-slate-700 border-slate-600 text-emerald-400' : 'bg-emerald-50 border-emerald-100 text-emerald-600'}`}>
-                                👤 {clientName}
-                            </span>
-                        )}
-                        {/* DEV: reset contador pasta rápida — remova em produção */}
-                        <button
-                            onClick={() => { pastaRapidaClicksRef.current = 0; localStorage.setItem('dst_pr_clicks', '0'); }}
-                            title="DEV: resetar contador pasta rápida"
-                            className="shrink-0 text-[9px] font-bold px-2 py-1 rounded-full border border-dashed border-slate-300 text-slate-300 hover:border-orange-400 hover:text-orange-400 transition-all">
-                            ↺ PR
-                        </button>
-                        {/* DEV: reset contador cotação — remova em produção */}
-                        <button
-                            onClick={() => { cotacaoClicksRef.current = 0; localStorage.setItem('dst_cot_clicks', '0'); }}
-                            title="DEV: resetar contador cotação"
-                            className="shrink-0 text-[9px] font-bold px-2 py-1 rounded-full border border-dashed border-slate-300 text-slate-300 hover:border-indigo-400 hover:text-indigo-400 transition-all">
-                            ↺ COT
-                        </button>
-                    </div>
+                    <input type="file" ref={quickFolderInputRef} onChange={handleQuickFolderUpload} multiple accept="image/*,application/pdf" className="hidden" />
                     <div className="px-3 pb-3" style={{ paddingBottom: 'max(12px, calc(env(safe-area-inset-bottom) + 8px))' }}>
+                        {/* ── PÍLULAS ACIMA DO INPUT — só desktop (sm+) ── */}
+                        <div className="flex gap-1.5 items-center overflow-x-auto pb-2 pt-2" style={{scrollbarWidth:'none', msOverflowStyle:'none'}}>
+                            {/* Pasta */}
+                            <button onClick={() => { haptic(); setFolderSource('manual'); setIsCreatingFolder(true); fileInputRef.current?.click(); }}
+                                className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider transition-all active:scale-95 text-white relative overflow-hidden"
+                                style={{ background: 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)', boxShadow: '0 2px 8px rgba(99,102,241,0.35)' }}>
+                                <FolderPlus size={11} className="relative z-10" />
+                                <span className="relative z-10">Pasta</span>
+                            </button>
+                            {/* Pasta Rápida IA */}
+                            <button
+                                onClick={(e) => {
+                                    haptic('medium');
+                                    const clicks = pastaRapidaClicksRef.current;
+                                    if (clicks < 5) {
+                                        e.preventDefault(); e.stopPropagation();
+                                        pastaRapidaClicksRef.current = clicks + 1;
+                                        localStorage.setItem('dst_pr_clicks', String(clicks + 1));
+                                        setShowPastaRapidaInfo(true);
+                                    } else {
+                                        setFolderSource('rapida');
+                                        quickFolderInputRef.current?.click();
+                                    }
+                                }}
+                                className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider transition-all active:scale-95 text-white relative overflow-hidden"
+                                style={{
+                                    background: 'linear-gradient(135deg, #f97316 0%, #ef4444 60%, #f59e0b 100%)',
+                                    boxShadow: '0 0 0 2px rgba(249,115,22,0.3), 0 0 14px 3px rgba(249,115,22,0.35)',
+                                    animation: 'pr-pulse 1.6s ease-in-out infinite',
+                                }}>
+                                <span className="absolute inset-0 pasta-rapida-btn pointer-events-none" style={{borderRadius:'9999px'}}></span>
+                                <Sparkles size={11} className="shrink-0 relative z-10" style={{filter:'drop-shadow(0 0 4px rgba(255,255,255,0.9))', animation:'spin 3s linear infinite'}} />
+                                <span className="relative z-10" style={{letterSpacing:'0.06em'}}>Pasta Rápida IA</span>
+                            </button>
+                            {/* Separador */}
+                            <div className={`shrink-0 w-px h-3.5 ${modoNoturno ? 'bg-slate-600' : 'bg-slate-200'}`}/>
+                            {/* Taxas Docs */}
+                            <button
+                                onClick={() => { haptic('medium'); setShowTaxasDocsModal(true); }}
+                                className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider transition-all active:scale-95 text-white relative overflow-hidden"
+                                style={{
+                                    background: 'linear-gradient(135deg, #0ea5e9 0%, #0284c7 60%, #0369a1 100%)',
+                                    boxShadow: '0 0 0 2px rgba(14,165,233,0.3), 0 0 14px 3px rgba(14,165,233,0.35)',
+                                }}>
+                                <FileText size={11} className="shrink-0 relative z-10" />
+                                <span className="relative z-10" style={{letterSpacing:'0.06em'}}>Taxas Docs</span>
+                            </button>
+                            {/* Nome do cliente */}
+                            {clientName && (
+                                <span className={`shrink-0 flex items-center gap-1 text-[10px] font-bold px-2.5 py-1.5 rounded-full border ${modoNoturno ? 'bg-slate-700 border-slate-600 text-emerald-400' : 'bg-emerald-50 border-emerald-100 text-emerald-600'}`}>
+                                    👤 {clientName}
+                                </span>
+                            )}
+                            {/* DEV reset */}
+                            <button onClick={() => { pastaRapidaClicksRef.current = 0; localStorage.setItem('dst_pr_clicks', '0'); }}
+                                title="DEV: reset PR" className="shrink-0 text-[9px] font-bold px-2 py-1 rounded-full border border-dashed border-slate-300 text-slate-300 hover:border-orange-400 hover:text-orange-400 transition-all">
+                                ↺ PR
+                            </button>
+                        </div>
                         <div className="relative flex items-center">
                             <input type="file" ref={fileInputRef} onChange={handleFileUpload} multiple accept="image/*,application/pdf" className="hidden" />
                             <input 
@@ -4045,7 +4323,7 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
                                 : { background: 'linear-gradient(135deg, #6366f1 0%, #4f46e5 40%, #7c3aed 100%)', boxShadow: '0 4px 24px rgba(99,102,241,0.4)' }
                             }>
                             <div className="absolute inset-0 pointer-events-none overflow-hidden">
-                                <div style={{ position:'absolute', top:'-20%', left:0, width:'60%', height:'140%', background:'linear-gradient(105deg, transparent 10%, rgba(255,255,255,0.22) 50%, transparent 90%)', animation: folderSource === 'rapida' ? 'light-sweep 1.6s ease-in-out infinite' : 'cotacao-shine 3.5s ease-in-out infinite', transform:'skewX(-18deg)' }}></div>
+                                <div style={{ position:'absolute', top:'-20%', left:0, width:'60%', height:'140%', background:'linear-gradient(105deg, transparent 10%, rgba(255,255,255,0.22) 50%, transparent 90%)', animation: folderSource === 'rapida' ? 'light-sweep 1.6s ease-in-out infinite' : 'none', transform:'skewX(-18deg)' }}></div>
                             </div>
                             <div className="relative z-10 flex items-center justify-between">
                                 <div className="flex items-center gap-3">
@@ -4093,7 +4371,7 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
                                 }>
                                 {folderSource === 'rapida'
                                     ? <span className="absolute inset-0 pasta-rapida-btn pointer-events-none" style={{borderRadius:'1rem'}}></span>
-                                    : <span className="absolute inset-0 cotacao-btn-shine pointer-events-none" style={{borderRadius:'1rem'}}></span>
+                                    : <span className="absolute inset-0 btn-shine-anim pointer-events-none" style={{borderRadius:'1rem'}}></span>
                                 }
                                 {isChatLoading ? (
                                     <div className="absolute inset-0 flex items-center justify-center">
@@ -4320,1392 +4598,13 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
                 </div>
             )}
 
-            {/* MODAL INFO COTAÇÃO — exibido nas 5 primeiras vezes */}
-            {showCotacaoInfo && (
-                <div className="fixed inset-0 z-[70] flex items-end sm:items-center justify-center p-0 sm:p-4"
-                    style={{ background: 'rgba(7,11,22,0.72)', backdropFilter: 'blur(18px) saturate(180%)', WebkitBackdropFilter: 'blur(18px) saturate(180%)' }}>
-                    <div className={`animate-slide-up w-full sm:max-w-md flex flex-col rounded-t-3xl sm:rounded-3xl shadow-2xl`}
-                        style={{
-                            maxHeight: '92dvh',
-                            ...(modoNoturno ? {
-                                background: 'rgba(13,18,36,0.97)',
-                                backdropFilter: 'blur(28px) saturate(180%)',
-                                WebkitBackdropFilter: 'blur(28px) saturate(180%)',
-                                border: '1px solid rgba(99,102,241,0.25)',
-                                boxShadow: '0 -8px 48px rgba(99,102,241,0.25), 0 24px 64px rgba(0,0,0,0.6)',
-                            } : {
-                                background: 'rgba(255,255,255,0.97)',
-                                backdropFilter: 'blur(28px) saturate(200%)',
-                                WebkitBackdropFilter: 'blur(28px) saturate(200%)',
-                                border: '1px solid rgba(255,255,255,0.95)',
-                                boxShadow: '0 -8px 48px rgba(99,102,241,0.18), 0 24px 64px rgba(0,0,0,0.12)',
-                            })
-                        }}
-                        onClick={e => e.stopPropagation()}>
-
-                        {/* Header fixo com shimmer */}
-                        <div className="shrink-0 relative overflow-hidden rounded-t-3xl sm:rounded-t-3xl"
-                            style={{ background: 'linear-gradient(135deg, #6366f1 0%, #4f46e5 45%, #7c3aed 100%)', boxShadow: '0 4px 24px rgba(99,102,241,0.45)' }}>
-                            <div className="absolute inset-0 pointer-events-none overflow-hidden">
-                                <div style={{ position:'absolute', top:'-20%', left:0, width:'60%', height:'140%', background:'linear-gradient(105deg, transparent 10%, rgba(255,255,255,0.22) 50%, transparent 90%)', animation:'cotacao-shine 3.5s ease-in-out infinite', transform:'skewX(-18deg)' }}></div>
-                            </div>
-                            <div className="relative z-10 px-5 pt-5 pb-4 flex items-start justify-between gap-3">
-                                <div className="flex items-center gap-3">
-                                    <div className="bg-white/15 p-2.5 rounded-2xl border border-white/25 backdrop-blur-md">
-                                        <Calculator size={22} className="text-white" style={{filter:'drop-shadow(0 0 8px rgba(255,255,255,0.8))'}} />
-                                    </div>
-                                    <div>
-                                        <h2 className="text-white font-black text-xl uppercase tracking-widest drop-shadow-md">$ Cotação</h2>
-                                        <p className="text-indigo-200 text-[10px] font-black uppercase tracking-[0.15em]">Como funciona · Leia antes de usar</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Drag pill (mobile) */}
-                        <div className="sm:hidden shrink-0 flex justify-center pt-2.5 pb-0.5">
-                            <div className={`w-10 h-1 rounded-full ${modoNoturno ? 'bg-slate-700' : 'bg-slate-200'}`}></div>
-                        </div>
-
-                        {/* Conteúdo scrollável */}
-                        <div className="flex-1 overflow-y-auto custom-scrollbar px-5 pt-4 pb-3 flex flex-col gap-3">
-
-                            {/* O que é */}
-                            <div className={`rounded-2xl p-4 border ${modoNoturno ? 'bg-indigo-950/50 border-indigo-500/25' : 'bg-indigo-50 border-indigo-100'}`}>
-                                <p className={`font-black text-[11px] mb-2 uppercase tracking-widest flex items-center gap-1.5 ${modoNoturno ? 'text-indigo-400' : 'text-indigo-600'}`}>
-                                    💡 O que é a Cotação?
-                                </p>
-                                <p className={`text-[12.5px] leading-relaxed ${modoNoturno ? 'text-slate-300' : 'text-slate-700'}`}>
-                                    A <strong>Cotação</strong> é o <strong>plano de parcelamento da entrada</strong> do imóvel — mostra ao cliente o <strong>ato, os sinais e as mensais</strong> que ele vai pagar durante as obras, respeitando as regras do perfil comercial escolhido.
-                                </p>
-                            </div>
-
-                            {/* Passo a passo */}
-                            <div className={`rounded-2xl p-4 border ${modoNoturno ? 'bg-slate-800/60 border-slate-700/50' : 'bg-white border-slate-100'}`}>
-                                <p className={`font-black text-[11px] mb-3 uppercase tracking-widest ${modoNoturno ? 'text-slate-300' : 'text-slate-600'}`}>📋 Como fazer</p>
-                                <div className="flex flex-col gap-3.5">
-                                    {[
-                                        {
-                                            n: '1', icon: '📎',
-                                            label: 'Anexe a aprovação bancária (opcional)',
-                                            desc: 'Cole prints ou PDF da aprovação — a IA lê e preenche automaticamente: valor do imóvel, parcela de financiamento, prazo e data de entrega.'
-                                        },
-                                        {
-                                            n: '2', icon: '👤',
-                                            label: 'Escolha o perfil comercial do cliente',
-                                            desc: 'Selecione Diamante, Ouro, Prata, Bronze ou Aço. O perfil define as condições de PS, parcelas e comprometimento — não é baseado na renda do cliente.'
-                                        },
-                                        {
-                                            n: '3', icon: '💰',
-                                            label: 'Preencha os dados financeiros',
-                                            desc: 'Informe o valor do imóvel, renda familiar, FGTS disponível, ato e parcela de financiamento. Se a aprovação foi anexada, os campos já estarão preenchidos.'
-                                        },
-                                        {
-                                            n: '4', icon: '📊',
-                                            label: 'Clique em "Calcular Cotação"',
-                                            desc: 'A ferramenta gera 2 planos completos mostrando ato, sinais e mensais — tudo calculado dentro das regras do perfil selecionado.'
-                                        },
-                                    ].map(({ n, icon, label, desc }) => (
-                                        <div key={n} className="flex items-start gap-3">
-                                            <div className="shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black text-white mt-0.5"
-                                                style={{ background: 'linear-gradient(135deg, #6366f1, #7c3aed)' }}>
-                                                {n}
-                                            </div>
-                                            <div>
-                                                <p className={`text-[12px] font-black leading-tight ${modoNoturno ? 'text-slate-200' : 'text-slate-800'}`}>{icon} {label}</p>
-                                                <p className={`text-[11.5px] leading-snug mt-0.5 ${modoNoturno ? 'text-slate-400' : 'text-slate-500'}`}>{desc}</p>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-
-                            {/* Dica extra */}
-                            <div className={`rounded-2xl px-4 py-3 border flex items-start gap-3 ${modoNoturno ? 'bg-emerald-950/40 border-emerald-500/25' : 'bg-emerald-50 border-emerald-100'}`}>
-                                <span className="text-base leading-none mt-0.5">✅</span>
-                                <p className={`text-[11.5px] leading-snug ${modoNoturno ? 'text-emerald-300' : 'text-emerald-800'}`}>
-                                    Pode calcular <strong>sem anexar</strong> nenhum documento — basta preencher os campos manualmente direto na tela de cotação.
-                                </p>
-                            </div>
-
-                            {/* Aviso Bora Vender */}
-                            <div className={`rounded-2xl px-4 py-3.5 border flex items-start gap-3 ${modoNoturno ? 'bg-amber-950/40 border-amber-500/30' : 'bg-amber-50 border-amber-200'}`}>
-                                <span className="text-lg leading-none mt-0.5 shrink-0">⚠️</span>
-                                <div>
-                                    <p className={`font-black text-[11px] uppercase tracking-widest mb-1 ${modoNoturno ? 'text-amber-400' : 'text-amber-600'}`}>Sempre confirme no Bora Vender</p>
-                                    <p className={`text-[11.5px] leading-snug ${modoNoturno ? 'text-amber-200/80' : 'text-amber-800'}`}>
-                                        Os valores gerados aqui são uma <strong>estimativa de apoio à venda</strong>. Antes de apresentar ao cliente, <strong>confira os valores finais no Bora Vender</strong> — tabelas, subsídios e regras do MCMV podem variar por empreendimento.
-                                    </p>
-                                </div>
-                            </div>
-
-                        </div>
-
-                        {/* Barra de progresso + botão — fixo no rodapé */}
-                        <div className="shrink-0 px-5 pb-6 pt-3 flex flex-col gap-3 border-t"
-                            style={{
-                                paddingBottom: 'max(24px, calc(env(safe-area-inset-bottom) + 16px))',
-                                borderColor: modoNoturno ? 'rgba(99,102,241,0.12)' : 'rgba(226,232,240,1)',
-                            }}>
-                            {cotacaoInfoCountdown > 0 && (
-                                <div className="flex flex-col gap-1.5">
-                                    <div className={`w-full h-1.5 rounded-full overflow-hidden ${modoNoturno ? 'bg-slate-800' : 'bg-slate-200'}`}>
-                                        <div className="h-full rounded-full transition-all duration-1000 ease-linear"
-                                            style={{ width: `${((10 - cotacaoInfoCountdown) / 10) * 100}%`, background: 'linear-gradient(90deg, #6366f1, #7c3aed)' }} />
-                                    </div>
-                                    <p className={`text-center text-[10px] font-black uppercase tracking-widest ${modoNoturno ? 'text-slate-600' : 'text-slate-400'}`}>
-                                        leia antes de continuar — {cotacaoInfoCountdown}s
-                                    </p>
-                                </div>
-                            )}
-                            <button
-                                disabled={cotacaoInfoCountdown > 0}
-                                onClick={() => { setShowCotacaoInfo(false); setTimeout(() => setShowCotacaoModal(true), 150); }}
-                                className={`w-full font-black text-sm uppercase tracking-widest py-4 rounded-2xl transition-all flex items-center justify-center gap-2 relative overflow-hidden active:scale-[0.98] ${cotacaoInfoCountdown > 0 ? (modoNoturno ? 'bg-slate-800 text-slate-600 cursor-not-allowed' : 'bg-slate-100 text-slate-300 cursor-not-allowed') : 'text-white'}`}
-                                style={cotacaoInfoCountdown > 0 ? {} : { background: 'linear-gradient(135deg, #6366f1 0%, #4f46e5 45%, #7c3aed 100%)', boxShadow: '0 4px 20px rgba(99,102,241,0.45)' }}>
-                                {cotacaoInfoCountdown > 0 ? (
-                                    <span>Aguarde...</span>
-                                ) : (
-                                    <>
-                                        <span className="absolute inset-0 cotacao-btn-shine pointer-events-none" style={{borderRadius:'1rem'}}></span>
-                                        <Calculator size={15} className="relative z-10" style={{filter:'drop-shadow(0 0 6px rgba(255,255,255,0.9))'}} />
-                                        <span className="relative z-10" style={{textShadow:'0 1px 6px rgba(0,0,0,0.3)'}}>Entendi, vamos calcular!</span>
-                                    </>
-                                )}
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* MODAL SENHA COTAÇÃO */}
-            {showCotacaoSenha && (
-                <div className="fixed inset-0 z-[80] flex items-center justify-center p-5"
-                    style={{ background: 'rgba(7,11,22,0.75)', backdropFilter: 'blur(18px)', WebkitBackdropFilter: 'blur(18px)' }}
-                    onClick={(e) => { if (e.target === e.currentTarget) { setShowCotacaoSenha(false); setCotacaoSenhaInput(''); setCotacaoSenhaErro(false); } }}>
-                    <div className={`w-full max-w-xs rounded-3xl p-7 flex flex-col gap-5 shadow-2xl ${modoNoturno ? 'bg-[#0f1829] border border-slate-700/50' : 'bg-white border border-slate-200'}`}
-                        style={{ animation: 'poi-modal-in 0.35s cubic-bezier(0.34,1.3,0.64,1) both' }}>
-                        {/* Ícone */}
-                        <div className="flex flex-col items-center gap-2">
-                            <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-1"
-                                style={{ background: 'linear-gradient(135deg,#6366f1,#7c3aed)', boxShadow: '0 4px 20px rgba(99,102,241,0.4)' }}>
-                                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
-                                    <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-                                </svg>
-                            </div>
-                            <h2 className={`text-base font-black tracking-wide text-center ${modoNoturno ? 'text-white' : 'text-slate-900'}`}>ACESSO RESTRITO</h2>
-                            <p className={`text-xs text-center leading-relaxed ${modoNoturno ? 'text-slate-400' : 'text-slate-500'}`}>
-                                O gerador de cotação está em fase de testes e disponível apenas para administradores.
-                            </p>
-                        </div>
-                        {/* Input senha */}
-                        <div className="flex flex-col gap-2">
-                            <input
-                                type="password"
-                                maxLength={6}
-                                placeholder="Digite a senha"
-                                value={cotacaoSenhaInput}
-                                onChange={e => { setCotacaoSenhaInput(e.target.value); setCotacaoSenhaErro(false); }}
-                                onKeyDown={e => {
-                                    if (e.key === 'Enter') {
-                                        if (cotacaoSenhaInput === '6658') {
-                                            localStorage.setItem('dst_cot_unlock', String(Date.now()));
-                                            setShowCotacaoSenha(false);
-                                            setCotacaoSenhaInput('');
-                                            setTimeout(() => setShowCotacaoModal(true), 200);
-                                        } else {
-                                            setCotacaoSenhaErro(true);
-                                        }
-                                    }
-                                }}
-                                className={`w-full text-center text-xl font-black tracking-[0.4em] rounded-2xl px-4 py-4 outline-none border-2 transition-all ${
-                                    cotacaoSenhaErro
-                                        ? 'border-red-500 bg-red-50 text-red-600'
-                                        : modoNoturno
-                                            ? 'border-slate-600 bg-slate-800 text-white focus:border-indigo-500'
-                                            : 'border-slate-200 bg-slate-50 text-slate-900 focus:border-indigo-400'
-                                }`}
-                                autoFocus
-                            />
-                            {cotacaoSenhaErro && (
-                                <p className="text-xs text-red-500 text-center font-bold animate-pulse">Senha incorreta. Tente novamente.</p>
-                            )}
-                        </div>
-                        {/* Botões */}
-                        <div className="flex gap-3">
-                            <button
-                                onClick={() => { setShowCotacaoSenha(false); setCotacaoSenhaInput(''); setCotacaoSenhaErro(false); }}
-                                className={`flex-1 py-3 rounded-2xl text-xs font-black uppercase tracking-widest transition-all ${modoNoturno ? 'bg-slate-800 text-slate-400 hover:bg-slate-700' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}>
-                                Cancelar
-                            </button>
-                            <button
-                                onClick={() => {
-                                    if (cotacaoSenhaInput === '6658') {
-                                        localStorage.setItem('dst_cot_unlock', String(Date.now()));
-                                        setShowCotacaoSenha(false);
-                                        setCotacaoSenhaInput('');
-                                        setTimeout(() => setShowCotacaoModal(true), 200);
-                                    } else {
-                                        setCotacaoSenhaErro(true);
-                                    }
-                                }}
-                                className="flex-1 py-3 rounded-2xl text-xs font-black uppercase tracking-widest text-white transition-all active:scale-95"
-                                style={{ background: 'linear-gradient(135deg,#6366f1,#7c3aed)', boxShadow: '0 4px 16px rgba(99,102,241,0.4)' }}>
-                                Entrar
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* MODAL BOAS VINDAS */}
-
-
-            {/* MODAL COTAÇÃO */}
-            {showCotacaoModal && (
-                <div className="fixed inset-0 z-[70] flex flex-col"
-                    style={{ background: modoNoturno ? 'rgba(7,11,22,0.82)' : 'rgba(15,23,42,0.55)', backdropFilter: 'blur(20px) saturate(180%)', WebkitBackdropFilter: 'blur(20px) saturate(180%)' }}>
-                    <div className={`cotacao-modal-open flex flex-col h-full w-full ${modoNoturno ? 'bg-[#0B1120]' : 'bg-slate-50'}`}
-                        style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}>
-
-                        {/* ── HEADER ── */}
-                        <div className="shrink-0 relative overflow-hidden"
-                            style={{
-                                background: 'linear-gradient(135deg, #6366f1 0%, #4f46e5 40%, #7c3aed 100%)',
-                                boxShadow: '0 4px 32px rgba(99,102,241,0.45)',
-                            }}>
-                            {/* shimmer sweep */}
-                            <div className="absolute inset-0 pointer-events-none overflow-hidden">
-                                <div style={{ position:'absolute', top:'-20%', left:0, width:'60%', height:'140%', background:'linear-gradient(105deg, transparent 10%, rgba(255,255,255,0.18) 50%, transparent 90%)', animation:'cotacao-shine 3.5s ease-in-out infinite', transform:'skewX(-18deg)' }}></div>
-                            </div>
-                            <div className="relative z-10 px-5 pt-5 pb-4 flex items-center justify-between">
-                                <div className="flex items-center gap-3">
-                                    <div className="bg-white/15 backdrop-blur-md p-2.5 rounded-2xl border border-white/20 shadow-inner">
-                                        <Calculator size={20} className="text-white" />
-                                    </div>
-                                    <div>
-                                        <h2 className="text-white font-black text-xl uppercase tracking-widest drop-shadow-md">$ Cotação</h2>
-                                        <p className="text-indigo-200 text-[10px] font-black uppercase tracking-[0.15em]">Plano de Entrada · IA</p>
-                                    </div>
-                                </div>
-                                <button
-                                    onClick={() => { haptic(); setShowCotacaoModal(false); setCotacaoResult(null); setCotacaoFile(null); setPerfilSelecionado(null); setPerfilExpandido(null); setCotacaoData({ perfil:'', empreendimento:'', valorImovel:'', renda:'', financiamentoBanco:'', subsidio:'', fgts:'', atoCliente:'', parcelaFinanciamento:'', entrega:'' }); }}
-                                    className="bg-white/10 hover:bg-white/25 active:scale-95 text-white p-2.5 rounded-2xl border border-white/20 transition-all backdrop-blur-sm">
-                                    <X size={20} />
-                                </button>
-                            </div>
-                        </div>
-
-                        {/* ── BODY ── */}
-                        <div className="flex-1 overflow-y-auto custom-scrollbar px-4 py-5 space-y-3">
-
-                            {/* CARD: Anexar aprovação */}
-                            <div
-                                className={`rounded-3xl overflow-hidden transition-all duration-300 cursor-pointer active:scale-[0.98] ${
-                                    cotacaoFile
-                                    ? (modoNoturno ? 'bg-indigo-900/30 border border-indigo-500/40 shadow-lg shadow-indigo-900/30' : 'bg-indigo-50 border border-indigo-200 shadow-lg shadow-indigo-100')
-                                    : (modoNoturno ? 'bg-slate-800/80 border border-slate-700/60 hover:border-indigo-500/50' : 'bg-white border border-slate-100 hover:border-indigo-200 shadow-sm hover:shadow-md')
-                                }`}
-                                onClick={() => cotacaoFileRef.current?.click()}>
-                                <input ref={cotacaoFileRef} type="file" accept="image/*,application/pdf" className="hidden" onChange={async (e) => {
-                                    const file = e.target.files?.[0];
-                                    if (!file) return;
-                                    setCotacaoFile(file);
-                                    setCotacaoLoading(true);
-                                    setCotacaoResult(null);
-                                    try {
-                                        // Converte para base64
-                                        const toBase64 = (f) => new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result.split(',')[1]); r.onerror = rej; r.readAsDataURL(f); });
-                                        const b64 = await toBase64(file);
-                                        // PDFs: converte para imagem via canvas (mesmo truque da Pasta Rápida)
-                                        let mime = file.type.startsWith('image/') ? file.type : 'image/jpeg';
-                                        let imgB64 = b64;
-                                        if (file.type === 'application/pdf') {
-                                            try {
-                                                // Usa todas as páginas empilhadas — entrega/parcela costumam estar em pág 2+
-                                                const preview = await generatePdfAllPages(file);
-                                                if (preview) { imgB64 = preview.split(',')[1]; mime = 'image/jpeg'; }
-                                                else {
-                                                    const pg1 = await generatePdfPreview(file);
-                                                    if (pg1) { imgB64 = pg1.split(',')[1]; mime = 'image/jpeg'; }
-                                                }
-                                            } catch { /* usa b64 original */ }
-                                        }
-
-                                        const PROMPT_COTACAO = `Você é um extrator de dados de documentos imobiliários brasileiros (Caixa Econômica Federal, Direcional, Riva). Analise TODO o documento visível e extraia os campos abaixo com máxima precisão.
-
-CAMPO "parcelaFinanciamento" — ATENÇÃO: este é o campo mais difícil, leia com cuidado:
-- É o valor MENSAL da prestação do financiamento bancário
-- Nos documentos da CAIXA ECONÔMICA aparece como:
-  • "Prestação" (coluna em tabela de amortização, use o valor do mês 1)
-  • "Prestação Aprovada" ou "Prestação Máxima"
-  • "Valor da Prestação" ou "Prestação do Financiamento"
-  • "SIRIC" (sistema de análise de crédito — é o valor da prestação aprovada)
-  • "1ª Prestação" ou "Primeira Prestação"
-  • "Encargo Mensal" ou "Parcela Mensal"
-  • "Comprometimento de Renda" — NÃO é isso, mas a prestação aparece próxima
-- O valor geralmente está entre R$ 300 e R$ 5.000
-- Se aparecer numa tabela com colunas, pegue o valor da linha do MÊS 1 ou PERÍODO 1
-- Exemplo: "R$ 1.240,56" ou "1240,56"
-
-CAMPO "entrega":
-- Data prevista de conclusão/entrega do imóvel ao comprador
-- Procure por: "previsão de entrega", "prazo de entrega", "conclusão prevista", "habite-se previsto", "data prevista de entrega", "entrega prevista"
-- Pode estar no rodapé, notas de rodapé, ou corpo do documento
-- Formato desejado: "Dez/2026", "Mar/2027", "06/2027"
-
-CAMPO "empreendimento":
-- Apenas o nome do condomínio/empreendimento (SEM endereço, SEM número)
-- Procure no título, cabeçalho, logo, nome da unidade
-- Exemplos: "Brisas do Horizonte", "Village Torres", "Parque Ville Lírio Azul"
-
-DEMAIS CAMPOS:
-- "valorImovel": "Valor final com desconto" > "Valor da unidade" > "Valor do imóvel" (número sem R$)
-- "financiamentoBanco": valor TOTAL financiado pelo banco (não a parcela mensal)
-- "renda": renda bruta familiar mensal
-- "subsidio": subsídio MCMV / Governo Federal
-- "fgts": FGTS a ser utilizado
-- Campos não encontrados: ""
-
-Responda SOMENTE com JSON puro (sem markdown, sem texto antes ou depois):
-{"empreendimento":"","valorImovel":"","renda":"","financiamentoBanco":"","subsidio":"","fgts":"","parcelaFinanciamento":"","entrega":""}`;
-
-                                        // Tenta modelos gratuitos com visão em cascata (igual Pasta Rápida)
-                                        const modelos = [
-                                            'google/gemini-2.0-flash-001',
-                                            'google/gemini-flash-1.5',
-                                            'meta-llama/llama-3.2-90b-vision-instruct',
-                                        ];
-
-                                        let parsed = null;
-                                        for (const modelo of modelos) {
-                                            try {
-                                                const controller = new AbortController();
-                                                const tid = setTimeout(() => controller.abort(), 20000);
-                                                const resp = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-                                                    method: 'POST',
-                                                    signal: controller.signal,
-                                                    headers: {
-                                                        'Content-Type': 'application/json',
-                                                        'Authorization': `Bearer ${OPENROUTER_KEY}`,
-                                                        'HTTP-Referer': window.location.origin,
-                                                        'X-Title': 'Destemidos Imoveis'
-                                                    },
-                                                    body: JSON.stringify({
-                                                        model: modelo,
-                                                        max_tokens: 600,
-                                                        temperature: 0.0,
-                                                        messages: [{ role: 'user', content: [
-                                                            { type: 'image_url', image_url: { url: `data:${mime};base64,${imgB64}` } },
-                                                            { type: 'text', text: PROMPT_COTACAO }
-                                                        ]}]
-                                                    })
-                                                });
-                                                clearTimeout(tid);
-                                                if (!resp.ok) { console.warn(`Cotação: modelo ${modelo} retornou ${resp.status}`); continue; }
-                                                const data = await resp.json();
-                                                const text = data.choices?.[0]?.message?.content || '';
-                                                console.log(`📄 Cotação raw [${modelo}]:`, text);
-                                                const clean = text.replace(/```json|```/g, '').trim();
-                                                const match = clean.match(/\{[\s\S]*\}/);
-                                                if (!match) { console.warn(`Cotação: sem JSON em ${modelo}`); continue; }
-                                                parsed = JSON.parse(match[0]);
-                                                console.log(`✅ Cotação extraída [${modelo}]:`, parsed);
-                                                break;
-                                            } catch (err) {
-                                                console.warn(`Cotação: erro em ${modelo}:`, err.message);
-                                            }
-                                        }
-
-                                        if (parsed) {
-                                            // perfil NÃO é definido pelo documento — só o usuário clica
-                                            const { perfil: _ignorado, ...dadosSemPerfil } = parsed;
-
-                                            // Se a IA não trouxe entrega mas trouxe empreendimento,
-                                            // busca a data no mapa interno
-                                            if (!dadosSemPerfil.entrega && dadosSemPerfil.empreendimento) {
-                                                const nomeDoc = dadosSemPerfil.empreendimento.toLowerCase();
-                                                const EMPREEND_ENTREGA = {
-                                                    'topazio':'Abr/2026','jardim botanico':'Nov/2026','jardim botânico':'Nov/2026',
-                                                    'village':'Abr/2027','orquidea':'Abr/2027','orquídea':'Abr/2027',
-                                                    'jardim norte':'Jun/2027','tapajos':'Ago/2027','tapajós':'Ago/2027',
-                                                    'coral':'Mar/2028','marinas':'Mar/2028','bosque':'Jun/2028',
-                                                    'brisas':'Ago/2028','lirio':'Nov/2028','lírio':'Nov/2028',
-                                                    'rio negro':'Entregue',
-                                                };
-                                                for (const [chave, data] of Object.entries(EMPREEND_ENTREGA)) {
-                                                    if (nomeDoc.includes(chave)) { dadosSemPerfil.entrega = data; break; }
-                                                }
-                                            }
-
-                                            // Formata campos monetários vindos da IA
-                                            const CAMPOS_BRL = ['valorImovel','renda','financiamentoBanco','subsidio','fgts','atoCliente','parcelaFinanciamento'];
-                                            const formatBRL = (v) => {
-                                                if (!v) return '';
-                                                const digits = String(v).replace(/\D/g, '');
-                                                if (!digits) return String(v);
-                                                const num = parseInt(digits, 10);
-                                                return (num / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-                                            };
-                                            const dadosFormatados = { ...dadosSemPerfil };
-                                            CAMPOS_BRL.forEach(campo => {
-                                                if (dadosFormatados[campo]) dadosFormatados[campo] = formatBRL(dadosFormatados[campo]);
-                                            });
-                                            setCotacaoData(prev => ({ ...prev, ...dadosFormatados }));
-                                        }
-                                    } catch (err) { console.error('Cotação IA error:', err); }
-                                    finally { setCotacaoLoading(false); }
-                                }} />
-                                <div className="p-4 flex items-center gap-3.5">
-                                    <div className={`p-3 rounded-2xl shrink-0 ${cotacaoFile ? 'bg-indigo-500/20' : (modoNoturno ? 'bg-slate-700' : 'bg-slate-100')}`}>
-                                        {cotacaoLoading
-                                            ? <div className="w-5 h-5 border-2 border-indigo-500 border-t-transparent rounded-full" style={{animation:'spin 0.8s linear infinite'}}></div>
-                                            : <Paperclip size={20} className={cotacaoFile ? 'text-indigo-400' : 'text-slate-400'} />
-                                        }
-                                    </div>
-                                    <div className="flex-1 min-w-0">
-                                        {cotacaoLoading ? (
-                                            <div>
-                                                <p className={`font-black text-sm ${modoNoturno ? 'text-indigo-300' : 'text-indigo-600'}`}>IA lendo documento...</p>
-                                                <p className={`text-[10px] font-bold mt-0.5 ${modoNoturno ? 'text-slate-500' : 'text-slate-400'}`}>Extraindo dados automaticamente</p>
-                                            </div>
-                                        ) : cotacaoFile ? (
-                                            <div>
-                                                <p className={`font-black text-sm truncate ${modoNoturno ? 'text-indigo-300' : 'text-indigo-700'}`}>✓ {cotacaoFile.name}</p>
-                                                <p className={`text-[10px] font-bold mt-0.5 ${modoNoturno ? 'text-slate-500' : 'text-slate-400'}`}>Toque para trocar o arquivo</p>
-                                            </div>
-                                        ) : (
-                                            <div>
-                                                <p className={`font-black text-sm ${modoNoturno ? 'text-white' : 'text-slate-800'}`}>Anexar Aprovação do Cliente</p>
-                                                <p className={`text-[10px] font-bold mt-0.5 ${modoNoturno ? 'text-slate-400' : 'text-slate-500'}`}>Cole prints ou PDF da aprovação · IA extrai os dados</p>
-                                            </div>
-                                        )}
-                                    </div>
-                                    {/* Botão Colar (Ctrl+V) */}
-                                    <button
-                                        onClick={async (ev) => {
-                                            ev.stopPropagation();
-                                            haptic('light');
-                                            try {
-                                                const items = await navigator.clipboard.read();
-                                                for (const item of items) {
-                                                    const imgType = item.types.find(t => t.startsWith('image/'));
-                                                    if (imgType) {
-                                                        const blob = await item.getType(imgType);
-                                                        const file = new File([blob], 'print_colado.png', { type: imgType });
-                                                        // Dispara o mesmo handler do input file
-                                                        const dt = new DataTransfer();
-                                                        dt.items.add(file);
-                                                        cotacaoFileRef.current.files = dt.files;
-                                                        cotacaoFileRef.current.dispatchEvent(new Event('change', { bubbles: true }));
-                                                        return;
-                                                    }
-                                                }
-                                                alert('Nenhuma imagem encontrada na área de transferência.');
-                                            } catch { alert('Permissão negada ou área de transferência vazia.'); }
-                                        }}
-                                        className={`shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all active:scale-95 ${modoNoturno ? 'bg-slate-700 text-slate-300 hover:bg-indigo-500/20 hover:text-indigo-300' : 'bg-slate-100 text-slate-500 hover:bg-indigo-100 hover:text-indigo-600'}`}
-                                        title="Colar print (Ctrl+V)">
-                                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                                            <rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
-                                        </svg>
-                                        Colar
-                                    </button>
-                                    <div className={`shrink-0 text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full ${modoNoturno ? 'bg-indigo-500/20 text-indigo-300' : 'bg-indigo-100 text-indigo-600'}`}>IA</div>
-                                </div>
-                            </div>
-
-                            {/* DIVIDER */}
-                            <div className={`flex items-center gap-3 py-1`}>
-                                <div className={`flex-1 h-px ${modoNoturno ? 'bg-slate-800' : 'bg-slate-200'}`}></div>
-                                <span className={`text-[9px] font-black uppercase tracking-[0.18em] ${modoNoturno ? 'text-slate-600' : 'text-slate-400'}`}>ou preencha manualmente</span>
-                                <div className={`flex-1 h-px ${modoNoturno ? 'bg-slate-800' : 'bg-slate-200'}`}></div>
-                            </div>
-
-                            {/* CAMPOS — agrupados em cards iOS */}
-
-                            {/* LINHA 1: Perfil do Cliente */}
-                            {(() => {
-                                const PERFIS = [
-                                    { id: 'diamante', label: 'Diamante', emoji: '💎', ativo: { bg: 'linear-gradient(135deg, #bae6fd 0%, #38bdf8 40%, #0284c7 100%)', shadow: '0 4px 16px rgba(56,189,248,0.5)' }, porcentagens: [{ l: 'PS', v: '25%' }, { l: 'Parcelas', v: '84x' }, { l: 'Fin.+PS', v: '≤50%' }, { l: 'PS solo', v: '≤20%' }] },
-                                    { id: 'ouro',     label: 'Ouro',     emoji: '🥇', ativo: { bg: 'linear-gradient(135deg, #fef08a 0%, #fbbf24 40%, #b45309 100%)', shadow: '0 4px 16px rgba(251,191,36,0.5)' },  porcentagens: [{ l: 'PS', v: '20%' }, { l: 'Parcelas', v: '84x' }, { l: 'Fin.+PS', v: '≤50%' }, { l: 'PS solo', v: '≤20%' }] },
-                                    { id: 'prata',    label: 'Prata',    emoji: '🥈', ativo: { bg: 'linear-gradient(135deg, #f1f5f9 0%, #94a3b8 40%, #475569 100%)', shadow: '0 4px 16px rgba(148,163,184,0.5)' }, porcentagens: [{ l: 'PS', v: '18%' }, { l: 'Parcelas', v: '84x' }, { l: 'Fin.+PS', v: '≤48%' }, { l: 'PS solo', v: '≤18%' }] },
-                                    { id: 'bronze',   label: 'Bronze',   emoji: '🥉', ativo: { bg: 'linear-gradient(135deg, #fcd9b6 0%, #b87333 40%, #7c3a1e 100%)', shadow: '0 4px 16px rgba(184,115,51,0.5)' },  porcentagens: [{ l: 'PS', v: '15%' }, { l: 'Parcelas', v: '84x' }, { l: 'Fin.+PS', v: '≤45%' }, { l: 'PS solo', v: '≤15%' }] },
-                                    { id: 'aco',      label: 'Aço',      emoji: '⚙️', ativo: { bg: 'linear-gradient(135deg, #e2e8f0 0%, #4b5563 40%, #111827 100%)', shadow: '0 4px 16px rgba(75,85,99,0.5)' },    porcentagens: [{ l: 'PS', v: '12%' }, { l: 'Parcelas', v: '84x' }, { l: 'Fin.+PS', v: '≤40%' }, { l: 'PS solo', v: '≤10%' }] },
-                                ];
-                                return (
-                                    <div>
-
-                                        {/* Card Perfil */}
-                                        <div className="flex flex-col">
-                                            <p className={`text-[9px] font-black uppercase tracking-[0.18em] mb-2 ml-1 ${modoNoturno ? 'text-slate-500' : 'text-slate-400'}`}>Perfil Comercial</p>
-                                            <div className={`flex-1 rounded-3xl border transition-colors flex flex-col justify-center px-4 py-4 ${modoNoturno ? 'bg-slate-800/80 border-slate-700/60' : 'bg-white border-slate-100 shadow-sm'}`}>
-                                                <label className={`block text-[9px] font-black uppercase tracking-widest mb-1 ${modoNoturno ? 'text-slate-500' : 'text-slate-400'}`}>👤 Perfil Comercial do Cliente</label>
-                                                <p className={`text-[9px] mb-3 ${modoNoturno ? 'text-slate-600' : 'text-slate-400'}`}>Define as condições de PS e comprometimento — não é baseado na renda</p>
-                                                {/* Pílulas de perfil — overflow:hidden no container, cada pílula cresce/encolhe */}
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', minWidth: 0, overflow: 'hidden' }}>
-                                                    {PERFIS.map(p => {
-                                                        const sel = perfilSelecionado === p.id;
-                                                        const empurrado = perfilSelecionado !== null && !sel;
-                                                        return (
-                                                            <div key={p.id}
-                                                                onClick={() => { haptic('light'); setPerfilSelecionado(sel ? null : p.id); }}
-                                                                style={{
-                                                                    display: 'flex', alignItems: 'center',
-                                                                    flexShrink: empurrado ? 1 : 0,
-                                                                    flexGrow: sel ? 1 : 0,
-                                                                    flexBasis: empurrado ? '0px' : '40px',
-                                                                    minWidth: empurrado ? '0px' : '40px',
-                                                                    maxWidth: empurrado ? '0px' : sel ? '9999px' : '40px',
-                                                                    height: '40px',
-                                                                    borderRadius: '999px',
-                                                                    overflow: 'clip',
-                                                                    opacity: empurrado ? 0 : 1,
-                                                                    cursor: 'pointer',
-                                                                    transition: 'all 0.42s cubic-bezier(0.34,1.05,0.64,1)',
-                                                                    background: sel ? p.ativo.bg : (modoNoturno ? '#1e293b' : '#f1f5f9'),
-                                                                    boxShadow: sel ? p.ativo.shadow : 'none',
-                                                                    border: `2px solid ${sel ? 'transparent' : (modoNoturno ? '#334155' : '#e2e8f0')}`,
-                                                                    paddingLeft: sel ? '10px' : '0',
-                                                                    paddingRight: sel ? '12px' : '0',
-                                                                    gap: sel ? '8px' : '0',
-                                                                    whiteSpace: 'nowrap',
-                                                                    backgroundSize: '200% 100%',
-                                                                    backgroundPosition: 'left center',
-                                                                }}>
-                                                                {/* Emoji — sempre centrado quando fechado, à esquerda quando aberto */}
-                                                                <span style={{
-                                                                    fontSize: '18px', lineHeight: 1,
-                                                                    width: sel ? 'auto' : '40px',
-                                                                    flexShrink: 0,
-                                                                    textAlign: 'center',
-                                                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                                                    filter: sel ? 'drop-shadow(0 1px 3px rgba(0,0,0,0.3))' : 'none',
-                                                                    transition: 'filter 0.3s, width 0.42s cubic-bezier(0.34,1.05,0.64,1)',
-                                                                }}>{p.emoji}</span>
-
-                                                                {/* Conteúdo expandido */}
-                                                                <div style={{
-                                                                    display: 'flex', alignItems: 'center', gap: '6px',
-                                                                    overflow: 'hidden',
-                                                                    opacity: sel ? 1 : 0,
-                                                                    maxWidth: sel ? '600px' : '0px',
-                                                                    transition: `opacity ${sel ? '0.18s ease 0.22s' : '0.1s'}, max-width ${sel ? '0.42s cubic-bezier(0.34,1.05,0.64,1)' : '0.2s'}`,
-                                                                    pointerEvents: 'none',
-                                                                }}>
-                                                                    <span style={{ fontSize: '10px', fontWeight: 900, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.95)', textShadow: '0 1px 3px rgba(0,0,0,0.3)', whiteSpace: 'nowrap' }}>{p.label}</span>
-                                                                    <div style={{ width: '1px', height: '18px', background: 'rgba(255,255,255,0.2)', flexShrink: 0 }} />
-                                                                    <div style={{ display: 'flex', gap: '3px' }}>
-                                                                        {p.porcentagens.map((pc, i) => (
-                                                                            <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '2px 5px', borderRadius: '6px', background: 'rgba(0,0,0,0.25)', flexShrink: 0 }}>
-                                                                                <span style={{ fontSize: '6px', fontWeight: 900, textTransform: 'uppercase', color: 'rgba(255,255,255,0.5)', lineHeight: 1.3, whiteSpace: 'nowrap' }}>{pc.l}</span>
-                                                                                <span style={{ fontSize: '9px', fontWeight: 900, color: '#fff', lineHeight: 1.3, whiteSpace: 'nowrap' }}>{pc.v}</span>
-                                                                            </div>
-                                                                        ))}
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                        );
-                                                    })}
-                                                </div>
-                                            </div>
-                                        </div>
-
-
-                                    </div>
-                                );
-                            })()}
-
-                            {/* CARD EMPREENDIMENTO */}
-                            <div>
-                                <p className={`text-[9px] font-black uppercase tracking-[0.18em] mb-2 ml-1 ${modoNoturno ? 'text-slate-500' : 'text-slate-400'}`}>Empreendimento</p>
-                                <div className={`rounded-3xl overflow-hidden border ${modoNoturno ? 'bg-slate-800/80 border-slate-700/60' : 'bg-white border-slate-100 shadow-sm'}`}>
-                                    <div className="px-4 pt-3.5 pb-2 flex items-center gap-3">
-                                        <span className="text-base shrink-0 w-6 text-center">🏗️</span>
-                                        <div className="flex-1 min-w-0">
-                                            <label className={`block text-[9px] font-black uppercase tracking-widest mb-0.5 ${modoNoturno ? 'text-slate-500' : 'text-slate-400'}`}>Nome do Empreendimento</label>
-                                            <input
-                                                type="text"
-                                                value={cotacaoData.empreendimento || ''}
-                                                onChange={e => {
-                                                    const val = e.target.value;
-                                                    setCotacaoData(p => ({ ...p, empreendimento: val }));
-                                                    // Auto-preenche entrega ao digitar
-                                                    const low = val.toLowerCase();
-                                                    const EMAP = {
-                                                        'topazio':{'entrega':'04/2026'},'jardim botanico':{'entrega':'11/2026'},'jardim botânico':{'entrega':'11/2026'},
-                                                        'village':{'entrega':'04/2027'},'orquidea':{'entrega':'04/2027'},'orquídea':{'entrega':'04/2027'},
-                                                        'jardim norte':{'entrega':'06/2027'},'tapajos':{'entrega':'08/2027'},'tapajós':{'entrega':'08/2027'},
-                                                        'coral':{'entrega':'03/2028'},'marinas':{'entrega':'03/2028'},'bosque':{'entrega':'06/2028'},
-                                                        'brisas':{'entrega':'08/2028'},'lirio':{'entrega':'11/2028'},'lírio':{'entrega':'11/2028'},
-                                                        'rio negro':{'entrega':'Entregue'},
-                                                    };
-                                                    for (const [chave, dados] of Object.entries(EMAP)) {
-                                                        if (low.includes(chave)) {
-                                                            setCotacaoData(p => ({ ...p, empreendimento: val, entrega: dados.entrega }));
-                                                            break;
-                                                        }
-                                                    }
-                                                }}
-                                                placeholder="Ex: Brisas do Horizonte"
-                                                className={`w-full text-sm font-semibold bg-transparent border-none outline-none placeholder-slate-400/60 ${modoNoturno ? 'text-white' : 'text-slate-800'}`}
-                                            />
-                                        </div>
-                                        {cotacaoData.empreendimento ? (
-                                            <button onClick={() => setCotacaoData(p => ({ ...p, empreendimento: '', entrega: '' }))}
-                                                className={`shrink-0 p-1.5 rounded-full transition-all ${modoNoturno ? 'text-slate-500 hover:text-red-400' : 'text-slate-300 hover:text-red-400'}`}>
-                                                <X size={13} />
-                                            </button>
-                                        ) : null}
-                                    </div>
-                                    {/* Chips de seleção rápida */}
-                                    <div className="px-4 pb-3.5 flex flex-wrap gap-1.5">
-                                        {[
-                                            { label: 'Topázio',        nome: 'Conquista Topázio',        entrega: '04/2026' },
-                                            { label: 'Jd. Botânico',   nome: 'Conquista Jardim Botânico', entrega: '11/2026' },
-                                            { label: 'Village Torres', nome: 'Village Torres',            entrega: '04/2027' },
-                                            { label: 'Orquídea',       nome: 'Parque Ville Orquídea',     entrega: '04/2027' },
-                                            { label: 'Jd. Norte',      nome: 'Conquista Jardim Norte',    entrega: '06/2027' },
-                                            { label: 'Tapajós',        nome: 'Viva Vida Rio Tapajós',     entrega: '08/2027' },
-                                            { label: 'Coral',          nome: 'Viva Vida Coral',           entrega: '03/2028' },
-                                            { label: 'Bosque Torres',  nome: 'Bosque das Torres',         entrega: '06/2028' },
-                                            { label: 'Brisas',         nome: 'Brisas do Horizonte',       entrega: '08/2028' },
-                                            { label: 'Lírio Azul',     nome: 'Parque Ville Lírio Azul',   entrega: '11/2028' },
-                                            { label: 'Rio Negro',      nome: 'Conquista Rio Negro',       entrega: 'Entregue' },
-                                        ].map(ape => {
-                                            const sel = cotacaoData.empreendimento === ape.nome;
-                                            return (
-                                                <button
-                                                    key={ape.label}
-                                                    onClick={() => {
-                                                        haptic('light');
-                                                        if (sel) {
-                                                            setCotacaoData(p => ({ ...p, empreendimento: '', entrega: '' }));
-                                                        } else {
-                                                            setCotacaoData(p => ({ ...p, empreendimento: ape.nome, entrega: ape.entrega }));
-                                                        }
-                                                    }}
-                                                    className="text-[10px] font-black px-2.5 py-1 rounded-full transition-all active:scale-95"
-                                                    style={sel ? {
-                                                        background: 'linear-gradient(135deg, #6366f1 0%, #7c3aed 100%)',
-                                                        color: 'white',
-                                                        boxShadow: '0 2px 8px rgba(99,102,241,0.4)',
-                                                    } : {
-                                                        background: modoNoturno ? '#1e293b' : '#f1f5f9',
-                                                        color: modoNoturno ? '#94a3b8' : '#64748b',
-                                                        border: `1px solid ${modoNoturno ? '#334155' : '#e2e8f0'}`,
-                                                    }}>
-                                                    {sel ? '✓ ' : ''}{ape.label}
-                                                </button>
-                                            );
-                                        })}
-                                    </div>
-                                    {/* Indicador de entrega auto-preenchida */}
-                                    {cotacaoData.empreendimento && cotacaoData.entrega && (
-                                        <div className={`mx-4 mb-3.5 px-3 py-2 rounded-xl flex items-center gap-2 ${modoNoturno ? 'bg-indigo-950/60 border border-indigo-700/40' : 'bg-indigo-50 border border-indigo-100'}`}>
-                                            <span className="text-sm">🔑</span>
-                                            <p className={`text-[11px] font-bold ${modoNoturno ? 'text-indigo-300' : 'text-indigo-600'}`}>
-                                                Entrega preenchida automaticamente: <strong>{cotacaoData.entrega}</strong>
-                                            </p>
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-
-                            {/* LINHA 2: Financeiro e Benefícios lado a lado */}
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 260px), 1fr))', gap: '12px', alignItems: 'start' }}>
-                                    {/* GRUPO: FINANCEIRO */}
-                                    <div>
-                                        <p className={`text-[9px] font-black uppercase tracking-[0.18em] mb-2 ml-1 ${modoNoturno ? 'text-slate-500' : 'text-slate-400'}`}>Financeiro</p>
-                                        <div className={`rounded-3xl overflow-hidden border ${modoNoturno ? 'bg-slate-800/80 border-slate-700/60' : 'bg-white border-slate-100 shadow-sm'}`}>
-
-                                            {/* ATO DO CLIENTE — destaque no topo */}
-                                            <div className={`px-4 py-3 ${modoNoturno ? 'bg-indigo-950/60 border-b border-indigo-800/40' : 'bg-indigo-50 border-b border-indigo-100'}`}>
-                                                <div className="flex items-center gap-3">
-                                                    <span className="text-base shrink-0 w-6 text-center">💵</span>
-                                                    <div className="flex-1 min-w-0">
-                                                        <div className="flex items-center gap-1.5 mb-0.5">
-                                                            <label className={`text-[9px] font-black uppercase tracking-widest ${modoNoturno ? 'text-indigo-400' : 'text-indigo-500'}`}>Ato do Cliente</label>
-                                                            <span className={`text-[8px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-full ${modoNoturno ? 'bg-indigo-800/60 text-indigo-300' : 'bg-indigo-100 text-indigo-500'}`}>negocia</span>
-                                                        </div>
-                                                        <input type="text" inputMode="numeric" value={cotacaoData.atoCliente || ''} onChange={e => { const maskBRL = (v) => { const d=v.replace(/\D/g,''); if(!d) return ''; return (parseInt(d,10)/100).toLocaleString('pt-BR',{style:'currency',currency:'BRL'}); }; setCotacaoData(p => ({...p, atoCliente: maskBRL(e.target.value)})); }} placeholder="R$ 1.000,00 (padrão)" className={`w-full text-sm font-bold bg-transparent border-none outline-none placeholder-slate-400/60 ${modoNoturno ? 'text-indigo-200' : 'text-indigo-700'}`} />
-                                                    </div>
-                                                </div>
-                                            </div>
-
-                                            {/* Demais campos financeiros */}
-                                            <div className={`divide-y ${modoNoturno ? 'divide-slate-700/60' : 'divide-slate-100'}`}>
-                                                {[
-                                                    { key: 'valorImovel',        label: 'Valor do Imóvel',       placeholder: 'R$ 230.000,00',    icon: '🏠' },
-                                                    { key: 'renda',              label: 'Renda',                 placeholder: 'R$ 3.500,00',      icon: '📊' },
-                                                    { key: 'financiamentoBanco', label: 'Financiamento Banco',   placeholder: 'Caixa, Bradesco...', icon: '🏦' },
-                                                ].map(field => (
-                                                    <div key={field.key} className="flex items-center px-4 py-3 gap-3">
-                                                        <span className="text-base shrink-0 w-6 text-center">{field.icon}</span>
-                                                        <div className="flex-1 min-w-0">
-                                                            <label className={`block text-[9px] font-black uppercase tracking-widest mb-0.5 ${modoNoturno ? 'text-slate-500' : 'text-slate-400'}`}>{field.label}</label>
-                                                            <input type="text" inputMode={['valorImovel','renda'].includes(field.key)?'numeric':'text'} value={cotacaoData[field.key] || ''} onChange={e => { const mkBRL=(v)=>{const d=v.replace(/\D/g,'');if(!d)return '';return (parseInt(d,10)/100).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});}; const val=['valorImovel','renda'].includes(field.key)?mkBRL(e.target.value):e.target.value; setCotacaoData(p => ({...p, [field.key]: val})); }} placeholder={field.placeholder} className={`w-full text-sm font-semibold bg-transparent border-none outline-none placeholder-slate-400/60 ${modoNoturno ? 'text-white' : 'text-slate-800'}`} />
-                                                        </div>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {/* GRUPO: BENEFÍCIOS & PARCELA */}
-                                    <div>
-                                        <p className={`text-[9px] font-black uppercase tracking-[0.18em] mb-2 ml-1 ${modoNoturno ? 'text-slate-500' : 'text-slate-400'}`}>Benefícios & Parcela</p>
-                                        <div className={`rounded-3xl overflow-hidden border divide-y ${modoNoturno ? 'bg-slate-800/80 border-slate-700/60 divide-slate-700/60' : 'bg-white border-slate-100 divide-slate-100 shadow-sm'}`}>
-                                            {[
-                                                { key: 'subsidio',            label: 'Subsídio',                  placeholder: 'R$ 55.000,00',    icon: '🎁' },
-                                                { key: 'fgts',                label: 'FGTS',                      placeholder: 'R$ 12.000,00',    icon: '📋' },
-                                                { key: 'parcelaFinanciamento', label: 'Prestação Financiamento',   placeholder: 'R$ 780,00/mês',   icon: '📅' },
-                                                { key: 'entrega',             label: 'Entrega',                   placeholder: 'Dezembro/2026',   icon: '🔑' },
-
-                                            ].map(field => (
-                                                <div key={field.key} className="flex items-center px-4 py-3 gap-3">
-                                                    <span className="text-base shrink-0 w-6 text-center">{field.icon}</span>
-                                                    <div className="flex-1 min-w-0">
-                                                        <label className={`block text-[9px] font-black uppercase tracking-widest mb-0.5 ${modoNoturno ? 'text-slate-500' : 'text-slate-400'}`}>{field.label}</label>
-                                                        <input type="text" inputMode={['subsidio','fgts','parcelaFinanciamento'].includes(field.key)?'numeric':'text'} value={cotacaoData[field.key] || ''} onChange={e => { const mkBRL=(v)=>{const d=v.replace(/\D/g,'');if(!d)return '';return (parseInt(d,10)/100).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});}; const val=['subsidio','fgts','parcelaFinanciamento'].includes(field.key)?mkBRL(e.target.value):e.target.value; setCotacaoData(p => ({...p, [field.key]: val})); }} placeholder={field.placeholder} className={`w-full text-sm font-semibold bg-transparent border-none outline-none placeholder-slate-400/60 ${modoNoturno ? 'text-white' : 'text-slate-800'}`} />
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-
-                                </div>{/* fim grid formulário */}
-
-                            {/* RESULTADO — 3 PLANOS EM CARDS */}
-                            {Array.isArray(cotacaoResult) && (() => {
-                                const CORES = [
-                                    { bg: 'linear-gradient(135deg, #6366f1 0%, #4f46e5 40%, #7c3aed 100%)', shadow: '0 8px 28px rgba(99,102,241,0.30)' },
-                                    { bg: 'linear-gradient(135deg, #0ea5e9 0%, #0284c7 40%, #0369a1 100%)', shadow: '0 8px 28px rgba(14,165,233,0.30)' },
-                                    { bg: 'linear-gradient(135deg, #10b981 0%, #059669 40%, #047857 100%)', shadow: '0 8px 28px rgba(16,185,129,0.30)' },
-                                ];
-                                const planos = cotacaoResult.slice(0, 1); // 1 card: Ato à Vista
-                                const meta   = cotacaoResult[2] || {};
-                                const todosReprovados = planos.every(pl => !pl.aprovado);
-                                return (
-                                    <div>
-                                        <p className={`text-[9px] font-black uppercase tracking-[0.18em] mb-3 ml-1 ${modoNoturno ? 'text-slate-500' : 'text-slate-400'}`}>Planos de Pagamento</p>
-                                        {/* Banner renda mínima quando todos reprovam */}
-                                        {todosReprovados && meta.rendaMinima && (
-                                            <div className="mb-4 rounded-2xl px-4 py-3 flex items-center gap-3" style={{background: modoNoturno ? 'rgba(239,68,68,0.12)' : 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.25)'}}>
-                                                <span className="text-xl shrink-0">📊</span>
-                                                <div>
-                                                    <p className="text-xs font-black text-red-500 uppercase tracking-wide mb-0.5">Renda insuficiente para este perfil</p>
-                                                    <p className={`text-xs font-semibold ${modoNoturno ? 'text-slate-300' : 'text-slate-600'}`}>
-                                                        Renda mínima necessária: <span className="font-black text-red-400">{meta.rendaMinima.toLocaleString('pt-BR', {style:'currency',currency:'BRL'})}</span>
-                                                        <span className={`ml-1 ${modoNoturno ? 'text-slate-500' : 'text-slate-400'}`}>(renda informada: {meta.renda.toLocaleString('pt-BR',{style:'currency',currency:'BRL'})})</span>
-                                                    </p>
-                                                </div>
-                                            </div>
-                                        )}
-                                        {/* Análise da IA */}
-                                        {meta.analiseIA ? (
-                                            <div className="mb-4 rounded-2xl px-4 py-3 flex items-start gap-3" style={{background: modoNoturno ? 'rgba(99,102,241,0.10)' : 'rgba(99,102,241,0.06)', border: '1px solid rgba(99,102,241,0.20)'}}>
-                                                <span className="text-lg shrink-0 mt-0.5">🤖</span>
-                                                <div>
-                                                    <p className="text-[10px] font-black uppercase tracking-wide mb-1" style={{color:'#818cf8'}}>Análise da IA</p>
-                                                    <p className={`text-xs leading-relaxed ${modoNoturno ? 'text-slate-300' : 'text-slate-600'}`}>{meta.analiseIA}</p>
-                                                </div>
-                                            </div>
-                                        ) : (
-                                            <div className="mb-4 rounded-2xl px-4 py-2 flex items-center gap-2" style={{background: modoNoturno ? 'rgba(99,102,241,0.06)' : 'rgba(99,102,241,0.04)', border: '1px solid rgba(99,102,241,0.12)'}}>
-                                                <span className="text-sm shrink-0">🤖</span>
-                                                <p className={`text-[10px] ${modoNoturno ? 'text-slate-500' : 'text-slate-400'}`}>Analisando cotação com IA…</p>
-                                            </div>
-                                        )}
-                                        {/* Grid: 1 col mobile, 3 col desktop */}
-                                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 260px), 1fr))', gap: '12px' }}>
-                                            {planos.map((plano, idx) => {
-                                                const cor = CORES[plano.cor ?? idx] ?? CORES[2];
-                                                return (
-                                                    <div key={idx} className="rounded-3xl overflow-hidden flex flex-col"
-                                                        style={{ boxShadow: cor.shadow, background: modoNoturno ? '#1e293b' : '#fff', border: modoNoturno ? '1px solid rgba(255,255,255,0.06)' : '1px solid rgba(0,0,0,0.06)' }}>
-
-                                                        {/* Header */}
-                                                        <div className="px-4 py-3 flex items-center justify-between" style={{ background: cor.bg }}>
-                                                            <span className="text-white font-black text-sm tracking-wide">{plano.label}</span>
-                                                            <span className={`text-xs font-black px-2.5 py-1 rounded-full ${plano.aprovado ? 'bg-white/25 text-white' : 'bg-black/20 text-white/80'}`}>
-                                                                {plano.aprovado ? '✅ Aprovado' : '❌ Reprovado'}
-                                                            </span>
-                                                        </div>
-
-                                                        <div className="p-4 flex flex-col gap-3 flex-1">
-                                                            {/* Composição */}
-                                                            <div>
-                                                                <p className={`text-[9px] font-black uppercase tracking-widest mb-1.5 ${modoNoturno ? 'text-slate-500' : 'text-slate-400'}`}>🏠 Composição</p>
-                                                                <div className={`rounded-2xl px-3 py-2 text-xs space-y-1 ${modoNoturno ? 'bg-slate-800' : 'bg-slate-50'}`}>
-                                                                    <div className="flex justify-between"><span className={modoNoturno?'text-slate-400':'text-slate-500'}>Imóvel</span><span className={`font-bold ${modoNoturno?'text-white':'text-slate-800'}`}>{plano.valorImovel}</span></div>
-                                                                    {plano.financBanco && <div className="flex justify-between"><span className={modoNoturno?'text-slate-400':'text-slate-500'}>Financiamento banco</span><span className={`font-bold ${modoNoturno?'text-white':'text-slate-800'}`}>{plano.financBanco}</span></div>}
-                                                                    {plano.subsidio && <div className="flex justify-between"><span className={modoNoturno?'text-slate-400':'text-slate-500'}>Subsídio</span><span className="font-bold text-emerald-500">{plano.subsidio}</span></div>}
-                                                                    {plano.fgts && <div className="flex justify-between"><span className={modoNoturno?'text-slate-400':'text-slate-500'}>FGTS</span><span className="font-bold text-emerald-500">{plano.fgts}</span></div>}
-                                                                    <div className="flex justify-between pt-1 border-t" style={{borderColor:modoNoturno?'#334155':'#e2e8f0'}}>
-                                                                        <span className={modoNoturno?'text-slate-400':'text-slate-500'}>Entrada bruta</span>
-                                                                        <span className={`font-bold ${modoNoturno?'text-white':'text-slate-800'}`}>{plano.entradaBruta}</span>
-                                                                    </div>
-                                                                    <div className="flex justify-between">
-                                                                        <span className={`font-medium ${modoNoturno?'text-indigo-300':'text-indigo-600'}`}>Benefício PS (Direcional parcela)</span>
-                                                                        <span className={`font-bold ${modoNoturno?'text-indigo-300':'text-indigo-600'}`}>{plano.benePS}</span>
-                                                                    </div>
-                                                                    {plano.excessoAto && (
-                                                                        <div className="flex justify-between">
-                                                                            <span className={`text-[10px] ${modoNoturno?'text-emerald-400':'text-emerald-600'}`}>↳ ato abateu PS em</span>
-                                                                            <span className={`text-[10px] font-bold ${modoNoturno?'text-emerald-300':'text-emerald-600'}`}>−{plano.excessoAto}</span>
-                                                                        </div>
-                                                                    )}
-                                                                    <div className="flex justify-between pt-1 border-t" style={{borderColor:modoNoturno?'#334155':'#e2e8f0'}}>
-                                                                        <span className={`font-bold ${modoNoturno?'text-amber-300':'text-amber-600'}`}>
-                                                                            {plano.sinais ? 'Ato + Sinais (cliente paga)' : 'Ato paga entrada'}
-                                                                        </span>
-                                                                        <span className={`font-bold ${modoNoturno?'text-amber-300':'text-amber-600'}`}>{plano.atoSinaisTotal}</span>
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-
-                                                            {/* Como o cliente paga */}
-                                                            <div>
-                                                                <p className={`text-[9px] font-black uppercase tracking-widest mb-1.5 ${modoNoturno ? 'text-slate-500' : 'text-slate-400'}`}>💰 Como o cliente paga</p>
-                                                                <div className={`rounded-2xl px-3 py-2 text-xs space-y-1.5 ${modoNoturno ? 'bg-slate-800' : 'bg-slate-50'}`}>
-
-                                                                    {/* Ato */}
-                                                                    <div className="flex justify-between items-center">
-                                                                        <span className={modoNoturno?'text-slate-400':'text-slate-500'}>✍️ Ato <span className={`text-[9px] ${modoNoturno?'text-slate-600':'text-slate-400'}`}>(assinatura)</span></span>
-                                                                        <span className={`font-black ${modoNoturno?'text-white':'text-slate-800'}`}>{plano.ato}</span>
-                                                                    </div>
-
-                                                                    {/* Sinais — só se necessário */}
-                                                                    {plano.sinais && (
-                                                                        <div className="flex justify-between items-center">
-                                                                            <span className={modoNoturno?'text-amber-400':'text-amber-600'}>📅 Sinais <span className="font-black">({plano.sinais.qtd}×)</span></span>
-                                                                            <span className={`font-black ${modoNoturno?'text-amber-300':'text-amber-600'}`}>{plano.sinais.valor}/mês</span>
-                                                                        </div>
-                                                                    )}
-
-                                                                    {/* PS 84x = entrada parcelada */}
-                                                                    <div className="flex justify-between items-center pt-1 border-t" style={{borderColor:modoNoturno?'#334155':'#e2e8f0'}}>
-                                                                        <span style={{color:'#818cf8'}}>🏠 PS <span className="font-black">84×</span> <span className={`text-[9px] font-normal`}>(entrada parcelada)</span></span>
-                                                                        <span className="font-black" style={{color:'#818cf8'}}>{plano.parcelaPS}</span>
-                                                                    </div>
-
-                                                                    {/* Anuais */}
-                                                                    {plano.anuais && (
-                                                                        <div className="flex justify-between items-center">
-                                                                            <span className={modoNoturno?'text-amber-400':'text-amber-600'}>🗓️ Anuais <span className={`text-[9px] font-normal`}>(todo dez)</span></span>
-                                                                            <span className="font-black text-amber-500">{plano.anuais}</span>
-                                                                        </div>
-                                                                    )}
-
-                                                                </div>
-                                                            </div>
-
-                                                            {/* 3 Regras */}
-                                                            <div>
-                                                                <p className={`text-[9px] font-black uppercase tracking-widest mb-1.5 ${modoNoturno ? 'text-slate-500' : 'text-slate-400'}`}>📋 3 Regras</p>
-                                                                <div className="space-y-1.5">
-                                                                    {plano.regras.map((r, ri) => {
-                                                                        const rKey = `${idx}-${ri}`;
-                                                                        const isOpen = openRegra === rKey;
-                                                                        return (
-                                                                        <div key={ri} className={`rounded-xl overflow-hidden ${r.ok ? (modoNoturno?'bg-emerald-900/30':'bg-emerald-50') : (modoNoturno?'bg-red-900/30':'bg-red-50')}`}>
-                                                                            <button onClick={() => setOpenRegra(isOpen ? null : rKey)} className="w-full px-2.5 py-2 text-left">
-                                                                                <div className="flex items-center justify-between gap-2 mb-0.5">
-                                                                                    <span className="text-[10px] font-black">{r.ok ? '✅' : '❌'} {r.rotulo} <span className={`text-[9px] font-normal ${modoNoturno?'text-slate-500':'text-slate-400'}`}>{isOpen ? '▲' : '▼'}</span></span>
-                                                                                    <span className={`text-[11px] font-black px-2 py-0.5 rounded-full ${r.ok ? (modoNoturno?'bg-emerald-700/50 text-emerald-200':'bg-emerald-200 text-emerald-800') : (modoNoturno?'bg-red-700/50 text-red-200':'bg-red-200 text-red-800')}`}>
-                                                                                        {r.pctAtual} / {r.pctLimite}
-                                                                                    </span>
-                                                                                </div>
-                                                                                <span className={`text-[10px] ${r.ok ? (modoNoturno?'text-emerald-400':'text-emerald-600') : (modoNoturno?'text-red-400':'text-red-600')}`}>{r.detalhe}</span>
-                                                                            </button>
-                                                                            {isOpen && (
-                                                                                <div className={`px-2.5 pb-2.5 pt-0 text-[10px] leading-relaxed border-t ${r.ok ? (modoNoturno?'border-emerald-800/40 text-emerald-300':'border-emerald-200 text-emerald-700') : (modoNoturno?'border-red-800/40 text-red-300':'border-red-200 text-red-700')}`}>
-                                                                                    {r.descricao}
-                                                                                </div>
-                                                                            )}
-                                                                        </div>
-                                                                        );
-                                                                    })}
-                                                                </div>
-                                                            </div>
-
-                                                            <p className={`text-[9px] ${modoNoturno?'text-slate-600':'text-slate-400'}`}>📌 Fator comercial {plano.fatorComercial ? plano.fatorComercial : '1.47146'} × 84 parcelas{plano.fatorLabel ? ` · ${plano.fatorLabel}` : ''}</p>
-                                                            {plano.rebalance && (
-                                                                <div className={`mt-2 p-2 rounded-lg text-[10px] font-semibold ${modoNoturno?'bg-amber-900/30 text-amber-300':'bg-amber-50 text-amber-700'}`}>
-                                                                    ⚖️ {plano.rebalance}
-                                                                </div>
-                                                            )}
-                                                        </div>
-                                                    </div>
-                                                );                                            })}
-                                        </div>
-                                    </div>
-                                );
-                            })()}
-
-                            {/* Aviso Bora Vender nos resultados */}
-                            {Array.isArray(cotacaoResult) && (
-                                <div className={`rounded-2xl px-4 py-3.5 border flex items-start gap-3 ${modoNoturno ? 'bg-amber-950/40 border-amber-500/30' : 'bg-amber-50 border-amber-200'}`}>
-                                    <span className="text-lg leading-none mt-0.5 shrink-0">⚠️</span>
-                                    <div>
-                                        <p className={`font-black text-[10px] uppercase tracking-widest mb-1 ${modoNoturno ? 'text-amber-400' : 'text-amber-600'}`}>Confirme no Bora Vender</p>
-                                        <p className={`text-[11px] leading-snug ${modoNoturno ? 'text-amber-200/80' : 'text-amber-800'}`}>
-                                            Estes valores são uma <strong>estimativa de apoio à venda</strong>. Sempre confirme os valores finais no <strong>Bora Vender</strong> antes de apresentar ao cliente.
-                                        </p>
-                                    </div>
-                                </div>
-                            )}
-
-                            <div className="h-2"></div>
-                        </div>
-
-                        {/* ── FOOTER ── */}
-                        <div className={`shrink-0 px-4 pt-3 border-t transition-colors ${modoNoturno ? 'border-slate-800 bg-[#0B1120]' : 'border-slate-100 bg-slate-50'}`}
-                            style={{ paddingBottom: 'max(20px, calc(env(safe-area-inset-bottom) + 12px))' }}>
-                            <button
-                                onClick={() => {
-                                    haptic('medium');
-                                    setCotacaoResult(null);
-                                    try {
-                                        // ══════════════════════════════════════════════
-                                        // PARÂMETROS POR PERFIL
-                                        // psLimite     = % do imóvel que a Direcional parcela (R1)
-                                        // condicao     = % da renda para parcela PS + financiamento (R2)
-                                        // comprometimento = % da renda só para parcela PS (R3)
-                                        // ══════════════════════════════════════════════
-                                        const PARAMS = {
-                                            diamante: { psLimite: 0.25, condicao: 0.50, comprometimento: 0.20 },
-                                            ouro:     { psLimite: 0.20, condicao: 0.50, comprometimento: 0.20 },
-                                            prata:    { psLimite: 0.18, condicao: 0.48, comprometimento: 0.18 },
-                                            bronze:   { psLimite: 0.15, condicao: 0.45, comprometimento: 0.15 },
-                                            aco:      { psLimite: 0.12, condicao: 0.40, comprometimento: 0.10 },
-                                        };
-
-                                        // Mapa de empreendimentos → data de entrega (gerado do Supabase via revistasData)
-                                        const EMPREEND_MAP = {};
-                                        revistasData.forEach(e => {
-                                            if (e.entrega) {
-                                                (e.aliases || []).forEach(alias => {
-                                                    EMPREEND_MAP[alias.toLowerCase()] = { entrega: e.entrega };
-                                                });
-                                                EMPREEND_MAP[e.title.toLowerCase()] = { entrega: e.entrega };
-                                            }
-                                        });
-
-                                        // ── Utilitários ──
-                                        const toNum = (s) => s ? parseFloat(s.replace(/[R$\s.]/g, '').replace(',', '.')) || 0 : 0;
-                                        const brl   = (v) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-                                        const pct   = (v) => `${(v * 100).toFixed(0)}%`;
-
-                                        // ── Fator dinâmico por data de entrega ──
-                                        // fator = 1.20 + 0.72 × e^(−0.026 × meses)
-                                        const calcFatorDinamico = (dataEntregaStr) => {
-                                            const match = dataEntregaStr && dataEntregaStr.match(/(\d{1,2})[\/\-](\d{4})/);
-                                            if (!match) return 1.471466;
-                                            const hoje = new Date();
-                                            const mesAtual  = hoje.getFullYear() * 12 + hoje.getMonth();
-                                            const mesEntrega = parseInt(match[2]) * 12 + (parseInt(match[1]) - 1);
-                                            const meses = Math.max(0, mesEntrega - mesAtual);
-                                            return 1.20 + 0.72 * Math.exp(-0.026 * meses);
-                                        };
-
-                                        // ── Conta dezembros futuros antes da entrega (anuais) ──
-                                        const contarAnuais = (dataStr) => {
-                                            if (!dataStr) return 0;
-                                            const matchMY = dataStr.match(/(\d{1,2})[\/\-](\d{4})/);
-                                            const matchY  = dataStr.match(/\b(20\d{2})\b/);
-                                            let mesEntrega, anoEntrega;
-                                            if (matchMY) { mesEntrega = parseInt(matchMY[1]); anoEntrega = parseInt(matchMY[2]); }
-                                            else if (matchY) { mesEntrega = 12; anoEntrega = parseInt(matchY[1]); }
-                                            else return 0;
-                                            const hoje    = new Date();
-                                            const anoHoje = hoje.getFullYear();
-                                            const mesHoje = hoje.getMonth() + 1;
-                                            let count = 0;
-                                            for (let ano = anoHoje; ano <= anoEntrega; ano++) {
-                                                if (ano < anoHoje || (ano === anoHoje && 12 <= mesHoje)) continue;
-                                                if (ano > anoEntrega || (ano === anoEntrega && 12 >= mesEntrega)) continue;
-                                                count++;
-                                            }
-                                            return count;
-                                        };
-
-                                        // ── Leitura dos campos ──
-                                        const perfil      = perfilSelecionado;
-                                        const p           = PARAMS[perfil];
-                                        const valorImovel = toNum(cotacaoData.valorImovel);
-                                        const renda       = toNum(cotacaoData.renda);
-                                        const financBanco = toNum(cotacaoData.financiamentoBanco);
-                                        const subsidio    = toNum(cotacaoData.subsidio);
-                                        const fgts        = toNum(cotacaoData.fgts);
-                                        const parcelaFinanc         = toNum(cotacaoData.parcelaFinanciamento);
-                                        const parcelaFinancDigitada = parcelaFinanc;
-                                        const atoCliente  = toNum(cotacaoData.atoCliente) || 1000;
-                                        const empreendNome = (cotacaoData.empreendimento || '').toLowerCase();
-
-                                        if (!perfil || !p)  { setCotacaoResult('⚠️ Selecione o perfil do cliente.'); throw new Error('sem perfil'); }
-                                        if (!valorImovel)   { setCotacaoResult('⚠️ Informe o valor do imóvel.'); throw new Error('sem valor'); }
-                                        if (!renda)         { setCotacaoResult('⚠️ Informe a renda do cliente.'); throw new Error('sem renda'); }
-
-                                        // ── Detecta empreendimento e data de entrega ──
-                                        let fatorLabel = null, entregaDetectada = null;
-                                        for (const [chave, dados] of Object.entries(EMPREEND_MAP)) {
-                                            if (empreendNome.includes(chave)) {
-                                                fatorLabel = cotacaoData.empreendimento;
-                                                entregaDetectada = dados.entrega;
-                                                break;
-                                            }
-                                        }
-                                        const dataEntregaFinal = cotacaoData.entrega || entregaDetectada || '';
-                                        const nAnuais   = contarAnuais(dataEntregaFinal);
-                                        const valorAnual = renda * 0.5; // cada anual = 50% da renda
-
-                                        // ── Fator comercial ──
-                                        const FATOR_BASE_SEM_SINAIS = calcFatorDinamico(dataEntregaFinal);
-                                        const FATOR_BASE_COM_SINAIS = FATOR_BASE_SEM_SINAIS * (1.4582 / 1.471466);
-                                        const FATOR_INCR  = 1.01106;
-                                        const PARCELAS_PS = 84;
-                                        const calcFator = (sinais) => sinais === 0
-                                            ? FATOR_BASE_SEM_SINAIS
-                                            : FATOR_BASE_COM_SINAIS * Math.pow(FATOR_INCR, sinais);
-
-                                        // ══════════════════════════════════════════════
-                                        // FUNÇÃO PRINCIPAL DE CÁLCULO DE UM PLANO
-                                        // Recebe: ato necessário, PS a parcelar, anuais usados
-                                        // Devolve: objeto completo com todos os valores e regras
-                                        // ══════════════════════════════════════════════
-                                        const calcPlano = ({ atoNecessario, psParcelado, anuaisUsados = 0, label = '', cor = 0 }) => {
-
-                                            // ENTRADA BRUTA = imóvel - banco - subsídio - fgts
-                                            const entradaBruta = Math.max(0, valorImovel - financBanco - subsidio - fgts);
-
-                                            // R1: PS fixo no teto do perfil — sempre esse valor na composição
-                                            const psTetoR1 = p.psLimite * valorImovel;
-
-                                            // ATO: o que o cliente paga na assinatura
-                                            const ato = atoCliente;
-
-                                            // SINAIS: se o ato necessário > o que o cliente tem → parcela em 3x
-                                            const diferencaAto = Math.max(0, atoNecessario - atoCliente);
-                                            const sinaisQtd   = diferencaAto > 0.01 ? 3 : 0;
-                                            const sinaisValor = sinaisQtd > 0 ? diferencaAto / 3 : 0;
-
-                                            // PS PARCELADO: o que gera a parcela mensal (pode ser menor que psTetoR1 se renda não comporta)
-                                            const psBase = psParcelado !== undefined ? psParcelado : psTetoR1;
-
-                                            // ANUAIS: abate do PS parcelado
-                                            const abateAnual = anuaisUsados * valorAnual;
-                                            const psLiq = Math.max(0, psBase - abateAnual);
-
-                                            // FATOR: com ou sem sinais
-                                            const fatorPS = calcFator(sinaisQtd);
-
-                                            // PARCELA MENSAL = PS líquido × fator ÷ 84
-                                            const parcelaPS = (psLiq * fatorPS) / PARCELAS_PS;
-
-                                            // VALIDAÇÕES
-                                            // R1: sempre aprovado — é informativo
-                                            const r1ok = true;
-                                            // R2: parcela PS + financiamento ≤ condicao% da renda
-                                            const r2ok = (parcelaFinanc + parcelaPS) <= p.condicao * renda;
-                                            // R3: parcela PS ≤ comprometimento% da renda
-                                            const r3ok = parcelaPS <= p.comprometimento * renda;
-                                            const aprovado = r1ok && r2ok && r3ok;
-
-                                            // Mensagem de reprovação
-                                            let rebalance = null;
-                                            if (!r2ok) rebalance = `❌ Reprovado por R2: Financiamento + PS (${brl(parcelaFinanc + parcelaPS)}/mês) ultrapassa ${(p.condicao*100).toFixed(0)}% da renda (máx ${brl(p.condicao * renda)}/mês).`;
-                                            else if (!r3ok) rebalance = `❌ Reprovado por R3: Parcela PS (${brl(parcelaPS)}/mês) ultrapassa ${(p.comprometimento*100).toFixed(0)}% da renda (máx ${brl(p.comprometimento * renda)}/mês).`;
-
-                                            // % para exibição
-                                            const pctR1atual = p.psLimite * 100;
-                                            const pctR2atual = renda > 0 ? ((parcelaFinanc + parcelaPS) / renda) * 100 : 0;
-                                            const pctR3atual = renda > 0 ? (parcelaPS / renda) * 100 : 0;
-
-                                            return {
-                                                aprovado, label, cor,
-                                                valorImovel:    brl(valorImovel),
-                                                financBanco:    financBanco ? brl(financBanco) : null,
-                                                subsidio:       subsidio    ? brl(subsidio)    : null,
-                                                fgts:           fgts        ? brl(fgts)        : null,
-                                                entradaBruta:   brl(entradaBruta),
-                                                benePS:         brl(psTetoR1),
-                                                atoSinaisTotal: brl(Math.max(0, entradaBruta - psTetoR1)),
-                                                ato:            brl(ato),
-                                                sinais:         sinaisQtd > 0 ? { qtd: sinaisQtd, valor: brl(sinaisValor) } : null,
-                                                parcelaPS:      `${brl(parcelaPS)}/mês`,
-                                                anuais:         anuaisUsados > 0 ? `${brl(valorAnual)} × ${anuaisUsados}` : null,
-                                                excessoAto:     null,
-                                                rebalance,
-                                                regras: [
-                                                    {
-                                                        ok: r1ok,
-                                                        rotulo: 'R1 Percentual pró soluto',
-                                                        pctAtual: pctR1atual.toFixed(1) + '%',
-                                                        pctLimite: pct(p.psLimite),
-                                                        detalhe: `Teto Direcional: ${(p.psLimite*100).toFixed(0)}% do imóvel = ${brl(psTetoR1)}`,
-                                                        descricao: `R1 é o valor que a Direcional parcela em 84x. Sempre ${(p.psLimite*100).toFixed(0)}% do imóvel = ${brl(psTetoR1)}.`,
-                                                    },
-                                                    {
-                                                        ok: r2ok,
-                                                        rotulo: 'R2 — Financ.+PS / Renda',
-                                                        pctAtual: pctR2atual.toFixed(1) + '%',
-                                                        pctLimite: pct(p.condicao),
-                                                        detalhe: `${brl(parcelaFinanc + parcelaPS)}/mês · máx ${brl(p.condicao * renda)}`,
-                                                        descricao: `R2: parcela PS (${brl(parcelaPS)}/mês) + financiamento (${brl(parcelaFinanc)}/mês) não pode ultrapassar ${pct(p.condicao)} da renda = ${brl(p.condicao * renda)}/mês.`,
-                                                    },
-                                                    {
-                                                        ok: r3ok,
-                                                        rotulo: 'R3 — PS / Renda',
-                                                        pctAtual: pctR3atual.toFixed(1) + '%',
-                                                        pctLimite: pct(p.comprometimento),
-                                                        detalhe: `${brl(parcelaPS)}/mês · máx ${brl(p.comprometimento * renda)}`,
-                                                        descricao: `R3: parcela PS sozinha (${brl(parcelaPS)}/mês) não pode ultrapassar ${pct(p.comprometimento)} da renda = ${brl(p.comprometimento * renda)}/mês.`,
-                                                    },
-                                                ],
-                                                coefEfetivo: `÷ 84 parcelas`,
-                                                fatorLabel,
-                                                fatorComercial: fatorPS.toFixed(4),
-                                            };
-                                        };
-
-                                        // ══════════════════════════════════════════════
-                                        // PLANO 1 — "Ato Informado"
-                                        // Usa o ato que o cliente tem e escala anuais se precisar
-                                        // ══════════════════════════════════════════════
-                                        const calcPlano1 = () => {
-                                            const entradaBruta = Math.max(0, valorImovel - financBanco - subsidio - fgts);
-                                            const psTetoR1     = p.psLimite * valorImovel;
-
-                                            // Ato informado pelo cliente
-                                            const atoNecessario = atoCliente;
-
-                                            // PS parcelado começa no teto R1
-                                            // Se R2/R3 reprovarem, escala anuais para reduzir parcela
-                                            let psParcelado = psTetoR1;
-                                            let anuaisUsados = 0;
-
-                                            const limiteR3 = p.comprometimento * renda;
-                                            const limiteR2 = Math.max(0, p.condicao * renda - parcelaFinanc);
-                                            const limiteParcela = Math.min(limiteR3, limiteR2);
-
-                                            // Verifica se aprova sem anuais
-                                            const sinaisQtd = (atoNecessario - atoCliente) > 0.01 ? 3 : 0;
-                                            let parcela = (psParcelado * calcFator(sinaisQtd)) / PARCELAS_PS;
-
-                                            if (parcela > limiteParcela) {
-                                                // Escala anuais até aprovar
-                                                for (let a = 1; a <= nAnuais; a++) {
-                                                    const psComAnual = Math.max(0, psTetoR1 - a * valorAnual);
-                                                    parcela = (psComAnual * calcFator(sinaisQtd)) / PARCELAS_PS;
-                                                    if (parcela <= limiteParcela) {
-                                                        anuaisUsados = a;
-                                                        psParcelado = psComAnual;
-                                                        break;
-                                                    }
-                                                    anuaisUsados = a;
-                                                    psParcelado = psComAnual;
-                                                }
-                                            }
-
-                                            return calcPlano({
-                                                atoNecessario,
-                                                psParcelado,
-                                                anuaisUsados,
-                                                label: 'Ato Informado',
-                                                cor: 1,
-                                            });
-                                        };
-                                        const plano1 = calcPlano1();
-
-                                        // ══════════════════════════════════════════════
-                                        // PLANO 2 — "Ato à Vista"
-                                        // Calcula o ato necessário para R2 e R3 aprovarem
-                                        // Se renda não comporta o PS cheio → excesso vai para ato/sinais
-                                        // ══════════════════════════════════════════════
-                                        const calcPlano2 = () => {
-                                            const entradaBruta = Math.max(0, valorImovel - financBanco - subsidio - fgts);
-                                            const psTetoR1     = p.psLimite * valorImovel;
-
-                                            // Limite de parcela mensal pela renda
-                                            const limiteR3 = p.comprometimento * renda;
-                                            const limiteR2 = Math.max(0, p.condicao * renda - parcelaFinanc);
-                                            const limiteParcela = Math.min(limiteR3, limiteR2);
-
-                                            // PS que a renda suporta = limite × 84 ÷ fator
-                                            // Usa fator com sinais (conservador) pois provavelmente haverá sinais
-                                            const fatorComS  = calcFator(3);
-                                            const fatorSemS  = calcFator(0);
-
-                                            // Testa sem sinais primeiro
-                                            let psParcelado = Math.floor((limiteParcela * PARCELAS_PS) / fatorSemS * 100) / 100;
-                                            psParcelado = Math.min(psParcelado, psTetoR1);
-
-                                            // Ato necessário = entrada bruta - PS parcelado
-                                            let atoNecessario = Math.max(atoCliente, entradaBruta - psParcelado);
-
-                                            // Se vai ter sinais, recalcula com fator conservador
-                                            if (atoNecessario > atoCliente + 0.01) {
-                                                psParcelado = Math.floor((limiteParcela * PARCELAS_PS) / fatorComS * 100) / 100;
-                                                psParcelado = Math.min(psParcelado, psTetoR1);
-                                                atoNecessario = Math.max(atoCliente, entradaBruta - psParcelado);
-                                            }
-
-                                            return calcPlano({
-                                                atoNecessario,
-                                                psParcelado,
-                                                anuaisUsados: 0,
-                                                label: 'Ato à Vista',
-                                                cor: 2,
-                                            });
-                                        };
-                                        const plano2 = calcPlano2();
-                                        const plano3 = plano2; // placeholder — só 2 cards
-
-                                        // Renda mínima = renda necessária para a parcela do PS caber em R2 e R3
-                                        // PS = teto R1 fixo
-                                        const psTetoCalc    = p.psLimite * valorImovel;
-                                        const parcelaPSCalc = (psTetoCalc * FATOR_BASE_SEM_SINAIS) / PARCELAS_PS;
-                                        const rendaMinR3    = parcelaPSCalc / p.comprometimento;
-                                        const rendaMinR2    = (parcelaFinancDigitada + parcelaPSCalc) / p.condicao;
-                                        const rendaMinima   = Math.ceil(Math.max(rendaMinR3, rendaMinR2));
-
-                                        // ── Monta resultado provisório e exibe imediatamente ──
-                                        const resultadoProvisorio = [plano2, { rendaMinima, renda }];
-                                        setCotacaoResult(resultadoProvisorio);
-
-                                        // ── IA analisa os planos e sugere ajustes ──
-                                        // Executa em background para não bloquear a exibição
-                                        (async () => {
-                                            try {
-                                                const resumo = [plano1, plano2, plano3].map((pl, i) => {
-                                                    const status = pl.aprovado ? '✅ Aprovado' : '❌ Reprovado';
-                                                    const regrasStatus = pl.regras.map(r => `${r.rotulo}: ${r.ok ? 'ok' : 'reprovado'} (${r.pctAtual}/${r.pctLimite})`).join('; ');
-                                                    return `Plano ${i+1} (${pl.label}): ${status} | Ato: ${pl.ato} | PS: ${pl.benePS} | Parcela PS: ${pl.parcelaPS} | Anuais: ${pl.anuais || 'nenhum'} | Regras: ${regrasStatus}`;
-                                                }).join('\n');
-
-                                                const prompt = `[MISSÃO DA IA] Você é o "Motor de Cálculo Oficial" para aprovação de financiamentos imobiliários (Padrão Direcional). Sua função é receber os dados de uma cotação e devolver os valores exatos de Ato, Sinais, Mensal PS (Pró-Soluto) e Anuais que fechem a conta da "Entrada Bruta", respeitando rigorosamente as regras de comprometimento de renda (R1, R2 e R3) do perfil do cliente.
-
-[MODO DE EXECUÇÃO: CÁLCULO DETERMINÍSTICO DE COTAÇÃO]
-Você é uma calculadora estrita. Siga EXATAMENTE o algoritmo abaixo. Você está PROIBIDA de usar os limites máximos das regras (R1, R2, R3) como valores de cobrança. O "Benefício PS Máximo" serve APENAS para verificação final, NUNCA para subtração.
-
-PASSO 1 — VARIÁVEIS DE ENTRADA:
-Identifique os valores fornecidos:
-- V_IMOVEL = Valor do Imóvel
-- V_FINAN  = Financiamento Banco
-- V_SUB    = Subsídio MCMV
-- V_FGTS   = FGTS do cliente (entra na Entrada Bruta, reduz o PS igual ao subsídio)
-- V_ATO    = Dinheiro real que o cliente vai dar de Ato (ex: R$ 1.000,00)
-
-PASSO 2 — CÁLCULO DA DÍVIDA REAL:
-ENTRADA_BRUTA = V_IMOVEL - V_FINAN - V_SUB - V_FGTS
-Regra de Ouro: O teto do Benefício PS (ex: R$ 35.712,00) NÃO FAZ PARTE DESTA CONTA.
-Nota: FGTS e Subsídio entram aqui pois reduzem diretamente a dívida, igual ao financiamento banco.
-
-PASSO 3 — CÁLCULO DO SALDO A PARCELAR:
-SALDO_PS_BASE = ENTRADA_BRUTA - ATO_NECESSARIO
-Trava de Segurança: NUNCA gere valores negativos. Se o Ato cobrir tudo, o PS é zero.
-
-SOBRE OS SINAIS (Ato Parcelado):
-Os Sinais NÃO são parcelas do PS. São o ATO sendo parcelado em 3x para o cliente que não tem o valor cheio na hora da assinatura.
-- ATO_NECESSARIO = valor total que precisa entrar como Ato para o PS caber na renda
-- ATO_CLIENTE    = o que o cliente tem disponível no dia da assinatura
-- Se ATO_CLIENTE < ATO_NECESSARIO → SINAIS = (ATO_NECESSARIO - ATO_CLIENTE) ÷ 3
-- Exemplo: Ato necessário R$ 10.000, cliente tem R$ 1.000 → Sinais = 3x de R$ 3.000
-- Os Sinais NÃO alteram o Saldo PS — o PS já foi calculado com o ATO_NECESSARIO completo
-
-PASSO 4 — TENTATIVA 1 (O CAMINHO FELIZ — SEM SINAIS E SEM ANUAIS):
-PARCELA_MENSAL_TESTE = SALDO_PS_BASE ÷ 84
-
-PASSO 5 — VALIDAÇÃO DAS REGRAS R2 E R3:
-Compare a PARCELA_MENSAL_TESTE com o limite máximo permitido pela renda do cliente.
-
-✅ SE PARCELA_MENSAL_TESTE <= Limite da Renda (R3 e R2):
-PARE O CÁLCULO AQUI! A COTAÇÃO ESTÁ APROVADA. Retorne imediatamente:
-- Ato: V_ATO
-- Sinais: 0
-- Anuais: 0
-- Mensal PS: 84x de PARCELA_MENSAL_TESTE
-
-❌ SE PARCELA_MENSAL_TESTE > Limite da Renda:
-APENAS NESTE CASO, inicie a adição de parcelas ANUAIS (valor fixo = 50% da renda bruta, vencimento todo dezembro) para abater o SALDO_PS_BASE até que a divisão por 84 caiba na renda. Escale 1, 2, 3... anuais até aprovar. Se mesmo com todos os anuais disponíveis não couber, adicione SINAIS. Cada Sinal adiciona 1% de juros ao SALDO_PS_BASE no cálculo (1 mês base + 1 mês por sinal).
-
-[AS 3 REGRAS DE OURO (VALIDAÇÃO)] Após calcular a Parcela Mensal PS, valide o perfil do cliente:
-- R1 (Benefício PS / Imóvel): O PS não pode ultrapassar o teto do imóvel (Diamante 25%, Ouro 20%, Prata 18%, Bronze 15%, Aço 12%). Assuma sempre aprovado no limite.
-- R2 (Financ. + PS / Renda): A soma (Parcela do Financiamento + Parcela Mensal PS) NÃO PODE ultrapassar o limite da renda bruta (Diamante/Ouro 50%, Prata 48%, Bronze 45%, Aço 40%).
-- R3 (PS / Renda - A MAIS RESTRITIVA): A Parcela Mensal PS sozinha NÃO PODE ultrapassar o teto da renda bruta (Diamante/Ouro 20%, Prata 18%, Bronze 15%, Aço 10%).
-
-[SISTEMA DE SALVAMENTO (AUTO-ESCALA DE ANUAIS)] Se a Parcela Mensal PS calculada REPROVAR nas regras R2 ou R3, NÃO reprove imediatamente. Use a Válvula de Escape:
-1. Adicione parcelas Anuais (vencimento todo mês de dezembro).
-2. O valor de cada parcela Anual é travado em 50% da renda bruta do cliente.
-3. Subtraia o valor total dessas Anuais do Saldo PS e recalcule a divisão por 84x.
-4. Repita escalando a quantidade de Anuais (1, 2, 3...) até a Parcela Mensal PS ser APROVADA nas regras R2 e R3.
-5. Fator comercial fixo: 1.47146 × 84 parcelas.
-
-[DADOS DO CLIENTE]
-- Perfil: ${perfil}
-- Imóvel: ${brl(valorImovel)}
-- Renda: ${brl(renda)}
-- Financ. banco: ${brl(financBanco)}
-- Parcela financiamento: ${parcelaFinanc ? brl(parcelaFinanc) : 'estimativa 30% da renda'}
-- Subsídio: ${brl(subsidio)}
-- FGTS: ${brl(fgts)}
-- Ato do cliente: ${brl(atoCliente)}
-- Anuais disponíveis: ${nAnuais}
-
-[PLANOS CALCULADOS PELO SISTEMA]
-${resumo}
-
-[SAÍDA ESPERADA] Analise os planos acima e entregue um comentário CURTO e DIRETO (máx 3 linhas) para o corretor, destacando:
-- Qual plano aprovar e por quê
-- Os valores finais: Ato, Sinais (qtd e valor), PS (84x - valor da parcela), Anuais (qtd e valor se usadas)
-- Se reprovado, o que precisa ajustar
-Responda em português, direto ao ponto.`;
-
-                                                const resp = await fetch('https://api.anthropic.com/v1/messages', {
-                                                    method: 'POST',
-                                                    headers: { 'Content-Type': 'application/json' },
-                                                    body: JSON.stringify({
-                                                        model: 'claude-sonnet-4-20250514',
-                                                        max_tokens: 200,
-                                                        messages: [{ role: 'user', content: prompt }]
-                                                    })
-                                                });
-                                                const data = await resp.json();
-                                                const analise = data?.content?.[0]?.text || null;
-                                                if (analise) {
-                                                    setCotacaoResult([plano2, { rendaMinima, renda, analiseIA: analise }]);
-                                                }
-                                            } catch(err) {
-                                                console.warn('Análise IA falhou:', err);
-                                            }
-                                        })();
-
-                                    } catch(e) { console.error(e); if (!['sem perfil','sem valor','sem renda'].includes(e.message)) setCotacaoResult('⚠️ Erro: ' + e.message); }
-                                }}
-                                disabled={false}
-                                className="w-full py-4 rounded-2xl font-black text-sm uppercase tracking-widest text-white transition-all flex items-center justify-center gap-2 relative overflow-hidden active:scale-[0.98]"
-                                style={{
-                                    background: 'linear-gradient(135deg, #6366f1 0%, #4f46e5 40%, #7c3aed 100%)',
-                                    boxShadow: '0 4px 24px rgba(99,102,241,0.45), 0 0 0 2px rgba(99,102,241,0.2)',
-                                }}>
-                                <span className="absolute inset-0 cotacao-btn-shine pointer-events-none" style={{borderRadius:'1rem'}}></span>
-                                <Calculator size={16} className="relative z-10" style={{filter:'drop-shadow(0 0 6px rgba(255,255,255,0.9))'}} />
-                                <span className="relative z-10" style={{textShadow:'0 1px 6px rgba(0,0,0,0.3)'}}>Gerar Plano</span>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
 
 
 
             {showTaxasDocsModal && (
                 <div className="fixed inset-0 z-[70] flex flex-col"
                     style={{ background: modoNoturno ? 'rgba(7,11,22,0.82)' : 'rgba(15,23,42,0.55)', backdropFilter: 'blur(20px) saturate(180%)', WebkitBackdropFilter: 'blur(20px) saturate(180%)' }}>
-                    <div className="cotacao-modal-open flex flex-col w-full"
+                    <div className="modal-slide-open flex flex-col w-full"
                         style={{ height: '100%', background: modoNoturno ? '#0B1120' : '#f8fafc' }}>
                         <div className="shrink-0 relative overflow-hidden"
                             style={{

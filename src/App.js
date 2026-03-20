@@ -1016,10 +1016,10 @@ export default function App() {
     // ── HintPills phase — sincroniza estado do botão do chat ──
     const [hintPhase, setHintPhase] = useState('idle'); // idle | show | fly | gone
     // ── Splash screen ao entrar no site ──
-    const [splashDone, setSplashDone] = useState(() => sessionStorage.getItem('dst_splash') === '1');
+    const [splashDone, setSplashDone] = useState(() => window.innerWidth < 768 || sessionStorage.getItem('dst_splash') === '1');
     const [splashLeaving, setSplashLeaving] = useState(false);
     useEffect(() => {
-        if (splashDone) return;
+        if (splashDone || window.innerWidth < 768) return;
         // Fase 1: mostra logo por 1.8s, depois anima saída
         const t1 = setTimeout(() => setSplashLeaving(true), 1900);
         const t2 = setTimeout(() => { setSplashDone(true); sessionStorage.setItem('dst_splash','1'); }, 2550);

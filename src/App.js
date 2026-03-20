@@ -2867,6 +2867,160 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
                 </div>
             </header>
 
+            {/* ── PAINEL INFORMAÇÕES COMERCIAIS — visível até domingo 22/03/2026, some na segunda ── */}
+            {(() => {
+                const hoje = new Date();
+                const expira = new Date('2026-03-23T00:00:00'); // segunda-feira 23/03
+                if (hoje >= expira) return null;
+                return (
+            <aside className="hidden xl:block" style={{
+                position: 'fixed',
+                top: headerHeight + 16,
+                left: 20,
+                width: 260,
+                maxHeight: `calc(100vh - ${headerHeight + 32}px)`,
+                overflowY: 'auto',
+                scrollbarWidth: 'none',
+                msOverflowStyle: 'none',
+                zIndex: 30,
+            }}>
+                <div style={{ padding: '4px 0' }}>
+
+                    {/* Título */}
+                    <div style={{ padding: '0 4px 10px' }}>
+                        <p style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', color: modoNoturno ? 'rgba(255,255,255,0.35)' : 'rgba(0,0,0,0.32)', margin: 0 }}>
+                            Março 2026
+                        </p>
+                        <p style={{ fontSize: 15, fontWeight: 700, color: modoNoturno ? '#fff' : '#000', margin: '3px 0 0', letterSpacing: '-0.01em' }}>
+                            Informações Comerciais
+                        </p>
+                    </div>
+
+                    {/* Linha separadora */}
+                    <div style={{ height: '0.5px', background: modoNoturno ? 'rgba(255,255,255,0.10)' : 'rgba(0,0,0,0.10)', margin: '0 4px 8px' }} />
+
+                    {/* Campanhas */}
+                    <div style={{ padding: '0 4px 8px', display: 'flex', flexDirection: 'column', gap: 4 }}>
+                        {[
+                            { icon: '✓', label: 'ITBI + Registro Grátis' },
+                            { icon: '·', label: 'Entrada facilitada' },
+                            { icon: '·', label: 'Campanha G3% disponível' },
+                        ].map((b, i) => (
+                            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                <span style={{ fontSize: 11, fontWeight: 700, color: modoNoturno ? 'rgba(255,255,255,0.35)' : 'rgba(0,0,0,0.28)', width: 10, flexShrink: 0 }}>{b.icon}</span>
+                                <span style={{ fontSize: 12, color: modoNoturno ? 'rgba(255,255,255,0.55)' : 'rgba(0,0,0,0.50)', fontWeight: 400 }}>{b.label}</span>
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* Gerentes */}
+                    {[
+                        {
+                            nome: 'Daniele',
+                            items: [
+                                { emp: 'Brisas do Horizonte',       note: 'ITBI Grátis · 20 un.', highlight: true },
+                                { emp: 'Viva Vida Rio Tapajós',      note: 'G3%', highlight: false },
+                                { emp: 'Viva Vida Rio Amazonas',     note: null, highlight: false },
+                                { emp: 'Village Torres',            note: null, highlight: false },
+                                { emp: 'Conquista Jardim Botânico',  note: null, highlight: false },
+                                { emp: 'Reserva das Águas',         note: null, highlight: false },
+                            ],
+                        },
+                        {
+                            nome: 'Evelyn',
+                            items: [
+                                { emp: 'Viva Vida Coral',    note: 'ITBI Grátis · 50 un.', highlight: true },
+                                { emp: 'Conquista Topázio',  note: null, highlight: false },
+                                { emp: 'Conquista Rio Negro', note: null, highlight: false },
+                                { emp: 'Reserva das Águas',  note: null, highlight: false },
+                            ],
+                        },
+                        {
+                            nome: 'Hidaka',
+                            items: [
+                                { emp: 'Bosque das Torres',       note: 'ITBI Grátis · 25 un.', highlight: true },
+                                { emp: 'Conquista Ville Orquídea', note: null, highlight: false },
+                            ],
+                        },
+                        {
+                            nome: 'Mateus',
+                            items: [
+                                { emp: 'Parque Ville Lírio Azul',  note: null, highlight: false },
+                                { emp: 'Conquista Jardim Norte',   note: 'ITBI Grátis · 25 un.', highlight: true },
+                            ],
+                        },
+                    ].map((g, gi, arr) => (
+                        <div key={gi}>
+                            <div style={{ height: '0.5px', background: modoNoturno ? 'rgba(255,255,255,0.10)' : 'rgba(0,0,0,0.10)', margin: '0 4px' }} />
+                            {/* Nome gerente — destaque com fundo pill */}
+                            <div style={{ padding: '9px 4px 5px' }}>
+                                <span style={{
+                                    display: 'inline-block',
+                                    fontSize: 10.5,
+                                    fontWeight: 700,
+                                    letterSpacing: '0.07em',
+                                    textTransform: 'uppercase',
+                                    color: modoNoturno ? '#93c5fd' : '#1e3a8a',
+                                    background: modoNoturno ? 'rgba(59,130,246,0.12)' : 'rgba(30,58,138,0.08)',
+                                    borderRadius: 5,
+                                    padding: '2px 7px',
+                                }}>
+                                    {g.nome}
+                                </span>
+                            </div>
+                            {/* Empreendimentos */}
+                            <div style={{ padding: '0 4px', paddingBottom: gi === arr.length - 1 ? 4 : 4 }}>
+                                {g.items.map((it, ii) => (
+                                    <div key={ii} style={{
+                                        padding: it.highlight ? '6px 8px' : '5px 8px',
+                                        marginBottom: 2,
+                                        borderRadius: it.highlight ? 8 : 6,
+                                        background: it.highlight
+                                            ? (modoNoturno ? 'rgba(59,130,246,0.08)' : 'rgba(30,58,138,0.06)')
+                                            : 'transparent',
+                                        borderLeft: it.highlight
+                                            ? `2px solid ${modoNoturno ? '#3b82f6' : '#1e3a8a'}`
+                                            : '2px solid transparent',
+                                    }}>
+                                        <p style={{
+                                            fontSize: it.highlight ? 13 : 12.5,
+                                            fontWeight: it.highlight ? 600 : 400,
+                                            color: it.highlight
+                                                ? (modoNoturno ? '#93c5fd' : '#1e3a8a')
+                                                : (modoNoturno ? 'rgba(255,255,255,0.60)' : 'rgba(0,0,0,0.52)'),
+                                            margin: 0,
+                                            lineHeight: 1.35,
+                                        }}>
+                                            {it.emp}
+                                        </p>
+                                        {it.note && (
+                                            <p style={{
+                                                fontSize: 11,
+                                                fontWeight: it.highlight ? 500 : 400,
+                                                color: it.highlight
+                                                    ? (modoNoturno ? 'rgba(147,197,253,0.70)' : '#1d4ed8')
+                                                    : (modoNoturno ? 'rgba(255,255,255,0.30)' : 'rgba(0,0,0,0.30)'),
+                                                margin: '1px 0 0',
+                                            }}>
+                                                {it.note}
+                                            </p>
+                                        )}
+                                        {!it.note && (
+                                            <p style={{ fontSize: 11, fontWeight: 400, color: modoNoturno ? 'rgba(255,255,255,0.22)' : 'rgba(0,0,0,0.22)', margin: '1px 0 0' }}>
+                                                Condição padrão
+                                            </p>
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    ))}
+
+                </div>
+            </aside>
+                );
+            })()}
+
             <main className="main-content max-w-5xl mx-auto px-4 sm:px-6 lg:px-8" style={{ paddingTop: `${headerHeight}px` }}>
                 {/* BANNER INSPIRAÇÃO DIÁRIA */}
                 {/* ── BANNER + ABAS ── */}

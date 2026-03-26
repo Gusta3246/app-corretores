@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useLayoutEffect, useRef } from 'react';
-import { Search, Building, ExternalLink, MapPin, BookOpen, Maximize, Bed, LayoutGrid, Rocket, Quote, Sparkles, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, FileText, TableProperties, BookMarked, HelpCircle, Calculator, Bot, X, Send, Wand2, Paperclip, File as FileIcon, Trash2, FolderPlus, GripVertical, Plus, MessageCircle, Moon, Sun, AlertTriangle, Book, GalleryHorizontal, Clock } from 'lucide-react';
+import { Search, Building, ExternalLink, MapPin, BookOpen, Maximize, Bed, LayoutGrid, Sparkles, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, FileText, TableProperties, BookMarked, HelpCircle, Calculator, Bot, X, Send, Wand2, Paperclip, File as FileIcon, Trash2, FolderPlus, GripVertical, Plus, MessageCircle, Moon, Sun, AlertTriangle, Book, Clock } from 'lucide-react';
 import { buscarRespostaDoRobo, buscarRespostaGemini } from './bot/dadosFinanciamento.js';
 
 // === LOGOS DOS EMPREENDIMENTOS ===
@@ -20,6 +20,7 @@ const LOGOS_EMPREENDIMENTO = {
   topazio: "https://i.postimg.cc/qqNR1XRR/DIR-CTopazio-Logo-Prancheta-1.png",
   rio_negro: "https://i.postimg.cc/NFKMd7M6/DIR-Conquista-Rio-Negro-Logo.png",
   rio_tapajos: "https://i.postimg.cc/xCx8GF0c/Copia-de-DIR-Rio-Tapajos-logo.png",
+  moratta: "https://i.postimg.cc/bvTVQqdd/248-3-LOGO-MORATTA-FIORE-PRETO-V1F.png",
 };
 
 // Map revista id -> logo key
@@ -40,6 +41,7 @@ const REVISTA_LOGO_MAP = {
   14: 'topazio',
   16: 'rio_negro',
   17: 'rio_tapajos',
+  18: 'moratta',
 };
 
 
@@ -225,6 +227,17 @@ const revistasDataLocal = [
       ],
       link: "https://drive.google.com/file/d/1k3TOypf5bm_zXPfc-ulb7vY9e7MKxmlk/view?usp=drive_link", aliases: ["tapajos", "tapajós", "rio tapajos", "viva vida rio tapajos"], pois: ["Aeroporto Internacional de Manaus", "Tarumã (área de balneários famosos)", "Sivam", "proximidade com a entrada da Ponta Negra"] },
 
+    { id: 18, title: "Moratta Home Riva", brand: "Riva", region: "Flores - Zona Centro-Sul", size: "43,41m² a 59,35m²", bedrooms: "2 dormitórios", flooring: "Todo o apê", entrega: "04/2029", pinned: true,
+      cover: `https://i.postimg.cc/vmFwP8QX/IMG-1577.png`,
+      fotosExtras: [
+        `https://i.postimg.cc/Wzn0y4L5/DIRECIONAL-CARREFOUR-TORRE-DETALHE-FINAL.jpg`,
+        `https://i.postimg.cc/ryCGsf0r/DIRECIONAL-CARREFOUR-TORRE-DIURNA-FINAL.jpg`,
+        `https://i.postimg.cc/x8tbRFMb/DIRECIONAL-CARREFOUR-ACADEMIA-FINAL.jpg`,
+        `https://i.postimg.cc/5N2z0bWR/DIRECIONAL-CARREFOUR-INTERNA-SALA-FINAL.jpg`,
+        `https://i.postimg.cc/jdSf5tY9/DIRECIONAL-CARREFOUR-LAVANDERIA-FINAL.jpg`,
+      ],
+      link: "https://drive.google.com/file/d/16Umi4PJlL2-yHR1Ye_nqtv_EOggbBCwk/view?usp=drive_link", aliases: ["moratta", "moratta home", "moratta riva"], pois: ["Carrefour Flores (ao lado)", "Amazonas Shopping (próximo)", "Arena da Amazônia (próximo)", "Manauara Shopping (poucos min)", "Millennium Shopping (poucos min)", "UNIP - Universidade Paulista", "Nilton Lins", "Hospital 28 de Agosto", "Vila Olímpica", "Mirage Park", "Pátio Gourmet", "Supermercado Nova Era"] },
+
     ];
 
 // === DADOS DE UTILITÁRIOS ===
@@ -301,6 +314,7 @@ const imagensEquipeDiarias = [
 // Cálculos para manter a mesma imagem e frase durante todo o dia
 const today = new Date();
 const dayIndex = Math.floor((today.getTime() - today.getTimezoneOffset() * 60000) / (1000 * 60 * 60 * 24));
+
 
 
 // ── RippleButton ────────────────────────────────────────────────
@@ -1298,8 +1312,6 @@ export default function App() {
     // 'idle' | 'gather' | 'shake' | 'scatter'
     const [cardAnimPhase, setCardAnimPhase] = useState('idle');
     // Stores {id, x, y, w, h} of each card's real DOM position for the pile animation
-    const [cardRects, setCardRects] = useState([]);  // absolute positions of each card in viewport
-    const [gridCenter, setGridCenter] = useState({ x: 0, y: 0 });
     const cardGridRef = useRef(null);
 
     // === ESTADOS PARA CRIAÇÃO DE PASTA DO CLIENTE ===
@@ -1310,7 +1322,6 @@ export default function App() {
     const [isCreatingFolder, setIsCreatingFolder] = useState(false);
     const [folderSource, setFolderSource] = useState('manual'); // 'manual' | 'rapida'
     const [isFinalizingFolder, setIsFinalizingFolder] = useState(false);
-    const [showThumbsUp, setShowThumbsUp] = useState(false);
     const [showLightning, setShowLightning] = useState(false);
     const [pendingDocs, setPendingDocs] = useState([]);
     const [pdfFileName, setPdfFileName] = useState("Pasta_do_Cliente");
@@ -1351,89 +1362,6 @@ export default function App() {
         return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
     };
 
-    const processChatMessage = (inputMsg) => {
-    const input = normalizeString(inputMsg);
-    let matchedProperties = [];
-
-    const docs = dadosFinanciamento.documentos;
-    
-    if (input.includes("documento") || input.includes("precisa") || input.includes("papel")) {
-      if (input.includes("autonomo")) {
-        return `Para **Autônomos**, os documentos são: ${docs.autonomo.join(", ")}. \n\n⚠️ **Importante:** Solteiros devem apresentar Certidão de Nascimento. Se tiver filhos, envie a Certidão do dependente.`;
-      }
-      if (input.includes("servidor")) {
-        return `Para **Servidor Público**, você precisa de: ${docs.servidor.join(", ")}. \n\n📍 Não esqueça os 3 últimos contracheques atualizados!`;
-      }
-      return `Para **CLT (Carteira Assinada)**, separe: ${docs.clt.join(", ")}. \n\n💡 Dica: A Carteira de Trabalho pode ser a Digital (PDF).`;
-    }
-
-    if (input.includes("investidor")) {
-      return "Na **Tabela Investidor**, o ato é facilitado e o saldo é parcelado em até 28x sem juros ou correção durante a obra! 🚀";
-    }
-    if (input.includes("financiamento direto") || (input.includes("direto") && input.includes("construtora"))) {
-      return "Temos a opção de **Financiamento Direto** com a construtora em até 120 meses após a entrega das chaves! Quer que eu verifique as taxas para você?";
-    }
-
-    revistasData.forEach(prop => {
-        if (prop.aliases.some(alias => input.includes(normalizeString(alias)))) {
-            if (!matchedProperties.some(p => p.id === prop.id)) {
-                matchedProperties.push(prop);
-            }
-        }
-    });
-
-    if (matchedProperties.length === 0) {
-        const regions = ["zona leste", "zona norte", "zona oeste", "zona sul", "centro-sul", "centro-oeste", "taruma", "flores", "coroado"];
-        let detectedRegion = regions.find(r => input.includes(r));
-        if (detectedRegion) {
-            matchedProperties = revistasData.filter(p => normalizeString(p.region).includes(detectedRegion));
-        }
-    }
-
-    const wantsMagazine = ["revista", "pdf", "link", "material", "apresentacao", "enviar", "mande", "mandar", "baixe", "baixar"].some(w => input.includes(w));
-    const wantsPois = ["referencia", "referência", "perto", "proximo", "próximo", "localizacao", "localização", "onde fica"].some(w => input.includes(w));
-
-    let botResponse = "";
-
-    if (input.includes("criar pasta") || input.includes("pasta do cliente") || input.includes("subir pasta")) {
-        setIsCreatingFolder(true);
-        return "Com certeza! Modo **Criar Pasta do Cliente** ativado! 📂✨\n\nÉ só clicar no botão de anexo ou arrastar os documentos pra cá. Vou te ajudar a organizar tudo na ordem certinha para o seu PDF sair perfeito!";
-    }
-
-    if (matchedProperties.length > 0) {
-        if (matchedProperties.length === 1) {
-            const p = matchedProperties[0];
-            if (wantsPois) {
-                botResponse = `O **${p.title}** fica super bem localizado na região de ${p.region}.\n\n📍 **Principais Pontos de Referência:**\n`;
-                p.pois.forEach(poi => botResponse += `• ${poi}\n`);
-                botResponse += `\nQuer que eu te mande a revista dele para você mostrar pro cliente?`;
-            } else {
-                botResponse = `Com certeza! Falando do **${p.title}** (${p.brand}):\n\n📍 **Onde Fica:** ${p.region}\n📏 **Planta:** ${p.size} com ${p.bedrooms}\n🏢 **Referências próximas:** ${p.pois.slice(0, 3).join(', ')}.\n\n`;
-                if (wantsMagazine || input.includes("revista")) {
-                    botResponse += `Aqui está o material que você pediu: [Acessar Revista do ${p.title}](${p.link})`;
-                } else {
-                    botResponse += `Se o seu cliente quiser ver mais, posso te enviar o PDF da revista. É só me pedir! 😉`;
-                }
-            }
-        } else {
-            botResponse = `Boa! Encontrei essas opções ótimas para o que você procura:\n\n`;
-matchedProperties.forEach(p => {
-    botResponse += ` 🔹 **${p.title}** (${p.region}) - ${p.size} (${p.brand})\n`;
-    if (wantsMagazine) botResponse += ` 🔗 [Baixar Revista PDF](${p.link})\n`;
-});
-if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF agora?`;
-        }
-    } else {
-        if (input.includes("ola") || input.includes("bom dia") || input.includes("boa tarde") || input.includes("boa noite")) {
-            botResponse = "Olá, Destemido! Bora bater essa meta? 🚀 Como posso te ajudar agora? Posso buscar empreendimentos por bairro, nome ou te ajudar a criar aquela pasta do cliente rapidinho.";
-        } else if (input.includes("amml") || input.includes("amazonas meu lar")) {
-            botResponse = "Para o **Amazonas Meu Lar**, temos todos os modelos de declarações que você precisa na aba **UTILITÁRIOS**. É só baixar e usar!";
-        } else {
-            botResponse = "Hmm, não consegui entender exatamente o que você precisa. 😅\n\nPode tentar algo como: 'Documentos para autônomo', 'Regras do investidor' ou 'Me mostra o Brisas'.";
-        }
-    }
-    return botResponse;
-  };
     const handleSendChatMessage = async () => {
         if (!chatInput.trim() || isChatLoading) return;
         const userMessage = chatInput;
@@ -1544,9 +1472,6 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
         if (fileInputRef.current) fileInputRef.current.value = '';
     };
 
-    // =========================================================
-    // PASTA RÁPIDA — OpenRouter com roteador automático
-    // =========================================================
     const OPENROUTER_KEY = process.env.REACT_APP_OPENROUTER_KEY;
 
     // Modelos tentados em ordem — fallbacks caso o primeiro falhe
@@ -1621,7 +1546,6 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
         const copy = arrayBuffer.slice(0);
         const pdfDoc = await window.pdfjsLib.getDocument({ data: new Uint8Array(copy), password: '', disableRange: true, disableStream: true }).promise;
         const page = await pdfDoc.getPage(1);
-        // Escala 2.0 original — necessária para a IA identificar o documento corretamente
         const viewport = page.getViewport({ scale: 2.0 });
         const canvas = document.createElement('canvas');
         canvas.width = Math.floor(viewport.width);
@@ -1631,7 +1555,6 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         await page.render({ canvasContext: ctx, viewport }).promise;
         page.cleanup();
-        // Qualidade 0.85 original — necessária para a IA ler o texto do documento
         return canvas.toDataURL('image/jpeg', 0.85).split(',')[1];
     };
 
@@ -1668,7 +1591,7 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
         });
     };
 
-    // ✅ OTIMIZAÇÃO: timeout de 12s por modelo para não travar indefinidamente
+    
     const tryModel = async (model, b64, mime) => {
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 12000);
@@ -1700,14 +1623,12 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
             clearTimeout(timeoutId);
 
             if (res.status === 429) {
-                // ✅ OTIMIZAÇÃO: aguarda apenas 2s em rate limit (era 8s)
-                console.warn(`Rate limit no modelo ${model}, aguardando 2s...`);
+                
                 await sleep(2000);
                 return null;
             }
             if (!res.ok) {
                 const err = await res.text();
-                console.warn(`Modelo ${model} falhou (${res.status}):`, err.substring(0, 80));
                 return null;
             }
 
@@ -1722,17 +1643,12 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
         } catch (err) {
             clearTimeout(timeoutId);
             if (err.name === 'AbortError') {
-                console.warn(`Modelo ${model} ultrapassou timeout de 12s`);
             } else {
-                console.warn(`Modelo ${model} erro:`, err.message);
             }
             return null;
         }
     };
 
-    // =========================================================
-    // DICIONÁRIO COMPARTILHADO — usado pelas Armas 1, 2, 4 e 5/6
-    // =========================================================
     const KEYWORD_MAP = [
         // ── Documentos urgentes / administrativos — vão na frente de tudo ──
         { keywords: ['cancelamento','carta de cancelamento','distrato'], category: 'cancelamento', label: 'Carta de Cancelamento' },
@@ -1794,22 +1710,15 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
         return null;
     };
 
-    // =========================================================
-    // ARMA 1 — Nome do arquivo (0ms, sem API)
-    // =========================================================
     const classifyByFilename = (filename) => {
         const name = filename.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[_\-\.]/g, ' ');
         const result = matchKeywords(name);
         if (result) {
-            console.log(`🏷️ Arma 1 (nome) → ${result.label}`);
             return result;
         }
         return null;
     };
 
-    // =========================================================
-    // ARMA 5 — Metadados do PDF: Title, Subject, Keywords (~0ms)
-    // =========================================================
     const classifyByPdfMetadata = async (arrayBuffer) => {
         try {
             if (!window.pdfjsLib) return null;
@@ -1822,16 +1731,12 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
             if (!combined.trim()) return null;
             const result = matchKeywords(combined);
             if (result) {
-                console.log(`📋 Arma 5 (metadados) → ${result.label}`);
                 return result;
             }
         } catch {}
         return null;
     };
 
-    // =========================================================
-    // ARMA 6 — Producer/Creator do PDF (~0ms)
-    // =========================================================
     const classifyByPdfProducer = async (arrayBuffer) => {
         try {
             if (!window.pdfjsLib) return null;
@@ -1850,16 +1755,12 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
             // Fallback: tenta o dicionário geral
             const result = matchKeywords(combined);
             if (result) {
-                console.log(`🏭 Arma 6 (producer) → ${result.label}`);
                 return result;
             }
         } catch {}
         return null;
     };
 
-    // =========================================================
-    // ARMA 2 — Texto embutido do PDF (~100ms, sem API)
-    // =========================================================
     const classifyByPdfText = async (arrayBuffer) => {
         try {
             if (!window.pdfjsLib) return null;
@@ -1876,16 +1777,12 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
             if (fullText.trim().length < 20) return null; // PDF escaneado — sem texto
             const result = matchKeywords(fullText);
             if (result) {
-                console.log(`📄 Arma 2 (texto PDF) → ${result.label}`);
                 return result;
             }
         } catch {}
         return null;
     };
 
-    // =========================================================
-    // ARMA 4 — Tesseract OCR (1-4s, sem API)
-    // =========================================================
     const loadTesseract = () => new Promise((resolve, reject) => {
         if (window.Tesseract) { resolve(window.Tesseract); return; }
         const existing = document.getElementById('tesseract-script');
@@ -1914,16 +1811,12 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
             if (!text || text.trim().length < 15) return null;
             const result = matchKeywords(text);
             if (result) {
-                console.log(`🔬 Arma 4 (OCR) → ${result.label}`);
                 return result;
             }
         } catch {}
         return null;
     };
 
-    // =========================================================
-    // classifyDoc — Ordem: 1 → 5 → 6 → 2 → 4 → IA
-    // =========================================================
     const classifyDoc = async (file) => {
         try {
             // ── Arma 1: Nome do arquivo ──
@@ -1968,11 +1861,10 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
             }
 
             // ── IA (último recurso) ──
-            // ✅ OTIMIZAÇÃO: delay entre modelos reduzido (era 1000ms, agora 300ms)
+            
             for (const model of VISION_MODELS) {
                 const result = await tryModel(model, b64, mime);
                 if (result) {
-                    console.log(`✅ Modelo usado: ${model} → ${result.label}`);
                     return result;
                 }
                 await sleep(300);
@@ -1980,7 +1872,6 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
 
             return { category: 'outros', order: 99, label: 'Outro Documento' };
         } catch (err) {
-            console.error('Classify error:', err);
             return { category: 'outros', order: 99, label: 'Outro Documento' };
         }
     };
@@ -2309,12 +2200,9 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
             setIsCreatingFolder(false);
             setPendingDocs([]);
             setIsFinalizingFolder(false);
-            setShowThumbsUp(true);
-            setTimeout(() => setShowThumbsUp(false), 2800);
             setShowLightning(true);
             setTimeout(() => setShowLightning(false), 2800);
         } catch (error) {
-            console.error('Erro ao gerar PDF:', error);
             setChatMessages(prev => [...prev, { role: 'bot', content: `Ops, algo não deu certo ao gerar o arquivo. 😕\n\nDetalhe: ${error.message || 'erro desconhecido'}` }]);
         }
         setIsChatLoading(false);
@@ -2403,7 +2291,7 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
         const matchesBrand = revista.brand === activeBrand;
         const matchesZone = !activeZone || revista.region.toLowerCase().includes(activeZone.toLowerCase());
         return matchesSearch && matchesBrand && matchesZone;
-    });
+    }).sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0));
 
     return (
         <>
@@ -2487,7 +2375,7 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
                 .group:hover img { transform: scale(1.12) !important; }
                 .group img { transition: transform 0.7s cubic-bezier(0.25,0.46,0.45,0.94) !important; }
 
-
+                /* ── LIQUID GLASS — card fixado ── */
                 @keyframes banner-reveal-anim {
                     0%   { opacity: 0; transform: translateY(18px) scale(0.98); }
                     100% { opacity: 1; transform: translateY(0)    scale(1); }
@@ -3163,8 +3051,33 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
                             </div>
                         ) : (
                             <div className="flex flex-col gap-6">
+                                {/* ── GRID COM PINNED PRIMEIRO ── */}
                                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                                    {filteredRevistas.map((revista, cardIdx) => (
+                                    {filteredRevistas.filter(r => r.pinned).map((revista, cardIdx) => (
+                                        <div key={`pinned-${revista.id}`} style={{ position: 'relative' }}>
+                                            <span style={{
+                                                position: 'absolute', top: 12, right: 12, zIndex: 30,
+                                                background: 'linear-gradient(135deg, #8b1c3a 0%, #c2185b 100%)',
+                                                color: '#fff', fontSize: 9, fontWeight: 900,
+                                                letterSpacing: '0.16em', padding: '4px 11px',
+                                                borderRadius: 999, textTransform: 'uppercase',
+                                                boxShadow: '0 2px 10px rgba(139,28,58,0.5)',
+                                                border: '1px solid rgba(255,255,255,0.25)',
+                                                pointerEvents: 'none',
+                                            }}>✦ NOVA</span>
+                                            <CardRevista
+                                                key={revista.id}
+                                                revista={revista}
+                                                cardIdx={cardIdx}
+                                                modoNoturno={modoNoturno}
+                                                haptic={haptic}
+                                                setPdfLeitor={setPdfLeitor}
+                                                setSelectedPois={setSelectedPois}
+                                                setPdfLeitorLogoAnim={setPdfLeitorLogoAnim}
+                                            />
+                                        </div>
+                                    ))}
+                                    {filteredRevistas.filter(r => !r.pinned).map((revista, cardIdx) => (
                                         <CardRevista
                                             key={revista.id}
                                             revista={revista}
@@ -3438,6 +3351,7 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
                     'Conquista Topázio':            '-3.01547,-60.018348',
                     'Conquista Rio Negro':          '-3.0401114,-60.0800979',
                     'Viva Vida Rio Tapajós':        '-2.9835792,-60.0470611',
+                    'Moratta Home Riva':            '-3.077458,-60.020785',
                 };
 
                 // Mapa de POIs com endereço exato para evitar o Maps abrir a unidade errada

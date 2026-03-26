@@ -1,8 +1,7 @@
 import React, { useState, useEffect, useLayoutEffect, useRef } from 'react';
-import { Search, Building, ExternalLink, MapPin, BookOpen, Maximize, Bed, LayoutGrid, Sparkles, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, FileText, TableProperties, BookMarked, HelpCircle, Calculator, Bot, X, Send, Wand2, Paperclip, File as FileIcon, Trash2, FolderPlus, GripVertical, Plus, MessageCircle, Moon, Sun, AlertTriangle, Book, Clock } from 'lucide-react';
+import { Search, Building, ExternalLink, MapPin, BookOpen, Maximize, Bed, LayoutGrid, Sparkles, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, FileText, TableProperties, BookMarked, HelpCircle, Calculator, Bot, X, Send, Wand2, Paperclip, File as FileIcon, Trash2, FolderPlus, GripVertical, Plus, MessageCircle, Moon, Sun, AlertTriangle, Book, Clock, Trophy } from 'lucide-react';
 import { buscarRespostaDoRobo, buscarRespostaGemini } from './bot/dadosFinanciamento.js';
 
-// === LOGOS DOS EMPREENDIMENTOS ===
 const LOGOS_EMPREENDIMENTO = {
   brisas: "https://i.postimg.cc/CxkWjBFf/Copia-de-LOGO-COLORIDO-PREFERENCIAL.png",
   orquidea: "https://i.postimg.cc/nhbz1mt3/Copia-de-DIR-Orquidea-Logo-FINAL.png",
@@ -23,7 +22,6 @@ const LOGOS_EMPREENDIMENTO = {
   moratta: "https://i.postimg.cc/bvTVQqdd/248-3-LOGO-MORATTA-FIORE-PRETO-V1F.png",
 };
 
-// Map revista id -> logo key
 const REVISTA_LOGO_MAP = {
   1: 'brisas',
   2: 'orquidea',
@@ -44,9 +42,6 @@ const REVISTA_LOGO_MAP = {
   18: 'moratta',
 };
 
-
-
-// === DADOS DAS REVISTAS E BASE DE CONHECIMENTO DO CHATBOT ===
 const D = 'https://www.direcional.com.br/wp-content/uploads';
 const R = 'https://www.rivaincorporadora.com.br/wp-content/uploads';
 
@@ -240,7 +235,6 @@ const revistasDataLocal = [
 
     ];
 
-// === DADOS DE UTILITÁRIOS ===
 const utilitariosData = [
     { title: "RESERVA DE UNIDADE DE LANÇAMENTO", link: "https://docs.google.com/document/d/17QoIEhahikPda2zjSQ3esclqu-YS9j81/edit?usp=sharing&ouid=115657243229938792991&rtpof=true&sd=true" },
     { title: "CARTA DE CANCELAMENTO", link: "https://drive.google.com/file/d/1tlibpT-9XGQIDGTrvp3Zcb9sDep1CldF/view?usp=sharing" },
@@ -257,7 +251,6 @@ const utilitariosData = [
 ];
 
 
-// === FRASES MOTIVACIONAIS DIÁRIAS ===
 const frasesMotivacionais = [
     { texto: "O sucesso é a soma de pequenos esforços repetidos dia após dia.", autor: "Robert Collier" },
     { texto: "Não vendemos apenas imóveis, nós entregamos as chaves para novos sonhos e recomeços.", autor: "Equipe Destemidos" },
@@ -292,7 +285,6 @@ const frasesMotivacionais = [
     { texto: "Faça de cada atendimento uma obra-prima. O seu sucesso é a sua principal assinatura.", autor: "Motivação Destemidos" }
 ];
 
-// === IMAGENS DE EQUIPE (Muda Diariamente) ===
 const imagensEquipeDiarias = [
     "https://i.postimg.cc/QCxjYhBj/Copia-de-IMG-9585.jpg",
     "https://i.postimg.cc/2SJ3qb1V/Copia-de-IMG-5622-(1).jpg",
@@ -311,13 +303,9 @@ const imagensEquipeDiarias = [
     "https://i.postimg.cc/fWKLcg3X/Copia-de-IMG-9919.avif",
 ];
 
-// Cálculos para manter a mesma imagem e frase durante todo o dia
 const today = new Date();
 const dayIndex = Math.floor((today.getTime() - today.getTimezoneOffset() * 60000) / (1000 * 60 * 60 * 24));
 
-
-
-// ── RippleButton ────────────────────────────────────────────────
 function RippleButton({ onClick, className, children, style }) {
     const btnRef = useRef(null);
     const handleClick = (e) => {
@@ -339,11 +327,9 @@ function RippleButton({ onClick, className, children, style }) {
     );
 }
 
-// ── BannerExpandido — modal grande, blur no fundo, sem X, animação de saída ───
 function BannerExpandido({ revista, onClose, modoNoturno, onVerRevista, onVerPois }) {
-    const [phase, setPhase] = useState('entering'); // 'entering' | 'in' | 'out'
+    const [phase, setPhase] = useState('entering');
 
-    // Fotos: começa com a cover e vai adicionando as extras que carregam
     const [fotos, setFotos] = useState([revista.cover]);
     const checkedRef = useRef(false);
     useEffect(() => {
@@ -356,10 +342,9 @@ function BannerExpandido({ revista, onClose, modoNoturno, onVerRevista, onVerPoi
         });
     }, []);
 
-    // Slide: idx atual + idx anterior (para animar a saída) + direção
     const [idx, setIdx] = useState(0);
     const [prevIdx, setPrevIdx] = useState(null);
-    const [dir, setDir] = useState(null); // 'left' | 'right'
+    const [dir, setDir] = useState(null);
     const sliding = useRef(false);
 
     const goTo = (newIdx, d) => {
@@ -407,9 +392,7 @@ function BannerExpandido({ revista, onClose, modoNoturno, onVerRevista, onVerPoi
         </div>
     );
 
-    // Direções do slide: saindo vai para -100% (esq) ou +100% (dir); entrando vem do oposto
     const outX = dir === 'left' ? '-100%' : '100%';
-    const inX  = dir === 'left' ? '100%'  : '-100%';
     const DUR = '0.38s';
     const EASE = 'cubic-bezier(0.4,0,0.2,1)';
 
@@ -444,7 +427,6 @@ function BannerExpandido({ revista, onClose, modoNoturno, onVerRevista, onVerPoi
                     {/* ── ESQUERDA — foto (58%) ── */}
                     <div style={{ flex:'0 0 58%', position:'relative', overflow:'hidden' }}>
 
-                        {/* Imagem saindo */}
                         {dir && prevIdx !== null && (
                             <img key={`out-${prevIdx}`} src={fotos[prevIdx]} alt="" style={{
                                 position:'absolute', inset:0, width:'100%', height:'100%', objectFit:'cover',
@@ -453,7 +435,6 @@ function BannerExpandido({ revista, onClose, modoNoturno, onVerRevista, onVerPoi
                                 zIndex:1,
                             }}/>
                         )}
-                        {/* Imagem entrando */}
                         <img key={`in-${idx}`} src={fotos[idx]} alt={revista.title} style={{
                             position:'absolute', inset:0, width:'100%', height:'100%', objectFit:'cover',
                             transform: dir ? `translateX(0)` : 'translateX(0)',
@@ -476,7 +457,6 @@ function BannerExpandido({ revista, onClose, modoNoturno, onVerRevista, onVerPoi
                             );
                         })()}
 
-                        {/* Setas */}
                         {fotos.length > 1 && (<>
                             <button onClick={goPrev} style={{ position:'absolute', left:14, top:'50%', transform:'translateY(-50%)', zIndex:7, width:38, height:38, borderRadius:'50%', border:'none', cursor:'pointer', background:'rgba(0,0,0,0.36)', display:'flex', alignItems:'center', justifyContent:'center', transition:'background 0.15s' }}
                                 onMouseEnter={e=>e.currentTarget.style.background='rgba(0,0,0,0.62)'} onMouseLeave={e=>e.currentTarget.style.background='rgba(0,0,0,0.36)'}><ChevronLeft size={20} color="#fff"/></button>
@@ -487,7 +467,6 @@ function BannerExpandido({ revista, onClose, modoNoturno, onVerRevista, onVerPoi
                             </div>
                         </>)}
 
-                        {/* Título + região */}
                         <div style={{ position:'absolute', bottom:0, left:0, right:0, padding:'0 24px 24px', zIndex:5 }}>
                             <h2 style={{ margin:0, fontSize:24, fontWeight:900, color:'#fff', lineHeight:1.2, textShadow:'0 2px 14px rgba(0,0,0,0.6)' }}>{revista.title}</h2>
                             <div style={{ display:'flex', alignItems:'center', gap:5, marginTop:6 }}>
@@ -651,7 +630,7 @@ function CardRevista({ revista, cardIdx, modoNoturno, haptic, setPdfLeitor, setS
                         : '0 2px 6px rgba(100,130,200,0.10), 0 8px 28px rgba(100,130,200,0.14), inset 0 1.5px 0 rgba(255,255,255,1)';
                     stopHover();
                 }}
-            >                {/* ── IMAGEM ── */}
+            >
                 <div className="relative h-48 overflow-hidden bg-slate-100">
                     <img src={revista.cover}
                         onError={(e)=>{e.target.onerror=null;e.target.src='https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&q=80&w=400';}}
@@ -661,7 +640,6 @@ function CardRevista({ revista, cardIdx, modoNoturno, haptic, setPdfLeitor, setS
                     <div className="absolute inset-0 pointer-events-none z-10 overflow-hidden">
                         <div className="card-shimmer-sweep" style={{ position:'absolute', top:0, left:0, width:'55%', height:'100%', background:'linear-gradient(105deg, transparent 0%, rgba(255,255,255,0.38) 50%, transparent 100%)', transform:'translateX(-150%) skewX(-18deg)' }}/>
                     </div>
-                    {/* Logo Empreendimento */}
                     <div style={{ position:'absolute', top:10, left:10, zIndex:10, width:110, height:70, display:'flex', alignItems:'flex-start', justifyContent:'flex-start' }}>
                         {(() => {
                             const logoKey = REVISTA_LOGO_MAP[revista.id];
@@ -721,7 +699,6 @@ function CardRevista({ revista, cardIdx, modoNoturno, haptic, setPdfLeitor, setS
     );
 }
 
-// ── HintPills — aparecem uma vez e voam pro botão do chat ──────────────────────
 const HINT_PILLS_DATA = [
     {
         label: 'Pasta',
@@ -744,14 +721,10 @@ const HINT_PILLS_DATA = [
 ];
 
 function HintPills({ onPhaseChange }) {
-    const [phase, setPhase] = useState('idle'); // idle → show → fly → gone
+    const [phase, setPhase] = useState('idle');
 
     useEffect(() => {
         if (sessionStorage.getItem('dst_hint_done')) return;
-        // Sequência:
-        // 5.8s  — começa a entrar (escalonado por pill)
-        // 8.5s  — inicia saída voando pro chat
-        // 9.4s  — remove do DOM e grava sessão
         const t1 = setTimeout(() => { setPhase('show'); onPhaseChange && onPhaseChange('show'); }, 5800);
         const t2 = setTimeout(() => { setPhase('fly'); onPhaseChange && onPhaseChange('fly'); }, 8500);
         const t3 = setTimeout(() => {
@@ -764,9 +737,6 @@ function HintPills({ onPhaseChange }) {
 
     if (phase === 'idle' || phase === 'gone') return null;
 
-    // Cada pill tem sua própria animação CSS via keyframes nomeadas
-    // Entrada: cai de cima com bounce + brilho
-    // Saída: voa para o canto inferior direito encolhendo
     const pillAnims = HINT_PILLS_DATA.map((_, i) => ({
         enter: `hint-enter-${i}`,
         delay: `${i * 0.18}s`,
@@ -775,7 +745,6 @@ function HintPills({ onPhaseChange }) {
     return (
         <>
             <style>{`
-                /* ── ENTRADA — cada pill cai do topo com bounce e brilho ── */
                 @keyframes hint-enter-0 {
                     0%   { opacity:0; transform: translateX(120px) translateY(-30px) rotate(12deg) scale(0.4); }
                     55%  { opacity:1; transform: translateX(-8px)  translateY(4px)   rotate(-2deg) scale(1.08); }
@@ -794,7 +763,6 @@ function HintPills({ onPhaseChange }) {
                     75%  { transform: translateX(2px) translateY(-1px) rotate(0deg)  scale(0.98); }
                     100% { opacity:1; transform: translateX(0)      translateY(0)     rotate(0deg)  scale(1); }
                 }
-                /* ── SAÍDA — pills voam para o botão do chat ── */
                 @keyframes hint-fly-0 {
                     0%   { opacity:1; transform: translateX(0)    translateY(0)    scale(1);    filter: brightness(1); }
                     30%  {            transform: translateX(10px) translateY(-8px) scale(1.1);  filter: brightness(1.4); }
@@ -810,7 +778,6 @@ function HintPills({ onPhaseChange }) {
                     30%  {            transform: translateX(6px)  translateY(-4px) scale(1.06); filter: brightness(1.4); }
                     100% { opacity:0; transform: translateX(50px) translateY(60px) scale(0.05); filter: brightness(2); }
                 }
-                /* ── SHINE sweep nas pills ── */
                 @keyframes hint-shine {
                     0%   { left: -80%; }
                     100% { left: 160%; }
@@ -850,7 +817,6 @@ function HintPills({ onPhaseChange }) {
                             ? `hint-enter-${i} 0.65s cubic-bezier(0.22,1,0.36,1) ${pillAnims[i].delay} both`
                             : `hint-fly-${i} 0.65s cubic-bezier(0.55,0,1,0.45) ${i * 0.07}s both`,
                     }}>
-                        {/* Ícone em bolinha */}
                         <div style={{
                             width: 22, height: 22, borderRadius: '50%',
                             background: 'rgba(255,255,255,0.22)',
@@ -860,7 +826,6 @@ function HintPills({ onPhaseChange }) {
                             <svg width="11" height="11" viewBox="0 0 24 24">{p.icon}</svg>
                         </div>
                         {p.label}
-                        {/* Shine sweep */}
                         <div style={{
                             position: 'absolute', top: 0, width: '45%', height: '100%',
                             background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.28), transparent)',
@@ -875,10 +840,8 @@ function HintPills({ onPhaseChange }) {
     );
 }
 
-// ── RevistaCloseButton — bloqueia zoom de pinça enquanto revista estiver aberta ──
 function RevistaCloseButton({ onClose }) {
     useEffect(() => {
-        // Bloqueia pinça no trackpad (wheel+ctrlKey) e gestos nativos Safari
         const blockZoom = (e) => {
             if (e.ctrlKey || e.metaKey) { e.preventDefault(); e.stopPropagation(); }
         };
@@ -2500,6 +2463,7 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
                                 const STICKY_TABS = [
                                     { id: 'Direcional',  label: 'DIR',  action: () => setActiveBrand('Direcional'), isBtn: true },
                                     { id: 'Riva',        label: 'RIVA', action: () => setActiveBrand('Riva'),        isBtn: true },
+                                    { id: 'Ranking',     label: 'VER RANKING',  icon: <Trophy size={13} style={{color:'rgba(255,255,255,0.6)',flexShrink:0}}/>, href: 'https://ranking-direcional.streamlit.app/' },
                                     { id: 'Simulador',   label: 'SIM',  href: 'https://www8.caixa.gov.br/siopiinternet-web/simulaOperacaoInternet.do?method=inicializarCasoUso&isVoltar=true' },
                                     { id: 'Tabelas',     label: 'TAB',  href: 'https://drive.google.com/drive/folders/14mYfQkNaSc9APr6hpOTKKTFQ02oq3uOf?usp=sharing' },
                                     { id: 'Utilitarios', label: 'UTIL', action: () => setActiveBrand('Utilitarios'), isBtn: true },
@@ -2581,6 +2545,7 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
                         {[
                             { id: 'Direcional',  label: 'DIRECIONAL',  icon: <span style={{width:5,height:5,borderRadius:2,background:'rgba(255,255,255,0.7)',flexShrink:0,display:'inline-block'}}/>, action: () => setActiveBrand('Direcional'), isBtn: true },
                             { id: 'Riva',        label: 'RIVA',        icon: <span style={{width:5,height:5,borderRadius:2,background:'rgba(255,255,255,0.7)',flexShrink:0,display:'inline-block'}}/>, action: () => setActiveBrand('Riva'),        isBtn: true },
+                            { id: 'Ranking',     label: 'VER RANKING',     icon: <Trophy size={13} style={{color:'rgba(255,255,255,0.6)',flexShrink:0}}/>, href: 'https://ranking-direcional.streamlit.app/' },
                             { id: 'Simulador',   label: 'SIMULADOR',   icon: <Calculator size={13} style={{color:'rgba(255,255,255,0.6)',flexShrink:0}}/>, href: 'https://www8.caixa.gov.br/siopiinternet-web/simulaOperacaoInternet.do?method=inicializarCasoUso&isVoltar=true' },
                             { id: 'Tabelas',     label: 'TABELAS',     icon: <TableProperties size={13} style={{color:'rgba(255,255,255,0.6)',flexShrink:0}}/>, href: 'https://drive.google.com/drive/folders/14mYfQkNaSc9APr6hpOTKKTFQ02oq3uOf?usp=sharing' },
                             { id: 'Utilitarios', label: 'UTILITÁRIOS', icon: <BookMarked size={13} style={{color:'rgba(255,255,255,0.6)',flexShrink:0}}/>, action: () => setActiveBrand('Utilitarios'), isBtn: true },
@@ -2854,6 +2819,7 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
                                 const TABS = [
                                     { id: 'Direcional',  label: 'DIRECIONAL', icon: <span style={{width:5,height:5,borderRadius:2,background:'rgba(255,255,255,0.7)',flexShrink:0,display:'inline-block'}}/>, action: () => setActiveBrand('Direcional'), isBtn: true },
                                     { id: 'Riva',        label: 'RIVA',        icon: <span style={{width:5,height:5,borderRadius:2,background:'rgba(255,255,255,0.7)',flexShrink:0,display:'inline-block'}}/>, action: () => setActiveBrand('Riva'),        isBtn: true },
+                                    { id: 'Ranking',     label: 'VER RANKING',     icon: <Trophy size={13} style={{color:'rgba(255,255,255,0.6)',flexShrink:0}}/>, href: 'https://ranking-direcional.streamlit.app/' },
                                     { id: 'Simulador',   label: 'SIMULADOR',   icon: <Calculator size={13} style={{color:'rgba(255,255,255,0.6)',flexShrink:0}}/>, href: 'https://www8.caixa.gov.br/siopiinternet-web/simulaOperacaoInternet.do?method=inicializarCasoUso&isVoltar=true' },
                                     { id: 'Tabelas',     label: 'TABELAS',     icon: <TableProperties size={13} style={{color:'rgba(255,255,255,0.6)',flexShrink:0}}/>, href: 'https://drive.google.com/drive/folders/14mYfQkNaSc9APr6hpOTKKTFQ02oq3uOf?usp=sharing' },
                                     { id: 'Utilitarios', label: 'UTILITÁRIOS', icon: <BookMarked size={13} style={{color:'rgba(255,255,255,0.6)',flexShrink:0}}/>, action: () => setActiveBrand('Utilitarios'), isBtn: true },

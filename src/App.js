@@ -1,899 +1,9 @@
 import React, { useState, useEffect, useLayoutEffect, useRef } from 'react';
-import { Search, Building, ExternalLink, MapPin, BookOpen, Maximize, Bed, LayoutGrid, Sparkles, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, FileText, TableProperties, BookMarked, HelpCircle, Calculator, Bot, X, Send, Wand2, Paperclip, File as FileIcon, Trash2, FolderPlus, GripVertical, Plus, MessageCircle, Moon, Sun, AlertTriangle, Book, Clock, Trophy } from 'lucide-react';
+import { Search, Building, ExternalLink, MapPin, BookOpen, Maximize, Bed, LayoutGrid, Sparkles, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, FileText, TableProperties, BookMarked, HelpCircle, Calculator, Bot, X, Send, Wand2, Paperclip, File as FileIcon, Trash2, FolderPlus, GripVertical, Plus, MessageCircle, Moon, Sun, AlertTriangle, Book, Clock, Trophy, RotateCw, RotateCcw } from 'lucide-react';
 import { buscarRespostaDoRobo, buscarRespostaGemini } from './bot/dadosFinanciamento.js';
-
-const LOGOS_EMPREENDIMENTO = {
-  brisas: "https://i.postimg.cc/CxkWjBFf/Copia-de-LOGO-COLORIDO-PREFERENCIAL.png",
-  orquidea: "https://i.postimg.cc/nhbz1mt3/Copia-de-DIR-Orquidea-Logo-FINAL.png",
-  village_torres: "https://i.postimg.cc/fyVL8jL3/Logo-Village-Torres.png",
-  conquista_jb: "https://i.postimg.cc/7h56KM6G/Ativo-1.png",
-  viva_coral: "https://i.postimg.cc/3RSNjbKh/Copia-de-Logo-Viva-Vida-Coral.png",
-  jardim_norte: "https://i.postimg.cc/zv4f6bbp/Copia-de-DIR-Jd-Norte-Logo-FINAL-Prancheta-1.png",
-  rio_amazonas: "https://i.postimg.cc/D0SZxdZP/DIR-Rio-AM-logo-AZUL.png",
-  bosque_torres: "https://i.postimg.cc/Kj1z0rzs/Copia-de-Logo-Bosque-das-Torres-Prancheta-1.png",
-  lirio_azul: "https://i.postimg.cc/Wzd3563y/Copia-de-DIR-PVLirio-Azul-Logo.png",
-  boulevard_classic: "https://i.postimg.cc/6qbHXwBJ/Logo-AMAZOM-BOULEVARD-CLASSIC.png",
-  boulevard_prime: "https://i.postimg.cc/PJV6jhdG/Copia-de-LOGO-AMAZON-BOULEVARD-PRIME-OK-01.png",
-  oasis_azzure: "https://i.postimg.cc/bJCr0Fzk/Copia-de-LOGO-OASIS-AZZURE-BRANCA.png",
-  zenith: "https://i.postimg.cc/gjtMWdGb/ZENITH-LOGO-ORIGINAL.png",
-  topazio: "https://i.postimg.cc/qqNR1XRR/DIR-CTopazio-Logo-Prancheta-1.png",
-  rio_negro: "https://i.postimg.cc/NFKMd7M6/DIR-Conquista-Rio-Negro-Logo.png",
-  rio_tapajos: "https://i.postimg.cc/xCx8GF0c/Copia-de-DIR-Rio-Tapajos-logo.png",
-  moratta: "https://i.postimg.cc/bvTVQqdd/248-3-LOGO-MORATTA-FIORE-PRETO-V1F.png",
-};
-
-const REVISTA_LOGO_MAP = {
-  1: 'brisas',
-  2: 'orquidea',
-  3: 'village_torres',
-  4: 'conquista_jb',
-  5: 'viva_coral',
-  6: 'jardim_norte',
-  7: 'rio_amazonas',
-  8: 'bosque_torres',
-  9: 'lirio_azul',
-  10: 'boulevard_classic',
-  11: 'boulevard_prime',
-  12: 'oasis_azzure',
-  13: 'zenith',
-  14: 'topazio',
-  16: 'rio_negro',
-  17: 'rio_tapajos',
-  18: 'moratta',
-};
-
-const D = 'https://www.direcional.com.br/wp-content/uploads';
-const R = 'https://www.rivaincorporadora.com.br/wp-content/uploads';
-
-const revistasDataLocal = [
-    { id: 1, title: "Brisas do Horizonte", brand: "Direcional", region: "Coroado - Zona Leste", size: "43m² a 45m²", bedrooms: "2 quartos", flooring: "Todo o apê", entrega: "08/2028",
-      cover: `${D}/2025/06/Perspectiva-Guarita-BrisasdoHorizonte.jpg.webp`,
-            fotosExtras: [
-        `https://api.apto.vc/images/realties/9440/brisas-do-horizonte-condominio-2.webp`,
-        `https://api.apto.vc/images/realties/9440/brisas-do-horizonte-condominio-3.webp`,
-        `https://api.apto.vc/images/realties/9440/brisas-do-horizonte-condominio-4.webp`,
-        `https://api.apto.vc/images/realties/9440/brisas-do-horizonte-condominio-5.webp`,
-        `https://api.apto.vc/images/realties/9440/brisas-do-horizonte-condominio-6.webp`,
-      ],
-      link: "https://drive.google.com/file/d/18IXtAt9PLVjIsk2PkXIHXnVCaduVkGu2/view?usp=drive_link", aliases: ["brisas", "brisas do horizonte", "horizonte"], pois: ["Supermercado Vitória (1 min)", "Escola Mun. Profª Maria Rodrigues Tapajós (2 min)", "SPA Coroado (3 min)", "Estádio Carlos Zamith (5 min)", "Park Mall Ephigênio Salles (6 min)", "UFAM - Universidade Federal do Amazonas (7 min)", "Hospital Dr. João Lúcio (7 min)", "Samel São José Medical Center (7 min)", "Sesi Clube do Trabalhador (8 min)", "Manauara Shopping (14 min)"] },
-
-    { id: 2, title: "Parque Ville Orquídea", brand: "Direcional", region: "Lago Azul - Zona Norte", size: "41m²", bedrooms: "2 quartos", flooring: "Todo o apê", entrega: "04/2027",
-      cover: `${D}/2024/05/Perspectiva_PARQUEVILLEORQUIDEA_GUARITA.jpg.webp`,
-            fotosExtras: [
-        `https://api.apto.vc/images/realties/7259/parque-ville-orquidea-condominio-2.webp`,
-        `https://api.apto.vc/images/realties/7259/parque-ville-orquidea-condominio-3.webp`,
-        `https://api.apto.vc/images/realties/7259/parque-ville-orquidea-condominio-4.webp`,
-        `https://api.apto.vc/images/realties/7259/parque-ville-orquidea-condominio-5.webp`,
-        `https://api.apto.vc/images/realties/7259/parque-ville-orquidea-condominio-6.webp`,
-      ],
-      link: "https://drive.google.com/file/d/1F_BeT2jceDM8u4kCbSXN8kp2rk7boQTG/view?usp=drive_link", aliases: ["orquidea", "orquídea", "parque ville", "parque ville orquidea"], pois: ["Escola Mun. Viviane Estrela (1-2 min)", "Clínica da Família C. Nicolau (1-2 min)", "Veneza Express (3-4 min)", "Nova Era Supermercado (3-4 min)", "Terminal 6 (3-4 min)", "Colégio Militar da PM VI (3-4 min)", "Shopping Via Norte (7 min)", "Hospital Delphina Aziz (10 min)", "Sumaúma Park Shopping (12 min)"] },
-
-    { id: 3, title: "Village Torres", brand: "Direcional", region: "Lago Azul - Zona Norte", size: "36m²", bedrooms: "2 quartos", flooring: "Cozinha, banheiro e lavatório", entrega: "04/2027",
-      cover: `${D}/2024/09/Perspectiva-Guarita-VillageTorres.jpg.webp`,
-            fotosExtras: [
-        `https://api.apto.vc/images/realties/7672/village-torres-condominio-2.webp`,
-        `https://api.apto.vc/images/realties/7672/village-torres-condominio-3.webp`,
-        `https://api.apto.vc/images/realties/7672/village-torres-condominio-4.webp`,
-        `https://api.apto.vc/images/realties/7672/village-torres-condominio-5.webp`,
-        `https://api.apto.vc/images/realties/7672/village-torres-condominio-6.webp`,
-      ],
-      link: "https://drive.google.com/file/d/1blVconA5fjODxvXB7s8KT6dSlX8KpLLv/view?usp=drive_link", aliases: ["village", "village torres", "torres"], pois: ["Supermercado Nova Era", "Shopping Via Norte", "Sumaúma Park Shopping", "Atacadão"] },
-
-    { id: 4, title: "Conquista Jardim Botânico", brand: "Direcional", region: "Nova Cidade - Zona Norte", size: "40m²", bedrooms: "2 quartos", flooring: "Cozinha, banheiro e lavatório", entrega: "11/2026",
-      cover: `${D}/2024/03/Conquista-Jardim-Botanico-Guarita.jpg.webp`,
-            fotosExtras: [
-        `https://api.apto.vc/images/realties/7260/conquista-jardim-botanico-condominio-2.webp`,
-        `https://api.apto.vc/images/realties/7260/conquista-jardim-botanico-condominio-3.webp`,
-        `https://api.apto.vc/images/realties/7260/conquista-jardim-botanico-condominio-4.webp`,
-        `https://api.apto.vc/images/realties/7260/conquista-jardim-botanico-condominio-5.webp`,
-        `https://api.apto.vc/images/realties/7260/conquista-jardim-botanico-condominio-6.webp`,
-      ],
-      link: "https://drive.google.com/file/d/1TYzIq8RuGORXfxQpH8CGZejTjF_GlUz0/view?usp=drive_link", aliases: ["botanico", "botânico", "jardim botanico", "conquista jardim"], pois: ["MUSA (Museu da Amazônia / Jardim Botânico)", "Shopping Via Norte", "Supermercado DB Nova Cidade", "SPA Galiléia"] },
-
-    { id: 5, title: "Viva Vida Coral", brand: "Direcional", region: "Colônia Terra Nova - Zona Norte", size: "41m² a 51m²", bedrooms: "2 quartos", flooring: "Cozinha, banheiro e lavatório", entrega: "03/2028",
-      cover: `${D}/2025/05/Perspectiva-Guarita-VivaVidaCoral.jpg.webp`,
-            fotosExtras: [
-        `https://api.apto.vc/images/realties/8667/viva-vida-coral-condominio-2.webp`,
-        `https://api.apto.vc/images/realties/8667/viva-vida-coral-condominio-3.webp`,
-        `https://api.apto.vc/images/realties/8667/viva-vida-coral-condominio-4.webp`,
-        `https://api.apto.vc/images/realties/8667/viva-vida-coral-condominio-5.webp`,
-        `https://api.apto.vc/images/realties/8667/viva-vida-coral-condominio-6.webp`,
-      ],
-      link: "https://drive.google.com/file/d/1lYo3otquzwdnD0r5f6JobBbW-6KmGOF4/view?usp=drive_link", aliases: ["coral", "viva vida coral", "viva vida"], pois: ["Shopping Via Norte", "Loja Havan", "Atacadão", "Hospital Delphina Aziz", "Posto Atem (famoso na entrada do bairro)"] },
-
-    { id: 6, title: "Conquista Jardim Norte", brand: "Direcional", region: "Santa Etelvina - Zona Norte", size: "36m²", bedrooms: "2 quartos", flooring: "Cozinha, banheiro e lavatório", entrega: "06/2027",
-      cover: `${D}/2024/12/Perspectiva-Guarita-ConquistaJardimNorte.jpg.webp`,
-            fotosExtras: [
-        `https://api.apto.vc/images/realties/8191/conquista-jardim-norte-condominio-2.webp`,
-        `https://api.apto.vc/images/realties/8191/conquista-jardim-norte-condominio-3.webp`,
-        `https://api.apto.vc/images/realties/8191/conquista-jardim-norte-condominio-4.webp`,
-        `https://api.apto.vc/images/realties/8191/conquista-jardim-norte-condominio-5.webp`,
-        `https://api.apto.vc/images/realties/8191/conquista-jardim-norte-condominio-6.webp`,
-      ],
-      link: "https://drive.google.com/file/d/1_Hyb72NWl1HjEiabKLL9m5ZMutHExesY/view?usp=drive_link", aliases: ["jardim norte", "santa etelvina", "conquista norte"], pois: ["Shopping Via Norte (1 min)", "Havan (1 min)", "Fun Park (1 min)", "Nova Era Supermercado (1 min)", "UBS Sálvio Belota (2 min)", "Feira do Santa Etelvina (2 min)", "Terminal 06 (5 min)", "15º Distrito Policial (5-7 min)", "Hiper DB (5-7 min)", "Hospital Delphina Aziz", "Escola Dra. Viviane Estrela"] },
-
-    { id: 7, title: "Viva Vida Rio Amazonas", brand: "Direcional", region: "Tarumã - Zona Oeste", size: "36m²", bedrooms: "2 quartos", flooring: "Cozinha, banheiro e lavatório", entrega: "03/2026",
-      cover: `${D}/2023/07/Guarita-Viva-Vida-Rio-Amazonas-Direcional.jpg.webp`,
-      fotosExtras: [
-        `${D}/2023/07/Fachada-Viva-Vida-Rio-Amazonas-Direcional.jpg.webp`,
-        `${D}/2023/07/Lazer-Viva-Vida-Rio-Amazonas-Direcional.jpg.webp`,
-        `${D}/2023/07/Piscina-Viva-Vida-Rio-Amazonas-Direcional.jpg.webp`,
-        `${D}/2023/07/Fitness-Viva-Vida-Rio-Amazonas-Direcional.jpg.webp`,
-        `${D}/2023/07/Playground-Viva-Vida-Rio-Amazonas-Direcional.jpg.webp`,
-      ],
-      link: "https://drive.google.com/", aliases: ["amazonas", "rio amazonas", "viva vida rio amazonas"], pois: ["Aeroporto Internacional Eduardo Gomes", "Orla da Ponta Negra", "Sivam (Sistema de Vigilância da Amazônia)", "Sipam", "Supermercado Veneza"] },
-
-    { id: 8, title: "Bosque das Torres", brand: "Direcional", region: "Lago Azul - Zona Norte", size: "36m²", bedrooms: "2 quartos", flooring: "Cozinha, banheiro e lavatório", entrega: "06/2028",
-      cover: `${D}/2025/10/portaria-bosque-das-torres.jpg.webp`,
-            fotosExtras: [
-        `https://api.apto.vc/images/realties/11153/bosque-das-torres-condominio-2.webp`,
-        `https://api.apto.vc/images/realties/11153/bosque-das-torres-condominio-3.webp`,
-        `https://api.apto.vc/images/realties/11153/bosque-das-torres-condominio-4.webp`,
-        `https://api.apto.vc/images/realties/11153/bosque-das-torres-condominio-5.webp`,
-        `https://api.apto.vc/images/realties/11153/bosque-das-torres-condominio-6.webp`,
-      ],
-      link: "https://drive.google.com/file/d/1lPnNQuxlPkKOcW2JqOB7KEWsaQVpZzcU/view?usp=drive_link", aliases: ["bosque", "bosque das torres"], pois: ["Supermercado Nova Era (Torres)", "Sumaúma Park Shopping", "Parque do Mindu", "Faculdade Estácio (polo próximo)"] },
-
-    { id: 9, title: "Parque Ville Lírio Azul", brand: "Direcional", region: "Lago Azul - Zona Norte", size: "41m²", bedrooms: "2 quartos", flooring: "Cozinha, banheiro e lavatório", entrega: "11/2028",
-      cover: `${D}/2025/11/fachada-noturna-parque-ville-lirio-azul.jpg.webp`,
-            fotosExtras: [
-        `https://api.apto.vc/images/realties/12749/parque-ville-lirio-azul-condominio-2.webp`,
-        `https://api.apto.vc/images/realties/12749/parque-ville-lirio-azul-condominio-3.webp`,
-        `https://api.apto.vc/images/realties/12749/parque-ville-lirio-azul-condominio-4.webp`,
-        `https://api.apto.vc/images/realties/12749/parque-ville-lirio-azul-condominio-5.webp`,
-        `https://api.apto.vc/images/realties/12749/parque-ville-lirio-azul-condominio-6.webp`,
-      ],
-      link: "https://drive.google.com/file/d/1fc7AXap6nhkpTlxONsm46WJCKxIWIhwe/view?usp=drive_link", aliases: ["lirio", "lírio", "lirio azul", "parque ville lirio"], pois: ["Escola Integral João S. Braga (1 min)", "Colégio Militar da PM VI (2 min)", "Escola Est. Eliana Braga (2 min)", "Nova Era Supermercado (2 min)", "Clínica da Família C. Gracie (2 min)", "UBS José Fligliuolo (4 min)", "Clínica da Família C. Nicolau (4 min)", "Terminal 6 e 7 (4 min)", "Shopping Via Norte / Havan / Fun Park (7 min)", "Hospital Delphina Aziz (8 min)"] },
-
-    { id: 10, title: "Amazon Boulevard Classic", brand: "Riva", region: "Bairro da Paz - Zona Centro-Oeste", size: "44m² a 69,78m²", bedrooms: "2 quartos", flooring: "Todo o apê", entrega: "12/2026",
-      cover: `${R}/2023/11/fachada-noturna_amazon-boulevard-classic.jpg.webp`,
-            fotosExtras: [
-        `https://api.apto.vc/images/realties/6845/amazon-boulevard-classic-condominio-2.webp`,
-        `https://api.apto.vc/images/realties/6845/amazon-boulevard-classic-condominio-3.webp`,
-        `https://api.apto.vc/images/realties/6845/amazon-boulevard-classic-condominio-4.webp`,
-        `https://api.apto.vc/images/realties/6845/amazon-boulevard-classic-condominio-5.webp`,
-        `https://api.apto.vc/images/realties/6845/amazon-boulevard-classic-condominio-6.webp`,
-      ],
-      link: "https://drive.google.com/file/d/1ZX37T2S8FlHnSiO-yeAjlFyqq_5-dVzx/view?usp=drive_link", aliases: ["classic", "amazon boulevard", "boulevard", "boulevard classic"], pois: ["Arena da Amazônia", "Amazonas Shopping", "Carrefour Hipermercado", "UNIP (Universidade Paulista)", "Terminal Rodoviário de Manaus", "Hospital Tropical (Fundação de Medicina Tropical)"] },
-
-    { id: 11, title: "Amazon Boulevard Prime", brand: "Riva", region: "Bairro da Paz - Zona Centro-Oeste", size: "51m² a 90,39m²", bedrooms: "2 e 3 quartos", flooring: "Todo o apê", entrega: "06/2028",
-      cover: `${R}/2025/06/guarita-Amazon-prime-boulevard-riva.jpg.webp`,
-            fotosExtras: [
-        `https://api.apto.vc/images/realties/9089/amazon-boulevard-prime-condominio-2.webp`,
-        `https://api.apto.vc/images/realties/9089/amazon-boulevard-prime-condominio-3.webp`,
-        `https://api.apto.vc/images/realties/9089/amazon-boulevard-prime-condominio-4.webp`,
-        `https://api.apto.vc/images/realties/9089/amazon-boulevard-prime-condominio-5.webp`,
-        `https://api.apto.vc/images/realties/9089/amazon-boulevard-prime-condominio-6.webp`,
-      ],
-      link: "https://drive.google.com/file/d/1aIuBlwLYGStUm7DNE3gCbfu3Ty2JmkGM/view?usp=drive_link", aliases: ["prime", "amazon prime", "boulevard prime"], pois: ["Arena da Amazônia", "Sambódromo", "Hipermercado Carrefour", "La Parilla Restaurante", "Aeroclub", "Petz", "Clube Municipal (ao lado)", "Vila Olímpica", "Drogaria Bom Preço", "Drogaria Santo Remédio"] },
-
-    { id: 12, title: "Città Oasis Azzure", brand: "Riva", region: "Flores - Zona Centro-Sul", size: "48m² a 75m²", bedrooms: "2 e 3 quartos", flooring: "Todo o apê", entrega: "11/2028",
-      cover: `${R}/2025/08/citta-azzure_GUARITA.jpg.webp`,
-            fotosExtras: [
-        `https://api.apto.vc/images/realties/10744/citta-oasis-azzure-home-riva-condominio-2.webp`,
-        `https://api.apto.vc/images/realties/10744/citta-oasis-azzure-home-riva-condominio-3.webp`,
-        `https://api.apto.vc/images/realties/10744/citta-oasis-azzure-home-riva-condominio-4.webp`,
-        `https://api.apto.vc/images/realties/10744/citta-oasis-azzure-home-riva-condominio-5.webp`,
-        `https://api.apto.vc/images/realties/10744/citta-oasis-azzure-home-riva-condominio-6.webp`,
-      ],
-      link: "https://drive.google.com/file/d/1Y-fT6UbQ-OopqVaV0POgHRIdlayMXMOB/view?usp=sharing", aliases: ["citta", "città", "azzure", "oasis", "oasis azzure"], pois: ["Universidade Nilton Lins", "Laranjeiras Restaurante (polo gastronômico)", "Sushi Ponta Negra", "Domes Burgers", "Di Fiori - Casa de Massas e Pizzas", "Na Lenha Pizzaria", "Drogaria Santo Remédio", "Supermercado Atack (Laranjeiras)", "Sollarium Mall"] },
-
-    { id: 13, title: "Zenith Condomínio Clube", brand: "Riva", region: "São Francisco - Zona Sul", size: "48m² a 49m²", bedrooms: "2 e 3 quartos", flooring: "Todo o apê", entrega: "03/2028",
-      cover: `${R}/2024/08/Perspectiva-Guarita-ZenithCondominioClube.webp`,
-            fotosExtras: [
-        `https://api.apto.vc/images/realties/7605/zenith-condominio-clube-condominio-2.webp`,
-        `https://api.apto.vc/images/realties/7605/zenith-condominio-clube-condominio-3.webp`,
-        `https://api.apto.vc/images/realties/7605/zenith-condominio-clube-condominio-4.webp`,
-        `https://api.apto.vc/images/realties/7605/zenith-condominio-clube-condominio-5.webp`,
-        `https://api.apto.vc/images/realties/7605/zenith-condominio-clube-condominio-6.webp`,
-      ],
-      link: "https://drive.google.com/file/d/1wv_v56T2ACEHtPZF-iRBvEWY2VVdUXxu/view?usp=drive_link", aliases: ["zenith", "zenith condominio"], pois: ["Manauara Shopping", "Fórum Ministro Henoch Reis", "Tribunal de Justiça (TJ-AM)", "Hospital Check Up", "Colégio Martha Falcão", "Faculdade Martha Falcão", "Faculdade Estácio"] },
-
-    { id: 14, title: "Conquista Topázio", brand: "Direcional", region: "Colônia Terra Nova - Zona Norte", size: "41m² a 51m²", bedrooms: "1 e 2 quartos", flooring: "Todo o apê", entrega: "Entregue",
-      cover: `${D}/2023/04/Guarita-Conquista-Topazio-Direcional.jpg.webp`,
-            fotosExtras: [
-        `https://api.apto.vc/images/realties/6507/conquista-topazio-condominio-2.webp`,
-        `https://api.apto.vc/images/realties/6507/conquista-topazio-condominio-3.webp`,
-        `https://api.apto.vc/images/realties/6507/conquista-topazio-condominio-4.webp`,
-        `https://api.apto.vc/images/realties/6507/conquista-topazio-condominio-5.webp`,
-        `https://api.apto.vc/images/realties/6507/conquista-topazio-condominio-6.webp`,
-      ],
-      link: "https://drive.google.com/file/d/1SMIfr9HbfLd06UaDLKbMUxxtuh4cPPEM/view?usp=drive_link", aliases: ["topazio", "topázio", "conquista topazio"], pois: ["Allegro Mall (vizinho)", "Shopping Via Norte", "Atacadão", "Loja Havan", "SPA da Colônia Terra Nova"] },
-
-    { id: 16, title: "Conquista Rio Negro", brand: "Direcional", region: "Ponta Negra - Zona Oeste", size: "41m²", bedrooms: "2 quartos", flooring: "Todo o apê", entrega: "Entregue",
-      cover: `${D}/2022/11/Guarita-Conquista-Rio-Negro-Direcional.jpg.webp`,
-            fotosExtras: [
-        `https://api.apto.vc/images/realties/6070/conquista-rio-negro-condominio-2.webp`,
-        `https://api.apto.vc/images/realties/6070/conquista-rio-negro-condominio-3.webp`,
-        `https://api.apto.vc/images/realties/6070/conquista-rio-negro-condominio-4.webp`,
-        `https://api.apto.vc/images/realties/6070/conquista-rio-negro-condominio-5.webp`,
-        `https://api.apto.vc/images/realties/6070/conquista-rio-negro-condominio-6.webp`,
-      ],
-      link: "https://drive.google.com/file/d/1pHLQwUSn6BDMfLo7fFGonyyWlgtXwNmy/view?usp=drive_link", aliases: ["negro", "rio negro", "conquista rio negro"], pois: ["Shopping Ponta Negra", "DB Ponta Negra", "Orla 92 Mall", "Supermercado Veneza", "Orla da Ponta Negra", "Praia Dourada", "Marina Tauá", "Balneário do SESC", "Aeroporto Eduardo Gomes", "Policlínica José Lins", "Colégio Século"] },
-
-    { id: 17, title: "Viva Vida Rio Tapajós", brand: "Direcional", region: "Tarumã - Zona Oeste", size: "36m²", bedrooms: "2 quartos", flooring: "Cozinha, banheiro e lavatório", entrega: "08/2027",
-      cover: `${D}/2025/02/Perspectiva-Guarita-VivaVidaRioTapajos.jpg.webp`,
-      fotosExtras: [
-        `${D}/2025/02/Perspectiva-Fachada-VivaVidaRioTapajos.jpg.webp`,
-        `${D}/2025/02/Perspectiva-Lazer-VivaVidaRioTapajos.jpg.webp`,
-        `${D}/2025/02/Perspectiva-Piscina-VivaVidaRioTapajos.jpg.webp`,
-        `${D}/2025/02/Perspectiva-Fitness-VivaVidaRioTapajos.jpg.webp`,
-        `${D}/2025/02/Perspectiva-Playground-VivaVidaRioTapajos.jpg.webp`,
-      ],
-      link: "https://drive.google.com/file/d/1k3TOypf5bm_zXPfc-ulb7vY9e7MKxmlk/view?usp=drive_link", aliases: ["tapajos", "tapajós", "rio tapajos", "viva vida rio tapajos"], pois: ["Aeroporto Internacional de Manaus", "Tarumã (área de balneários famosos)", "Sivam", "proximidade com a entrada da Ponta Negra"] },
-
-    { id: 18, title: "Moratta Home Riva", brand: "Riva", region: "Flores - Zona Centro-Sul", size: "43,41m² a 59,35m²", bedrooms: "2 dormitórios", flooring: "Todo o apê", entrega: "04/2029", pinned: true,
-      cover: `https://i.postimg.cc/vmFwP8QX/IMG-1577.png`,
-      fotosExtras: [
-        `https://i.postimg.cc/Wzn0y4L5/DIRECIONAL-CARREFOUR-TORRE-DETALHE-FINAL.jpg`,
-        `https://i.postimg.cc/ryCGsf0r/DIRECIONAL-CARREFOUR-TORRE-DIURNA-FINAL.jpg`,
-        `https://i.postimg.cc/x8tbRFMb/DIRECIONAL-CARREFOUR-ACADEMIA-FINAL.jpg`,
-        `https://i.postimg.cc/5N2z0bWR/DIRECIONAL-CARREFOUR-INTERNA-SALA-FINAL.jpg`,
-        `https://i.postimg.cc/jdSf5tY9/DIRECIONAL-CARREFOUR-LAVANDERIA-FINAL.jpg`,
-      ],
-      link: "https://drive.google.com/file/d/16Umi4PJlL2-yHR1Ye_nqtv_EOggbBCwk/view?usp=drive_link", aliases: ["moratta", "moratta home", "moratta riva"], pois: ["Carrefour Flores (ao lado)", "Amazonas Shopping (próximo)", "Arena da Amazônia (próximo)", "Manauara Shopping (poucos min)", "Millennium Shopping (poucos min)", "UNIP - Universidade Paulista", "Nilton Lins", "Hospital 28 de Agosto", "Vila Olímpica", "Mirage Park", "Pátio Gourmet", "Supermercado Nova Era"] },
-
-    ];
-
-const utilitariosData = [
-    { title: "RESERVA DE UNIDADE DE LANÇAMENTO", link: "https://docs.google.com/document/d/17QoIEhahikPda2zjSQ3esclqu-YS9j81/edit?usp=sharing&ouid=115657243229938792991&rtpof=true&sd=true" },
-    { title: "CARTA DE CANCELAMENTO", link: "https://drive.google.com/file/d/1tlibpT-9XGQIDGTrvp3Zcb9sDep1CldF/view?usp=sharing" },
-    { title: "M.O", link: "https://drive.google.com/file/d/1exQM1G9KFAHfRgOMIlZwc1rnsAFYRrZd/view?usp=sharing" },
-    { title: "MONTAR PLANO", link: "https://drive.google.com/file/d/1nLpqHMlmSwx7h9azIGW4JbWwDdNrFvsg/view?usp=sharing" },
-    { title: "ANALISE INTERNA", link: "https://drive.google.com/file/d/1shaF3OEZnX0y4M9OhSCWZMXAXb9CbAVf/view?usp=sharing" },
-    { title: "DECLARAÇÃO DE ESCLARECIMENTO", link: "https://docs.google.com/document/d/1tBS_JyaYVJtLP4uZil7hrKQIbO8t6YUo/edit?usp=sharing&ouid=115657243229938792991&rtpof=true&sd=true" },
-    { title: "DECLARAÇÃO DEPENDENTE - SOLTEIRO/DIVORCIADO", link: "https://docs.google.com/document/d/1ZvZGt5G9aV-WwG7HH3H55RZVGlNqUP-q/edit?usp=sharing" },
-    { title: "DECLARAÇÃO DEPENDENTE - CASADO", link: "https://docs.google.com/document/d/19VBTkk3Z4E2elG3LXvUZVoSOiAVNpBiW/edit?usp=sharing" },
-    { title: "AMML - DECLA. PROPRIETÁRIO DE RESIDÊNCIA", link: "https://drive.google.com/file/d/1Qp19k2BaqiR6kuWqmju3qd_GMlUYuxrX/view?usp=sharing" },
-    { title: "AMML- DECLA. TEMPO DE RESIDÊNCIA", link: "https://drive.google.com/file/d/1sJdAyDwVBvOauW9EK0XBJIHoIHL6nhAX/view?usp=sharing" },
-    { title: "AMML - DECLA. ESTADO CIVIL", link: "https://drive.google.com/file/d/1f5aC4XStNfCKuu6NK2_EetP2DHpbF_0p/view?usp=sharing" },
-    { title: "FICHA CADASTRO PF - CLIENTE INFORMAL", link: "https://drive.google.com/file/d/1Y5h9B3oe8HdoU7EGJwkcEerQACIaGAAG/view?usp=drive_link" }
-];
-
-
-const frasesMotivacionais = [
-    { texto: "O sucesso é a soma de pequenos esforços repetidos dia após dia.", autor: "Robert Collier" },
-    { texto: "Não vendemos apenas imóveis, nós entregamos as chaves para novos sonhos e recomeços.", autor: "Equipe Destemidos" },
-    { texto: "A oportunidade não bate à porta, ela se apresenta quando você a constrói com muito trabalho.", autor: "Chris Grosser" },
-    { texto: "Seu limite não é o mercado, é a sua própria mente. Voe alto!", autor: "Motivação Destemidos" },
-    { texto: "Um cliente satisfeito é a melhor estratégia de negócios que existe.", autor: "Michael LeBoeuf" },
-    { texto: "Não espere por condições perfeitas. O momento de fazer acontecer é agora.", autor: "George Bernard Shaw" },
-    { texto: "O 'não' você já tem. O 'sim' está na próxima ligação, na próxima visita, no próximo cliente.", autor: "Sabedoria de Vendas" },
-    { texto: "Vender é construir uma ponte de confiança entre a necessidade do cliente e a solução que você oferece.", autor: "Equipe Destemidos" },
-    { texto: "A sorte acompanha quem trabalha duro. Que hoje seja um dia de muitos fechamentos!", autor: "Motivação Destemidos" },
-    { texto: "Corretor de sucesso é aquele que escuta mais do que fala e resolve mais do que promete.", autor: "Anônimo" },
-    { texto: "Cada 'não' recebido é um degrau a mais na escada que leva ao seu próximo 'sim'.", autor: "Sabedoria de Vendas" },
-    { texto: "Não se trata apenas de vender uma casa, mas de apresentar o palco onde a vida do cliente vai acontecer.", autor: "Equipe Destemidos" },
-    { texto: "O melhor corretor não é aquele que mais fala, mas aquele que faz as melhores perguntas.", autor: "Jeffrey Gitomer" },
-    { texto: "A excelência em vendas não é um ato isolado, é um hábito construído a cada novo atendimento.", autor: "Aristóteles (Adaptado)" },
-    { texto: "Transformar dúvidas em certezas é a verdadeira arte de quem vende com propósito.", autor: "Motivação Destemidos" },
-    { texto: "As pessoas compram confiança antes de comprarem tijolos e cimento.", autor: "Anônimo" },
-    { texto: "A sua energia de hoje determina a sua comissão de amanhã. Vá com tudo!", autor: "Motivação Destemidos" },
-    { texto: "Nenhum obstáculo é grande demais quando a vontade de bater a meta é inabalável.", autor: "Equipe Destemidos" },
-    { texto: "Foque em ajudar o seu cliente a realizar um sonho, e a venda será a consequência natural.", autor: "Sabedoria de Vendas" },
-    { texto: "Grandes resultados exigem grandes dedicações. Dê o seu melhor em cada visita de hoje.", autor: "Motivação Destemidos" },
-    { texto: "Para ser um corretor de sucesso, apaixone-se por resolver o problema do seu cliente.", autor: "Equipe Destemidos" },
-    { texto: "A motivação nos faz começar o mês, mas é a disciplina nos atendimentos que nos faz fechar contratos.", autor: "Jim Rohn (Adaptado)" },
-    { texto: "Todo campeão de vendas começou apenas com a coragem de pegar o telefone e tentar.", autor: "Anônimo" },
-    { texto: "Mostre o valor antes de falar o preço, e veja a mágica da negociação acontecer.", autor: "Sabedoria de Vendas" },
-    { texto: "O seu entusiasmo é contagiante. Vista o seu melhor sorriso e vá fechar negócios!", autor: "Motivação Destemidos" },
-    { texto: "Não existe cliente impossível, existe cliente que ainda não compreendeu o valor da sua oferta.", autor: "Equipe Destemidos" },
-    { texto: "Acredite no projeto que você está apresentando e o cliente acreditará em você.", autor: "Sabedoria de Vendas" },
-    { texto: "Comemore cada pequeno avanço. Uma assinatura de contrato sempre começa com um bom 'bom dia'.", autor: "Motivação Destemidos" },
-    { texto: "A diferença entre o corretor mediano e o de excelência está na atenção aos detalhes e ao cliente.", autor: "Equipe Destemidos" },
-    { texto: "Nosso trabalho é transformar alicerces e plantas arquitetônicas em lares inesquecíveis.", autor: "Anônimo" },
-    { texto: "Faça de cada atendimento uma obra-prima. O seu sucesso é a sua principal assinatura.", autor: "Motivação Destemidos" }
-];
-
-const imagensEquipeDiarias = [
-    "https://i.postimg.cc/QCxjYhBj/Copia-de-IMG-9585.jpg",
-    "https://i.postimg.cc/2SJ3qb1V/Copia-de-IMG-5622-(1).jpg",
-    "https://i.postimg.cc/mgqhczP5/Copia-de-IMG-3054.jpg",
-    "https://i.postimg.cc/YSW0QrF3/Copia-de-IMG-3049.jpg",
-    "https://i.postimg.cc/1zqXDmFK/Copia-de-IMG-3048.jpg",
-    "https://i.postimg.cc/bvtr1yb8/Copia-de-IMG-2830.jpg",
-    "https://i.postimg.cc/fbzc1rWb/Copia-de-IMG-1659.jpg",
-    "https://i.postimg.cc/KzhzN6r5/Copia-de-IMG-1515.jpg",
-    "https://i.postimg.cc/fLvwvJRq/Copia-de-IMG-1017.jpg",
-    "https://i.postimg.cc/VL86Lg4H/Copia-de-IMG-9690.jpg",
-    "https://i.postimg.cc/tCc9D09Q/Copia-de-IMG-0779-(1).jpg",
-    "https://i.postimg.cc/sXP20TwK/Copia-de-IMG-1504.jpg",
-    "https://i.postimg.cc/4xMnK7YP/Copia-de-IMG-3117.jpg",
-    "https://i.postimg.cc/hGT4fCWS/Copia-de-IMG-2336.jpg",
-    "https://i.postimg.cc/fWKLcg3X/Copia-de-IMG-9919.avif",
-];
-
-const today = new Date();
-const dayIndex = Math.floor((today.getTime() - today.getTimezoneOffset() * 60000) / (1000 * 60 * 60 * 24));
-
-function RippleButton({ onClick, className, children, style }) {
-    const btnRef = useRef(null);
-    const handleClick = (e) => {
-        const btn = btnRef.current;
-        if (!btn) return;
-        const rect = btn.getBoundingClientRect();
-        const x = (e.clientX || e.touches?.[0]?.clientX || rect.left + rect.width / 2) - rect.left;
-        const y = (e.clientY || e.touches?.[0]?.clientY || rect.top + rect.height / 2) - rect.top;
-        const ripple = document.createElement('span');
-        ripple.style.cssText = `position:absolute;left:${x}px;top:${y}px;transform:translate(-50%,-50%) scale(0);width:200px;height:200px;border-radius:50%;background:rgba(255,255,255,0.35);animation:ripple-anim 0.55s ease-out forwards;pointer-events:none;`;
-        btn.appendChild(ripple);
-        ripple.addEventListener('animationend', () => ripple.remove());
-        onClick?.(e);
-    };
-    return (
-        <button ref={btnRef} className={className} style={{ ...style, position: 'relative', overflow: 'hidden' }} onClick={handleClick}>
-            {children}
-        </button>
-    );
-}
-
-function BannerExpandido({ revista, onClose, modoNoturno, onVerRevista, onVerPois }) {
-    const [phase, setPhase] = useState('entering');
-
-    const [fotos, setFotos] = useState([revista.cover]);
-    const checkedRef = useRef(false);
-    useEffect(() => {
-        if (checkedRef.current) return;
-        checkedRef.current = true;
-        (revista.fotosExtras || []).forEach(url => {
-            const img = new Image();
-            img.onload = () => setFotos(prev => prev.includes(url) ? prev : [...prev, url]);
-            img.src = url;
-        });
-    }, []);
-
-    const [idx, setIdx] = useState(0);
-    const [prevIdx, setPrevIdx] = useState(null);
-    const [dir, setDir] = useState(null);
-    const sliding = useRef(false);
-
-    const goTo = (newIdx, d) => {
-        if (sliding.current || newIdx === idx) return;
-        sliding.current = true;
-        setPrevIdx(idx);
-        setDir(d);
-        setIdx(newIdx);
-        setTimeout(() => {
-            setPrevIdx(null);
-            setDir(null);
-            sliding.current = false;
-        }, 380);
-    };
-    const goPrev = (e) => { e.stopPropagation(); goTo((idx - 1 + fotos.length) % fotos.length, 'right'); };
-    const goNext = (e) => { e.stopPropagation(); goTo((idx + 1) % fotos.length, 'left'); };
-    const goDot  = (i, e) => { e.stopPropagation(); if (i !== idx) goTo(i, i > idx ? 'left' : 'right'); };
-
-    const isDir = revista.brand === 'Direcional';
-    const accent     = isDir ? '#f97316' : '#2563eb';
-    const accentDark = isDir ? '#c2410c' : '#1d4ed8';
-    const bg      = modoNoturno ? '#0f172a' : '#ffffff';
-    const bgSub   = modoNoturno ? '#1e293b' : '#f1f5f9';
-    const text    = modoNoturno ? '#f1f5f9' : '#1e293b';
-    const sub     = modoNoturno ? '#94a3b8' : '#64748b';
-    const divider = modoNoturno ? '#1e293b' : '#e2e8f0';
-
-    const triggerClose = () => { setPhase('out'); setTimeout(onClose, 280); };
-
-    useEffect(() => {
-        const r1 = requestAnimationFrame(() => requestAnimationFrame(() => setPhase('in')));
-        const onKey = (e) => {
-            if (e.key === 'Escape') { triggerClose(); return; }
-            if (e.key === 'ArrowLeft')  { goPrev(Object.assign(new Event('k'), { stopPropagation: () => {} })); return; }
-            if (e.key === 'ArrowRight') { goNext(Object.assign(new Event('k'), { stopPropagation: () => {} })); return; }
-        };
-        window.addEventListener('keydown', onKey);
-        return () => { cancelAnimationFrame(r1); window.removeEventListener('keydown', onKey); };
-    }, [idx]);
-
-    const Chip = ({ icon, label }) => (
-        <div style={{ display:'flex', alignItems:'center', gap:5, padding:'4px 10px', borderRadius:99,
-            background:bgSub, border:`1px solid ${divider}`, color:sub, fontSize:12, fontWeight:600 }}>
-            <span style={{ color:accent, display:'flex', alignItems:'center' }}>{icon}</span>{label}
-        </div>
-    );
-
-    const outX = dir === 'left' ? '-100%' : '100%';
-    const DUR = '0.38s';
-    const EASE = 'cubic-bezier(0.4,0,0.2,1)';
-
-    return (
-        <>
-            {/* Backdrop com blur */}
-            <div onClick={triggerClose} style={{
-                position:'fixed', inset:0, zIndex:200,
-                background:'rgba(0,0,0,0.48)',
-                backdropFilter:'blur(10px)', WebkitBackdropFilter:'blur(10px)',
-                opacity: phase === 'in' ? 1 : 0,
-                transition: phase === 'entering' ? 'none' : 'opacity 0.28s ease',
-            }}/>
-
-            {/* Container centralizado */}
-            <div style={{ position:'fixed', inset:0, zIndex:201, display:'flex', alignItems:'center', justifyContent:'center', padding:'16px', pointerEvents:'none' }}>
-                <div
-                    onMouseLeave={triggerClose}
-                    onClick={e => e.stopPropagation()}
-                    style={{
-                        pointerEvents:'auto',
-                        width:'100%', maxWidth:1160,
-                        height:'min(90vh, 720px)',
-                        borderRadius:26, overflow:'hidden', display:'flex',
-                        background:bg,
-                        boxShadow:'0 32px 100px rgba(0,0,0,0.40), 0 8px 32px rgba(0,0,0,0.20)',
-                        opacity: phase === 'in' ? 1 : 0,
-                        transform: phase === 'in' ? 'scale(1) translateY(0)' : 'scale(0.93) translateY(28px)',
-                        transition: phase === 'entering' ? 'none' : `opacity 0.32s cubic-bezier(0.22,1,0.36,1), transform 0.32s cubic-bezier(0.22,1,0.36,1)`,
-                    }}
-                >
-                    {/* ── ESQUERDA — foto (58%) ── */}
-                    <div style={{ flex:'0 0 58%', position:'relative', overflow:'hidden' }}>
-
-                        {dir && prevIdx !== null && (
-                            <img key={`out-${prevIdx}`} src={fotos[prevIdx]} alt="" style={{
-                                position:'absolute', inset:0, width:'100%', height:'100%', objectFit:'cover',
-                                transform:`translateX(${outX})`,
-                                transition:`transform ${DUR} ${EASE}`,
-                                zIndex:1,
-                            }}/>
-                        )}
-                        <img key={`in-${idx}`} src={fotos[idx]} alt={revista.title} style={{
-                            position:'absolute', inset:0, width:'100%', height:'100%', objectFit:'cover',
-                            transform: dir ? `translateX(0)` : 'translateX(0)',
-                            animation: dir ? `slideIn-${dir} ${DUR} ${EASE} forwards` : 'none',
-                            zIndex:2,
-                        }}/>
-
-                        <div style={{ position:'absolute', inset:0, pointerEvents:'none', zIndex:3,
-                            background:'linear-gradient(to top, rgba(0,0,0,0.72) 0%, rgba(0,0,0,0.06) 50%, transparent 100%)' }}/>
-
-                        {/* Badge logo empreendimento */}
-                        {(() => {
-                            const logoKey = REVISTA_LOGO_MAP[revista.id];
-                            const logoSrc = logoKey ? LOGOS_EMPREENDIMENTO[logoKey] : null;
-                            if (!logoSrc) return null;
-                            return (
-                                <div style={{ position:'absolute', top:16, left:16, zIndex:6, width:150, height:90, display:'flex', alignItems:'flex-start', justifyContent:'flex-start' }}>
-                                    <img src={logoSrc} alt={revista.title} style={{ maxHeight: logoKey === 'brisas' ? 76 : 88, maxWidth: logoKey === 'brisas' ? 148 : 145, width:'auto', height:'auto', objectFit:'contain', objectPosition:'top left', filter:'drop-shadow(0 0 10px rgba(0,0,0,0.95)) drop-shadow(0 3px 16px rgba(0,0,0,0.8)) drop-shadow(0 0 4px rgba(255,255,255,0.3))' }}/>
-                                </div>
-                            );
-                        })()}
-
-                        {fotos.length > 1 && (<>
-                            <button onClick={goPrev} style={{ position:'absolute', left:14, top:'50%', transform:'translateY(-50%)', zIndex:7, width:38, height:38, borderRadius:'50%', border:'none', cursor:'pointer', background:'rgba(0,0,0,0.36)', display:'flex', alignItems:'center', justifyContent:'center', transition:'background 0.15s' }}
-                                onMouseEnter={e=>e.currentTarget.style.background='rgba(0,0,0,0.62)'} onMouseLeave={e=>e.currentTarget.style.background='rgba(0,0,0,0.36)'}><ChevronLeft size={20} color="#fff"/></button>
-                            <button onClick={goNext} style={{ position:'absolute', right:14, top:'50%', transform:'translateY(-50%)', zIndex:7, width:38, height:38, borderRadius:'50%', border:'none', cursor:'pointer', background:'rgba(0,0,0,0.36)', display:'flex', alignItems:'center', justifyContent:'center', transition:'background 0.15s' }}
-                                onMouseEnter={e=>e.currentTarget.style.background='rgba(0,0,0,0.62)'} onMouseLeave={e=>e.currentTarget.style.background='rgba(0,0,0,0.36)'}><ChevronRight size={20} color="#fff"/></button>
-                            <div style={{ position:'absolute', bottom:18, left:0, right:0, display:'flex', justifyContent:'center', gap:5, zIndex:7 }}>
-                                {fotos.map((_,i) => <button key={i} onClick={e=>goDot(i,e)} style={{ width:i===idx?22:6, height:6, borderRadius:99, padding:0, border:'none', cursor:'pointer', background:i===idx?'#fff':'rgba(255,255,255,0.36)', transition:'width 0.25s, background 0.25s' }}/>)}
-                            </div>
-                        </>)}
-
-                        <div style={{ position:'absolute', bottom:0, left:0, right:0, padding:'0 24px 24px', zIndex:5 }}>
-                            <h2 style={{ margin:0, fontSize:24, fontWeight:900, color:'#fff', lineHeight:1.2, textShadow:'0 2px 14px rgba(0,0,0,0.6)' }}>{revista.title}</h2>
-                            <div style={{ display:'flex', alignItems:'center', gap:5, marginTop:6 }}>
-                                <MapPin size={13} color="rgba(255,255,255,0.68)"/>
-                                <span style={{ fontSize:13, color:'rgba(255,255,255,0.76)', fontWeight:500 }}>{revista.region}</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* ── DIREITA — infos ── */}
-                    <div style={{ flex:1, display:'flex', flexDirection:'column', overflow:'hidden' }}>
-
-                        {/* Cabeçalho */}
-                        <div style={{ padding:'22px 24px 14px', borderBottom:`1px solid ${divider}`, flexShrink:0 }}>
-                            <h3 style={{ margin:0, fontSize:18, fontWeight:800, color:text, lineHeight:1.2 }}>{revista.title}</h3>
-                            <div style={{ display:'flex', alignItems:'center', gap:5, marginTop:5 }}>
-                                <MapPin size={12} color={accent}/>
-                                <span style={{ fontSize:12, color:sub, fontWeight:500 }}>{revista.region}</span>
-                            </div>
-                        </div>
-
-                        {/* Chips */}
-                        <div style={{ display:'flex', flexWrap:'wrap', gap:6, padding:'14px 24px 12px', borderBottom:`1px solid ${divider}`, flexShrink:0 }}>
-                            <Chip icon={<Maximize size={12}/>} label={revista.size}/>
-                            <Chip icon={<Bed size={12}/>} label={revista.bedrooms}/>
-                            <Chip icon={<LayoutGrid size={12}/>} label={revista.flooring}/>
-                            {revista.entrega && <Chip icon={<Clock size={12}/>} label={revista.entrega === 'Entregue' ? '✅ Entregue' : `Entrega ${revista.entrega}`}/>}
-                        </div>
-
-                        {/* POIs */}
-                        <div style={{ flex:1, overflowY:'auto', padding:'14px 24px 10px', scrollbarWidth:'thin' }}>
-                            {revista.pois?.length > 0 && (<>
-                                <div style={{ display:'flex', alignItems:'center', gap:5, marginBottom:10 }}>
-                                    <MapPin size={11} color={accent}/>
-                                    <span style={{ fontSize:10, fontWeight:800, color:sub, textTransform:'uppercase', letterSpacing:'0.12em' }}>Pontos de referência</span>
-                                </div>
-                                <div style={{ display:'flex', flexDirection:'column', gap:7 }}>
-                                    {revista.pois.map((poi,i) => (
-                                        <div key={i} style={{ display:'flex', alignItems:'flex-start', gap:9 }}>
-                                            <div style={{ width:6, height:6, borderRadius:'50%', background:accent, flexShrink:0, marginTop:5 }}/>
-                                            <span style={{ fontSize:13, color:text, lineHeight:1.45 }}>{poi}</span>
-                                        </div>
-                                    ))}
-                                </div>
-                            </>)}
-                        </div>
-
-                        {/* Botões */}
-                        <div style={{ padding:'14px 24px 20px', display:'flex', flexDirection:'column', gap:9, flexShrink:0, borderTop:`1px solid ${divider}` }}>
-                            <button onClick={()=>{triggerClose();setTimeout(onVerRevista,300);}} style={{
-                                width:'100%', padding:'13px 0', borderRadius:16, border:'none', cursor:'pointer',
-                                display:'flex', alignItems:'center', justifyContent:'center', gap:8,
-                                background:accent, color:'#fff', fontSize:14, fontWeight:800,
-                                boxShadow:`0 4px 16px ${accent}44`,
-                                transition:'background 0.15s, transform 0.12s',
-                            }}
-                                onMouseEnter={e=>{e.currentTarget.style.background=accentDark;e.currentTarget.style.transform='scale(1.01)';}}
-                                onMouseLeave={e=>{e.currentTarget.style.background=accent;e.currentTarget.style.transform='scale(1)';}}
-                            ><BookOpen size={16}/> Ver Revista Digital</button>
-
-                            <button onClick={()=>{triggerClose();setTimeout(onVerPois,300);}} style={{
-                                width:'100%', padding:'11px 0', borderRadius:16, cursor:'pointer',
-                                display:'flex', alignItems:'center', justifyContent:'center', gap:7,
-                                background:'transparent', border:`1.5px solid ${divider}`,
-                                color:sub, fontSize:13, fontWeight:700,
-                                transition:'border-color 0.15s, color 0.15s, transform 0.12s',
-                            }}
-                                onMouseEnter={e=>{e.currentTarget.style.borderColor=accent;e.currentTarget.style.color=accent;e.currentTarget.style.transform='scale(1.01)';}}
-                                onMouseLeave={e=>{e.currentTarget.style.borderColor=divider;e.currentTarget.style.color=sub;e.currentTarget.style.transform='scale(1)';}}
-                            ><MapPin size={14} color="#f43f5e"/> Ver pontos de referência</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <style>{`
-                @keyframes slideIn-left  { from { transform: translateX(100%);  } to { transform: translateX(0); } }
-                @keyframes slideIn-right { from { transform: translateX(-100%); } to { transform: translateX(0); } }
-            `}</style>
-        </>
-    );
-}
-
-// ── CardRevista — hover 1.7s desktop apenas abre modal ───────────────────────
-function CardRevista({ revista, cardIdx, modoNoturno, haptic, setPdfLeitor, setSelectedPois, setPdfLeitorLogoAnim }) {
-    const DELAY = 1700;
-    const [expanded, setExpanded] = useState(false);
-    const timerRef = useRef(null);
-    const isDir = revista.brand === 'Direcional';
-
-    // Detecta se é touch device — não ativa o hover expand no mobile
-    const isTouchDevice = () => window.matchMedia('(hover: none) and (pointer: coarse)').matches;
-
-    const startHover = () => {
-        if (isTouchDevice()) return;
-        timerRef.current = setTimeout(() => { haptic('medium'); setExpanded(true); }, DELAY);
-    };
-    const stopHover = () => { clearTimeout(timerRef.current); };
-
-    useEffect(() => () => clearTimeout(timerRef.current), []);
-
-    const handleVerRevista = () => {
-        haptic('medium');
-        const previewUrl = revista.link.replace(/\/view(\?.*)?$/, '/preview');
-        const logoKey = REVISTA_LOGO_MAP[revista.id];
-        const logoSrc = logoKey ? LOGOS_EMPREENDIMENTO[logoKey] : null;
-        if (logoSrc && setPdfLeitorLogoAnim) {
-            setPdfLeitorLogoAnim({ logoSrc, brand: revista.brand, title: revista.title });
-            setTimeout(() => {
-                setPdfLeitorLogoAnim(null);
-                setPdfLeitor({ title: revista.title, url: previewUrl, brand: revista.brand });
-            }, 2200);
-        } else {
-            setPdfLeitor({ title: revista.title, url: previewUrl, brand: revista.brand });
-        }
-    };
-    const handleVerPois = () => { haptic(); setSelectedPois(revista); };
-
-    return (
-        <>
-            {expanded && (
-                <BannerExpandido
-                    revista={revista}
-                    onClose={() => setExpanded(false)}
-                    modoNoturno={modoNoturno}
-                    onVerRevista={handleVerRevista}
-                    onVerPois={handleVerPois}
-                />
-            )}
-
-            <div
-                className="card-entry overflow-hidden flex flex-col group"
-                style={{
-                    animationDelay:`${cardIdx*90}ms`,
-                    position:'relative',
-                    borderRadius:'24px',
-                    background: modoNoturno ? 'rgba(255,255,255,0.07)' : 'rgba(255,255,255,0.55)',
-                    backdropFilter:'blur(28px) saturate(200%) brightness(1.02)',
-                    WebkitBackdropFilter:'blur(28px) saturate(200%) brightness(1.02)',
-                    border: modoNoturno ? '1px solid rgba(255,255,255,0.12)' : '1px solid rgba(255,255,255,0.90)',
-                    outline: modoNoturno ? '1px solid rgba(99,179,248,0.08)' : '1.5px solid rgba(160,185,230,0.40)',
-                    outlineOffset:'-1px',
-                    boxShadow: modoNoturno
-                        ? '0 2px 8px rgba(0,0,0,0.30), 0 8px 32px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.14)'
-                        : '0 2px 6px rgba(100,130,200,0.10), 0 8px 28px rgba(100,130,200,0.14), inset 0 1.5px 0 rgba(255,255,255,1)',
-                    transition:'transform 0.45s cubic-bezier(0.25,0.46,0.45,0.94), box-shadow 0.45s ease',
-                }}
-                onMouseEnter={e => {
-                    if (isTouchDevice()) return;
-                    e.currentTarget.style.transform = 'translateY(-10px)';
-                    e.currentTarget.style.boxShadow = modoNoturno
-                        ? '0 8px 24px rgba(0,0,0,0.40), 0 24px 64px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.18)'
-                        : '0 8px 24px rgba(100,130,200,0.18), 0 24px 64px rgba(100,130,200,0.22), inset 0 1.5px 0 rgba(255,255,255,1)';
-                    startHover();
-                }}
-                onMouseLeave={e => {
-                    if (isTouchDevice()) return;
-                    e.currentTarget.style.transform = 'translateY(0)';
-                    e.currentTarget.style.boxShadow = modoNoturno
-                        ? '0 2px 8px rgba(0,0,0,0.30), 0 8px 32px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.14)'
-                        : '0 2px 6px rgba(100,130,200,0.10), 0 8px 28px rgba(100,130,200,0.14), inset 0 1.5px 0 rgba(255,255,255,1)';
-                    stopHover();
-                }}
-            >
-                <div className="relative h-48 overflow-hidden bg-slate-100">
-                    <img src={revista.cover}
-                        onError={(e)=>{e.target.onerror=null;e.target.src='https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&q=80&w=400';}}
-                        alt={`Capa ${revista.title}`}
-                        className="w-full h-full object-cover group-hover:scale-115 transition-transform duration-700 ease-out"
-                        style={{ transformOrigin:'center center', willChange:'transform' }}/>
-                    <div className="absolute inset-0 pointer-events-none z-10 overflow-hidden">
-                        <div className="card-shimmer-sweep" style={{ position:'absolute', top:0, left:0, width:'55%', height:'100%', background:'linear-gradient(105deg, transparent 0%, rgba(255,255,255,0.38) 50%, transparent 100%)', transform:'translateX(-150%) skewX(-18deg)' }}/>
-                    </div>
-                    <div style={{ position:'absolute', top:10, left:10, zIndex:10, width:110, height:70, display:'flex', alignItems:'flex-start', justifyContent:'flex-start' }}>
-                        {(() => {
-                            const logoKey = REVISTA_LOGO_MAP[revista.id];
-                            const logoSrc = logoKey ? LOGOS_EMPREENDIMENTO[logoKey] : null;
-                            if (!logoSrc) return null;
-                            return (
-                                <img src={logoSrc} alt={revista.title} style={{ maxHeight: logoKey === 'brisas' ? 62 : 68, maxWidth: logoKey === 'brisas' ? 108 : 105, width:'auto', height:'auto', objectFit:'contain', objectPosition:'top left', filter:'drop-shadow(0 0 8px rgba(0,0,0,0.9)) drop-shadow(0 2px 12px rgba(0,0,0,0.7)) drop-shadow(0 0 3px rgba(255,255,255,0.25))' }}/>
-                            );
-                        })()}
-                    </div>
-                    {/* Overlay entrega */}
-                    {revista.entrega && (
-                        <div className="absolute inset-0 z-20 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-500"
-                            style={{ background:'rgba(255,255,255,0.18)', backdropFilter:'blur(18px) saturate(180%)', WebkitBackdropFilter:'blur(18px) saturate(180%)' }}>
-                            {(()=>{
-                                const meses=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
-                                if(revista.entrega==='Entregue') return(<div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:4}}><span style={{fontSize:24,fontWeight:900,color:'#fff',textShadow:'0 2px 16px rgba(0,0,0,0.6)',lineHeight:1.1}}>Entregue!</span><span style={{fontSize:11,fontWeight:600,color:'rgba(255,255,255,0.8)',letterSpacing:'0.15em',textTransform:'uppercase'}}>pronto pra morar</span></div>);
-                                const p=revista.entrega.split('/');
-                                const mes=meses[parseInt(p[0])-1]||'';
-                                const ano=p[1]||p[0];
-                                const hoje=new Date();
-                                const diff=(parseInt(p[1])-hoje.getFullYear())*12+(parseInt(p[0])-(hoje.getMonth()+1));
-                                const restante=diff>0?`faltam ${diff} ${diff===1?'mês':'meses'}`:'chegando!';
-                                return(<div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:1}}><span style={{fontSize:10,fontWeight:700,color:'rgba(255,255,255,0.55)',letterSpacing:'0.3em',textTransform:'uppercase'}}>entrega</span><span style={{fontSize:46,fontWeight:900,color:'#fff',letterSpacing:'-0.04em',textShadow:'0 4px 24px rgba(0,0,0,0.5)',lineHeight:0.95}}>{ano}</span><span style={{fontSize:14,fontWeight:800,color:'rgba(255,255,255,0.9)',letterSpacing:'0.08em',textTransform:'uppercase'}}>{mes}</span><div style={{marginTop:10,padding:'4px 12px',borderRadius:999,background:'rgba(255,255,255,0.22)',backdropFilter:'blur(8px)',border:'1px solid rgba(255,255,255,0.3)'}}><span style={{fontSize:11,fontWeight:800,color:'#fff'}}>{restante}</span></div></div>);
-                            })()}
-                        </div>
-                    )}
-                </div>
-
-                {/* ── INFOS ── */}
-                <div className="p-5 flex flex-col flex-grow">
-                    <h3 className={`text-xl font-bold mb-2 ${modoNoturno?'text-white':'text-slate-800'}`}>{revista.title}</h3>
-                    <div className="flex flex-col gap-2 mb-6">
-                        <div className="flex items-center text-slate-500 text-sm gap-2">
-                            <MapPin size={16} className="text-slate-400 shrink-0"/>
-                            <span className={`line-clamp-1 ${modoNoturno?'text-slate-400':''}`}>{revista.region}</span>
-                        </div>
-                        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mt-1">
-                            <div className="flex items-center text-slate-500 text-sm gap-1.5"><Maximize size={16} className="text-slate-400 shrink-0"/><span className={modoNoturno?'text-slate-400':''}>{revista.size}</span></div>
-                            <div className="flex items-center text-slate-500 text-sm gap-1.5"><Bed size={16} className="text-slate-400 shrink-0"/><span className={modoNoturno?'text-slate-400':''}>{revista.bedrooms}</span></div>
-                            <div className="flex items-center text-slate-500 text-sm gap-1.5"><LayoutGrid size={16} className="text-slate-400 shrink-0"/><span className={modoNoturno?'text-slate-400':''}>{revista.flooring}</span></div>
-                        </div>
-                    </div>
-                    <div className="mt-auto flex flex-col gap-2">
-                        <RippleButton onClick={handleVerRevista}
-                            className={`w-full flex items-center justify-center gap-2 py-3 rounded-2xl font-semibold transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg ${isDir?'bg-gradient-to-r from-orange-500 via-red-500 to-orange-600 hover:from-orange-600 hover:to-red-600 shadow-orange-300/30 text-white':'bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 hover:from-blue-700 hover:to-indigo-700 shadow-blue-300/30 text-white'}`}>
-                            <BookOpen size={18}/> Ver Revista
-                        </RippleButton>
-                        <RippleButton onClick={handleVerPois}
-                            className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-2xl font-semibold transition-colors duration-200 border text-sm ${modoNoturno?'bg-slate-700 border-slate-600 text-slate-200 hover:bg-slate-600':'bg-slate-100 border-slate-200 text-slate-700 hover:bg-slate-200'}`}>
-                            <MapPin size={16} className="text-rose-500"/> Ver Pontos de Referência
-                        </RippleButton>
-                    </div>
-                </div>
-            </div>
-        </>
-    );
-}
-
-const HINT_PILLS_DATA = [
-    {
-        label: 'Pasta',
-        color: 'linear-gradient(135deg,#6366f1,#4f46e5)',
-        glow: 'rgba(99,102,241,0.7)',
-        icon: <path d="M3 7a2 2 0 012-2h3.586a1 1 0 01.707.293L10.707 6.7A1 1 0 0011.414 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V7z" fill="white"/>,
-    },
-    {
-        label: 'Pasta Rápida IA',
-        color: 'linear-gradient(135deg,#f97316,#ef4444)',
-        glow: 'rgba(249,115,22,0.7)',
-        icon: <polygon points="13,2 3,14 12,14 11,22 21,10 12,10" fill="white"/>,
-    },
-    {
-        label: 'Taxas Docs',
-        color: 'linear-gradient(135deg,#0ea5e9,#0369a1)',
-        glow: 'rgba(14,165,233,0.7)',
-        icon: <><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" fill="white"/><polyline points="14,2 14,8 20,8" fill="none" stroke="rgba(255,255,255,0.5)" strokeWidth="2"/></>,
-    },
-];
-
-function HintPills({ onPhaseChange }) {
-    const [phase, setPhase] = useState('idle');
-
-    useEffect(() => {
-        if (sessionStorage.getItem('dst_hint_done')) return;
-        const t1 = setTimeout(() => { setPhase('show'); onPhaseChange && onPhaseChange('show'); }, 5800);
-        const t2 = setTimeout(() => { setPhase('fly'); onPhaseChange && onPhaseChange('fly'); }, 8500);
-        const t3 = setTimeout(() => {
-            setPhase('gone');
-            onPhaseChange && onPhaseChange('gone');
-            sessionStorage.setItem('dst_hint_done', '1');
-        }, 9400);
-        return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); };
-    }, []);
-
-    if (phase === 'idle' || phase === 'gone') return null;
-
-    const pillAnims = HINT_PILLS_DATA.map((_, i) => ({
-        enter: `hint-enter-${i}`,
-        delay: `${i * 0.18}s`,
-    }));
-
-    return (
-        <>
-            <style>{`
-                @keyframes hint-enter-0 {
-                    0%   { opacity:0; transform: translateX(120px) translateY(-30px) rotate(12deg) scale(0.4); }
-                    55%  { opacity:1; transform: translateX(-8px)  translateY(4px)   rotate(-2deg) scale(1.08); }
-                    75%  { transform: translateX(4px) translateY(-2px) rotate(1deg)  scale(0.97); }
-                    100% { opacity:1; transform: translateX(0)      translateY(0)     rotate(0deg)  scale(1); }
-                }
-                @keyframes hint-enter-1 {
-                    0%   { opacity:0; transform: translateX(140px) translateY(-20px) rotate(8deg)  scale(0.35); }
-                    55%  { opacity:1; transform: translateX(-6px)  translateY(3px)   rotate(-2deg) scale(1.06); }
-                    75%  { transform: translateX(3px) translateY(-1px) rotate(1deg)  scale(0.98); }
-                    100% { opacity:1; transform: translateX(0)      translateY(0)     rotate(0deg)  scale(1); }
-                }
-                @keyframes hint-enter-2 {
-                    0%   { opacity:0; transform: translateX(160px) translateY(-10px) rotate(5deg)  scale(0.3); }
-                    55%  { opacity:1; transform: translateX(-5px)  translateY(2px)   rotate(-1deg) scale(1.05); }
-                    75%  { transform: translateX(2px) translateY(-1px) rotate(0deg)  scale(0.98); }
-                    100% { opacity:1; transform: translateX(0)      translateY(0)     rotate(0deg)  scale(1); }
-                }
-                @keyframes hint-fly-0 {
-                    0%   { opacity:1; transform: translateX(0)    translateY(0)    scale(1);    filter: brightness(1); }
-                    30%  {            transform: translateX(10px) translateY(-8px) scale(1.1);  filter: brightness(1.4); }
-                    100% { opacity:0; transform: translateX(60px) translateY(90px) scale(0.05); filter: brightness(2); }
-                }
-                @keyframes hint-fly-1 {
-                    0%   { opacity:1; transform: translateX(0)    translateY(0)    scale(1);    filter: brightness(1); }
-                    30%  {            transform: translateX(8px)  translateY(-5px) scale(1.08); filter: brightness(1.4); }
-                    100% { opacity:0; transform: translateX(55px) translateY(75px) scale(0.05); filter: brightness(2); }
-                }
-                @keyframes hint-fly-2 {
-                    0%   { opacity:1; transform: translateX(0)    translateY(0)    scale(1);    filter: brightness(1); }
-                    30%  {            transform: translateX(6px)  translateY(-4px) scale(1.06); filter: brightness(1.4); }
-                    100% { opacity:0; transform: translateX(50px) translateY(60px) scale(0.05); filter: brightness(2); }
-                }
-                @keyframes hint-shine {
-                    0%   { left: -80%; }
-                    100% { left: 160%; }
-                }
-            `}</style>
-
-            <div style={{
-                position: 'fixed',
-                bottom: 108,
-                right: 36,
-                zIndex: 44,
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'flex-end',
-                gap: 10,
-                pointerEvents: 'none',
-            }}>
-                {HINT_PILLS_DATA.map((p, i) => (
-                    <div key={i} style={{
-                        position: 'relative',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 8,
-                        padding: '9px 16px 9px 10px',
-                        borderRadius: 99,
-                        background: p.color,
-                        color: '#fff',
-                        fontSize: 11.5,
-                        fontWeight: 800,
-                        textTransform: 'uppercase',
-                        letterSpacing: '0.08em',
-                        boxShadow: `0 0 0 1.5px rgba(255,255,255,0.15), 0 4px 20px ${p.glow}, 0 2px 6px rgba(0,0,0,0.3)`,
-                        whiteSpace: 'nowrap',
-                        overflow: 'hidden',
-                        // Animação: entrada ou saída dependendo da fase
-                        animation: phase === 'show'
-                            ? `hint-enter-${i} 0.65s cubic-bezier(0.22,1,0.36,1) ${pillAnims[i].delay} both`
-                            : `hint-fly-${i} 0.65s cubic-bezier(0.55,0,1,0.45) ${i * 0.07}s both`,
-                    }}>
-                        <div style={{
-                            width: 22, height: 22, borderRadius: '50%',
-                            background: 'rgba(255,255,255,0.22)',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            flexShrink: 0,
-                        }}>
-                            <svg width="11" height="11" viewBox="0 0 24 24">{p.icon}</svg>
-                        </div>
-                        {p.label}
-                        <div style={{
-                            position: 'absolute', top: 0, width: '45%', height: '100%',
-                            background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.28), transparent)',
-                            transform: 'skewX(-18deg)',
-                            animation: `hint-shine 2.2s ease-in-out ${0.8 + i * 0.4}s infinite`,
-                            pointerEvents: 'none',
-                        }}/>
-                    </div>
-                ))}
-            </div>
-        </>
-    );
-}
-
-function RevistaCloseButton({ onClose }) {
-    useEffect(() => {
-        const blockZoom = (e) => {
-            if (e.ctrlKey || e.metaKey) { e.preventDefault(); e.stopPropagation(); }
-        };
-        const blockGesture = (e) => { e.preventDefault(); };
-        document.addEventListener('wheel',         blockZoom,    { passive: false, capture: true });
-        document.addEventListener('gesturestart',  blockGesture, { passive: false, capture: true });
-        document.addEventListener('gesturechange', blockGesture, { passive: false, capture: true });
-        document.addEventListener('gestureend',    blockGesture, { passive: false, capture: true });
-        return () => {
-            document.removeEventListener('wheel',         blockZoom,    { capture: true });
-            document.removeEventListener('gesturestart',  blockGesture, { capture: true });
-            document.removeEventListener('gesturechange', blockGesture, { capture: true });
-            document.removeEventListener('gestureend',    blockGesture, { capture: true });
-        };
-    }, []);
-
-    return (
-        <div style={{
-            position: 'fixed', top: 0, left: 0,
-            width: '100vw', height: '0',
-            pointerEvents: 'none',
-            zIndex: 99999,
-        }}>
-            <button
-                onClick={onClose}
-                style={{
-                    pointerEvents: 'all',
-                    position: 'absolute',
-                    top: 'calc(env(safe-area-inset-top, 0px) + 14px)',
-                    left: '14px',
-                    width: 48, height: 48,
-                    borderRadius: '50%',
-                    border: '1.5px solid rgba(255,255,255,0.30)',
-                    background: 'rgba(0,0,0,0.55)',
-                    backdropFilter: 'blur(20px) saturate(180%)',
-                    WebkitBackdropFilter: 'blur(20px) saturate(180%)',
-                    boxShadow: '0 2px 12px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.12)',
-                    cursor: 'pointer',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    color: '#fff',
-                    transition: 'background 0.15s, transform 0.12s',
-                }}
-                onMouseEnter={e => { e.currentTarget.style.background = 'rgba(30,30,30,0.75)'; }}
-                onMouseLeave={e => { e.currentTarget.style.background = 'rgba(0,0,0,0.55)'; }}
-                onMouseDown={e  => { e.currentTarget.style.transform = 'scale(0.90)'; }}
-                onMouseUp={e    => { e.currentTarget.style.transform = 'scale(1)'; }}
-            >
-                <X size={22} strokeWidth={2.5} />
-            </button>
-        </div>
-    );
-}
+import { revistasDataLocal, utilitariosData, frasesMotivacionais, imagensEquipeDiarias, dayIndex } from './data/dados.js';
+import { RippleButton, CardRevista, HintPills, RevistaCloseButton } from './components/Componentes.jsx';
+import { useDocClassifier } from './hooks/useDocClassifier.js';
 
 export default function App() {
     const [headerHeight, setHeaderHeight] = useState(0);
@@ -974,35 +84,8 @@ export default function App() {
         navigator.vibrate(p[style] || 10);
     };
 
-    // --- LÓGICA DO ROBÔ DE VENDAS ---
-  const obterRespostaDoBot = (mensagem) => {
-    const texto = mensagem.toLowerCase();
-
-    // Resposta para DOCUMENTOS (Baseado nas fotos que você enviou)
-    if (texto.includes("documento") || texto.includes("papel") || texto.includes("precisa")) {
-      if (texto.includes("autonomo")) {
-        return "Para Autônomos, os documentos são: RG/CPF, Estado Civil, Residência, Carteira Digital, 6 últimos extratos bancários e Imposto de Renda.";
-      }
-      if (texto.includes("servidor")) {
-        return "Para Servidor Público: RG/CPF, Certidão de Nascimento/Casamento, Residência atualizado, 3 últimos contracheques e Imposto de Renda (se houver).";
-      }
-      return "Para CLT (Carteira Assinada): RG/CPF, Estado Civil, Residência, Carteira Digital, 3 últimos contracheques e Imposto de Renda.";
-    }
-
-    // Resposta para TABELAS
-    if (texto.includes("investidor")) {
-      return "Na Tabela Investidor, o ato é facilitado e o saldo é parcelado sem juros ou correção durante a obra!";
-    }
-    
-    if (texto.includes("financiamento") || texto.includes("direto")) {
-      return "Temos a opção de Financiamento Direto com a construtora em até 120 meses após a obra!";
-    }
-
-    // Resposta padrão caso ele não entenda
-    return "Ainda estou aprendendo sobre esse detalhe. Posso te ajudar com documentos para análise ou informações das tabelas?";
-  };
     const [searchTerm, setSearchTerm] = useState('');
-    const [revistasData] = useState(revistasDataLocal);
+    const revistasData = revistasDataLocal;
     const [activeBrand, setActiveBrand] = useState('Direcional');
     const [fraseDoDia] = useState(frasesMotivacionais[dayIndex % frasesMotivacionais.length]);
     const [imagemDoDia] = useState(() => {
@@ -1275,6 +358,8 @@ export default function App() {
     // 'idle' | 'gather' | 'shake' | 'scatter'
     const [cardAnimPhase, setCardAnimPhase] = useState('idle');
     // Stores {id, x, y, w, h} of each card's real DOM position for the pile animation
+    const [cardRects, setCardRects] = useState([]);  // absolute positions of each card in viewport
+    const [gridCenter, setGridCenter] = useState({ x: 0, y: 0 });
     const cardGridRef = useRef(null);
 
     // === ESTADOS PARA CRIAÇÃO DE PASTA DO CLIENTE ===
@@ -1285,6 +370,7 @@ export default function App() {
     const [isCreatingFolder, setIsCreatingFolder] = useState(false);
     const [folderSource, setFolderSource] = useState('manual'); // 'manual' | 'rapida'
     const [isFinalizingFolder, setIsFinalizingFolder] = useState(false);
+    const [showThumbsUp, setShowThumbsUp] = useState(false);
     const [showLightning, setShowLightning] = useState(false);
     const [pendingDocs, setPendingDocs] = useState([]);
     const [pdfFileName, setPdfFileName] = useState("Pasta_do_Cliente");
@@ -1325,6 +411,89 @@ export default function App() {
         return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
     };
 
+    const processChatMessage = (inputMsg) => {
+    const input = normalizeString(inputMsg);
+    let matchedProperties = [];
+
+    const docs = dadosFinanciamento.documentos;
+    
+    if (input.includes("documento") || input.includes("precisa") || input.includes("papel")) {
+      if (input.includes("autonomo")) {
+        return `Para **Autônomos**, os documentos são: ${docs.autonomo.join(", ")}. \n\n⚠️ **Importante:** Solteiros devem apresentar Certidão de Nascimento. Se tiver filhos, envie a Certidão do dependente.`;
+      }
+      if (input.includes("servidor")) {
+        return `Para **Servidor Público**, você precisa de: ${docs.servidor.join(", ")}. \n\n📍 Não esqueça os 3 últimos contracheques atualizados!`;
+      }
+      return `Para **CLT (Carteira Assinada)**, separe: ${docs.clt.join(", ")}. \n\n💡 Dica: A Carteira de Trabalho pode ser a Digital (PDF).`;
+    }
+
+    if (input.includes("investidor")) {
+      return "Na **Tabela Investidor**, o ato é facilitado e o saldo é parcelado em até 28x sem juros ou correção durante a obra! 🚀";
+    }
+    if (input.includes("financiamento direto") || (input.includes("direto") && input.includes("construtora"))) {
+      return "Temos a opção de **Financiamento Direto** com a construtora em até 120 meses após a entrega das chaves! Quer que eu verifique as taxas para você?";
+    }
+
+    revistasData.forEach(prop => {
+        if (prop.aliases.some(alias => input.includes(normalizeString(alias)))) {
+            if (!matchedProperties.some(p => p.id === prop.id)) {
+                matchedProperties.push(prop);
+            }
+        }
+    });
+
+    if (matchedProperties.length === 0) {
+        const regions = ["zona leste", "zona norte", "zona oeste", "zona sul", "centro-sul", "centro-oeste", "taruma", "flores", "coroado"];
+        let detectedRegion = regions.find(r => input.includes(r));
+        if (detectedRegion) {
+            matchedProperties = revistasData.filter(p => normalizeString(p.region).includes(detectedRegion));
+        }
+    }
+
+    const wantsMagazine = ["revista", "pdf", "link", "material", "apresentacao", "enviar", "mande", "mandar", "baixe", "baixar"].some(w => input.includes(w));
+    const wantsPois = ["referencia", "referência", "perto", "proximo", "próximo", "localizacao", "localização", "onde fica"].some(w => input.includes(w));
+
+    let botResponse = "";
+
+    if (input.includes("criar pasta") || input.includes("pasta do cliente") || input.includes("subir pasta")) {
+        setIsCreatingFolder(true);
+        return "Com certeza! Modo **Criar Pasta do Cliente** ativado! 📂✨\n\nÉ só clicar no botão de anexo ou arrastar os documentos pra cá. Vou te ajudar a organizar tudo na ordem certinha para o seu PDF sair perfeito!";
+    }
+
+    if (matchedProperties.length > 0) {
+        if (matchedProperties.length === 1) {
+            const p = matchedProperties[0];
+            if (wantsPois) {
+                botResponse = `O **${p.title}** fica super bem localizado na região de ${p.region}.\n\n📍 **Principais Pontos de Referência:**\n`;
+                p.pois.forEach(poi => botResponse += `• ${poi}\n`);
+                botResponse += `\nQuer que eu te mande a revista dele para você mostrar pro cliente?`;
+            } else {
+                botResponse = `Com certeza! Falando do **${p.title}** (${p.brand}):\n\n📍 **Onde Fica:** ${p.region}\n📏 **Planta:** ${p.size} com ${p.bedrooms}\n🏢 **Referências próximas:** ${p.pois.slice(0, 3).join(', ')}.\n\n`;
+                if (wantsMagazine || input.includes("revista")) {
+                    botResponse += `Aqui está o material que você pediu: [Acessar Revista do ${p.title}](${p.link})`;
+                } else {
+                    botResponse += `Se o seu cliente quiser ver mais, posso te enviar o PDF da revista. É só me pedir! 😉`;
+                }
+            }
+        } else {
+            botResponse = `Boa! Encontrei essas opções ótimas para o que você procura:\n\n`;
+matchedProperties.forEach(p => {
+    botResponse += ` 🔹 **${p.title}** (${p.region}) - ${p.size} (${p.brand})\n`;
+    if (wantsMagazine) botResponse += ` 🔗 [Baixar Revista PDF](${p.link})\n`;
+});
+if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF agora?`;
+        }
+    } else {
+        if (input.includes("ola") || input.includes("bom dia") || input.includes("boa tarde") || input.includes("boa noite")) {
+            botResponse = "Olá, Destemido! Bora bater essa meta? 🚀 Como posso te ajudar agora? Posso buscar empreendimentos por bairro, nome ou te ajudar a criar aquela pasta do cliente rapidinho.";
+        } else if (input.includes("amml") || input.includes("amazonas meu lar")) {
+            botResponse = "Para o **Amazonas Meu Lar**, temos todos os modelos de declarações que você precisa na aba **UTILITÁRIOS**. É só baixar e usar!";
+        } else {
+            botResponse = "Hmm, não consegui entender exatamente o que você precisa. 😅\n\nPode tentar algo como: 'Documentos para autônomo', 'Regras do investidor' ou 'Me mostra o Brisas'.";
+        }
+    }
+    return botResponse;
+  };
     const handleSendChatMessage = async () => {
         if (!chatInput.trim() || isChatLoading) return;
         const userMessage = chatInput;
@@ -1435,430 +604,15 @@ export default function App() {
         if (fileInputRef.current) fileInputRef.current.value = '';
     };
 
-    const OPENROUTER_KEY = process.env.REACT_APP_OPENROUTER_KEY;
 
-    // Modelos tentados em ordem — fallbacks caso o primeiro falhe
-    const VISION_MODELS = [
-        'google/gemini-2.0-flash-001',
-        'google/gemini-flash-1.5',
-        'meta-llama/llama-3.2-90b-vision-instruct',
-    ];
-
-    const ORDER_MAP = {
-        // ── Documentos urgentes / administrativos (vão na frente de tudo) ──
-        cancelamento: 0, autorizacao: 0, reserva: 0,
-
-        // ── Documentos de identificação (todos equivalentes ao RG) ──
-        rg_frente: 1,   // frente do RG — sempre antes do verso
-        rg_verso: 2,    // verso do RG
-        rg: 1,          // RG genérico (sem distinção frente/verso)
-        cnh: 3,         // CNH equivale a RG como identidade
-        oab: 3,         // OAB equivale a RG como identidade
-        creci: 3,       // CRECI equivale a RG como identidade
-        cpf: 4,         // CPF vem logo após o documento de identidade
-
-        // ── Documentos de estado civil / certidões ──
-        certidao_nascimento: 5,
-        certidao_casamento: 6,
-        certidao_obito: 7,
-
-        // ── Comprovante de residência ──
-        residencia: 8,
-
-        // ── Documentos de trabalho / renda ──
-        ctps: 9,
-        contracheque: 10,
-        imposto_renda: 11,
-        extrato_bancario: 12,
-        fgts: 13,
-
-        outros: 99
-    };
-
-    const CLASSIFY_PROMPT = `Você é especialista em classificar documentos brasileiros. Analise esta imagem com atenção — pode ser foto de celular, com ângulo ou parcialmente visível.
-
-Responda APENAS com JSON válido, sem texto adicional: {"category":"CATEGORIA","label":"NOME DO DOCUMENTO"}
-
-CATEGORIAS POSSÍVEIS:
-- "rg" → RG ou Identidade (quando não dá para distinguir frente/verso): tem campos de identificação, número do RG
-- "cnh" → CNH: tem foto do motorista, logo DETRAN, letras de categoria (A B C D E), validade
-- "cpf" → CPF: tem número no formato XXX.XXX.XXX-XX, texto "Cadastro de Pessoas Físicas" ou "Receita Federal"
-- "oab" → OAB: tem logo da OAB, texto "Ordem dos Advogados do Brasil"
-- "creci" → CRECI: tem logo CRECI, texto "Conselho Regional de Corretores de Imóveis"
-- "rg_frente" → RG Frente: lado com foto 3x4, nome, data de nascimento, número do RG
-- "rg_verso" → RG Verso: lado com impressão digital, filiação (nome dos pais), órgão emissor
-- "residencia" → Comprovante de Residência: conta de luz, água, gás, internet, telefone, TV por assinatura, fatura de celular — qualquer documento que tenha endereço completo com CEP e valor/vencimento
-- "certidao_casamento" → Certidão de Casamento: tem texto "CERTIDÃO DE CASAMENTO", nome do cartório, nomes dos cônjuges
-- "certidao_nascimento" → Certidão de Nascimento: tem texto "CERTIDÃO DE NASCIMENTO", nome do cartório
-- "certidao_obito" → Certidão de Óbito: tem texto "CERTIDÃO DE ÓBITO", data de falecimento
-- "ctps" → Carteira de Trabalho: tem texto "CARTEIRA DE TRABALHO E PREVIDÊNCIA SOCIAL" ou "CTPS Digital", logo Governo Federal
-- "contracheque" → Contracheque ou Holerite: tem tabela com colunas Vencimentos e Descontos, valores de INSS, FGTS, salário base, total líquido
-- "imposto_renda" → Imposto de Renda: tem texto "DECLARAÇÃO DE AJUSTE ANUAL" ou "DIRPF", logo Receita Federal
-- "extrato_bancario" → Extrato Bancário: tem logo de banco (Caixa, Bradesco, Itaú, Nubank, Banco do Brasil, Santander, Inter), lista de transações, saldo, agência e conta
-- "fgts" → FGTS: tem logo "CAIXA" junto com "FGTS", número PIS/PASEP, tabela de depósitos mensais, "Valor para Fins Rescisórios"
-- "outros" → use apenas se não se encaixar em nenhuma categoria acima
-
-IMPORTANTE: Seja generoso na classificação. Se há qualquer indicação visual de uma categoria, classifique nela. Só use "outros" se realmente não der para identificar.
-
-Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
-
-    const sleep = (ms) => new Promise(r => setTimeout(r, ms));
-
-    const pdfFirstPageToBase64 = async (arrayBuffer) => {
-        await waitForPdfJs();
-        const copy = arrayBuffer.slice(0);
-        const pdfDoc = await window.pdfjsLib.getDocument({ data: new Uint8Array(copy), password: '', disableRange: true, disableStream: true }).promise;
-        const page = await pdfDoc.getPage(1);
-        const viewport = page.getViewport({ scale: 2.0 });
-        const canvas = document.createElement('canvas');
-        canvas.width = Math.floor(viewport.width);
-        canvas.height = Math.floor(viewport.height);
-        const ctx = canvas.getContext('2d');
-        ctx.fillStyle = '#ffffff';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        await page.render({ canvasContext: ctx, viewport }).promise;
-        page.cleanup();
-        return canvas.toDataURL('image/jpeg', 0.85).split(',')[1];
-    };
-
-    const fileToBase64 = (arrayBuffer) => {
-        const bytes = new Uint8Array(arrayBuffer);
-        const chunkSize = 8192;
-        let binary = '';
-        for (let i = 0; i < bytes.byteLength; i += chunkSize) {
-            binary += String.fromCharCode(...bytes.subarray(i, i + chunkSize));
-        }
-        return btoa(binary);
-    };
-
-    const resizeImageForAI = async (file) => {
-        return new Promise((resolve) => {
-            const img = new Image();
-            const url = URL.createObjectURL(file);
-            img.onload = () => {
-                URL.revokeObjectURL(url);
-                const MAX = 1280;
-                let w = img.width, h = img.height;
-                if (w > MAX || h > MAX) {
-                    if (w > h) { h = Math.round(h * MAX / w); w = MAX; }
-                    else { w = Math.round(w * MAX / h); h = MAX; }
-                }
-                const canvas = document.createElement('canvas');
-                canvas.width = w; canvas.height = h;
-                canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-                const b64 = canvas.toDataURL('image/jpeg', 0.88).split(',')[1];
-                resolve(b64);
-            };
-            img.onerror = () => { URL.revokeObjectURL(url); resolve(null); };
-            img.src = url;
-        });
-    };
-
-    
-    const tryModel = async (model, b64, mime) => {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 12000);
-
-        try {
-            const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-                method: 'POST',
-                signal: controller.signal,
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${OPENROUTER_KEY}`,
-                    'HTTP-Referer': window.location.origin,
-                    'X-Title': 'Destemidos Imoveis'
-                },
-                body: JSON.stringify({
-                    model,
-                    max_tokens: 100,
-                    temperature: 0.1,
-                    messages: [{
-                        role: 'user',
-                        content: [
-                            { type: 'image_url', image_url: { url: `data:${mime};base64,${b64}` } },
-                            { type: 'text', text: CLASSIFY_PROMPT }
-                        ]
-                    }]
-                })
-            });
-
-            clearTimeout(timeoutId);
-
-            if (res.status === 429) {
-                
-                await sleep(2000);
-                return null;
-            }
-            if (!res.ok) {
-                const err = await res.text();
-                return null;
-            }
-
-            const json = await res.json();
-            const text = json.choices?.[0]?.message?.content || '';
-            const match = text.match(/\{[^}]+\}/);
-            if (!match) { console.warn('Sem JSON na resposta:', text.substring(0, 80)); return null; }
-
-            const parsed = JSON.parse(match[0]);
-            const cat = parsed.category || 'outros';
-            return { category: cat, order: ORDER_MAP[cat] ?? 99, label: parsed.label || 'Outro Documento' };
-        } catch (err) {
-            clearTimeout(timeoutId);
-            if (err.name === 'AbortError') {
-            } else {
-            }
-            return null;
-        }
-    };
-
-    const KEYWORD_MAP = [
-        // ── Documentos urgentes / administrativos — vão na frente de tudo ──
-        { keywords: ['cancelamento','carta de cancelamento','distrato'], category: 'cancelamento', label: 'Carta de Cancelamento' },
-        { keywords: ['autorizacao cadastral','autorização cadastral','autorizacao','autorização','declaracao de esclarecimento','declaração de esclarecimento'], category: 'autorizacao', label: 'Autorização / Declaração' },
-        { keywords: ['reserva de unidade','reserva','proposta de compra'], category: 'reserva', label: 'Reserva de Unidade' },
-
-        // ── RG frente e verso (nome do arquivo com "frente" ou "verso") ──
-        { keywords: ['rg frente','rg_frente','identidade frente','frente rg','frente identidade','rg frente'], category: 'rg_frente', label: 'RG / Identidade (Frente)' },
-        { keywords: ['rg verso','rg_verso','identidade verso','verso rg','verso identidade'], category: 'rg_verso', label: 'RG / Identidade (Verso)' },
-
-        // ── Documentos de renda / trabalho ──
-        { keywords: ['holerite','contracheque','folha de pagamento','folha pagamento','salario','salário','vencimentos','descontos','liquido','líquido','inss','cbo','competencia','competência'], category: 'contracheque', label: 'Contracheque / Holerite' },
-        { keywords: ['declaracao de ajuste anual','declaração de ajuste anual','dirpf','imposto de renda','irpf','ajuste anual','rendimentos tributaveis','rendimentos tributáveis'], category: 'imposto_renda', label: 'Imposto de Renda' },
-        { keywords: ['extrato bancario','extrato bancário','extrato','saldo','movimentacao','movimentação','deposito','depósito','saque','transferencia','transferência','agencia','agência','conta corrente','poupanca','poupança','nubank','bradesco','itau','itaú','santander','caixa economica','banco do brasil','inter','sicoob'], category: 'extrato_bancario', label: 'Extrato Bancário' },
-        { keywords: ['fgts','fundo de garantia','pis','pasep','caixa fgts','depositos mensais','depósitos mensais','fins rescisórios','fins rescisorios'], category: 'fgts', label: 'FGTS' },
-        // CTPS deve vir ANTES de certidão de nascimento para evitar confusão
-        { keywords: ['carteira de trabalho','ctps','carteira profissional','previdencia social','previdência social','ctps digital','numero ctps','número ctps','ministerio do trabalho','ministério do trabalho'], category: 'ctps', label: 'Carteira de Trabalho (CTPS)' },
-
-        // ── Certidões de estado civil ──
-        { keywords: ['certidao de casamento','certidão de casamento','casamento','contraentes','registro de casamento'], category: 'certidao_casamento', label: 'Certidão de Casamento' },
-        // certidao_nascimento deve vir DEPOIS de ctps para não confundir
-        { keywords: ['certidao de nascimento','certidão de nascimento','registro de nascimento'], category: 'certidao_nascimento', label: 'Certidão de Nascimento' },
-        { keywords: ['certidao de obito','certidão de óbito','obito','óbito','falecimento'], category: 'certidao_obito', label: 'Certidão de Óbito' },
-
-        // ── CPF ──
-        { keywords: ['cadastro de pessoas fisicas','cadastro de pessoas físicas','cpf','receita federal do brasil'], category: 'cpf', label: 'CPF' },
-
-        // ── Documentos de identidade (todos equivalem ao RG) ──
-        { keywords: ['carteira nacional de habilitacao','carteira nacional de habilitação','cnh','detran','habilitacao','habilitação','registro nacional'], category: 'cnh', label: 'CNH' },
-        { keywords: ['ordem dos advogados','oab','advogado'], category: 'oab', label: 'OAB' },
-        { keywords: ['conselho regional de corretores','creci','corretor de imoveis','corretor de imóveis'], category: 'creci', label: 'CRECI' },
-        { keywords: ['registro geral','identidade','instituto de identificacao','instituto de identificação','filiacao','filiação','naturalidade'], category: 'rg', label: 'RG / Identidade' },
-        // "rg" como palavra sozinha vem por último para não capturar palavras que contenham "rg"
-        { keywords: [' rg ','_rg_','-rg-'], category: 'rg', label: 'RG / Identidade' },
-
-        // ── Comprovante de residência — qualquer conta serve ──
-        { keywords: [
-            'comprovante de residencia','comprovante de residência','residencia','residência',
-            'endereco','endereço','cep','codigo de barras','código de barras',
-            // contas de consumo
-            'conta de luz','energia eletrica','energia elétrica','eletrobras','amazonas energia','cemig','copel','light ',
-            'conta de agua','água tratada','saneamento','cosama','saae',
-            'conta de gas','gas encanado','gás encanado','comgas','cegás',
-            // telecomunicações
-            'fatura','conta de telefone','fatura telefone','celular','tim ','vivo ','claro ','oi ','net ','sky ','amazon fibra','brisanet',
-            'internet','banda larga','tv por assinatura','tv a cabo',
-            // genérico
-            'vencimento','valor a pagar'
-        ], category: 'residencia', label: 'Comprovante de Residência' },
-    ];
-
-    const matchKeywords = (text) => {
-        const normalized = text.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
-        for (const entry of KEYWORD_MAP) {
-            if (entry.keywords.some(kw => normalized.includes(kw.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()))) {
-                return { category: entry.category, order: ORDER_MAP[entry.category] ?? 99, label: entry.label };
-            }
-        }
-        return null;
-    };
-
-    const classifyByFilename = (filename) => {
-        const name = filename.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[_\-\.]/g, ' ');
-        const result = matchKeywords(name);
-        if (result) {
-            return result;
-        }
-        return null;
-    };
-
-    const classifyByPdfMetadata = async (arrayBuffer) => {
-        try {
-            if (!window.pdfjsLib) return null;
-            const copy = arrayBuffer.slice(0);
-            const pdfDoc = await window.pdfjsLib.getDocument({ data: new Uint8Array(copy), password: '', disableRange: true, disableStream: true }).promise;
-            const meta = await pdfDoc.getMetadata().catch(() => null);
-            if (!meta) return null;
-            const info = meta.info || {};
-            const combined = [info.Title, info.Subject, info.Keywords, info.Author].filter(Boolean).join(' ');
-            if (!combined.trim()) return null;
-            const result = matchKeywords(combined);
-            if (result) {
-                return result;
-            }
-        } catch {}
-        return null;
-    };
-
-    const classifyByPdfProducer = async (arrayBuffer) => {
-        try {
-            if (!window.pdfjsLib) return null;
-            const copy = arrayBuffer.slice(0);
-            const pdfDoc = await window.pdfjsLib.getDocument({ data: new Uint8Array(copy), password: '', disableRange: true, disableStream: true }).promise;
-            const meta = await pdfDoc.getMetadata().catch(() => null);
-            if (!meta) return null;
-            const info = meta.info || {};
-            const combined = [info.Producer, info.Creator].filter(Boolean).join(' ').toLowerCase();
-            if (!combined.trim()) return null;
-            // Regras específicas por produtor/criador
-            if (/serpro|receita federal|dirpf|rfb/.test(combined)) return { category: 'imposto_renda', order: ORDER_MAP['imposto_renda'] ?? 99, label: 'Imposto de Renda' };
-            if (/detran/.test(combined)) return { category: 'cnh', order: ORDER_MAP['cnh'] ?? 99, label: 'CNH' };
-            if (/caixa|cef|fgts/.test(combined)) return { category: 'fgts', order: ORDER_MAP['fgts'] ?? 99, label: 'FGTS' };
-            if (/esocial|ministerio do trabalho|mte/.test(combined)) return { category: 'ctps', order: ORDER_MAP['ctps'] ?? 99, label: 'Carteira de Trabalho (CTPS)' };
-            // Fallback: tenta o dicionário geral
-            const result = matchKeywords(combined);
-            if (result) {
-                return result;
-            }
-        } catch {}
-        return null;
-    };
-
-    const classifyByPdfText = async (arrayBuffer) => {
-        try {
-            if (!window.pdfjsLib) return null;
-            const copy = arrayBuffer.slice(0);
-            const pdfDoc = await window.pdfjsLib.getDocument({ data: new Uint8Array(copy), password: '', disableRange: true, disableStream: true }).promise;
-            const numPages = Math.min(pdfDoc.numPages, 3);
-            let fullText = '';
-            for (let p = 1; p <= numPages; p++) {
-                const page = await pdfDoc.getPage(p);
-                const content = await page.getTextContent();
-                fullText += content.items.map(i => i.str).join(' ') + ' ';
-                page.cleanup();
-            }
-            if (fullText.trim().length < 20) return null; // PDF escaneado — sem texto
-            const result = matchKeywords(fullText);
-            if (result) {
-                return result;
-            }
-        } catch {}
-        return null;
-    };
-
-    const loadTesseract = () => new Promise((resolve, reject) => {
-        if (window.Tesseract) { resolve(window.Tesseract); return; }
-        const existing = document.getElementById('tesseract-script');
-        if (existing) { existing.addEventListener('load', () => resolve(window.Tesseract)); return; }
-        const s = document.createElement('script');
-        s.id = 'tesseract-script';
-        s.src = 'https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js';
-        s.onload = () => resolve(window.Tesseract);
-        s.onerror = reject;
-        document.body.appendChild(s);
+    const { classifyDoc, classifyInBatches, handleOrganizeAll: _handleOrganizeAll, OPENROUTER_KEY } = useDocClassifier({
+        setPendingDocs,
+        setOrganizeProgress,
+        setCardAnimPhase,
+        setChatMessages,
     });
 
-    const classifyByOCR = async (arrayBuffer, mime) => {
-        try {
-            const Tesseract = await loadTesseract();
-            let imageData;
-            if (mime === 'image/jpeg') {
-                // É o resultado do pdfFirstPageToBase64 — já é base64 JPEG
-                imageData = `data:image/jpeg;base64,${arrayBuffer}`;
-            } else {
-                const blob = new Blob([arrayBuffer], { type: mime });
-                imageData = URL.createObjectURL(blob);
-            }
-            const { data: { text } } = await Tesseract.recognize(imageData, 'por', { logger: () => {} });
-            if (imageData.startsWith('blob:')) URL.revokeObjectURL(imageData);
-            if (!text || text.trim().length < 15) return null;
-            const result = matchKeywords(text);
-            if (result) {
-                return result;
-            }
-        } catch {}
-        return null;
-    };
-
-    const classifyDoc = async (file) => {
-        try {
-            // ── Arma 1: Nome do arquivo ──
-            const arm1 = classifyByFilename(file.name);
-            if (arm1) return arm1;
-
-            // Lê o buffer UMA vez e faz cópias para cada uso
-            const masterBuffer = await file.arrayBuffer();
-            let b64, mime;
-
-            if (file.type === 'application/pdf') {
-                // ── Arma 5: Metadados (Title/Subject/Keywords/Author) ──
-                const arm5 = await classifyByPdfMetadata(masterBuffer.slice(0));
-                if (arm5) return arm5;
-
-                // ── Arma 6: Producer/Creator ──
-                const arm6 = await classifyByPdfProducer(masterBuffer.slice(0));
-                if (arm6) return arm6;
-
-                // ── Arma 2: Texto embutido ──
-                const arm2 = await classifyByPdfText(masterBuffer.slice(0));
-                if (arm2) return arm2;
-
-                // Prepara imagem para Arma 4 e IA (usa cópia fresca)
-                b64 = await pdfFirstPageToBase64(masterBuffer.slice(0));
-                mime = 'image/jpeg';
-
-                // ── Arma 4: OCR (recebe b64 já pronto, não consome buffer) ──
-                const arm4 = await classifyByOCR(b64, 'image/jpeg');
-                if (arm4) return arm4;
-
-            } else if (file.type.startsWith('image/')) {
-                mime = 'image/jpeg';
-                b64 = await resizeImageForAI(file);
-                if (!b64) return { category: 'outros', order: 99, label: 'Outro Documento' };
-
-                // ── Arma 4: OCR em imagens (usa cópia fresca do buffer) ──
-                const arm4img = await classifyByOCR(masterBuffer.slice(0), mime);
-                if (arm4img) return arm4img;
-            } else {
-                return { category: 'outros', order: 99, label: 'Outro Documento' };
-            }
-
-            // ── IA (último recurso) ──
-            
-            for (const model of VISION_MODELS) {
-                const result = await tryModel(model, b64, mime);
-                if (result) {
-                    return result;
-                }
-                await sleep(300);
-            }
-
-            return { category: 'outros', order: 99, label: 'Outro Documento' };
-        } catch (err) {
-            return { category: 'outros', order: 99, label: 'Outro Documento' };
-        }
-    };
-
-    const classifyInBatches = async (docs, batchSize = 3) => {
-        const results = new Array(docs.length);
-        for (let i = 0; i < docs.length; i += batchSize) {
-            const batch = docs.slice(i, i + batchSize);
-            const batchResults = await Promise.all(
-                batch.map(async (doc, batchIdx) => {
-                    // Find this doc by ID in current pendingDocs (not by index)
-                    setPendingDocs(prev => prev.map(d => d.id === doc.id ? { ...d, aiLabel: '🔍' } : d));
-                    setOrganizeProgress(prev => ({ ...prev, current: i + batchIdx + 1, label: doc.name.length > 22 ? doc.name.substring(0, 22) + '…' : doc.name }));
-                    const result = await classifyDoc(doc.file);
-                    const done = { ...doc, aiLabel: result.label, aiOrder: result.order };
-                    setPendingDocs(prev => prev.map(d => d.id === doc.id ? done : d));
-                    return done;
-                })
-            );
-            batchResults.forEach((r, batchIdx) => { results[i + batchIdx] = r; });
-            if (i + batchSize < docs.length) await sleep(500);
-        }
-        return results;
-    };
+    const handleOrganizeAll = () => _handleOrganizeAll(pendingDocs, isOrganizingDocs);
 
     const handleQuickFolderUpload = async (e) => {
         const files = Array.from(e.target.files);
@@ -1867,10 +621,7 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
 
         if (!OPENROUTER_KEY) {
             setIsChatOpen(true);
-            setChatMessages(prev => [...prev, {
-                role: 'bot',
-                content: '⚠️ **Pasta Rápida precisa da chave do OpenRouter.**\n\n1. Acesse: https://openrouter.ai\n2. Crie conta gratuita (sem cartão)\n3. Vá em **Settings → Keys** e crie uma chave\n4. Adicione no `.env`:\n```\nREACT_APP_OPENROUTER_KEY=sk-or-...\n```\n5. Reinicie com `npm start` 🔑'
-            }]);
+            setChatMessages(prev => [...prev, { role: 'bot', content: '⚠️ **Pasta Rápida precisa da chave do OpenRouter.**\n\n1. Acesse: https://openrouter.ai\n2. Crie conta gratuita (sem cartão)\n3. Vá em **Settings → Keys** e crie uma chave\n4. Adicione no `.env`:\n```\nREACT_APP_OPENROUTER_KEY=sk-or-...\n```\n5. Reinicie com `npm start` 🔑' }]);
             return;
         }
 
@@ -1879,12 +630,8 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
         setIsOrganizingDocs(true);
         setOrganizeProgress({ current: 0, total: files.length, label: 'Preparando...' });
         setCardAnimPhase('pulse');
-        setChatMessages(prev => [...prev, {
-            role: 'bot',
-            content: `🧠 **Pasta Rápida ativada!** ${files.length} documento${files.length > 1 ? 's' : ''} recebido${files.length > 1 ? 's' : ''}.\n\nAnalisando com IA... ✨`
-        }]);
+        setChatMessages(prev => [...prev, { role: 'bot', content: `🧠 **Pasta Rápida ativada!** ${files.length} documento${files.length > 1 ? 's' : ''} recebido${files.length > 1 ? 's' : ''}.\n\nAnalisando com IA... ✨` }]);
 
-        // Gera previews dos NOVOS arquivos
         const newDocsBase = await Promise.all(files.map(async (file) => {
             let previewUrl = null;
             if (file.type.startsWith('image/')) previewUrl = URL.createObjectURL(file);
@@ -1892,67 +639,23 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
             return { id: Math.random().toString(36).substring(7), file, name: file.name, previewUrl, aiLabel: '⏳', aiOrder: 99 };
         }));
 
-        // Adiciona os novos ao final dos existentes (sem apagar os já organizados)
         setPendingDocs(prev => [...prev, ...newDocsBase]);
-
-        // Classifica SOMENTE os novos documentos
         const classified = await classifyInBatches(newDocsBase, 3);
 
-        // Mescla TODOS os docs existentes + os novos classificados e re-ordena tudo junto
         setPendingDocs(prev => {
-            // Existing docs that are NOT part of the new batch (keep their aiOrder)
             const existing = prev.filter(d => !newDocsBase.some(n => n.id === d.id));
-            const merged = [...existing, ...classified];
-            return merged.sort((a, b) => (a.aiOrder ?? 99) - (b.aiOrder ?? 99));
+            return [...existing, ...classified].sort((a, b) => (a.aiOrder ?? 99) - (b.aiOrder ?? 99));
         });
 
-        // Fase final: scatter — cards reaparecem nos seus lugares
         setCardAnimPhase('scatter');
         setTimeout(() => { setCardAnimPhase('idle'); }, 800);
-
         setIsOrganizingDocs(false);
         setOrganizeProgress({ current: 0, total: 0, label: '' });
 
         const resumo = classified.map((d, i) => `${i + 1}. ${d.aiLabel}`).join('\n');
-        setChatMessages(prev => [...prev, {
-            role: 'bot',
-            content: `✅ **Novos documentos adicionados e organizados:**\n\n${resumo}\n\nAjuste arrastando se precisar e clique em **Finalizar PDF**! 📄`
-        }]);
+        setChatMessages(prev => [...prev, { role: 'bot', content: `✅ **Novos documentos adicionados e organizados:**\n\n${resumo}\n\nAjuste arrastando se precisar e clique em **Finalizar PDF**! 📄` }]);
     };
 
-    // Reorganiza TODOS os documentos já presentes na pasta
-    const handleOrganizeAll = async () => {
-        if (!OPENROUTER_KEY || pendingDocs.length === 0 || isOrganizingDocs) return;
-
-        setIsOrganizingDocs(true);
-        setOrganizeProgress({ current: 0, total: pendingDocs.length, label: 'Preparando...' });
-        setCardAnimPhase('pulse');
-
-        setChatMessages(prev => [...prev, {
-            role: 'bot',
-            content: `🔄 **Reorganizando ${pendingDocs.length} documento${pendingDocs.length > 1 ? 's' : ''}...**\n\nAnalisando tudo com IA... ✨`
-        }]);
-
-        // Re-classifica TODOS os docs
-        const allDocs = [...pendingDocs];
-        const classified = await classifyInBatches(allDocs, 3);
-
-        // Ordena tudo
-        const sorted = [...classified].sort((a, b) => (a.aiOrder ?? 99) - (b.aiOrder ?? 99));
-        setPendingDocs(sorted);
-
-        setCardAnimPhase('scatter');
-        setTimeout(() => { setCardAnimPhase('idle'); }, 800);
-
-        setIsOrganizingDocs(false);
-        setOrganizeProgress({ current: 0, total: 0, label: '' });
-
-        const resumo = sorted.map((d, i) => `${i + 1}. ${d.aiLabel}`).join('\n');
-        setChatMessages(prev => [...prev, {
-            role: 'bot',
-            content: `✅ **Tudo organizado na ordem certa:**\n\n${resumo}\n\nAjuste arrastando se precisar e clique em **Finalizar PDF**! 📄`
-        }]);
-    };
 
     const closePoi = () => {
         setClosingPoi(true);
@@ -2122,29 +825,35 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
                         });
                     }
                 } else if (doc.file.type.startsWith('image/')) {
-                    let image;
-                    if (doc.file.type === 'image/png') {
-                        image = await mergedPdf.embedPng(arrayBuffer);
-                    } else {
-                        // JPEG, WEBP and others — convert to JPEG for speed
-                        try {
-                            image = await mergedPdf.embedJpg(arrayBuffer);
-                        } catch {
-                            image = await mergedPdf.embedPng(arrayBuffer);
-                        }
-                    }
-                    const page = mergedPdf.addPage();
-                    const { width, height } = page.getSize();
-                    const imgDims = image.scale(1);
-                    const scale = Math.min((width - 40) / imgDims.width, (height - 40) / imgDims.height, 1);
-                    const drawWidth  = imgDims.width  * scale;
-                    const drawHeight = imgDims.height * scale;
-                    page.drawImage(image, {
-                        x: width  / 2 - drawWidth  / 2,
-                        y: height / 2 - drawHeight / 2,
-                        width:  drawWidth,
-                        height: drawHeight,
+                    const rot = doc.rotation || 0;
+
+                    // Desenha a imagem num canvas já com a rotação aplicada nos pixels
+                    const rotatedBytes = await new Promise((resolve) => {
+                        const img = new Image();
+                        img.onload = () => {
+                            const swapped = rot === 90 || rot === 270;
+                            const cw = swapped ? img.height : img.width;
+                            const ch = swapped ? img.width  : img.height;
+                            const canvas = document.createElement('canvas');
+                            canvas.width  = cw;
+                            canvas.height = ch;
+                            const ctx = canvas.getContext('2d');
+                            ctx.fillStyle = '#ffffff';
+                            ctx.fillRect(0, 0, cw, ch);
+                            ctx.translate(cw / 2, ch / 2);
+                            ctx.rotate((rot * Math.PI) / 180);
+                            ctx.drawImage(img, -img.width / 2, -img.height / 2);
+                            canvas.toBlob(blob => {
+                                blob.arrayBuffer().then(buf => resolve(new Uint8Array(buf)));
+                            }, 'image/jpeg', 0.88);
+                        };
+                        img.src = URL.createObjectURL(doc.file);
                     });
+
+                    const image = await mergedPdf.embedJpg(rotatedBytes);
+                    const imgDims = image.scale(1);
+                    const page = mergedPdf.addPage([imgDims.width, imgDims.height]);
+                    page.drawImage(image, { x: 0, y: 0, width: imgDims.width, height: imgDims.height });
                 }
             }
 
@@ -2163,9 +872,12 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
             setIsCreatingFolder(false);
             setPendingDocs([]);
             setIsFinalizingFolder(false);
+            setShowThumbsUp(true);
+            setTimeout(() => setShowThumbsUp(false), 2800);
             setShowLightning(true);
             setTimeout(() => setShowLightning(false), 2800);
         } catch (error) {
+            console.error('Erro ao gerar PDF:', error);
             setChatMessages(prev => [...prev, { role: 'bot', content: `Ops, algo não deu certo ao gerar o arquivo. 😕\n\nDetalhe: ${error.message || 'erro desconhecido'}` }]);
         }
         setIsChatLoading(false);
@@ -2177,6 +889,12 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
             if (doc?.previewUrl) URL.revokeObjectURL(doc.previewUrl);
             return prev.filter(d => d.id !== id);
         });
+    };
+
+    const rotateDoc = (id, dir) => {
+        setPendingDocs(prev => prev.map(d =>
+            d.id === id ? { ...d, rotation: (((d.rotation || 0) + (dir === 'cw' ? 90 : -90)) + 360) % 360 } : d
+        ));
     };
 
     const renderChatMessage = (text) => {
@@ -2339,6 +1057,46 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
                 .group img { transition: transform 0.7s cubic-bezier(0.25,0.46,0.45,0.94) !important; }
 
                 /* ── LIQUID GLASS — card fixado ── */
+                @keyframes lg-sweep {
+                    0%   { transform: translateX(-140%) skewX(-18deg); opacity: 0; }
+                    10%  { opacity: 1; }
+                    80%  { opacity: 0.9; }
+                    100% { transform: translateX(280%) skewX(-18deg); opacity: 0; }
+                }
+                .pinned-lg-card {
+                    transition: transform 0.45s cubic-bezier(0.25,0.46,0.45,0.94),
+                                box-shadow 0.45s ease,
+                                border-color 0.45s ease;
+                    box-shadow: 0 4px 16px rgba(139,28,58,0.10);
+                }
+                .pinned-lg-card:hover {
+                    transform: translateY(-4px);
+                    box-shadow: 0 12px 32px rgba(139,28,58,0.22), 0 2px 6px rgba(0,0,0,0.08) !important;
+                    border-color: rgba(210,80,120,0.75) !important;
+                }
+                .lg-img {
+                    transition: transform 0.55s cubic-bezier(0.25,0.46,0.45,0.94) !important;
+                }
+                .pinned-lg-card:hover .lg-img {
+                    transform: scale(1.06) !important;
+                }
+                .lg-sweep-layer {
+                    transition: none;
+                }
+                .pinned-lg-card:hover .lg-sweep-layer {
+                    animation: lg-sweep 0.75s cubic-bezier(0.25,0.46,0.45,0.94) forwards;
+                }
+                .lg-glass-overlay {
+                    position: absolute; inset: 0; pointer-events: none; z-index: 8;
+                    background: linear-gradient(135deg,
+                        rgba(255,255,255,0.0) 0%,
+                        rgba(255,255,255,0.09) 45%,
+                        rgba(255,200,220,0.07) 65%,
+                        rgba(255,255,255,0.0) 100%);
+                    opacity: 0;
+                    transition: opacity 0.45s ease;
+                }
+                .pinned-lg-card:hover .lg-glass-overlay { opacity: 1; }
                 @keyframes banner-reveal-anim {
                     0%   { opacity: 0; transform: translateY(18px) scale(0.98); }
                     100% { opacity: 1; transform: translateY(0)    scale(1); }
@@ -2463,7 +1221,7 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
                                 const STICKY_TABS = [
                                     { id: 'Direcional',  label: 'DIR',  action: () => setActiveBrand('Direcional'), isBtn: true },
                                     { id: 'Riva',        label: 'RIVA', action: () => setActiveBrand('Riva'),        isBtn: true },
-                                    { id: 'Ranking',     label: 'VER RANKING',  icon: <Trophy size={13} style={{color:'rgba(255,255,255,0.6)',flexShrink:0}}/>, href: 'https://ranking-direcional.streamlit.app/' },
+                                    { id: 'Ranking',     label: 'RANK', href: 'https://ranking-direcional.streamlit.app/' },
                                     { id: 'Simulador',   label: 'SIM',  href: 'https://www8.caixa.gov.br/siopiinternet-web/simulaOperacaoInternet.do?method=inicializarCasoUso&isVoltar=true' },
                                     { id: 'Tabelas',     label: 'TAB',  href: 'https://drive.google.com/drive/folders/14mYfQkNaSc9APr6hpOTKKTFQ02oq3uOf?usp=sharing' },
                                     { id: 'Utilitarios', label: 'UTIL', action: () => setActiveBrand('Utilitarios'), isBtn: true },
@@ -2545,7 +1303,7 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
                         {[
                             { id: 'Direcional',  label: 'DIRECIONAL',  icon: <span style={{width:5,height:5,borderRadius:2,background:'rgba(255,255,255,0.7)',flexShrink:0,display:'inline-block'}}/>, action: () => setActiveBrand('Direcional'), isBtn: true },
                             { id: 'Riva',        label: 'RIVA',        icon: <span style={{width:5,height:5,borderRadius:2,background:'rgba(255,255,255,0.7)',flexShrink:0,display:'inline-block'}}/>, action: () => setActiveBrand('Riva'),        isBtn: true },
-                            { id: 'Ranking',     label: 'VER RANKING',     icon: <Trophy size={13} style={{color:'rgba(255,255,255,0.6)',flexShrink:0}}/>, href: 'https://ranking-direcional.streamlit.app/' },
+                            { id: 'Ranking',     label: 'VER RANKING', icon: <Trophy size={13} style={{color:'rgba(255,255,255,0.6)',flexShrink:0}}/>, href: 'https://ranking-direcional.streamlit.app/' },
                             { id: 'Simulador',   label: 'SIMULADOR',   icon: <Calculator size={13} style={{color:'rgba(255,255,255,0.6)',flexShrink:0}}/>, href: 'https://www8.caixa.gov.br/siopiinternet-web/simulaOperacaoInternet.do?method=inicializarCasoUso&isVoltar=true' },
                             { id: 'Tabelas',     label: 'TABELAS',     icon: <TableProperties size={13} style={{color:'rgba(255,255,255,0.6)',flexShrink:0}}/>, href: 'https://drive.google.com/drive/folders/14mYfQkNaSc9APr6hpOTKKTFQ02oq3uOf?usp=sharing' },
                             { id: 'Utilitarios', label: 'UTILITÁRIOS', icon: <BookMarked size={13} style={{color:'rgba(255,255,255,0.6)',flexShrink:0}}/>, action: () => setActiveBrand('Utilitarios'), isBtn: true },
@@ -2819,7 +1577,7 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
                                 const TABS = [
                                     { id: 'Direcional',  label: 'DIRECIONAL', icon: <span style={{width:5,height:5,borderRadius:2,background:'rgba(255,255,255,0.7)',flexShrink:0,display:'inline-block'}}/>, action: () => setActiveBrand('Direcional'), isBtn: true },
                                     { id: 'Riva',        label: 'RIVA',        icon: <span style={{width:5,height:5,borderRadius:2,background:'rgba(255,255,255,0.7)',flexShrink:0,display:'inline-block'}}/>, action: () => setActiveBrand('Riva'),        isBtn: true },
-                                    { id: 'Ranking',     label: 'VER RANKING',     icon: <Trophy size={13} style={{color:'rgba(255,255,255,0.6)',flexShrink:0}}/>, href: 'https://ranking-direcional.streamlit.app/' },
+                                    { id: 'Ranking',     label: 'VER RANKING', icon: <Trophy size={13} style={{color:'rgba(255,255,255,0.6)',flexShrink:0}}/>, href: 'https://ranking-direcional.streamlit.app/' },
                                     { id: 'Simulador',   label: 'SIMULADOR',   icon: <Calculator size={13} style={{color:'rgba(255,255,255,0.6)',flexShrink:0}}/>, href: 'https://www8.caixa.gov.br/siopiinternet-web/simulaOperacaoInternet.do?method=inicializarCasoUso&isVoltar=true' },
                                     { id: 'Tabelas',     label: 'TABELAS',     icon: <TableProperties size={13} style={{color:'rgba(255,255,255,0.6)',flexShrink:0}}/>, href: 'https://drive.google.com/drive/folders/14mYfQkNaSc9APr6hpOTKKTFQ02oq3uOf?usp=sharing' },
                                     { id: 'Utilitarios', label: 'UTILITÁRIOS', icon: <BookMarked size={13} style={{color:'rgba(255,255,255,0.6)',flexShrink:0}}/>, action: () => setActiveBrand('Utilitarios'), isBtn: true },
@@ -3019,31 +1777,7 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
                             <div className="flex flex-col gap-6">
                                 {/* ── GRID COM PINNED PRIMEIRO ── */}
                                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                                    {filteredRevistas.filter(r => r.pinned).map((revista, cardIdx) => (
-                                        <div key={`pinned-${revista.id}`} style={{ position: 'relative' }}>
-                                            <span style={{
-                                                position: 'absolute', top: 12, right: 12, zIndex: 30,
-                                                background: 'linear-gradient(135deg, #8b1c3a 0%, #c2185b 100%)',
-                                                color: '#fff', fontSize: 9, fontWeight: 900,
-                                                letterSpacing: '0.16em', padding: '4px 11px',
-                                                borderRadius: 999, textTransform: 'uppercase',
-                                                boxShadow: '0 2px 10px rgba(139,28,58,0.5)',
-                                                border: '1px solid rgba(255,255,255,0.25)',
-                                                pointerEvents: 'none',
-                                            }}>✦ NOVA</span>
-                                            <CardRevista
-                                                key={revista.id}
-                                                revista={revista}
-                                                cardIdx={cardIdx}
-                                                modoNoturno={modoNoturno}
-                                                haptic={haptic}
-                                                setPdfLeitor={setPdfLeitor}
-                                                setSelectedPois={setSelectedPois}
-                                                setPdfLeitorLogoAnim={setPdfLeitorLogoAnim}
-                                            />
-                                        </div>
-                                    ))}
-                                    {filteredRevistas.filter(r => !r.pinned).map((revista, cardIdx) => (
+                                    {filteredRevistas.map((revista, cardIdx) => (
                                         <CardRevista
                                             key={revista.id}
                                             revista={revista}
@@ -3317,7 +2051,7 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
                     'Conquista Topázio':            '-3.01547,-60.018348',
                     'Conquista Rio Negro':          '-3.0401114,-60.0800979',
                     'Viva Vida Rio Tapajós':        '-2.9835792,-60.0470611',
-                    'Moratta Home Riva':            '-3.077458,-60.020785',
+                    'Moratta Home Riva':            '-3.077466,-60.020464',
                 };
 
                 // Mapa de POIs com endereço exato para evitar o Maps abrir a unidade errada
@@ -3426,6 +2160,17 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
                     'Aeroporto Eduardo Gomes':                 'Aeroporto Internacional Eduardo Gomes, Manaus',
                     'Policlínica José Lins':                   'Policlínica José Lins, Manaus',
                     'Colégio Século':                          'Colégio Século, Manaus',
+                    // Flores — Moratta Home Riva
+                    'Carrefour Flores (ao lado - 24h)':        'Carrefour Hipermercado, Av. Djalma Batista, 276, Flores, Manaus',
+                    'Amazonas Shopping (5 min)':               'Amazonas Shopping, Av. Djalma Batista, 482, Manaus',
+                    'Manaus Plaza Shopping (5 min)':           'Manaus Plaza Shopping, Av. Djalma Batista, 2100, Manaus',
+                    'Millennium Shopping (8 min)':             'Millennium Shopping, Av. Djalma Batista, 1661, Manaus',
+                    'UEA - Universidade Estadual do Amazonas (5 min)': 'UEA Escola Normal Superior, Av. Djalma Batista, 2470, Manaus',
+                    'UniNorte Campus Djalma Batista (5 min)':  'UniNorte, Av. Djalma Batista, 122, Manaus',
+                    'Samel Centro Médico Djalma Batista (10 min)': 'Centro Médico Samel, Av. Djalma Batista, 671, Manaus',
+                    'Sushi Ponta Negra - Djalma Batista (8 min)': 'Sushi Ponta Negra, Av. Djalma Batista, 935, Manaus',
+                    'Garrafeira 351 - Restaurante (5 min)':    'Garrafeira 351, Av. Djalma Batista, 125, Manaus',
+                    'Gendai Restaurante Japonês - Amazonas Shopping (5 min)': 'Gendai Restaurante, Amazonas Shopping, Av. Djalma Batista, 482, Manaus',
                 };
 
                 const origemEndereco = EMPREEND_COORDS[selectedPois.title] || (selectedPois.title + ', Manaus, AM');
@@ -3934,14 +2679,31 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
                                         onTouchEnd={handleDragTouchEnd}
                                         onClick={() => { if (!isDraggingActive) { haptic('light'); setFullscreenDoc(doc); } }}
                                         style={cardStyle}
-                                        className={`relative group border-2 border-dashed ${extraClass} ${draggedItemIndex === index ? 'border-orange-400 scale-90 opacity-30 rotate-3' : (modoNoturno ? `border-transparent bg-slate-800 ${folderSource === 'rapida' ? 'hover:border-orange-500' : 'hover:border-indigo-500'}` : `border-transparent bg-white ${folderSource === 'rapida' ? 'hover:border-orange-300' : 'hover:border-indigo-300'}`)} rounded-xl overflow-hidden shadow-sm hover:shadow-lg transition-colors aspect-[3/4] flex flex-col cursor-move`}>
+                                        className={`relative group border-2 border-dashed ${extraClass} ${draggedItemIndex === index ? 'border-orange-400 scale-90 opacity-30 rotate-3' : (modoNoturno ? `border-transparent bg-slate-800 ${folderSource === 'rapida' ? 'hover:border-orange-500' : 'hover:border-indigo-500'}` : `border-transparent bg-white ${folderSource === 'rapida' ? 'hover:border-orange-300' : 'hover:border-indigo-300'}`)} rounded-xl overflow-hidden shadow-sm aspect-[3/4] flex flex-col cursor-move`}>
                                         <div className="absolute top-1 left-1 text-white text-[9px] font-black w-5 h-5 flex items-center justify-center rounded-md z-10 backdrop-blur-sm"
                                             style={{ background: folderSource === 'rapida' ? 'rgba(124,58,27,0.85)' : 'rgba(67,56,202,0.85)' }}>{index + 1}</div>
                                         <button onClick={(e) => { e.stopPropagation(); haptic('heavy'); removeDoc(doc.id); }} className="absolute top-1 right-1 bg-red-500 text-white p-1 rounded-lg opacity-0 group-hover:opacity-100 active:opacity-100 transition-all z-10 hover:bg-red-600 shadow-lg"><Trash2 size={11} /></button>
-                                        <div className={`flex-1 flex items-center justify-center overflow-hidden relative ${modoNoturno ? 'bg-slate-950' : 'bg-slate-100'}`}>
+                                        {/* Botões de rotação — sempre visíveis na parte inferior do card */}
+                                        <div className="absolute bottom-7 left-0 right-0 flex justify-center gap-2 z-10">
+                                            <button onClick={(e) => { e.stopPropagation(); haptic('light'); rotateDoc(doc.id, 'ccw'); }}
+                                                className="bg-black/70 backdrop-blur-sm text-white rounded-lg hover:bg-black/90 active:scale-90 transition-all shadow-lg"
+                                                style={{ padding: '5px 10px' }}
+                                                title="Girar esquerda">
+                                                <RotateCcw size={15} />
+                                            </button>
+                                            <button onClick={(e) => { e.stopPropagation(); haptic('light'); rotateDoc(doc.id, 'cw'); }}
+                                                className="bg-black/70 backdrop-blur-sm text-white rounded-lg hover:bg-black/90 active:scale-90 transition-all shadow-lg"
+                                                style={{ padding: '5px 10px' }}
+                                                title="Girar direita">
+                                                <RotateCw size={15} />
+                                            </button>
+                                        </div>
+                                        <div className={`flex-1 flex items-center justify-center overflow-hidden relative ${modoNoturno ? 'bg-slate-950' : 'bg-slate-100'}`} style={{ isolation: 'isolate' }}>
                                             {doc.previewUrl ? (
                                                 <>
-                                                    <img src={doc.previewUrl} alt="preview" className="w-full h-full object-cover" />
+                                                    <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', willChange: 'transform' }}>
+                                                        <img src={doc.previewUrl} alt="preview" className="w-full h-full object-cover" style={{ transform: `rotate(${doc.rotation || 0}deg)`, transformOrigin: 'center center' }} />
+                                                    </div>
                                                     {doc.file.type === 'application/pdf' && (
                                                         <div className="absolute bottom-1 right-1 bg-red-600 text-white text-[8px] font-black px-1.5 py-0.5 rounded-md shadow-md">PDF</div>
                                                     )}
@@ -4270,7 +3032,7 @@ Responda SOMENTE o JSON. Exemplo: {"category":"rg","label":"RG / Identidade"}`;
                                     src={fullscreenDoc.previewUrl}
                                     alt={fullscreenDoc.name}
                                     className="max-w-full max-h-full object-contain rounded-2xl shadow-2xl"
-                                    style={{ maxHeight: 'calc(100vh - 100px)' }}
+                                    style={{ maxHeight: 'calc(100vh - 100px)', transform: `rotate(${fullscreenDoc.rotation || 0}deg)` }}
                                 />
                             ) : (
                                 <div className="flex flex-col items-center justify-center gap-6 text-white/60">

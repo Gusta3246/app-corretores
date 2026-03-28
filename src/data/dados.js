@@ -119,7 +119,7 @@ export const revistasDataLocal = [
       `https://i.postimg.cc/5N2z0bWR/DIRECIONAL-CARREFOUR-INTERNA-SALA-FINAL.jpg`,
       `https://i.postimg.cc/jdSf5tY9/DIRECIONAL-CARREFOUR-LAVANDERIA-FINAL.jpg`,
     ],
-    link: "https://drive.google.com/file/d/16Umi4PJlL2-yHR1Ye_nqtv_EOggbBCwk/view?usp=drive_link", aliases: ["moratta", "moratta home", "moratta riva"], pois: ["Carrefour Flores (ao lado - 24h)", "Amazonas Shopping (5 min)", "Manaus Plaza Shopping (5 min)", "Millennium Shopping (8 min)", "UEA - Universidade Estadual do Amazonas (5 min)", "UniNorte Campus Djalma Batista (5 min)", "Samel Centro Médico Djalma Batista (10 min)", "Sushi Ponta Negra - Djalma Batista (8 min)", "Garrafeira 351 - Restaurante (5 min)", "Gendai Restaurante Japonês - Amazonas Shopping (5 min)"] },
+    link: "https://drive.google.com/file/d/1qCCNbu_w4zzzSS9eAi-vTCS8YpW6AZvY/view?usp=sharing", aliases: ["moratta", "moratta home", "moratta riva"], pois: ["Carrefour Flores (ao lado - 24h)", "Amazonas Shopping (5 min)", "Manaus Plaza Shopping (5 min)", "Millennium Shopping (8 min)", "UEA - Universidade Estadual do Amazonas (5 min)", "UniNorte Campus Djalma Batista (5 min)", "Samel Centro Médico Djalma Batista (10 min)", "Sushi Ponta Negra - Djalma Batista (8 min)", "Garrafeira 351 - Restaurante (5 min)", "Gendai Restaurante Japonês - Amazonas Shopping (5 min)"] },
 ];
 
 export const utilitariosData = [

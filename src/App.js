@@ -88,10 +88,7 @@ export default function App() {
     const revistasData = revistasDataLocal;
     const [activeBrand, setActiveBrand] = useState('Direcional');
     const [fraseDoDia] = useState(frasesMotivacionais[dayIndex % frasesMotivacionais.length]);
-    const [imagemDoDia] = useState(() => {
-        const shuffled = [...imagensEquipeDiarias].sort(() => Math.random() - 0.5);
-        return shuffled[0];
-    });
+    const [imagemDoDia] = useState(imagensEquipeDiarias[dayIndex % imagensEquipeDiarias.length]);
     const [modoNoturno, setModoNoturno] = useState(() => localStorage.getItem('modoNoturno') === 'true');
     const [bannerFocusY, setBannerFocusY] = useState('30%');
 

@@ -110,7 +110,7 @@ export const revistasDataLocal = [
     fotosExtras: [`${D}/2025/02/Perspectiva-Fachada-VivaVidaRioTapajos.jpg.webp`,`${D}/2025/02/Perspectiva-Lazer-VivaVidaRioTapajos.jpg.webp`,`${D}/2025/02/Perspectiva-Piscina-VivaVidaRioTapajos.jpg.webp`,`${D}/2025/02/Perspectiva-Fitness-VivaVidaRioTapajos.jpg.webp`,`${D}/2025/02/Perspectiva-Playground-VivaVidaRioTapajos.jpg.webp`],
     link: "https://drive.google.com/file/d/1k3TOypf5bm_zXPfc-ulb7vY9e7MKxmlk/view?usp=drive_link", aliases: ["tapajos", "tapajós", "rio tapajos", "viva vida rio tapajos"], pois: ["Aeroporto Internacional de Manaus", "Tarumã (área de balneários famosos)", "Sivam", "proximidade com a entrada da Ponta Negra"] },
 
-  { id: 18, title: "Moratta Home Riva", brand: "Riva", region: "Flores - Zona Centro-Sul", size: "43,41m² a 59,35m²", bedrooms: "2 dormitórios", flooring: "Todo o apê", entrega: "04/2029", pinned: true, lat: -3.077466, lng: -60.020464,
+  { id: 18, title: "Moratta Home Riva", brand: "Riva", region: "Flores - Zona Centro-Sul", size: "43,41m² a 59,35m²", bedrooms: "2 dormitórios", flooring: "Todo o apê", entrega: "03/2029", pinned: true, lat: -3.077466, lng: -60.020464,
     cover: `https://i.postimg.cc/vmFwP8QX/IMG-1577.png`,
     fotosExtras: [
       `https://i.postimg.cc/Wzn0y4L5/DIRECIONAL-CARREFOUR-TORRE-DETALHE-FINAL.jpg`,

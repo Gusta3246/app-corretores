@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useLayoutEffect, useRef } from 'react';
-import { Search, Building, ExternalLink, MapPin, BookOpen, Maximize, Bed, LayoutGrid, Sparkles, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, FileText, TableProperties, BookMarked, HelpCircle, Calculator, Bot, X, Send, Wand2, Paperclip, File as FileIcon, Trash2, FolderPlus, GripVertical, Plus, MessageCircle, Moon, Sun, AlertTriangle, Book, Clock, Trophy, RotateCw, RotateCcw } from 'lucide-react';
+import { Search, Building, ExternalLink, MapPin, BookOpen, Maximize, Bed, LayoutGrid, Sparkles, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, FileText, TableProperties, BookMarked, HelpCircle, Calculator, Bot, X, Send, Wand2, Paperclip, File as FileIcon, Trash2, FolderPlus, GripVertical, Plus, MessageCircle, Moon, Sun, AlertTriangle, Book, Clock, Trophy, RotateCw, RotateCcw, Phone } from 'lucide-react';
 import { buscarRespostaDoRobo, buscarRespostaGemini } from './bot/dadosFinanciamento.js';
 import { revistasDataLocal, utilitariosData, frasesMotivacionais, imagensEquipeDiarias, dayIndex } from './data/dados.js';
 import { RippleButton, CardRevista, HintPills, RevistaCloseButton } from './components/Componentes.jsx';
@@ -1906,6 +1906,62 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
                                                 <p className={`text-sm leading-relaxed ${modoNoturno ? 'text-slate-400' : 'text-slate-600'}`}>{item.d}</p>
                                             </div>
                                         ))}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* ITEM 4: CONTATOS DE CARTÓRIOS DE PROTESTOS */}
+                        <div className={`card-entry border rounded-xl overflow-hidden shadow-sm transition-colors ${modoNoturno ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`} style={{ animationDelay: '240ms' }}>
+                            <button onClick={() => { haptic(); setOpenGuiaIndex(openGuiaIndex === 3 ? null : 3); }} className={`w-full text-left p-5 flex justify-between items-center transition-colors ${modoNoturno ? 'bg-slate-800 hover:bg-slate-700' : 'bg-white hover:bg-slate-50'}`}>
+                                <h3 className={`font-bold text-lg flex items-center gap-2 ${modoNoturno ? 'text-white' : 'text-slate-800'}`}><Phone className="text-purple-500" size={20} /> CONTATOS DE CARTÓRIOS DE PROTESTOS DE MANAUS</h3>
+                                {openGuiaIndex === 3 ? <ChevronUp className="text-slate-400" /> : <ChevronDown className="text-slate-400" />}
+                            </button>
+                            {openGuiaIndex === 3 && (
+                                <div className={`p-5 pt-0 border-t transition-colors ${modoNoturno ? 'border-slate-700 text-slate-300 bg-slate-800/50' : 'border-slate-100 text-slate-600 bg-slate-50/50'}`}>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4">
+                                        {[
+                                            { oficio: "2º OFÍCIO", whatsapp: "(92) 98432-1201" },
+                                            { oficio: "3º OFÍCIO", whatsapp: "(92) 99236-8197" },
+                                            { oficio: "4º OFÍCIO", whatsapp: "(92) 99449-1536" },
+                                            { oficio: "5º OFÍCIO", whatsapp: "(92) 99311-0317" },
+                                            { oficio: "6º OFÍCIO", whatsapp: "(92) 98246-6445" }
+                                        ].map((item, idx) => (
+                                            <a
+                                                key={idx}
+                                                href={`https://wa.me/55${item.whatsapp.replace(/\D/g, '')}`}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                onClick={haptic}
+                                                className={`p-4 rounded-xl border transition-all hover:scale-[1.02] active:scale-[0.98] cursor-pointer ${
+                                                    modoNoturno 
+                                                        ? 'bg-slate-900 border-slate-700 hover:border-purple-500/50 hover:bg-slate-800' 
+                                                        : 'bg-white border-slate-200 hover:border-purple-500/50 hover:bg-purple-50/30'
+                                                }`}
+                                            >
+                                                <div className="flex items-center justify-between gap-3">
+                                                    <div>
+                                                        <p className={`font-bold text-sm mb-1 ${modoNoturno ? 'text-purple-400' : 'text-purple-600'}`}>
+                                                            {item.oficio}
+                                                        </p>
+                                                        <p className={`text-lg font-mono tracking-tight ${modoNoturno ? 'text-white' : 'text-slate-900'}`}>
+                                                            {item.whatsapp}
+                                                        </p>
+                                                    </div>
+                                                    <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                                                        modoNoturno ? 'bg-purple-500/20' : 'bg-purple-100'
+                                                    }`}>
+                                                        <Phone size={18} className="text-purple-500" />
+                                                    </div>
+                                                </div>
+                                            </a>
+                                        ))}
+                                    </div>
+                                    <div className={`mt-4 p-3 rounded-lg flex items-start gap-2 text-xs ${
+                                        modoNoturno ? 'bg-purple-500/10 text-purple-300' : 'bg-purple-50 text-purple-700'
+                                    }`}>
+                                        <Phone size={14} className="shrink-0 mt-0.5" />
+                                        <p>Clique em qualquer cartório para abrir o WhatsApp direto com o número.</p>
                                     </div>
                                 </div>
                             )}

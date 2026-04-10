@@ -1921,7 +1921,8 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
                                 <div className={`p-5 pt-0 border-t transition-colors ${modoNoturno ? 'border-slate-700 text-slate-300 bg-slate-800/50' : 'border-slate-100 text-slate-600 bg-slate-50/50'}`}>
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4">
                                         {[
-                                            { oficio: "2º OFÍCIO", whatsapp: "(92) 98432-1201" },
+                                            { oficio: "1º OFÍCIO", whatsapp: "(92) 99377-6945" },
+                                            { oficio: "2º OFÍCIO", whatsapp: "(92) 98477-0807" },
                                             { oficio: "3º OFÍCIO", whatsapp: "(92) 99236-8197" },
                                             { oficio: "4º OFÍCIO", whatsapp: "(92) 99449-1536" },
                                             { oficio: "5º OFÍCIO", whatsapp: "(92) 99311-0317" },

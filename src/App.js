@@ -2237,7 +2237,20 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
             {/* ── HINT PILLS — renderizado como componente fixo ── */}
             <HintPills onPhaseChange={setHintPhase} />
 
-            <div className={`fixed bottom-8 right-8 z-40 flex flex-row items-end gap-3 transition-all duration-500 ${isChatOpen ? 'scale-0 opacity-0 pointer-events-none' : 'scale-100 opacity-100'}`}>
+            <div className={`fixed bottom-8 right-8 z-40 flex flex-col items-end gap-3 transition-all duration-500 ${isChatOpen ? 'scale-0 opacity-0 pointer-events-none' : 'scale-100 opacity-100'}`}>
+
+                {/* Botão Pasta flutuante */}
+                <button
+                    onClick={() => { haptic('medium'); setFolderSource('manual'); setIsCreatingFolder(true); setIsChatOpen(true); setTimeout(() => fileInputRef.current?.click(), 100); }}
+                    className="w-14 h-14 text-white rounded-[1.75rem] hover:rounded-[1rem] hover:scale-110 active:scale-95 transition-all duration-500 flex items-center justify-center relative overflow-hidden border-2 border-white/20 shadow-2xl"
+                    style={{ background: 'linear-gradient(135deg, #6366f1 0%, #4f46e5 60%, #7c3aed 100%)', boxShadow: '0 4px 20px rgba(99,102,241,0.5)' }}
+                    title="Criar Pasta"
+                >
+                    <FolderPlus size={22} />
+                </button>
+
+                {/* Balão de frase + botão chatbot */}
+                <div className="flex flex-row items-end gap-3">
                 <div 
                     className={`px-5 py-3 rounded-2xl shadow-xl border relative flex items-center gap-2 group cursor-pointer transition-all duration-500 origin-bottom-right ${
                         isScrolling 
@@ -2280,6 +2293,7 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
                         )}
                     </div>
                 </button>
+                </div>{/* fim flex-row chatbot */}
                 <style dangerouslySetInnerHTML={{ __html: `
 
                     /* ── FONTE SF PRO — SISTEMA iOS/macOS ── */
@@ -2462,7 +2476,7 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
                     /* Desktop chat flutuante: reseta top e height */
                     @media (min-width: 768px) {
                         .chat-mobile-full { top: auto !important; height: auto !important; }
-                        .chat-folder-full { top: 12px !important; left: 12px !important; right: 12px !important; bottom: 12px !important; height: auto !important; border-radius: 1.5rem !important; }
+                        .chat-folder-full { top: 0 !important; left: 0 !important; right: 0 !important; bottom: 0 !important; height: 100dvh !important; border-radius: 0 !important; }
                     }
                     /* Padding do main para compensar o header fixed (inclui notch no PWA) */
                     .main-content { padding-top: calc(136px + env(safe-area-inset-top, 0px)); }
@@ -2646,7 +2660,7 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
                                     )}
                                 </div>
                             )}
-                            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-2.5" id="docs-grid">
+                            <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-8 gap-1.5" id="docs-grid">
                                 {pendingDocs.map((doc, index) => {
                                     const total = pendingDocs.length;
                                     const scatterDelay = cardAnimPhase === 'scatter' ? index * 0.07 : 0;
@@ -2760,31 +2774,6 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
                                 style={{ background: 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)', boxShadow: '0 2px 8px rgba(99,102,241,0.35)' }}>
                                 <FolderPlus size={11} className="relative z-10" />
                                 <span className="relative z-10">Pasta</span>
-                            </button>
-                            {/* Pasta Rápida IA */}
-                            <button
-                                onClick={(e) => {
-                                    haptic('medium');
-                                    const clicks = pastaRapidaClicksRef.current;
-                                    if (clicks < 5) {
-                                        e.preventDefault(); e.stopPropagation();
-                                        pastaRapidaClicksRef.current = clicks + 1;
-                                        localStorage.setItem('dst_pr_clicks', String(clicks + 1));
-                                        setShowPastaRapidaInfo(true);
-                                    } else {
-                                        setFolderSource('rapida');
-                                        quickFolderInputRef.current?.click();
-                                    }
-                                }}
-                                className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider transition-all active:scale-95 text-white relative overflow-hidden"
-                                style={{
-                                    background: 'linear-gradient(135deg, #f97316 0%, #ef4444 60%, #f59e0b 100%)',
-                                    boxShadow: '0 0 0 2px rgba(249,115,22,0.3), 0 0 14px 3px rgba(249,115,22,0.35)',
-                                    animation: 'pr-pulse 1.6s ease-in-out infinite',
-                                }}>
-                                <span className="absolute inset-0 pasta-rapida-btn pointer-events-none" style={{borderRadius:'9999px'}}></span>
-                                <Sparkles size={11} className="shrink-0 relative z-10" style={{filter:'drop-shadow(0 0 4px rgba(255,255,255,0.9))', animation:'spin 3s linear infinite'}} />
-                                <span className="relative z-10" style={{letterSpacing:'0.06em'}}>Pasta Rápida IA</span>
                             </button>
                             {/* Separador */}
                             <div className={`shrink-0 w-px h-3.5 ${modoNoturno ? 'bg-slate-600' : 'bg-slate-200'}`}/>

@@ -1128,7 +1128,7 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
                     borderBottom: modoNoturno ? '1px solid rgba(51,65,85,0.6)' : '1px solid rgba(226,232,240,0.6)',
                     boxShadow: modoNoturno ? '0 2px 8px rgba(0,0,0,0.25)' : '0 2px 8px rgba(148,163,184,0.3)',
                 }}>
-                <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div className="w-full px-[7.2%]">
                     <div className="flex flex-col sm:flex-row sm:items-center sm:gap-4 sm:py-3">
 
                         {/* Linha 1 mobile — Logo + saudação animada */}
@@ -1183,7 +1183,7 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
                             );
                         })()}
 
-                        {/* Linha 2 mobile — Busca + Botão noturno */}
+                        {/* Busca + Botões — sempre visível, ocupa o espaço central */}
                         <div className={`flex items-center gap-2 pb-3 sm:pb-0 sm:flex-1 transition-all duration-300 ${
                             searchBarVisible && !tabsSticky
                             ? 'opacity-100 max-h-20'
@@ -1282,6 +1282,45 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
                                 title={modoNoturno ? "Ativar Modo Claro" : "Ativar Modo Noturno"}
                             >
                                 {modoNoturno ? <Sun size={20} /> : <Moon size={20} />}
+                            </button>
+
+                            {/* Botão Pasta no Header */}
+                            <button
+                                onClick={() => { haptic('medium'); setFolderSource('manual'); setIsCreatingFolder(true); setIsChatOpen(true); setTimeout(() => fileInputRef.current?.click(), 100); }}
+                                className={`shrink-0 p-2.5 rounded-2xl border transition-all duration-300 hover:scale-105 ${
+                                    modoNoturno
+                                    ? 'bg-indigo-500/20 border-indigo-400/30 text-indigo-300 hover:bg-indigo-500/30'
+                                    : 'bg-indigo-50 border-indigo-200 text-indigo-600 hover:bg-indigo-100'
+                                }`}
+                                title="Criar Pasta"
+                            >
+                                <FolderPlus size={20} />
+                            </button>
+
+                            {/* Botão Chat no Header */}
+                            <button
+                                onClick={() => { haptic('medium'); setIsChatOpen(true); }}
+                                className={`shrink-0 p-2.5 rounded-2xl border transition-all duration-300 hover:scale-105 ${
+                                    modoNoturno
+                                    ? 'bg-blue-500/20 border-blue-400/30 text-blue-300 hover:bg-blue-500/30'
+                                    : 'bg-blue-50 border-blue-200 text-blue-600 hover:bg-blue-100'
+                                }`}
+                                title="Abrir Chat IA"
+                            >
+                                <MessageCircle size={20} />
+                            </button>
+
+                            {/* Botão Taxas Docs no Header */}
+                            <button
+                                onClick={() => setShowTaxasDocsModal(true)}
+                                className={`shrink-0 p-2.5 rounded-2xl border transition-all duration-300 hover:scale-105 ${
+                                    modoNoturno
+                                    ? 'bg-cyan-500/20 border-cyan-400/30 text-cyan-300 hover:bg-cyan-500/30'
+                                    : 'bg-cyan-50 border-cyan-200 text-cyan-600 hover:bg-cyan-100'
+                                }`}
+                                title="Ver Taxas Docs"
+                            >
+                                <FileText size={20} />
                             </button>
                         </div>
 
@@ -1496,16 +1535,18 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
                 );
             })()}
 
-            <main className="main-content max-w-5xl mx-auto px-4 sm:px-6 lg:px-8" style={{ paddingTop: `${headerHeight}px` }}>
+            <main className="main-content w-full" style={{ paddingTop: `${headerHeight}px`, paddingLeft: 'clamp(16px, calc((100vw - 640px) * 0.3 + 16px), 100px)', paddingRight: 'clamp(16px, calc((100vw - 640px) * 0.3 + 16px), 100px)' }}>
                 {/* BANNER INSPIRAÇÃO DIÁRIA */}
                 {/* ── BANNER + ABAS ── */}
                 <div className="relative shadow-lg banner-reveal" style={{
                     borderRadius: 24,
                     clipPath: 'inset(0 round 24px)',
-                    marginTop: 12,
-                    marginBottom: 8,
+                    marginTop: 16,
+                    marginBottom: 16,
+                    marginLeft: 0,
+                    marginRight: 0,
                 }}>
-                    <img src={imagemDoDia} onError={(e) => { e.target.src = '' }} alt="Equipe Destemidos" className="w-full h-72 sm:h-96 object-cover bg-slate-200 banner-ken-burns" style={{ objectPosition: `center ${bannerFocusY}`, display: 'block' }} />
+                    <img src={imagemDoDia} onError={(e) => { e.target.src = '' }} alt="Equipe Destemidos" className="w-full h-screen sm:h-screen object-cover bg-slate-200 banner-ken-burns" style={{ objectPosition: `center ${bannerFocusY}`, display: 'block', maxHeight: '560px' }} />
                     {/* Camada 1: blur progressivo de baixo pra cima */}
                     <div className="absolute inset-0 pointer-events-none" style={{
                         backdropFilter: 'blur(14px)',
@@ -1519,8 +1560,8 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
                     }}/>
                     {/* Conteúdo */}
                     <div className="absolute inset-0 flex flex-col justify-end">
-                        <div className="px-4 sm:px-8 pt-4 sm:pt-8">
-                            <div className="flex items-center gap-2 mb-2 sm:mb-3 banner-text-1">
+                        <div className="px-4 sm:px-8 pt-8 sm:pt-12">
+                            <div className="flex items-center gap-2 mb-3 sm:mb-4 banner-text-1">
                                 <span className="bg-amber-500 text-amber-950 text-[10px] sm:text-xs font-black uppercase tracking-wider py-1 sm:py-1.5 px-2.5 sm:px-3 rounded-full flex items-center gap-1 shadow-lg">
                                     <Sparkles size={12} /> Inspiração do Dia
                                 </span>
@@ -1555,7 +1596,7 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
                                         )}
                                     </p>
                                 </div>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginTop: 10 }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginTop: 12 }}>
                                     <div style={{ width: 3, height: 3, borderRadius: '50%', background: '#c9a84c', opacity: 0.55, flexShrink: 0 }} />
                                     <p style={{
                                         fontSize: 9,
@@ -1569,7 +1610,7 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
                             </div>
                         </div>
                         {/* Abas maiores com destaque glass — Dock Effect */}
-                        <div className="mt-3 sm:mt-5 pb-4">
+                        <div className="mt-4 sm:mt-6 pb-5">
                             {(() => {
                                 const TABS = [
                                     { id: 'Direcional',  label: 'DIRECIONAL', icon: <span style={{width:5,height:5,borderRadius:2,background:'rgba(255,255,255,0.7)',flexShrink:0,display:'inline-block'}}/>, action: () => setActiveBrand('Direcional'), isBtn: true },
@@ -1773,7 +1814,7 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
                         ) : (
                             <div className="flex flex-col gap-6">
                                 {/* ── GRID COM PINNED PRIMEIRO ── */}
-                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4" style={{ columnGap: 'calc(1rem + 0.48rem)' }}>
                                     {filteredRevistas.map((revista, cardIdx) => (
                                         <CardRevista
                                             key={revista.id}
@@ -2294,7 +2335,8 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
             {/* ── HINT PILLS — renderizado como componente fixo ── */}
             <HintPills onPhaseChange={setHintPhase} />
 
-            <div className={`fixed bottom-8 right-8 z-40 flex flex-col items-end gap-3 transition-all duration-500 ${isChatOpen ? 'scale-0 opacity-0 pointer-events-none' : 'scale-100 opacity-100'}`}>
+            <div className={`fixed bottom-8 right-8 z-40 flex flex-col items-end gap-3 transition-all duration-500 ${isChatOpen ? 'scale-0 opacity-0 pointer-events-none' : 'scale-0 opacity-0 pointer-events-none'}`}>
+                {/* Botões movidos para o header */}
 
                 {/* Botão Pasta flutuante */}
                 <button

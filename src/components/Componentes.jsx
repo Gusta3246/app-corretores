@@ -29,6 +29,7 @@ export function BannerExpandido({ revista, onClose, modoNoturno, onVerRevista, o
     const [phase, setPhase] = useState('entering');
     const [fotos, setFotos] = useState([revista.cover]);
     const checkedRef = useRef(false);
+    const isMobile = typeof window !== 'undefined' && window.matchMedia('(hover: none) and (pointer: coarse)').matches;
     useEffect(() => {
         if (checkedRef.current) return;
         checkedRef.current = true;
@@ -43,6 +44,7 @@ export function BannerExpandido({ revista, onClose, modoNoturno, onVerRevista, o
     const [prevIdx, setPrevIdx] = useState(null);
     const [dir, setDir] = useState(null);
     const sliding = useRef(false);
+    const touchStartX = useRef(null);
 
     const goTo = (newIdx, d) => {
         if (sliding.current || newIdx === idx) return;
@@ -91,8 +93,19 @@ export function BannerExpandido({ revista, onClose, modoNoturno, onVerRevista, o
         <>
             <div onClick={triggerClose} style={{ position:'fixed', inset:0, zIndex:200, background:'rgba(0,0,0,0.48)', backdropFilter:'blur(10px)', WebkitBackdropFilter:'blur(10px)', opacity: phase === 'in' ? 1 : 0, transition: phase === 'entering' ? 'none' : 'opacity 0.28s ease' }}/>
             <div style={{ position:'fixed', inset:0, zIndex:201, display:'flex', alignItems:'center', justifyContent:'center', padding:'16px', pointerEvents:'none' }}>
-                <div onMouseLeave={triggerClose} onClick={e => e.stopPropagation()} style={{ pointerEvents:'auto', width:'100%', maxWidth:1160, height:'min(90vh, 720px)', borderRadius:26, overflow:'hidden', display:'flex', background:bg, boxShadow:'0 32px 100px rgba(0,0,0,0.40), 0 8px 32px rgba(0,0,0,0.20)', opacity: phase === 'in' ? 1 : 0, transform: phase === 'in' ? 'scale(1) translateY(0)' : 'scale(0.93) translateY(28px)', transition: phase === 'entering' ? 'none' : `opacity 0.32s cubic-bezier(0.22,1,0.36,1), transform 0.32s cubic-bezier(0.22,1,0.36,1)` }}>
-                    <div style={{ flex:'0 0 58%', position:'relative', overflow:'hidden' }}>
+                <div onMouseLeave={!isMobile ? triggerClose : undefined} onClick={e => e.stopPropagation()} style={{ pointerEvents:'auto', width:'100%', maxWidth:1160, height:'min(90vh, 720px)', borderRadius:26, overflow:'hidden', display:'flex', background:bg, boxShadow:'0 32px 100px rgba(0,0,0,0.40), 0 8px 32px rgba(0,0,0,0.20)', opacity: phase === 'in' ? 1 : 0, transform: phase === 'in' ? 'scale(1) translateY(0)' : 'scale(0.93) translateY(28px)', transition: phase === 'entering' ? 'none' : `opacity 0.32s cubic-bezier(0.22,1,0.36,1), transform 0.32s cubic-bezier(0.22,1,0.36,1)` }}>
+                    <div style={{ flex:'0 0 58%', position:'relative', overflow:'hidden' }}
+                        onTouchStart={e => { touchStartX.current = e.touches[0].clientX; }}
+                        onTouchEnd={e => {
+                            if (touchStartX.current === null) return;
+                            const diff = e.changedTouches[0].clientX - touchStartX.current;
+                            if (Math.abs(diff) > 40) {
+                                const fakeE = { stopPropagation: () => {} };
+                                if (diff > 0) goPrev(fakeE); else goNext(fakeE);
+                            }
+                            touchStartX.current = null;
+                        }}
+                    >
                         {dir && prevIdx !== null && (<img key={`out-${prevIdx}`} src={fotos[prevIdx]} alt="" style={{ position:'absolute', inset:0, width:'100%', height:'100%', objectFit:'cover', transform:`translateX(${outX})`, transition:`transform ${DUR} ${EASE}`, zIndex:1 }}/>)}
                         <img key={`in-${idx}`} src={fotos[idx]} alt={revista.title} style={{ position:'absolute', inset:0, width:'100%', height:'100%', objectFit:'cover', animation: dir ? `slideIn-${dir} ${DUR} ${EASE} forwards` : 'none', zIndex:2 }}/>
                         <div style={{ position:'absolute', inset:0, pointerEvents:'none', zIndex:3, background:'linear-gradient(to top, rgba(0,0,0,0.72) 0%, rgba(0,0,0,0.06) 50%, transparent 100%)' }}/>
@@ -186,6 +199,8 @@ export function CardRevista({ revista, cardIdx, modoNoturno, haptic, setPdfLeito
                 onMouseLeave={e => { if (isTouchDevice()) return; e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = modoNoturno ? '0 2px 8px rgba(0,0,0,0.30), 0 8px 32px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.14)' : '0 2px 6px rgba(100,130,200,0.10), 0 8px 28px rgba(100,130,200,0.14), inset 0 1.5px 0 rgba(255,255,255,1)'; stopHover(); }}>
                 <div className="relative h-48 overflow-hidden bg-slate-100">
                     <img src={revista.cover} onError={(e)=>{e.target.onerror=null;e.target.src='https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&q=80&w=400';}} alt={`Capa ${revista.title}`} className="w-full h-full object-cover group-hover:scale-115 transition-transform duration-700 ease-out" style={{ transformOrigin:'center center', willChange:'transform' }}/>
+                    {/* Gradiente fade na borda inferior */}
+                    <div style={{ position:'absolute', bottom:0, left:0, right:0, height:'60px', background:'linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.3) 100%)', zIndex:5, pointerEvents:'none' }}/>
                     <div className="absolute inset-0 pointer-events-none z-10 overflow-hidden"><div className="card-shimmer-sweep" style={{ position:'absolute', top:0, left:0, width:'55%', height:'100%', background:'linear-gradient(105deg, transparent 0%, rgba(255,255,255,0.38) 50%, transparent 100%)', transform:'translateX(-150%) skewX(-18deg)' }}/></div>
                     <div style={{ position:'absolute', top:10, left:10, zIndex:10, width:110, height:70, display:'flex', alignItems:'flex-start', justifyContent:'flex-start' }}>
                         {(() => { const logoKey = REVISTA_LOGO_MAP[revista.id]; const logoSrc = logoKey ? LOGOS_EMPREENDIMENTO[logoKey] : null; if (!logoSrc) return null; return (<img src={logoSrc} alt={revista.title} style={{ maxHeight: logoKey === 'brisas' ? 62 : 68, maxWidth: logoKey === 'brisas' ? 108 : 105, width:'auto', height:'auto', objectFit:'contain', objectPosition:'top left', filter:'drop-shadow(0 0 8px rgba(0,0,0,0.9)) drop-shadow(0 2px 12px rgba(0,0,0,0.7)) drop-shadow(0 0 3px rgba(255,255,255,0.25))' }}/>); })()}
@@ -264,7 +279,7 @@ export function CountdownLancamento({ modoNoturno }) {
 
     useEffect(() => {
         // Data alvo do lançamento: ajuste aqui quando souber a data real
-        const alvo = new Date('2025-08-01T09:00:00');
+        const alvo = new Date('2026-08-01T09:00:00');
 
         const calcular = () => {
             const agora = new Date();
@@ -341,8 +356,8 @@ export function RevistaCloseButton({ onClose }) {
         };
     }, []);
     return (
-        <div style={{ position:'fixed', top:0, left:0, width:'100vw', height:'0', pointerEvents:'none', zIndex:99999 }}>
-            <button onClick={onClose} style={{ pointerEvents:'all', position:'absolute', top:'calc(env(safe-area-inset-top, 0px) + 14px)', left:'14px', width:48, height:48, borderRadius:'50%', border:'1.5px solid rgba(255,255,255,0.30)', background:'rgba(0,0,0,0.55)', backdropFilter:'blur(20px) saturate(180%)', WebkitBackdropFilter:'blur(20px) saturate(180%)', boxShadow:'0 2px 12px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.12)', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', color:'#fff', transition:'background 0.15s, transform 0.12s' }} onMouseEnter={e=>{e.currentTarget.style.background='rgba(30,30,30,0.75)';}} onMouseLeave={e=>{e.currentTarget.style.background='rgba(0,0,0,0.55)';}} onMouseDown={e=>{e.currentTarget.style.transform='scale(0.90)';}} onMouseUp={e=>{e.currentTarget.style.transform='scale(1)';}}>
+        <div style={{ position:'fixed', top:0, left:0, width:'100vw', pointerEvents:'none', zIndex:99999 }}>
+            <button onClick={onClose} style={{ pointerEvents:'all', position:'absolute', top:'max(14px, env(safe-area-inset-top, 14px))', left:'14px', width:48, height:48, borderRadius:'50%', border:'1.5px solid rgba(255,255,255,0.30)', background:'rgba(0,0,0,0.55)', backdropFilter:'blur(20px) saturate(180%)', WebkitBackdropFilter:'blur(20px) saturate(180%)', boxShadow:'0 2px 12px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.12)', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', color:'#fff', transition:'background 0.15s, transform 0.12s' }} onMouseEnter={e=>{e.currentTarget.style.background='rgba(30,30,30,0.75)';}} onMouseLeave={e=>{e.currentTarget.style.background='rgba(0,0,0,0.55)';}} onMouseDown={e=>{e.currentTarget.style.transform='scale(0.90)';}} onMouseUp={e=>{e.currentTarget.style.transform='scale(1)';}} onTouchStart={e=>{e.currentTarget.style.transform='scale(0.90)';}} onTouchEnd={e=>{e.currentTarget.style.transform='scale(1)';}}>
                 <X size={22} strokeWidth={2.5}/>
             </button>
         </div>

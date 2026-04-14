@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { MapPin, BookOpen, Maximize, Bed, LayoutGrid, Clock, ChevronLeft, ChevronRight, X } from 'lucide-react';
+import { MapPin, BookOpen, Maximize, Bed, LayoutGrid, Clock, ChevronLeft, ChevronRight, X, Download, MousePointer2 } from 'lucide-react';
 import { LOGOS_EMPREENDIMENTO, REVISTA_LOGO_MAP } from '../data/dados.js';
 
 // ── RippleButton ────────────────────────────────────────────────
@@ -147,9 +147,14 @@ export function BannerExpandido({ revista, onClose, modoNoturno, onVerRevista, o
                             </>)}
                         </div>
                         <div style={{ padding:'14px 24px 20px', display:'flex', flexDirection:'column', gap:9, flexShrink:0, borderTop:`1px solid ${divider}` }}>
-                            <button onClick={()=>{triggerClose();setTimeout(onVerRevista,300);}} style={{ width:'100%', padding:'13px 0', borderRadius:16, border:'none', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:8, background:accent, color:'#fff', fontSize:14, fontWeight:800, boxShadow:`0 4px 16px ${accent}44`, transition:'background 0.15s, transform 0.12s' }} onMouseEnter={e=>{e.currentTarget.style.background=accentDark;e.currentTarget.style.transform='scale(1.01)';}} onMouseLeave={e=>{e.currentTarget.style.background=accent;e.currentTarget.style.transform='scale(1)';}}>
-                                <BookOpen size={16}/> Ver Revista Digital
-                            </button>
+                            <div style={{ display:'flex', gap:8, alignItems:'stretch' }}>
+                                <button onClick={()=>{triggerClose();setTimeout(onVerRevista,300);}} style={{ flex:1, padding:'13px 0', borderRadius:16, border:'none', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:8, background:accent, color:'#fff', fontSize:14, fontWeight:800, boxShadow:`0 4px 16px ${accent}44`, transition:'background 0.15s, transform 0.12s' }} onMouseEnter={e=>{e.currentTarget.style.background=accentDark;e.currentTarget.style.transform='scale(1.01)';}} onMouseLeave={e=>{e.currentTarget.style.background=accent;e.currentTarget.style.transform='scale(1)';}}>
+                                    <BookOpen size={16}/> Ver Revista Digital
+                                </button>
+                                <button onClick={(e)=>{ e.preventDefault(); const match = revista.link.match(/\/d\/([a-zA-Z0-9_-]+)/); if(match){ window.open(`https://drive.google.com/uc?export=download&id=${match[1]}`,'_blank'); } else { window.open(revista.link,'_blank'); } }} title="Baixar revista" style={{ flexShrink:0, width:48, height:48, alignSelf:'center', borderRadius:'50%', border:`1.5px solid ${accent}55`, display:'flex', alignItems:'center', justifyContent:'center', background:`${accent}18`, color:accent, cursor:'pointer', transition:'background 0.15s, transform 0.12s' }} onMouseEnter={e=>{e.currentTarget.style.background=`${accent}30`;e.currentTarget.style.transform='scale(1.08)';}} onMouseLeave={e=>{e.currentTarget.style.background=`${accent}18`;e.currentTarget.style.transform='scale(1)';}}>
+                                    <Download size={18}/>
+                                </button>
+                            </div>
                             <button onClick={()=>{triggerClose();setTimeout(onVerPois,300);}} style={{ width:'100%', padding:'11px 0', borderRadius:16, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:7, background:'transparent', border:`1.5px solid ${divider}`, color:sub, fontSize:13, fontWeight:700, transition:'border-color 0.15s, color 0.15s, transform 0.12s' }} onMouseEnter={e=>{e.currentTarget.style.borderColor=accent;e.currentTarget.style.color=accent;e.currentTarget.style.transform='scale(1.01)';}} onMouseLeave={e=>{e.currentTarget.style.borderColor=divider;e.currentTarget.style.color=sub;e.currentTarget.style.transform='scale(1)';}}>
                                 <MapPin size={14} color="#f43f5e"/> Ver pontos de referência
                             </button>
@@ -191,6 +196,19 @@ export function CardRevista({ revista, cardIdx, modoNoturno, haptic, setPdfLeito
     };
     const handleVerPois = () => { haptic(); setSelectedPois(revista); };
 
+    const handleDownload = (e) => {
+        e.preventDefault();
+        haptic();
+        // Extrai o file ID do link do Google Drive e monta URL de download direto
+        const match = revista.link.match(/\/d\/([a-zA-Z0-9_-]+)/);
+        if (match) {
+            const fileId = match[1];
+            window.open(`https://drive.google.com/uc?export=download&id=${fileId}`, '_blank');
+        } else {
+            window.open(revista.link, '_blank');
+        }
+    };
+
     return (
         <>
             {expanded && (<BannerExpandido revista={revista} onClose={() => setExpanded(false)} modoNoturno={modoNoturno} onVerRevista={handleVerRevista} onVerPois={handleVerPois}/>)}
@@ -222,8 +240,13 @@ export function CardRevista({ revista, cardIdx, modoNoturno, haptic, setPdfLeito
                         </div>
                     </div>
                     <div className="mt-auto flex flex-col gap-2">
-                        <RippleButton onClick={handleVerRevista} className={`w-full flex items-center justify-center gap-2 py-3 rounded-2xl font-semibold transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg ${isDir?'bg-gradient-to-r from-orange-500 via-red-500 to-orange-600 hover:from-orange-600 hover:to-red-600 shadow-orange-300/30 text-white':'bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 hover:from-blue-700 hover:to-indigo-700 shadow-blue-300/30 text-white'}`}><BookOpen size={18}/> Ver Revista</RippleButton>
-                        <RippleButton onClick={handleVerPois} className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-2xl font-semibold transition-colors duration-200 border text-sm ${modoNoturno?'bg-slate-700 border-slate-600 text-slate-200 hover:bg-slate-600':'bg-slate-100 border-slate-200 text-slate-700 hover:bg-slate-200'}`}><MapPin size={16} className="text-rose-500"/> Ver Pontos de Referência</RippleButton>
+                        <div style={{ display:'flex', gap:8, alignItems:'stretch' }}>
+                            <RippleButton onClick={handleVerRevista} className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl font-semibold transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg ${isDir?'bg-gradient-to-r from-orange-500 via-red-500 to-orange-600 hover:from-orange-600 hover:to-red-600 shadow-orange-300/30 text-white':'bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 hover:from-blue-700 hover:to-indigo-700 shadow-blue-300/30 text-white'}`}><BookOpen size={18}/> Ver Revista</RippleButton>
+                            <button onClick={handleDownload} title="Baixar revista" style={{ flexShrink:0, width:46, height:46, borderRadius:'50%', border: isDir ? '1.5px solid rgba(249,115,22,0.35)' : '1.5px solid rgba(37,99,235,0.35)', display:'flex', alignItems:'center', justifyContent:'center', background: isDir ? 'rgba(249,115,22,0.12)' : 'rgba(37,99,235,0.12)', color: isDir ? '#f97316' : '#2563eb', cursor:'pointer', transition:'background 0.15s, transform 0.12s' }} onMouseEnter={e=>{e.currentTarget.style.background=isDir?'rgba(249,115,22,0.22)':'rgba(37,99,235,0.22)';e.currentTarget.style.transform='scale(1.08)';}} onMouseLeave={e=>{e.currentTarget.style.background=isDir?'rgba(249,115,22,0.12)':'rgba(37,99,235,0.12)';e.currentTarget.style.transform='scale(1)';}}>
+                                <Download size={18}/>
+                            </button>
+                        </div>
+                        <RippleButton onClick={handleVerPois} style={{ cursor:'pointer' }} className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-2xl font-semibold transition-colors duration-200 border text-sm ${modoNoturno?'bg-slate-700 border-slate-600 text-slate-200 hover:bg-slate-600':'bg-slate-100 border-slate-200 text-slate-700 hover:bg-slate-200'}`}><MousePointer2 size={16} className="text-rose-500"/> Pontos de ref. Clicável</RippleButton>
                     </div>
                 </div>
             </div>

@@ -180,7 +180,7 @@ export const imagensEquipeDiarias = [
   "https://i.postimg.cc/bvtr1yb8/Copia-de-IMG-2830.jpg",
   "https://i.postimg.cc/P57qzz1h/IMG-1875.png",
   "https://i.postimg.cc/Rqr3R7kM/IMG_1876.jpg",
-  "https://i.postimg.cc/fLvwvJRq/Copia-de-IMG-1017.jpg",
+  "https://i.postimg.cc/fbKjRHHC/IMG-2123.jpg",
   "https://i.postimg.cc/VL86Lg4H/Copia-de-IMG-9690.jpg",
   "https://i.postimg.cc/tCc9D09Q/Copia-de-IMG-0779-(1).jpg",
   "https://i.postimg.cc/sXP20TwK/Copia-de-IMG-1504.jpg",

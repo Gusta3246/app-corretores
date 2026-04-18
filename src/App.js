@@ -777,8 +777,8 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
         const pages = [];
         for (let pageNum = 1; pageNum <= pdfDoc.numPages; pageNum++) {
             const page = await pdfDoc.getPage(pageNum);
-            // scale 1.2 + JPEG 0.82 = muito mais rápido que 2.0 + PNG, qualidade suficiente para documentos
-            const viewport = page.getViewport({ scale: 1.2 });
+            // scale 3.0 + JPEG 0.97 = máxima resolução para documentos
+            const viewport = page.getViewport({ scale: 3.0 });
             const canvas = document.createElement('canvas');
             canvas.width  = Math.floor(viewport.width);
             canvas.height = Math.floor(viewport.height);
@@ -786,12 +786,12 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
             ctx.fillStyle = '#ffffff';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
             await page.render({ canvasContext: ctx, viewport }).promise;
-            const dataUrl = canvas.toDataURL('image/jpeg', 0.82);
+            const dataUrl = canvas.toDataURL('image/jpeg', 0.97);
             const base64  = dataUrl.split(',')[1];
             const binaryStr = atob(base64);
             const bytes = new Uint8Array(binaryStr.length);
             for (let i = 0; i < binaryStr.length; i++) bytes[i] = binaryStr.charCodeAt(i);
-            pages.push({ bytes, widthPt: canvas.width / 1.2, heightPt: canvas.height / 1.2, isJpeg: true });
+            pages.push({ bytes, widthPt: canvas.width / 3.0, heightPt: canvas.height / 3.0, isJpeg: true });
             page.cleanup();
         }
         return pages;
@@ -842,7 +842,7 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
                             ctx.drawImage(img, -img.width / 2, -img.height / 2);
                             canvas.toBlob(blob => {
                                 blob.arrayBuffer().then(buf => resolve(new Uint8Array(buf)));
-                            }, 'image/jpeg', 0.88);
+                            }, 'image/jpeg', 0.97);
                         };
                         img.src = URL.createObjectURL(doc.file);
                     });

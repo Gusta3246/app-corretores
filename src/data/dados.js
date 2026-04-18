@@ -174,7 +174,7 @@ export const frasesMotivacionais = [
 export const imagensEquipeDiarias = [
   "https://i.postimg.cc/QCxjYhBj/Copia-de-IMG-9585.jpg",
   "https://i.postimg.cc/2SJ3qb1V/Copia-de-IMG-5622-(1).jpg",
-  "https://i.postimg.cc/mgqhczP5/Copia-de-IMG-3054.jpg",
+  "https://i.postimg.cc/QMNHC8FF/Chat-GPT-Image-18-04-2026-16-22-09.png",
   "https://i.postimg.cc/YSW0QrF3/Copia-de-IMG-3049.jpg",
   "https://i.postimg.cc/1zqXDmFK/Copia-de-IMG-3048.jpg",
   "https://i.postimg.cc/bvtr1yb8/Copia-de-IMG-2830.jpg",
@@ -187,6 +187,12 @@ export const imagensEquipeDiarias = [
   "https://i.postimg.cc/4xMnK7YP/Copia-de-IMG-3117.jpg",
   "https://i.postimg.cc/hGT4fCWS/Copia-de-IMG-2336.jpg",
   "https://i.postimg.cc/fWKLcg3X/Copia-de-IMG-9919.avif",
+  "https://i.postimg.cc/mgqhczP5/Copia-de-IMG-3054.jpg",
+  "https://i.postimg.cc/6pf8B2pN/Gemini-Generated-Image-ctn9mactn9mactn9.png",
+  "https://i.postimg.cc/zfDVvzy3/Gemini-Generated-Image-ujn05gujn05gujn0.png",
+  "https://i.postimg.cc/rpyKsVDp/Whats-App-Image-2026-04-18-at-16-14-11.jpg",
+  "https://i.postimg.cc/3xFk34xh/Whats-App-Image-2026-04-18-at-16-14-11-(1).jpg",
+  "https://i.postimg.cc/52SXfY21/Whats-App-Image-2026-04-18-at-16-14-11-(3).jpg",
 ];
 
 const today = new Date();

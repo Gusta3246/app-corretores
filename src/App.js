@@ -367,8 +367,6 @@ export default function App() {
     const [isCreatingFolder, setIsCreatingFolder] = useState(false);
     const [folderSource, setFolderSource] = useState('manual'); // 'manual' | 'rapida'
     const [isFinalizingFolder, setIsFinalizingFolder] = useState(false);
-    const [isCompressing, setIsCompressing] = useState(false);
-    const [compressionInfo, setCompressionInfo] = useState(null); // { before, after, saved }
     const [showThumbsUp, setShowThumbsUp] = useState(false);
     const [showLightning, setShowLightning] = useState(false);
     const [pendingDocs, setPendingDocs] = useState([]);
@@ -882,122 +880,6 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
         setIsChatLoading(false);
     };
 
-    const compressClientPDF = async () => {
-        if (!window.PDFLib) {
-            alert("Aguarde um instante, estou preparando o motor de PDFs... 🛠️");
-            return;
-        }
-        setIsCompressing(true);
-        setCompressionInfo(null);
-        try {
-            const { PDFDocument } = window.PDFLib;
-            const mergedPdf = await PDFDocument.create();
-
-            for (const doc of pendingDocs) {
-                const arrayBuffer = await doc.file.arrayBuffer();
-
-                if (doc.file.type === 'application/pdf') {
-                    // Comprime PDFs convertendo páginas em JPEG com qualidade reduzida
-                    const pages = await (async () => {
-                        const pdfjsLib = window['pdfjs-dist/build/pdf'];
-                        if (!pdfjsLib) return [];
-                        const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
-                        const pdfDoc = await loadingTask.promise;
-                        const pages = [];
-                        for (let i = 1; i <= pdfDoc.numPages; i++) {
-                            const page = await pdfDoc.getPage(i);
-                            // Compressão: scale 1.5 + JPEG 0.6
-                            const viewport = page.getViewport({ scale: 1.5 });
-                            const canvas = document.createElement('canvas');
-                            canvas.width  = Math.floor(viewport.width);
-                            canvas.height = Math.floor(viewport.height);
-                            const ctx = canvas.getContext('2d');
-                            ctx.fillStyle = '#ffffff';
-                            ctx.fillRect(0, 0, canvas.width, canvas.height);
-                            await page.render({ canvasContext: ctx, viewport }).promise;
-                            const dataUrl = canvas.toDataURL('image/jpeg', 0.60);
-                            const base64  = dataUrl.split(',')[1];
-                            const binaryStr = atob(base64);
-                            const bytes = new Uint8Array(binaryStr.length);
-                            for (let j = 0; j < binaryStr.length; j++) bytes[j] = binaryStr.charCodeAt(j);
-                            pages.push({ bytes, widthPt: canvas.width / 1.5, heightPt: canvas.height / 1.5 });
-                            page.cleanup();
-                        }
-                        return pages;
-                    })();
-                    for (const pg of pages) {
-                        const embedded = await mergedPdf.embedJpg(pg.bytes);
-                        const pdfPage  = mergedPdf.addPage([pg.widthPt, pg.heightPt]);
-                        pdfPage.drawImage(embedded, { x: 0, y: 0, width: pg.widthPt, height: pg.heightPt });
-                    }
-                } else if (doc.file.type.startsWith('image/')) {
-                    const rot = doc.rotation || 0;
-                    const rotatedBytes = await new Promise((resolve) => {
-                        const img = new Image();
-                        img.onload = () => {
-                            const swapped = rot === 90 || rot === 270;
-                            const cw = swapped ? img.height : img.width;
-                            const ch = swapped ? img.width  : img.height;
-                            const canvas = document.createElement('canvas');
-                            canvas.width  = cw;
-                            canvas.height = ch;
-                            const ctx = canvas.getContext('2d');
-                            ctx.fillStyle = '#ffffff';
-                            ctx.fillRect(0, 0, cw, ch);
-                            ctx.translate(cw / 2, ch / 2);
-                            ctx.rotate((rot * Math.PI) / 180);
-                            ctx.drawImage(img, -img.width / 2, -img.height / 2);
-                            // Compressão de imagens: JPEG 0.65
-                            canvas.toBlob(blob => {
-                                blob.arrayBuffer().then(buf => resolve(new Uint8Array(buf)));
-                            }, 'image/jpeg', 0.65);
-                        };
-                        img.src = URL.createObjectURL(doc.file);
-                    });
-                    const image = await mergedPdf.embedJpg(rotatedBytes);
-                    const imgDims = image.scale(1);
-                    const page = mergedPdf.addPage([imgDims.width, imgDims.height]);
-                    page.drawImage(image, { x: 0, y: 0, width: imgDims.width, height: imgDims.height });
-                }
-            }
-
-            const pdfBytes = await mergedPdf.save();
-
-            // Calcula tamanho original somando todos os arquivos
-            const totalOriginalBytes = pendingDocs.reduce((acc, doc) => acc + doc.file.size, 0);
-            const compressedBytes = pdfBytes.byteLength;
-            const beforeMB = (totalOriginalBytes / 1048576).toFixed(2);
-            const afterMB  = (compressedBytes / 1048576).toFixed(2);
-            const savedPct = Math.max(0, Math.round((1 - compressedBytes / totalOriginalBytes) * 100));
-
-            setCompressionInfo({ before: beforeMB, after: afterMB, saved: savedPct });
-
-            const blob = new Blob([pdfBytes], { type: 'application/pdf' });
-            const url  = URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            link.href  = url;
-            link.download = `${pdfFileName || 'Pasta_do_Cliente'}_comprimido.pdf`;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            setTimeout(() => URL.revokeObjectURL(url), 5000);
-
-            setChatMessages(prev => [...prev, { role: 'bot', content: `✅ **PDF Comprimido gerado!**\n\nAntes: **${beforeMB} MB** → Depois: **${afterMB} MB** (${savedPct}% menor)\n\nDownload concluído com sucesso!` }]);
-            setIsCreatingFolder(false);
-            setPendingDocs([]);
-            setIsFinalizingFolder(false);
-            setCompressionInfo(null);
-            setShowThumbsUp(true);
-            setTimeout(() => setShowThumbsUp(false), 2800);
-            setShowLightning(true);
-            setTimeout(() => setShowLightning(false), 2800);
-        } catch (error) {
-            console.error('Erro ao comprimir PDF:', error);
-            setChatMessages(prev => [...prev, { role: 'bot', content: `Ops, erro ao comprimir o PDF. 😕\n\nDetalhe: ${error.message || 'erro desconhecido'}` }]);
-        }
-        setIsCompressing(false);
-    };
-
     const removeDoc = (id) => {
         setPendingDocs(prev => {
             const doc = prev.find(d => d.id === id);
@@ -1440,6 +1322,20 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
                             >
                                 <FileText size={20} />
                             </button>
+                            {/* Botão Tabela Direta no Header */}
+                            <a
+                                href="https://docs.google.com/spreadsheets/d/1dHU0XB_GuGE-APGPvqQ6IONnw6iMmzo6z5GrrnRCiRc/edit?usp=sharing"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className={`shrink-0 w-10 h-10 rounded-2xl border transition-all duration-300 hover:scale-105 flex items-center justify-center font-black text-sm ${
+                                    modoNoturno
+                                    ? 'bg-green-500/20 border-green-400/30 text-green-300 hover:bg-green-500/30'
+                                    : 'bg-green-50 border-green-200 text-green-600 hover:bg-green-100'
+                                }`}
+                                title="Tabela Direta"
+                            >
+                                TD
+                            </a>
                         </div>
 
                     </div>
@@ -3005,6 +2901,20 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
                                 <FileText size={11} className="shrink-0 relative z-10" />
                                 <span className="relative z-10" style={{letterSpacing:'0.06em'}}>Taxas Docs</span>
                             </button>
+                            {/* Tabela Direta */}
+                            <a
+                                href="https://docs.google.com/spreadsheets/d/1dHU0XB_GuGE-APGPvqQ6IONnw6iMmzo6z5GrrnRCiRc/edit?usp=sharing"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                onClick={() => haptic('medium')}
+                                className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider transition-all active:scale-95 text-white relative overflow-hidden"
+                                style={{
+                                    background: 'linear-gradient(135deg, #16a34a 0%, #15803d 60%, #166534 100%)',
+                                    boxShadow: '0 0 0 2px rgba(22,163,74,0.3), 0 0 14px 3px rgba(22,163,74,0.35)',
+                                }}>
+                                <span className="relative z-10 font-black" style={{fontSize:'10px',letterSpacing:'0.04em'}}>TD</span>
+                                <span className="relative z-10" style={{letterSpacing:'0.06em'}}>Tabela Direta</span>
+                            </a>
                             {/* Nome do cliente */}
                             {clientName && (
                                 <span className={`shrink-0 flex items-center gap-1 text-[10px] font-bold px-2.5 py-1.5 rounded-full border ${modoNoturno ? 'bg-slate-700 border-slate-600 text-emerald-400' : 'bg-emerald-50 border-emerald-100 text-emerald-600'}`}>
@@ -3043,7 +2953,7 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
             {isFinalizingFolder && (
                 <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center p-0 sm:p-4"
                     style={{ background: 'rgba(7,11,22,0.65)', backdropFilter: 'blur(20px) saturate(180%)', WebkitBackdropFilter: 'blur(20px) saturate(180%)' }}
-                    onClick={() => { setIsFinalizingFolder(false); setCompressionInfo(null); }}>
+                    onClick={() => setIsFinalizingFolder(false)}>
                     <div
                         className="animate-slide-up w-full sm:max-w-sm rounded-t-3xl sm:rounded-3xl overflow-hidden shadow-2xl flex flex-col"
                         style={modoNoturno ? {
@@ -3080,7 +2990,7 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
                                         <p className="text-orange-200 text-[10px] font-black uppercase tracking-[0.15em]">Dê um nome ao seu PDF</p>
                                     </div>
                                 </div>
-                                <button onClick={() => { setIsFinalizingFolder(false); setCompressionInfo(null); }} className="bg-white/10 hover:bg-white/25 text-white p-2.5 rounded-2xl border border-white/20 transition-all backdrop-blur-sm">
+                                <button onClick={() => setIsFinalizingFolder(false)} className="bg-white/10 hover:bg-white/25 text-white p-2.5 rounded-2xl border border-white/20 transition-all backdrop-blur-sm">
                                     <X size={20} />
                                 </button>
                             </div>
@@ -3108,24 +3018,7 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
 
                         {/* Footer */}
                         <div className="px-5 pb-6 pt-3" style={{ paddingBottom: 'max(24px, calc(env(safe-area-inset-bottom) + 16px))' }}>
-                            {/* Card de resultado de compressão */}
-                            {compressionInfo && (
-                                <div className={`mb-3 rounded-2xl p-4 border flex items-center gap-3 ${modoNoturno ? 'bg-slate-800/60 border-indigo-500/20' : 'bg-indigo-50 border-indigo-100'}`}>
-                                    <div className="text-2xl">🗜️</div>
-                                    <div className="flex-1 min-w-0">
-                                        <p className={`text-[10px] font-black uppercase tracking-widest mb-1 ${modoNoturno ? 'text-indigo-400' : 'text-indigo-600'}`}>Resultado da Compressão</p>
-                                        <div className="flex items-center gap-2 flex-wrap">
-                                            <span className={`text-sm font-black ${modoNoturno ? 'text-slate-300' : 'text-slate-700'}`}>{compressionInfo.before} MB</span>
-                                            <span className={`text-xs ${modoNoturno ? 'text-slate-500' : 'text-slate-400'}`}>→</span>
-                                            <span className={`text-sm font-black ${modoNoturno ? 'text-green-400' : 'text-green-600'}`}>{compressionInfo.after} MB</span>
-                                            <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${modoNoturno ? 'bg-green-500/20 text-green-400' : 'bg-green-100 text-green-700'}`}>
-                                                -{compressionInfo.saved}%
-                                            </span>
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-                            <button onClick={() => { haptic('success'); generateClientPDF(); }} disabled={isChatLoading || isCompressing}
+                            <button onClick={() => { haptic('success'); generateClientPDF(); }} disabled={isChatLoading}
                                 className="w-full text-xs text-white px-6 py-4 rounded-2xl font-black uppercase tracking-widest transition-all disabled:cursor-not-allowed flex items-center justify-center gap-3 relative overflow-hidden active:scale-[0.98]"
                                 style={folderSource === 'rapida'
                                     ? { background: 'linear-gradient(135deg, #f97316 0%, #ef4444 50%, #f59e0b 100%)', boxShadow: '0 4px 24px rgba(249,115,22,0.45)' }
@@ -3152,30 +3045,6 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
                                     <><Wand2 size={20} className="relative z-10" style={{filter:'drop-shadow(0 0 6px rgba(255,255,255,0.8))'}} /><span className="relative z-10" style={{textShadow:'0 1px 6px rgba(0,0,0,0.3)'}}>Baixar PDF Unificado</span></>
                                 )}
                             </button>
-
-                            {/* Botão Comprimir PDF — apenas na pasta normal */}
-                            {folderSource !== 'rapida' && (
-                                <button
-                                    onClick={() => { haptic('medium'); compressClientPDF(); }}
-                                    disabled={isChatLoading || isCompressing}
-                                    className={`mt-3 w-full text-xs px-6 py-3.5 rounded-2xl font-black uppercase tracking-widest transition-all disabled:cursor-not-allowed flex items-center justify-center gap-2 relative overflow-hidden active:scale-[0.98] border-2 ${modoNoturno ? 'border-indigo-500/40 text-indigo-400 bg-indigo-500/10 hover:bg-indigo-500/20' : 'border-indigo-200 text-indigo-600 bg-indigo-50 hover:bg-indigo-100'}`}>
-                                    {isCompressing ? (
-                                        <>
-                                            <span className="flex gap-1">
-                                                <span className="w-1.5 h-1.5 rounded-full bg-current animate-bounce" style={{animationDelay:'0s'}}></span>
-                                                <span className="w-1.5 h-1.5 rounded-full bg-current animate-bounce" style={{animationDelay:'0.15s'}}></span>
-                                                <span className="w-1.5 h-1.5 rounded-full bg-current animate-bounce" style={{animationDelay:'0.3s'}}></span>
-                                            </span>
-                                            <span>Comprimindo...</span>
-                                        </>
-                                    ) : (
-                                        <>
-                                            <span className="text-base leading-none">🗜️</span>
-                                            <span>Baixar PDF Comprimido</span>
-                                        </>
-                                    )}
-                                </button>
-                            )}
                         </div>
                     </div>
                 </div>

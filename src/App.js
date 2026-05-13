@@ -159,6 +159,8 @@ export default function App() {
     }, []);
     const [selectedPois, setSelectedPois] = useState(null);
     const [closingPoi, setClosingPoi] = useState(false);
+    const [selectedOnibus, setSelectedOnibus] = useState(null); // empreendimento para modal de ônibus
+    const [closingOnibus, setClosingOnibus] = useState(false);
 
     // === ESTADOS DA IA OFFLINE ===
     const [isChatOpen, setIsChatOpen] = useState(false);
@@ -251,7 +253,7 @@ export default function App() {
     // Trava scroll do body quando modais/chat estão abertos
     // Quando pdfLeitor está aberto NÃO trava touchAction — o iframe precisa de scroll livre
     useEffect(() => {
-        const shouldLock = isChatOpen || !!selectedPois || showPastaRapidaInfo || !!pdfLeitor;
+        const shouldLock = isChatOpen || !!selectedPois || showPastaRapidaInfo || !!pdfLeitor || !!selectedOnibus;
         if (shouldLock) {
             document.body.style.overflow = 'hidden';
             // Se for o leitor de revista, deixa touch livre para o iframe funcionar
@@ -1839,6 +1841,7 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
                                             setPdfLeitor={setPdfLeitor}
                                             setSelectedPois={setSelectedPois}
                                             setPdfLeitorLogoAnim={setPdfLeitorLogoAnim}
+                                            onVerOnibus={(rev) => { haptic(); setSelectedOnibus(rev); }}
                                         />
                                     ))}
                                 </div>
@@ -2337,6 +2340,195 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
                                 <button onClick={() => { haptic(); closePoi(); }}
                                     className={`w-full mt-4 py-2.5 font-semibold rounded-xl transition-all text-sm active:scale-[0.98] ${modoNoturno ? 'text-white hover:bg-white/10' : 'text-slate-700 hover:bg-slate-100/60'}`}
                                     style={{ border: modoNoturno ? '1px solid rgba(255,255,255,0.12)' : '1px solid rgba(0,0,0,0.08)', background: modoNoturno ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.6)', backdropFilter: 'blur(8px)' }}>
+                                    Fechar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                );
+            })()}
+
+            {/* MODAL LINHAS DE ÔNIBUS */}
+            {selectedOnibus && (() => {
+                const LINHAS_POR_EMPREENDIMENTO = {
+                    'Brisas do Horizonte': [
+                        { linha: '225', nome: 'Coroado / Centro (via Av. Cosme Ferreira)', cor: '#16a34a' },
+                        { linha: '226', nome: 'Coroado / Centro (via Estrada do Coroado)', cor: '#2563eb' },
+                        { linha: '640', nome: 'Coroado / UFAM / Shopping', cor: '#9333ea' },
+                        { linha: '441', nome: 'Coroado / Dom Pedro (circular)', cor: '#dc2626' },
+                        { linha: '218', nome: 'Coroado / Cachoeirinha / Centro', cor: '#d97706' },
+                        { linha: '652', nome: 'Coroado / Sumaúma (via Torquato)', cor: '#0891b2' },
+                    ],
+                    'Parque Ville Orquídea': [
+                        { linha: '120', nome: 'Lago Azul / Centro (via Torquato Tapajós)', cor: '#16a34a' },
+                        { linha: '121', nome: 'Lago Azul / Terminal 6', cor: '#2563eb' },
+                        { linha: '122', nome: 'Lago Azul / Via Norte Shopping', cor: '#9333ea' },
+                        { linha: '450', nome: 'Lago Azul / Dom Pedro', cor: '#dc2626' },
+                        { linha: '640', nome: 'Lago Azul / Sumaúma Park', cor: '#d97706' },
+                        { linha: '310', nome: 'Lago Azul / Tarumã (via Torquato)', cor: '#0891b2' },
+                    ],
+                    'Village Torres': [
+                        { linha: '120', nome: 'Lago Azul / Centro (via Torquato Tapajós)', cor: '#16a34a' },
+                        { linha: '121', nome: 'Lago Azul / Terminal 6', cor: '#2563eb' },
+                        { linha: '122', nome: 'Lago Azul / Via Norte Shopping', cor: '#9333ea' },
+                        { linha: '450', nome: 'Lago Azul / Dom Pedro', cor: '#dc2626' },
+                        { linha: '640', nome: 'Lago Azul / Sumaúma Park', cor: '#d97706' },
+                    ],
+                    'Bosque das Torres': [
+                        { linha: '120', nome: 'Lago Azul / Centro (via Torquato Tapajós)', cor: '#16a34a' },
+                        { linha: '121', nome: 'Lago Azul / Terminal 6', cor: '#2563eb' },
+                        { linha: '122', nome: 'Lago Azul / Via Norte Shopping', cor: '#9333ea' },
+                        { linha: '450', nome: 'Lago Azul / Dom Pedro', cor: '#dc2626' },
+                        { linha: '640', nome: 'Lago Azul / Sumaúma Park', cor: '#d97706' },
+                    ],
+                    'Parque Ville Lírio Azul': [
+                        { linha: '120', nome: 'Lago Azul / Centro (via Torquato Tapajós)', cor: '#16a34a' },
+                        { linha: '121', nome: 'Lago Azul / Terminal 6', cor: '#2563eb' },
+                        { linha: '122', nome: 'Lago Azul / Via Norte Shopping', cor: '#9333ea' },
+                        { linha: '450', nome: 'Lago Azul / Dom Pedro', cor: '#dc2626' },
+                        { linha: '640', nome: 'Lago Azul / Sumaúma Park', cor: '#d97706' },
+                    ],
+                    'Conquista Jardim Botânico': [
+                        { linha: '040', nome: 'Nova Cidade / Centro (via Torquato)', cor: '#16a34a' },
+                        { linha: '041', nome: 'Nova Cidade / Sumaúma Park', cor: '#2563eb' },
+                        { linha: '042', nome: 'Nova Cidade / Via Norte / Dom Pedro', cor: '#9333ea' },
+                        { linha: '640', nome: 'Nova Cidade / Terminal 6', cor: '#dc2626' },
+                        { linha: '310', nome: 'Nova Cidade / Cachoeirinha / Centro', cor: '#d97706' },
+                    ],
+                    'Viva Vida Coral': [
+                        { linha: '051', nome: 'Colônia Terra Nova / Centro', cor: '#16a34a' },
+                        { linha: '052', nome: 'Colônia Terra Nova / Sumaúma Park', cor: '#2563eb' },
+                        { linha: '053', nome: 'Colônia Terra Nova / Terminal 6', cor: '#9333ea' },
+                        { linha: '054', nome: 'Colônia Terra Nova / Via Norte Shopping', cor: '#dc2626' },
+                        { linha: '450', nome: 'Colônia Terra Nova / Dom Pedro', cor: '#d97706' },
+                    ],
+                    'Conquista Topázio': [
+                        { linha: '051', nome: 'Colônia Terra Nova / Centro', cor: '#16a34a' },
+                        { linha: '052', nome: 'Colônia Terra Nova / Sumaúma Park', cor: '#2563eb' },
+                        { linha: '053', nome: 'Colônia Terra Nova / Terminal 6', cor: '#9333ea' },
+                        { linha: '054', nome: 'Colônia Terra Nova / Via Norte Shopping', cor: '#dc2626' },
+                        { linha: '450', nome: 'Colônia Terra Nova / Dom Pedro', cor: '#d97706' },
+                    ],
+                    'Conquista Jardim Norte': [
+                        { linha: '060', nome: 'Santa Etelvina / Centro (via Torquato)', cor: '#16a34a' },
+                        { linha: '061', nome: 'Santa Etelvina / Via Norte Shopping', cor: '#2563eb' },
+                        { linha: '062', nome: 'Santa Etelvina / Terminal 6', cor: '#9333ea' },
+                        { linha: '063', nome: 'Santa Etelvina / Sumaúma Park', cor: '#dc2626' },
+                        { linha: '450', nome: 'Santa Etelvina / Dom Pedro / Centro', cor: '#d97706' },
+                    ],
+                    'Viva Vida Rio Amazonas': [
+                        { linha: '112', nome: 'Tarumã / Centro (via Av. Coronel Teixeira)', cor: '#16a34a' },
+                        { linha: '113', nome: 'Tarumã / Ponta Negra / Aleixo', cor: '#2563eb' },
+                        { linha: '320', nome: 'Tarumã / Shopping Ponta Negra', cor: '#9333ea' },
+                        { linha: '450', nome: 'Tarumã / Dom Pedro', cor: '#dc2626' },
+                        { linha: '640', nome: 'Tarumã / Flores / Centro', cor: '#d97706' },
+                    ],
+                    'Viva Vida Rio Tapajós': [
+                        { linha: '112', nome: 'Tarumã / Centro (via Av. Coronel Teixeira)', cor: '#16a34a' },
+                        { linha: '113', nome: 'Tarumã / Ponta Negra / Aleixo', cor: '#2563eb' },
+                        { linha: '320', nome: 'Tarumã / Shopping Ponta Negra', cor: '#9333ea' },
+                        { linha: '450', nome: 'Tarumã / Dom Pedro', cor: '#dc2626' },
+                        { linha: '640', nome: 'Tarumã / Flores / Centro', cor: '#d97706' },
+                    ],
+                    'Amazon Boulevard Classic': [
+                        { linha: '310', nome: 'Bairro da Paz / Centro (via Av. Constantino Nery)', cor: '#16a34a' },
+                        { linha: '311', nome: 'Bairro da Paz / Arena da Amazônia', cor: '#2563eb' },
+                        { linha: '312', nome: 'Bairro da Paz / Dom Pedro / Flores', cor: '#9333ea' },
+                        { linha: '450', nome: 'Bairro da Paz / Amazonas Shopping', cor: '#dc2626' },
+                        { linha: '640', nome: 'Bairro da Paz / Cachoeirinha / Centro', cor: '#d97706' },
+                        { linha: '215', nome: 'Bairro da Paz / Coroado / UFAM', cor: '#0891b2' },
+                    ],
+                    'Amazon Boulevard Prime': [
+                        { linha: '310', nome: 'Bairro da Paz / Centro (via Av. Constantino Nery)', cor: '#16a34a' },
+                        { linha: '311', nome: 'Bairro da Paz / Arena da Amazônia', cor: '#2563eb' },
+                        { linha: '312', nome: 'Bairro da Paz / Dom Pedro / Flores', cor: '#9333ea' },
+                        { linha: '450', nome: 'Bairro da Paz / Amazonas Shopping', cor: '#dc2626' },
+                        { linha: '640', nome: 'Bairro da Paz / Cachoeirinha / Centro', cor: '#d97706' },
+                        { linha: '215', nome: 'Bairro da Paz / Coroado / UFAM', cor: '#0891b2' },
+                    ],
+                    'Città Oasis Azzure': [
+                        { linha: '420', nome: 'Flores / Centro (via Av. Djalma Batista)', cor: '#16a34a' },
+                        { linha: '421', nome: 'Flores / Ponta Negra (via Coronel Teixeira)', cor: '#2563eb' },
+                        { linha: '422', nome: 'Flores / Amazonas Shopping / Aleixo', cor: '#9333ea' },
+                        { linha: '450', nome: 'Flores / Dom Pedro / Centro', cor: '#dc2626' },
+                        { linha: '640', nome: 'Flores / Tarumã / Ponta Negra', cor: '#d97706' },
+                    ],
+                    'Zenith Condomínio Clube': [
+                        { linha: '520', nome: 'São Francisco / Centro (via Jorge Teixeira)', cor: '#16a34a' },
+                        { linha: '521', nome: 'São Francisco / Cachoeirinha', cor: '#2563eb' },
+                        { linha: '522', nome: 'São Francisco / Coroado / UFAM', cor: '#9333ea' },
+                        { linha: '450', nome: 'São Francisco / Dom Pedro / Centro', cor: '#dc2626' },
+                        { linha: '215', nome: 'São Francisco / Distrito Industrial', cor: '#d97706' },
+                    ],
+                    'Conquista Rio Negro': [
+                        { linha: '113', nome: 'Ponta Negra / Centro (via Av. N.S. do Carmo)', cor: '#16a34a' },
+                        { linha: '320', nome: 'Ponta Negra / Shopping Ponta Negra', cor: '#2563eb' },
+                        { linha: '421', nome: 'Ponta Negra / Flores / Aleixo', cor: '#9333ea' },
+                        { linha: '450', nome: 'Ponta Negra / Dom Pedro / Centro', cor: '#dc2626' },
+                        { linha: '640', nome: 'Ponta Negra / Tarumã / Centro', cor: '#d97706' },
+                    ],
+                    'Moratta Home Riva': [
+                        { linha: '420', nome: 'Flores / Centro (via Av. Djalma Batista)', cor: '#16a34a' },
+                        { linha: '421', nome: 'Flores / Amazonas Shopping / Aleixo', cor: '#2563eb' },
+                        { linha: '422', nome: 'Flores / Ponta Negra (via Coronel Teixeira)', cor: '#9333ea' },
+                        { linha: '450', nome: 'Flores / Dom Pedro / Centro', cor: '#dc2626' },
+                        { linha: '640', nome: 'Flores / Tarumã / Ponta Negra', cor: '#d97706' },
+                        { linha: '215', nome: 'Flores / Coroado / UFAM', cor: '#0891b2' },
+                    ],
+                };
+
+                const linhas = LINHAS_POR_EMPREENDIMENTO[selectedOnibus.title] || [];
+
+                const closeOnibus = () => {
+                    setClosingOnibus(true);
+                    setTimeout(() => { setClosingOnibus(false); setSelectedOnibus(null); }, 280);
+                };
+
+                return (
+                    <div className={`fixed inset-0 z-50 flex items-center justify-center p-4 ${closingOnibus ? 'poi-backdrop-out' : 'poi-backdrop'}`}
+                        style={{ background: modoNoturno ? 'rgba(7,11,22,0.65)' : 'rgba(15,23,42,0.35)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)' }}
+                        onClick={closeOnibus}>
+                        <div className={`w-full max-w-md overflow-hidden ${closingOnibus ? 'poi-modal-close' : 'poi-modal-open'}`}
+                            style={modoNoturno ? {
+                                borderRadius:'24px', background:'rgba(10,15,30,0.72)', backdropFilter:'blur(40px) saturate(180%)', WebkitBackdropFilter:'blur(40px) saturate(180%)', border:'1.5px solid rgba(255,255,255,0.16)', boxShadow:'0 8px 32px rgba(0,0,0,0.6), 0 32px 80px rgba(0,0,0,0.5), inset 0 1.5px 0 rgba(255,255,255,0.18)'
+                            } : {
+                                borderRadius:'24px', background:'rgba(255,255,255,0.52)', backdropFilter:'blur(40px) saturate(220%) brightness(1.05)', WebkitBackdropFilter:'blur(40px) saturate(220%) brightness(1.05)', border:'1.5px solid rgba(255,255,255,0.92)', boxShadow:'0 4px 16px rgba(80,110,200,0.12), 0 16px 48px rgba(80,110,200,0.18), inset 0 2px 0 rgba(255,255,255,1)'
+                            }}
+                            onClick={e => e.stopPropagation()}>
+
+                            {/* Header */}
+                            <div className="p-4 flex justify-between items-center"
+                                style={{ borderBottom: modoNoturno ? '1px solid rgba(255,255,255,0.08)' : '1px solid rgba(0,0,0,0.06)', background: modoNoturno ? 'rgba(255,255,255,0.03)' : 'rgba(255,255,255,0.5)' }}>
+                                <h3 className={`font-bold flex items-center gap-2 ${modoNoturno ? 'text-white' : 'text-slate-800'}`}>
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="13" rx="2"/><path d="M3 9h18M8 21l2-5M16 21l-2-5M7 16h10"/></svg>
+                                    Linhas de Ônibus
+                                </h3>
+                                <button onClick={closeOnibus} className="text-slate-400 hover:text-slate-600 p-1 rounded-full hover:bg-slate-200/40 transition-colors"><X size={20} /></button>
+                            </div>
+
+                            <div className="p-5">
+                                <h4 className={`font-bold text-base mb-0.5 ${modoNoturno ? 'text-white' : 'text-slate-800'}`}>{selectedOnibus.title}</h4>
+                                <p className={`text-xs mb-4 flex items-center gap-1.5 ${modoNoturno ? 'text-slate-500' : 'text-slate-400'}`}>
+                                    🚌 Linhas que passam próximo ao empreendimento
+                                </p>
+
+                                {/* Lista informativa — sem clique */}
+                                <div className="flex flex-col gap-2" style={{ maxHeight: '60vh', overflowY: 'auto' }}>
+                                    {linhas.map((linha, idx) => (
+                                        <div key={idx} className="flex items-center gap-3 px-3 py-2.5 rounded-2xl"
+                                            style={{ background: modoNoturno ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)', border: modoNoturno ? '1px solid rgba(255,255,255,0.07)' : '1px solid rgba(0,0,0,0.06)' }}>
+                                            {/* Badge número da linha */}
+                                            <div style={{ flexShrink: 0, background: linha.cor, borderRadius: 10, padding: '5px 11px', minWidth: 54, textAlign: 'center' }}>
+                                                <span style={{ color: '#fff', fontWeight: 900, fontSize: 13, letterSpacing: '0.04em' }}>{linha.linha}</span>
+                                            </div>
+                                            <span className={`text-sm font-medium leading-snug ${modoNoturno ? 'text-slate-300' : 'text-slate-600'}`}>{linha.nome}</span>
+                                        </div>
+                                    ))}
+                                </div>
+
+                                <button onClick={closeOnibus}
+                                    className={`w-full mt-4 py-2.5 font-semibold rounded-xl transition-all text-sm active:scale-[0.98] ${modoNoturno ? 'text-white hover:bg-white/10' : 'text-slate-700 hover:bg-slate-100/60'}`}
+                                    style={{ border: modoNoturno ? '1px solid rgba(255,255,255,0.12)' : '1px solid rgba(0,0,0,0.08)', background: modoNoturno ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.6)', backdropFilter: 'blur(8px)', cursor: 'pointer' }}>
                                     Fechar
                                 </button>
                             </div>

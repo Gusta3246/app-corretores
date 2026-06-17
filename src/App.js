@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useLayoutEffect, useRef } from 'react';
-import { Search, Building, ExternalLink, MapPin, BookOpen, Maximize, Bed, LayoutGrid, Sparkles, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, FileText, TableProperties, BookMarked, HelpCircle, Calculator, Bot, X, Send, Wand2, Paperclip, File as FileIcon, Trash2, FolderPlus, GripVertical, Plus, MessageCircle, Moon, Sun, AlertTriangle, Book, Clock, Trophy, RotateCw, RotateCcw, Phone } from 'lucide-react';
+import { Search, Building, ExternalLink, MapPin, BookOpen, Maximize, Bed, LayoutGrid, Sparkles, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, FileText, TableProperties, BookMarked, HelpCircle, Calculator, Bot, X, Send, Wand2, Paperclip, File as FileIcon, Trash2, FolderPlus, GripVertical, Plus, MessageCircle, Moon, Sun, AlertTriangle, Book, Clock, Trophy, RotateCw, RotateCcw, Phone, CreditCard, Copy, Check } from 'lucide-react';
 import { buscarRespostaDoRobo, buscarRespostaGemini } from './bot/dadosFinanciamento.js';
 import { revistasDataLocal, utilitariosData, frasesMotivacionais, imagensEquipeDiarias, dayIndex } from './data/dados.js';
 import { RippleButton, CardRevista, HintPills, RevistaCloseButton } from './components/Componentes.jsx';
@@ -82,6 +82,53 @@ export default function App() {
         if (!navigator.vibrate) return;
         const p = { light: 10, medium: 25, heavy: 40, success: [10, 50, 10] };
         navigator.vibrate(p[style] || 10);
+    };
+
+    // ── Gerador de CPF temporário/fictício ──
+    // Gera um número com a mesma estrutura e dígitos verificadores válidos de um CPF real
+    // (algoritmo oficial de cálculo), porém totalmente aleatório — não corresponde a nenhuma
+    // pessoa de verdade. Útil apenas para preencher formulários/testes internos.
+    const gerarCPF = () => {
+        const calcularDigito = (base) => {
+            let soma = 0;
+            let peso = base.length + 1;
+            for (let i = 0; i < base.length; i++) {
+                soma += parseInt(base[i], 10) * peso;
+                peso--;
+            }
+            const resto = soma % 11;
+            return resto < 2 ? 0 : 11 - resto;
+        };
+
+        // 9 primeiros dígitos aleatórios
+        let nums = Array.from({ length: 9 }, () => Math.floor(Math.random() * 10));
+
+        const d1 = calcularDigito(nums);
+        nums.push(d1);
+        const d2 = calcularDigito(nums);
+        nums.push(d2);
+
+        return nums.join('');
+    };
+
+    const formatarCPF = (cpf) => cpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
+
+    const handleGerarCPF = () => {
+        haptic('medium');
+        setCpfCopiado(false);
+        setCpfGerado(gerarCPF());
+        setShowCpfModal(true);
+    };
+
+    const handleCopiarCPF = async () => {
+        try {
+            await navigator.clipboard.writeText(formatarCPF(cpfGerado));
+            haptic('success');
+            setCpfCopiado(true);
+            setTimeout(() => setCpfCopiado(false), 1800);
+        } catch (e) {
+            // fallback silencioso caso clipboard não esteja disponível
+        }
     };
 
     const [searchTerm, setSearchTerm] = useState('');
@@ -181,6 +228,10 @@ export default function App() {
     const [clientName, setClientName] = useState(() => localStorage.getItem('dst_client') || '');
     const [showPastaRapidaInfo, setShowPastaRapidaInfo] = useState(false);
     const [showTaxasDocsModal, setShowTaxasDocsModal] = useState(false);
+    // ── Gerador de CPF temporário (uso interno/testes) ──
+    const [showCpfModal, setShowCpfModal] = useState(false);
+    const [cpfGerado, setCpfGerado] = useState('');
+    const [cpfCopiado, setCpfCopiado] = useState(false);
     const TAXAS_BASE_URL = "https://docs.google.com/spreadsheets/d/1PKNdiepf9c6q2MDQjROS62JNpaW77sN1FbyHN4yDD5g/edit?usp=sharing&rm=minimal";
     const [taxasIframeSrc, setTaxasIframeSrc] = useState(TAXAS_BASE_URL);
 
@@ -1221,6 +1272,7 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
                                     { id: 'Direcional',  label: 'DIR',  action: () => setActiveBrand('Direcional'), isBtn: true },
                                     { id: 'Riva',        label: 'RIVA', action: () => setActiveBrand('Riva'),        isBtn: true },
                                     { id: 'Ranking',     label: 'RANK', href: 'https://ranking-direcional.streamlit.app/' },
+                                    { id: 'GerarCpf',    label: 'CPF',  action: handleGerarCPF, isBtn: true },
                                     { id: 'Simulador',   label: 'SIM',  href: 'https://www8.caixa.gov.br/siopiinternet-web/simulaOperacaoInternet.do?method=inicializarCasoUso&isVoltar=true' },
                                     { id: 'Tabelas',     label: 'TAB',  href: 'https://drive.google.com/drive/folders/14mYfQkNaSc9APr6hpOTKKTFQ02oq3uOf?usp=sharing' },
                                     { id: 'Utilitarios', label: 'UTIL', action: () => setActiveBrand('Utilitarios'), isBtn: true },
@@ -1356,6 +1408,7 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
                             { id: 'Direcional',  label: 'DIRECIONAL',  icon: <span style={{width:5,height:5,borderRadius:2,background:'rgba(255,255,255,0.7)',flexShrink:0,display:'inline-block'}}/>, action: () => setActiveBrand('Direcional'), isBtn: true },
                             { id: 'Riva',        label: 'RIVA',        icon: <span style={{width:5,height:5,borderRadius:2,background:'rgba(255,255,255,0.7)',flexShrink:0,display:'inline-block'}}/>, action: () => setActiveBrand('Riva'),        isBtn: true },
                             { id: 'Ranking',     label: 'VER RANKING', icon: <Trophy size={13} style={{color:'rgba(255,255,255,0.6)',flexShrink:0}}/>, href: 'https://ranking-direcional.streamlit.app/' },
+                            { id: 'GerarCpf',    label: 'GERAR CPF',   icon: <CreditCard size={13} style={{color:'rgba(255,255,255,0.6)',flexShrink:0}}/>, action: handleGerarCPF, isBtn: true },
                             { id: 'Simulador',   label: 'SIMULADOR',   icon: <Calculator size={13} style={{color:'rgba(255,255,255,0.6)',flexShrink:0}}/>, href: 'https://www8.caixa.gov.br/siopiinternet-web/simulaOperacaoInternet.do?method=inicializarCasoUso&isVoltar=true' },
                             { id: 'Tabelas',     label: 'TABELAS',     icon: <TableProperties size={13} style={{color:'rgba(255,255,255,0.6)',flexShrink:0}}/>, href: 'https://drive.google.com/drive/folders/14mYfQkNaSc9APr6hpOTKKTFQ02oq3uOf?usp=sharing' },
                             { id: 'Utilitarios', label: 'UTILITÁRIOS', icon: <BookMarked size={13} style={{color:'rgba(255,255,255,0.6)',flexShrink:0}}/>, action: () => setActiveBrand('Utilitarios'), isBtn: true },
@@ -1632,6 +1685,7 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
                                     { id: 'Direcional',  label: 'DIRECIONAL', icon: <span style={{width:5,height:5,borderRadius:2,background:'rgba(255,255,255,0.7)',flexShrink:0,display:'inline-block'}}/>, action: () => setActiveBrand('Direcional'), isBtn: true },
                                     { id: 'Riva',        label: 'RIVA',        icon: <span style={{width:5,height:5,borderRadius:2,background:'rgba(255,255,255,0.7)',flexShrink:0,display:'inline-block'}}/>, action: () => setActiveBrand('Riva'),        isBtn: true },
                                     { id: 'Ranking',     label: 'VER RANKING', icon: <Trophy size={13} style={{color:'rgba(255,255,255,0.6)',flexShrink:0}}/>, href: 'https://ranking-direcional.streamlit.app/' },
+                                    { id: 'GerarCpf',    label: 'GERAR CPF',   icon: <CreditCard size={13} style={{color:'rgba(255,255,255,0.6)',flexShrink:0}}/>, action: handleGerarCPF, isBtn: true },
                                     { id: 'Simulador',   label: 'SIMULADOR',   icon: <Calculator size={13} style={{color:'rgba(255,255,255,0.6)',flexShrink:0}}/>, href: 'https://www8.caixa.gov.br/siopiinternet-web/simulaOperacaoInternet.do?method=inicializarCasoUso&isVoltar=true' },
                                     { id: 'Tabelas',     label: 'TABELAS',     icon: <TableProperties size={13} style={{color:'rgba(255,255,255,0.6)',flexShrink:0}}/>, href: 'https://drive.google.com/drive/folders/14mYfQkNaSc9APr6hpOTKKTFQ02oq3uOf?usp=sharing' },
                                     { id: 'Utilitarios', label: 'UTILITÁRIOS', icon: <BookMarked size={13} style={{color:'rgba(255,255,255,0.6)',flexShrink:0}}/>, action: () => setActiveBrand('Utilitarios'), isBtn: true },
@@ -3488,6 +3542,103 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
                                 title="Taxas de Transmissão de Imóvel"
                                 allow="autoplay"
                             />
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* ── MODAL: CPF Temporário Gerado ── */}
+            {showCpfModal && (
+                <div className="fixed inset-0 z-[80] flex items-center justify-center p-4"
+                    style={{ background: 'rgba(15,23,42,0.65)', backdropFilter: 'blur(12px) saturate(160%)', WebkitBackdropFilter: 'blur(12px) saturate(160%)' }}
+                    onClick={() => setShowCpfModal(false)}
+                >
+                    <div
+                        onClick={(e) => e.stopPropagation()}
+                        className="modal-slide-open w-full"
+                        style={{
+                            maxWidth: 360,
+                            borderRadius: 24,
+                            overflow: 'hidden',
+                            background: modoNoturno ? '#0B1120' : '#ffffff',
+                            boxShadow: '0 24px 64px rgba(0,0,0,0.35)',
+                            border: modoNoturno ? '1px solid rgba(255,255,255,0.08)' : '1px solid rgba(15,23,42,0.06)',
+                        }}
+                    >
+                        <div className="relative overflow-hidden"
+                            style={{
+                                background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 45%, #b45309 100%)',
+                                padding: '18px 20px',
+                            }}>
+                            <div className="absolute inset-0 pointer-events-none" style={{ background: 'radial-gradient(ellipse at top right, rgba(255,255,255,0.18) 0%, transparent 60%)' }}/>
+                            <div className="relative z-10 flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-2xl flex items-center justify-center shrink-0" style={{ background: 'rgba(255,255,255,0.20)' }}>
+                                    <CreditCard size={20} color="white" />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                    <h2 className="text-white font-black text-base uppercase tracking-wide truncate">CPF Temporário</h2>
+                                    <p className="text-amber-50 text-[11px] font-medium mt-0.5 opacity-90">Gerado para testes / preenchimento</p>
+                                </div>
+                                <button onClick={() => setShowCpfModal(false)}
+                                    className="w-8 h-8 rounded-xl flex items-center justify-center transition-all active:scale-90 shrink-0"
+                                    style={{ background: 'rgba(255,255,255,0.18)' }}>
+                                    <X size={16} color="white" />
+                                </button>
+                            </div>
+                        </div>
+
+                        <div className="p-5">
+                            <div
+                                className="flex items-center justify-between gap-3 rounded-2xl px-4 py-4 mb-3"
+                                style={{
+                                    background: modoNoturno ? 'rgba(255,255,255,0.06)' : 'rgba(15,23,42,0.04)',
+                                    border: modoNoturno ? '1px solid rgba(255,255,255,0.10)' : '1px solid rgba(15,23,42,0.08)',
+                                }}
+                            >
+                                <span style={{
+                                    fontFamily: 'monospace',
+                                    fontSize: 22,
+                                    fontWeight: 800,
+                                    letterSpacing: '0.03em',
+                                    color: modoNoturno ? '#fff' : '#0f172a',
+                                }}>
+                                    {cpfGerado ? formatarCPF(cpfGerado) : ''}
+                                </span>
+                                <button
+                                    onClick={handleCopiarCPF}
+                                    title="Copiar CPF"
+                                    className="shrink-0 w-10 h-10 rounded-xl flex items-center justify-center transition-all active:scale-90"
+                                    style={{
+                                        background: cpfCopiado
+                                            ? 'rgba(34,197,94,0.18)'
+                                            : (modoNoturno ? 'rgba(255,255,255,0.10)' : 'rgba(15,23,42,0.06)'),
+                                        border: cpfCopiado
+                                            ? '1px solid rgba(34,197,94,0.4)'
+                                            : (modoNoturno ? '1px solid rgba(255,255,255,0.14)' : '1px solid rgba(15,23,42,0.08)'),
+                                    }}
+                                >
+                                    {cpfCopiado
+                                        ? <Check size={18} color="#22c55e" />
+                                        : <Copy size={18} color={modoNoturno ? '#fff' : '#334155'} />}
+                                </button>
+                            </div>
+
+                            <p className="text-[11px] leading-relaxed mb-4" style={{ color: modoNoturno ? 'rgba(255,255,255,0.45)' : 'rgba(15,23,42,0.5)' }}>
+                                Número com estrutura e dígitos verificadores matematicamente válidos, gerado aleatoriamente — não corresponde a nenhuma pessoa real. Use apenas para testes, simulações ou preenchimento de formulários internos.
+                            </p>
+
+                            <button
+                                onClick={() => { haptic('medium'); setCpfCopiado(false); setCpfGerado(gerarCPF()); }}
+                                className="w-full flex items-center justify-center gap-2 rounded-2xl py-3 font-black text-xs uppercase tracking-wide transition-all active:scale-95"
+                                style={{
+                                    background: modoNoturno ? 'rgba(245,158,11,0.18)' : 'rgba(245,158,11,0.10)',
+                                    color: modoNoturno ? '#fbbf24' : '#b45309',
+                                    border: modoNoturno ? '1px solid rgba(245,158,11,0.3)' : '1px solid rgba(245,158,11,0.25)',
+                                }}
+                            >
+                                <RotateCw size={14} />
+                                Gerar Outro
+                            </button>
                         </div>
                     </div>
                 </div>

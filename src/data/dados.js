@@ -135,6 +135,7 @@ export const utilitariosData = [
   { title: "AMML- DECLA. TEMPO DE RESIDÊNCIA", link: "https://drive.google.com/file/d/1sJdAyDwVBvOauW9EK0XBJIHoIHL6nhAX/view?usp=sharing" },
   { title: "AMML - DECLA. ESTADO CIVIL", link: "https://drive.google.com/file/d/1f5aC4XStNfCKuu6NK2_EetP2DHpbF_0p/view?usp=sharing" },
   { title: "FICHA DE INFORMAÇÕES PARA AUTÔNOMOS", link: "https://drive.google.com/file/d/1pTm2Wre8hbGkkEQRRvNI5-1hQ2V25HkD/view?usp=sharing" },
+  { title: "FICHA DE INFORMAÇÕES PARA ANÁLISE DE CRÉDITO", link: "https://drive.google.com/file/d/1W6zQqLZZjNK4LnTiOE4KMkR6hfx7yCa6/view?usp=drive_link" },
 ];
 
 export const frasesMotivacionais = [

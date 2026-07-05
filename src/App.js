@@ -84,52 +84,7 @@ export default function App() {
         navigator.vibrate(p[style] || 10);
     };
 
-    // ── Gerador de CPF temporário/fictício ──
-    // Gera um número com a mesma estrutura e dígitos verificadores válidos de um CPF real
-    // (algoritmo oficial de cálculo), porém totalmente aleatório — não corresponde a nenhuma
-    // pessoa de verdade. Útil apenas para preencher formulários/testes internos.
-    const gerarCPF = () => {
-        const calcularDigito = (base) => {
-            let soma = 0;
-            let peso = base.length + 1;
-            for (let i = 0; i < base.length; i++) {
-                soma += parseInt(base[i], 10) * peso;
-                peso--;
-            }
-            const resto = soma % 11;
-            return resto < 2 ? 0 : 11 - resto;
-        };
 
-        // 9 primeiros dígitos aleatórios
-        let nums = Array.from({ length: 9 }, () => Math.floor(Math.random() * 10));
-
-        const d1 = calcularDigito(nums);
-        nums.push(d1);
-        const d2 = calcularDigito(nums);
-        nums.push(d2);
-
-        return nums.join('');
-    };
-
-    const formatarCPF = (cpf) => cpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
-
-    const handleGerarCPF = () => {
-        haptic('medium');
-        setCpfCopiado(false);
-        setCpfGerado(gerarCPF());
-        setShowCpfModal(true);
-    };
-
-    const handleCopiarCPF = async () => {
-        try {
-            await navigator.clipboard.writeText(formatarCPF(cpfGerado));
-            haptic('success');
-            setCpfCopiado(true);
-            setTimeout(() => setCpfCopiado(false), 1800);
-        } catch (e) {
-            // fallback silencioso caso clipboard não esteja disponível
-        }
-    };
 
     const [searchTerm, setSearchTerm] = useState('');
     const revistasData = revistasDataLocal;
@@ -227,13 +182,8 @@ export default function App() {
     const [activeZone, setActiveZone] = useState(null);
     const [clientName, setClientName] = useState(() => localStorage.getItem('dst_client') || '');
     const [showPastaRapidaInfo, setShowPastaRapidaInfo] = useState(false);
-    const [showTaxasDocsModal, setShowTaxasDocsModal] = useState(false);
-    // ── Gerador de CPF temporário (uso interno/testes) ──
-    const [showCpfModal, setShowCpfModal] = useState(false);
-    const [cpfGerado, setCpfGerado] = useState('');
-    const [cpfCopiado, setCpfCopiado] = useState(false);
-    const TAXAS_BASE_URL = "https://docs.google.com/spreadsheets/d/1PKNdiepf9c6q2MDQjROS62JNpaW77sN1FbyHN4yDD5g/edit?usp=sharing&rm=minimal";
-    const [taxasIframeSrc, setTaxasIframeSrc] = useState(TAXAS_BASE_URL);
+    // ── Calculadora ITBI ──
+    const [showCalculadoraItbiModal, setShowCalculadoraItbiModal] = useState(false);
 
     const tabRefs = {
         Direcional:  useRef(null),
@@ -1272,7 +1222,7 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
                                     { id: 'Direcional',  label: 'DIR',  action: () => setActiveBrand('Direcional'), isBtn: true },
                                     { id: 'Riva',        label: 'RIVA', action: () => setActiveBrand('Riva'),        isBtn: true },
                                     { id: 'Ranking',     label: 'RANK', href: 'https://ranking-direcional.streamlit.app/' },
-                                    { id: 'GerarCpf',    label: 'CPF',  action: handleGerarCPF, isBtn: true },
+                                    { id: 'Calculadora', label: 'ITBI', action: () => setShowCalculadoraItbiModal(true), isBtn: true },
                                     { id: 'Simulador',   label: 'SIM',  href: 'https://habitacao.caixa.gov.br/siopiweb-web/simulaOperacaoInternet.do?method=inicializarCasoUso' },
                                     { id: 'Tabelas',     label: 'TAB',  href: 'https://drive.google.com/drive/folders/14mYfQkNaSc9APr6hpOTKKTFQ02oq3uOf?usp=sharing' },
                                     { id: 'Utilitarios', label: 'UTIL', action: () => setActiveBrand('Utilitarios'), isBtn: true },
@@ -1364,18 +1314,6 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
                                 <MessageCircle size={20} />
                             </button>
 
-                            {/* Botão Taxas Docs no Header */}
-                            <button
-                                onClick={() => setShowTaxasDocsModal(true)}
-                                className={`shrink-0 p-2.5 rounded-2xl border transition-all duration-300 hover:scale-105 ${
-                                    modoNoturno
-                                    ? 'bg-cyan-500/20 border-cyan-400/30 text-cyan-300 hover:bg-cyan-500/30'
-                                    : 'bg-cyan-50 border-cyan-200 text-cyan-600 hover:bg-cyan-100'
-                                }`}
-                                title="Ver Taxas Docs"
-                            >
-                                <FileText size={20} />
-                            </button>
                             {/* Botão Tabela Direta no Header */}
                             <a
                                 href="https://docs.google.com/spreadsheets/d/1dHU0XB_GuGE-APGPvqQ6IONnw6iMmzo6z5GrrnRCiRc/edit?usp=sharing"
@@ -1408,7 +1346,7 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
                             { id: 'Direcional',  label: 'DIRECIONAL',  icon: <span style={{width:5,height:5,borderRadius:2,background:'rgba(255,255,255,0.7)',flexShrink:0,display:'inline-block'}}/>, action: () => setActiveBrand('Direcional'), isBtn: true },
                             { id: 'Riva',        label: 'RIVA',        icon: <span style={{width:5,height:5,borderRadius:2,background:'rgba(255,255,255,0.7)',flexShrink:0,display:'inline-block'}}/>, action: () => setActiveBrand('Riva'),        isBtn: true },
                             { id: 'Ranking',     label: 'VER RANKING', icon: <Trophy size={13} style={{color:'rgba(255,255,255,0.6)',flexShrink:0}}/>, href: 'https://ranking-direcional.streamlit.app/' },
-                            { id: 'GerarCpf',    label: 'GERAR CPF',   icon: <CreditCard size={13} style={{color:'rgba(255,255,255,0.6)',flexShrink:0}}/>, action: handleGerarCPF, isBtn: true },
+                            { id: 'Calculadora', label: 'CALCULAR ITBI', icon: <Calculator size={13} style={{color:'rgba(255,255,255,0.6)',flexShrink:0}}/>, action: () => setShowCalculadoraItbiModal(true), isBtn: true },
                             { id: 'Simulador',   label: 'SIMULADOR',   icon: <Calculator size={13} style={{color:'rgba(255,255,255,0.6)',flexShrink:0}}/>, href: 'https://habitacao.caixa.gov.br/siopiweb-web/simulaOperacaoInternet.do?method=inicializarCasoUso' },
                             { id: 'Tabelas',     label: 'TABELAS',     icon: <TableProperties size={13} style={{color:'rgba(255,255,255,0.6)',flexShrink:0}}/>, href: 'https://drive.google.com/drive/folders/14mYfQkNaSc9APr6hpOTKKTFQ02oq3uOf?usp=sharing' },
                             { id: 'Utilitarios', label: 'UTILITÁRIOS', icon: <BookMarked size={13} style={{color:'rgba(255,255,255,0.6)',flexShrink:0}}/>, action: () => setActiveBrand('Utilitarios'), isBtn: true },
@@ -1685,7 +1623,7 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
                                     { id: 'Direcional',  label: 'DIRECIONAL', icon: <span style={{width:5,height:5,borderRadius:2,background:'rgba(255,255,255,0.7)',flexShrink:0,display:'inline-block'}}/>, action: () => setActiveBrand('Direcional'), isBtn: true },
                                     { id: 'Riva',        label: 'RIVA',        icon: <span style={{width:5,height:5,borderRadius:2,background:'rgba(255,255,255,0.7)',flexShrink:0,display:'inline-block'}}/>, action: () => setActiveBrand('Riva'),        isBtn: true },
                                     { id: 'Ranking',     label: 'VER RANKING', icon: <Trophy size={13} style={{color:'rgba(255,255,255,0.6)',flexShrink:0}}/>, href: 'https://ranking-direcional.streamlit.app/' },
-                                    { id: 'GerarCpf',    label: 'GERAR CPF',   icon: <CreditCard size={13} style={{color:'rgba(255,255,255,0.6)',flexShrink:0}}/>, action: handleGerarCPF, isBtn: true },
+                                    { id: 'Calculadora', label: 'CALCULAR ITBI', icon: <Calculator size={13} style={{color:'rgba(255,255,255,0.6)',flexShrink:0}}/>, action: () => setShowCalculadoraItbiModal(true), isBtn: true },
                                     { id: 'Simulador',   label: 'SIMULADOR',   icon: <Calculator size={13} style={{color:'rgba(255,255,255,0.6)',flexShrink:0}}/>, href: 'https://habitacao.caixa.gov.br/siopiweb-web/simulaOperacaoInternet.do?method=inicializarCasoUso' },
                                     { id: 'Tabelas',     label: 'TABELAS',     icon: <TableProperties size={13} style={{color:'rgba(255,255,255,0.6)',flexShrink:0}}/>, href: 'https://drive.google.com/drive/folders/14mYfQkNaSc9APr6hpOTKKTFQ02oq3uOf?usp=sharing' },
                                     { id: 'Utilitarios', label: 'UTILITÁRIOS', icon: <BookMarked size={13} style={{color:'rgba(255,255,255,0.6)',flexShrink:0}}/>, action: () => setActiveBrand('Utilitarios'), isBtn: true },
@@ -3136,16 +3074,16 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
                             </button>
                             {/* Separador */}
                             <div className={`shrink-0 w-px h-3.5 ${modoNoturno ? 'bg-slate-600' : 'bg-slate-200'}`}/>
-                            {/* Taxas Docs */}
+                            {/* Calculadora ITBI */}
                             <button
-                                onClick={() => { haptic('medium'); setShowTaxasDocsModal(true); }}
+                                onClick={() => { haptic('medium'); setShowCalculadoraItbiModal(true); }}
                                 className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider transition-all active:scale-95 text-white relative overflow-hidden"
                                 style={{
                                     background: 'linear-gradient(135deg, #0ea5e9 0%, #0284c7 60%, #0369a1 100%)',
                                     boxShadow: '0 0 0 2px rgba(14,165,233,0.3), 0 0 14px 3px rgba(14,165,233,0.35)',
                                 }}>
-                                <FileText size={11} className="shrink-0 relative z-10" />
-                                <span className="relative z-10" style={{letterSpacing:'0.06em'}}>Taxas Docs</span>
+                                <Calculator size={11} className="shrink-0 relative z-10" />
+                                <span className="relative z-10" style={{letterSpacing:'0.06em'}}>Calcular ITBI</span>
                             </button>
                             {/* Tabela Direta */}
                             <a
@@ -3502,143 +3440,245 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
 
 
 
-            {showTaxasDocsModal && (
-                <div className="fixed inset-0 z-[70] flex flex-col"
-                    style={{ background: modoNoturno ? 'rgba(7,11,22,0.82)' : 'rgba(15,23,42,0.55)', backdropFilter: 'blur(20px) saturate(180%)', WebkitBackdropFilter: 'blur(20px) saturate(180%)' }}>
-                    <div className="modal-slide-open flex flex-col w-full"
-                        style={{ height: '100%', background: modoNoturno ? '#0B1120' : '#f8fafc' }}>
-                        <div className="shrink-0 relative overflow-hidden"
-                            style={{
-                                background: 'linear-gradient(135deg, #0ea5e9 0%, #0284c7 40%, #0369a1 100%)',
-                                boxShadow: '0 4px 32px rgba(14,165,233,0.45)',
-                                paddingTop: 'env(safe-area-inset-top, 0px)',
-                            }}>
-                            <div className="absolute inset-0 pointer-events-none" style={{ background: 'radial-gradient(ellipse at top right, rgba(255,255,255,0.12) 0%, transparent 60%)' }}/>
-                            <div className="relative z-10 flex items-center gap-3 px-5 pt-4 pb-4">
-                                <button onClick={() => setShowTaxasDocsModal(false)}
-                                    className="w-9 h-9 rounded-2xl flex items-center justify-center transition-all active:scale-90 shrink-0"
-                                    style={{ background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(8px)' }}>
-                                    <ChevronLeft size={20} color="white" />
-                                </button>
-                                <div className="flex-1 min-w-0">
-                                    <h2 className="text-white font-black text-xl uppercase tracking-widest drop-shadow-md truncate">📄 Taxas Docs</h2>
-                                    <p className="text-sky-100 text-xs font-medium mt-0.5">Previsão de despesas de transmissão</p>
-                                </div>
-                                <a
-                                    href="https://drive.google.com/drive/u/1/folders/14mYfQkNaSc9APr6hpOTKKTFQ02oq3uOf"
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="shrink-0 flex items-center gap-2 px-4 py-2.5 rounded-2xl transition-all active:scale-90"
-                                    style={{ background: 'rgba(255,255,255,0.22)', backdropFilter: 'blur(8px)', boxShadow: '0 2px 12px rgba(0,0,0,0.15)' }}>
-                                    <FileText size={18} color="white" />
-                                    <span className="text-white text-xs font-black uppercase tracking-wide">Abrir Tabelas</span>
-                                </a>
-                            </div>
-                        </div>
-                        <div className="flex-1 overflow-hidden relative">
-                            <iframe
-                                src={taxasIframeSrc}
-                                className="w-full h-full border-0"
-                                title="Taxas de Transmissão de Imóvel"
-                                allow="autoplay"
-                            />
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* ── MODAL: CPF Temporário Gerado ── */}
-            {showCpfModal && (
-                <div className="fixed inset-0 z-[80] flex items-center justify-center p-4"
+            {/* ── MODAL: Calculadora ITBI ── */}
+            {showCalculadoraItbiModal && (
+                <div className="fixed inset-0 z-[70] flex items-center justify-center p-4"
                     style={{ background: 'rgba(15,23,42,0.65)', backdropFilter: 'blur(12px) saturate(160%)', WebkitBackdropFilter: 'blur(12px) saturate(160%)' }}
-                    onClick={() => setShowCpfModal(false)}
+                    onClick={() => setShowCalculadoraItbiModal(false)}
                 >
                     <div
                         onClick={(e) => e.stopPropagation()}
                         className="modal-slide-open w-full"
                         style={{
-                            maxWidth: 360,
-                            borderRadius: 24,
+                            maxWidth: 420,
+                            borderRadius: 20,
                             overflow: 'hidden',
                             background: modoNoturno ? '#0B1120' : '#ffffff',
-                            boxShadow: '0 24px 64px rgba(0,0,0,0.35)',
+                            boxShadow: '0 24px 64px rgba(0,0,0,0.4)',
                             border: modoNoturno ? '1px solid rgba(255,255,255,0.08)' : '1px solid rgba(15,23,42,0.06)',
                         }}
                     >
-                        <div className="relative overflow-hidden"
+                        <div className="relative overflow-hidden shrink-0"
                             style={{
-                                background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 45%, #b45309 100%)',
-                                padding: '18px 20px',
+                                background: 'linear-gradient(135deg, #0ea5e9 0%, #0284c7 40%, #0369a1 100%)',
+                                boxShadow: '0 4px 32px rgba(14,165,233,0.45)',
                             }}>
-                            <div className="absolute inset-0 pointer-events-none" style={{ background: 'radial-gradient(ellipse at top right, rgba(255,255,255,0.18) 0%, transparent 60%)' }}/>
-                            <div className="relative z-10 flex items-center gap-3">
-                                <div className="w-10 h-10 rounded-2xl flex items-center justify-center shrink-0" style={{ background: 'rgba(255,255,255,0.20)' }}>
-                                    <CreditCard size={20} color="white" />
-                                </div>
+                            <div className="absolute inset-0 pointer-events-none" style={{ background: 'radial-gradient(ellipse at top right, rgba(255,255,255,0.12) 0%, transparent 60%)' }}/>
+                            <div className="relative z-10 flex items-center gap-3 px-5 py-4">
                                 <div className="flex-1 min-w-0">
-                                    <h2 className="text-white font-black text-base uppercase tracking-wide truncate">CPF Temporário</h2>
-                                    <p className="text-amber-50 text-[11px] font-medium mt-0.5 opacity-90">Gerado para testes / preenchimento</p>
+                                    <h2 className="text-white font-black text-lg uppercase tracking-widest drop-shadow-md truncate">🏠 Calcular ITBI</h2>
+                                    <p className="text-sky-100 text-xs font-medium mt-0.5">Simulação de parcelamento</p>
                                 </div>
-                                <button onClick={() => setShowCpfModal(false)}
+                                <button onClick={() => setShowCalculadoraItbiModal(false)}
                                     className="w-8 h-8 rounded-xl flex items-center justify-center transition-all active:scale-90 shrink-0"
                                     style={{ background: 'rgba(255,255,255,0.18)' }}>
                                     <X size={16} color="white" />
                                 </button>
                             </div>
                         </div>
+                        <div className="relative" style={{ height: 560, maxHeight: '75vh' }}>
+                            <iframe
+                                srcDoc={`<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Calcular ITBI</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --navy:#101d31;
+    --navy-deep:#0a1422;
+    --paper:#efe6cf;
+    --paper-soft:#f7f1e0;
+    --ink:#1c2331;
+    --brass:#b08d4f;
+    --brass-bright:#d4ab6a;
+    --line: rgba(16,29,49,0.14);
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background: var(--paper);
+    color: var(--paper-soft);
+    font-family:'IBM Plex Sans', sans-serif;
+    min-height:100vh;
+    display:flex; align-items:center; justify-content:center;
+    padding: 20px;
+  }
+  .card{
+    width:100%; max-width:440px;
+    background: var(--paper);
+    color: var(--ink);
+    border-radius:8px;
+    overflow:hidden;
+    box-shadow: 0 30px 70px -25px rgba(0,0,0,0.55);
+  }
+  .card-head{
+    padding: 28px 30px 22px;
+    border-bottom:1px solid var(--line);
+  }
+  .eyebrow{
+    font-family:'IBM Plex Mono', monospace; font-size:10.5px; letter-spacing:.14em;
+    text-transform:uppercase; color: var(--brass); margin:0 0 8px;
+  }
+  h1{
+    font-family:'Fraunces', serif; font-weight:600; font-size:22px;
+    line-height:1.15; margin:0; color: var(--ink);
+  }
+  .card-body{ padding: 26px 30px 8px; }
+  .field{ margin-bottom:22px; }
+  .field label{
+    display:block; font-size:12.5px; font-weight:600; margin-bottom:8px;
+    color: rgba(28,35,49,0.72);
+  }
+  input[type=text]{
+    width:100%; padding:13px 14px; font-size:16px; font-family:'IBM Plex Mono', monospace;
+    border:1px solid rgba(16,29,49,0.25); border-radius:4px; background:var(--paper-soft);
+    color:var(--ink); outline:none; transition:border-color .15s;
+  }
+  input[type=text]:focus{ border-color: var(--brass); }
+  .parcelas-row{ display:flex; align-items:center; gap:14px; }
+  input[type=range]{ flex:1; accent-color: var(--navy); }
+  .parcelas-val{
+    font-family:'IBM Plex Mono',monospace; font-size:15px; font-weight:600;
+    min-width:44px; text-align:right; color:var(--navy);
+  }
+  .result{
+    background: linear-gradient(180deg, var(--navy) 0%, var(--navy-deep) 100%);
+    margin:6px 0 0; padding: 26px 30px 28px;
+  }
+  .result-row{
+    display:flex; justify-content:space-between; align-items:baseline;
+    padding:10px 0;
+  }
+  .result-row + .result-row{ border-top:1px dashed rgba(239,230,207,0.16); }
+  .result-row .lbl{ font-size:13px; color: rgba(239,230,207,0.62); }
+  .result-row .val{ font-family:'IBM Plex Mono',monospace; font-weight:600; font-size:16px; }
+  .result-row.main{ padding-top:4px; padding-bottom:14px; }
+  .result-row.main .lbl{ font-family:'Fraunces',serif; font-size:15px; color: var(--paper-soft); }
+  .result-row.main .val{ font-size:26px; color: var(--brass-bright); }
+  .result-row .lbl{ color: rgba(239,230,207,0.62); }
+  .result-row .val{ color: var(--paper-soft); }
+  .val-clear{ color:#ffffff !important; }
+  .reveal-btn{
+    display:block; width:100%; text-align:left; background:none; border:none;
+    padding:12px 0 0; margin-top:2px; font-family:'IBM Plex Mono', monospace;
+    font-size:11.5px; letter-spacing:.05em; text-transform:uppercase;
+    color: rgba(239,230,207,0.45); cursor:pointer; transition:color .15s;
+  }
+  .reveal-btn:hover{ color: var(--brass-bright); }
+  .result-row.is-collapsed{ display:none; }
+  .disclaimer{
+    font-size:10.5px; line-height:1.6; color:rgba(28,35,49,0.4);
+    padding: 16px 30px 22px;
+  }
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="card-head">
+    <p class="eyebrow">Simulação · Boleto</p>
+    <h1>Parcelamento da Documentação</h1>
+  </div>
+  <div class="card-body">
+    <div class="field">
+      <label for="valor">Valor da documentação (R$)</label>
+      <input type="text" id="valor" inputmode="decimal" value="8.900,00">
+    </div>
+    <div class="field">
+      <label>Quantidade de parcelas</label>
+      <div class="parcelas-row">
+        <input type="range" id="parcelas" min="2" max="40" value="40" step="1">
+        <span class="parcelas-val" id="parcelas-val">40x</span>
+      </div>
+    </div>
+  </div>
+  <div class="result">
+    <div class="result-row main">
+      <span class="lbl">Valor da parcela</span>
+      <span class="val" id="out-parcela">—</span>
+    </div>
+    <button type="button" class="reveal-btn" id="reveal-btn">Ver total a prazo</button>
+    <div class="result-row is-collapsed" id="total-row">
+      <span class="lbl">Total a prazo</span>
+      <span class="val val-clear" id="out-total">—</span>
+    </div>
+  </div>
+  <p class="disclaimer">
+    Boleto, juros de 1,49% a.m. sobre o valor corrigido. Valores estimados, sujeitos a confirmação junto ao cartório.
+  </p>
+</div>
+<script>
+const RATE_MENSAL = 0.0149;
+const CUSTO_BOLETO_UNIT = 3.5;
+const TAXA_CARTAO = 0.029;
+const PLUS_DESCONTO = 0.003;
 
-                        <div className="p-5">
-                            <div
-                                className="flex items-center justify-between gap-3 rounded-2xl px-4 py-4 mb-3"
-                                style={{
-                                    background: modoNoturno ? 'rgba(255,255,255,0.06)' : 'rgba(15,23,42,0.04)',
-                                    border: modoNoturno ? '1px solid rgba(255,255,255,0.10)' : '1px solid rgba(15,23,42,0.08)',
-                                }}
-                            >
-                                <span style={{
-                                    fontFamily: 'monospace',
-                                    fontSize: 22,
-                                    fontWeight: 800,
-                                    letterSpacing: '0.03em',
-                                    color: modoNoturno ? '#fff' : '#0f172a',
-                                }}>
-                                    {cpfGerado ? formatarCPF(cpfGerado) : ''}
-                                </span>
-                                <button
-                                    onClick={handleCopiarCPF}
-                                    title="Copiar CPF"
-                                    className="shrink-0 w-10 h-10 rounded-xl flex items-center justify-center transition-all active:scale-90"
+function pmt(rate, nper, pv){
+  if(rate === 0) return pv / nper;
+  return (pv * rate) / (1 - Math.pow(1+rate, -nper));
+}
+
+const fmtBRL = v => v.toLocaleString('pt-BR', {style:'currency', currency:'BRL'});
+
+function parseValor(str){
+  const cleaned = str.replace(/[^\\d,.-]/g,'').replace(/\\./g,'').replace(',', '.');
+  const n = parseFloat(cleaned);
+  return isNaN(n) ? 0 : n;
+}
+
+document.getElementById('parcelas').addEventListener('input', e=>{
+  document.getElementById('parcelas-val').textContent = e.target.value + 'x';
+  compute();
+});
+const valorInput = document.getElementById('valor');
+valorInput.addEventListener('input', compute);
+valorInput.addEventListener('blur', e=>{
+  const v = parseValor(e.target.value);
+  e.target.value = v.toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2});
+});
+valorInput.addEventListener('focus', e=> setTimeout(()=> e.target.select(), 0));
+valorInput.addEventListener('click', e=> e.target.select());
+valorInput.addEventListener('paste', e=>{
+  e.preventDefault();
+  const pasted = (e.clipboardData || window.clipboardData).getData('text');
+  valorInput.value = pasted.trim();
+  compute();
+});
+
+const revealBtn = document.getElementById('reveal-btn');
+const totalRow = document.getElementById('total-row');
+revealBtn.addEventListener('click', ()=>{
+  const isShowing = !totalRow.classList.contains('is-collapsed');
+  totalRow.classList.toggle('is-collapsed');
+  revealBtn.textContent = isShowing ? 'Ver total a prazo' : 'Ocultar total a prazo';
+});
+
+function compute(){
+  const valor = parseValor(document.getElementById('valor').value);
+  const nParcelas = +document.getElementById('parcelas').value;
+
+  const corrigido = valor * (1 + PLUS_DESCONTO + TAXA_CARTAO);
+  const parcela = pmt(RATE_MENSAL, nParcelas, corrigido);
+  const total = parcela * nParcelas;
+
+  document.getElementById('out-parcela').textContent = fmtBRL(parcela);
+  document.getElementById('out-total').textContent = fmtBRL(total);
+}
+
+compute();
+</script>
+</body>
+</html>`}
+                                    className="w-full h-full border-0"
+                                    title="Calcular ITBI"
                                     style={{
-                                        background: cpfCopiado
-                                            ? 'rgba(34,197,94,0.18)'
-                                            : (modoNoturno ? 'rgba(255,255,255,0.10)' : 'rgba(15,23,42,0.06)'),
-                                        border: cpfCopiado
-                                            ? '1px solid rgba(34,197,94,0.4)'
-                                            : (modoNoturno ? '1px solid rgba(255,255,255,0.14)' : '1px solid rgba(15,23,42,0.08)'),
+                                        borderRadius: '8px',
+                                        backgroundColor: modoNoturno ? '#1e293b' : '#f8fafc'
                                     }}
-                                >
-                                    {cpfCopiado
-                                        ? <Check size={18} color="#22c55e" />
-                                        : <Copy size={18} color={modoNoturno ? '#fff' : '#334155'} />}
-                                </button>
-                            </div>
-
-                            <p className="text-[11px] leading-relaxed mb-4" style={{ color: modoNoturno ? 'rgba(255,255,255,0.45)' : 'rgba(15,23,42,0.5)' }}>
-                                Número com estrutura e dígitos verificadores matematicamente válidos, gerado aleatoriamente — não corresponde a nenhuma pessoa real. Use apenas para testes, simulações ou preenchimento de formulários internos.
-                            </p>
-
-                            <button
-                                onClick={() => { haptic('medium'); setCpfCopiado(false); setCpfGerado(gerarCPF()); }}
-                                className="w-full flex items-center justify-center gap-2 rounded-2xl py-3 font-black text-xs uppercase tracking-wide transition-all active:scale-95"
-                                style={{
-                                    background: modoNoturno ? 'rgba(245,158,11,0.18)' : 'rgba(245,158,11,0.10)',
-                                    color: modoNoturno ? '#fbbf24' : '#b45309',
-                                    border: modoNoturno ? '1px solid rgba(245,158,11,0.3)' : '1px solid rgba(245,158,11,0.25)',
-                                }}
-                            >
-                                <RotateCw size={14} />
-                                Gerar Outro
-                            </button>
+                                />
                         </div>
                     </div>
                 </div>

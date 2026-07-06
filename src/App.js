@@ -3,6 +3,7 @@ import { Search, Building, ExternalLink, MapPin, BookOpen, Maximize, Bed, Layout
 import { buscarRespostaDoRobo, buscarRespostaGemini } from './bot/dadosFinanciamento.js';
 import { revistasDataLocal, utilitariosData, frasesMotivacionais, imagensEquipeDiarias, dayIndex } from './data/dados.js';
 import { RippleButton, CardRevista, HintPills, RevistaCloseButton } from './components/Componentes.jsx';
+import CalculadoraTabelaDireta from './components/CalculadoraTabelaDireta.jsx';
 import { useDocClassifier } from './hooks/useDocClassifier.js';
 
 export default function App() {
@@ -184,6 +185,8 @@ export default function App() {
     const [showPastaRapidaInfo, setShowPastaRapidaInfo] = useState(false);
     // ── Calculadora ITBI ──
     const [showCalculadoraItbiModal, setShowCalculadoraItbiModal] = useState(false);
+    // ── Calculadora Tabela Direta ──
+    const [showCalculadoraTabelaDiretaModal, setShowCalculadoraTabelaDiretaModal] = useState(false);
 
     const tabRefs = {
         Direcional:  useRef(null),
@@ -1223,6 +1226,7 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
                                     { id: 'Riva',        label: 'RIVA', action: () => setActiveBrand('Riva'),        isBtn: true },
                                     { id: 'Ranking',     label: 'RANK', href: 'https://ranking-direcional.streamlit.app/' },
                                     { id: 'Calculadora', label: 'ITBI', action: () => setShowCalculadoraItbiModal(true), isBtn: true },
+                                    { id: 'TabelaDireta', label: 'TD', action: () => setShowCalculadoraTabelaDiretaModal(true), isBtn: true },
                                     { id: 'Simulador',   label: 'SIM',  href: 'https://habitacao.caixa.gov.br/siopiweb-web/simulaOperacaoInternet.do?method=inicializarCasoUso' },
                                     { id: 'Tabelas',     label: 'TAB',  href: 'https://drive.google.com/drive/folders/14mYfQkNaSc9APr6hpOTKKTFQ02oq3uOf?usp=sharing' },
                                     { id: 'Utilitarios', label: 'UTIL', action: () => setActiveBrand('Utilitarios'), isBtn: true },
@@ -1347,6 +1351,7 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
                             { id: 'Riva',        label: 'RIVA',        icon: <span style={{width:5,height:5,borderRadius:2,background:'rgba(255,255,255,0.7)',flexShrink:0,display:'inline-block'}}/>, action: () => setActiveBrand('Riva'),        isBtn: true },
                             { id: 'Ranking',     label: 'VER RANKING', icon: <Trophy size={13} style={{color:'rgba(255,255,255,0.6)',flexShrink:0}}/>, href: 'https://ranking-direcional.streamlit.app/' },
                             { id: 'Calculadora', label: 'CALCULAR ITBI', icon: <Calculator size={13} style={{color:'rgba(255,255,255,0.6)',flexShrink:0}}/>, action: () => setShowCalculadoraItbiModal(true), isBtn: true },
+                            { id: 'TabelaDireta', label: 'TABELA DIRETA', icon: <TableProperties size={13} style={{color:'rgba(255,255,255,0.6)',flexShrink:0}}/>, action: () => setShowCalculadoraTabelaDiretaModal(true), isBtn: true },
                             { id: 'Simulador',   label: 'SIMULADOR',   icon: <Calculator size={13} style={{color:'rgba(255,255,255,0.6)',flexShrink:0}}/>, href: 'https://habitacao.caixa.gov.br/siopiweb-web/simulaOperacaoInternet.do?method=inicializarCasoUso' },
                             { id: 'Tabelas',     label: 'TABELAS',     icon: <TableProperties size={13} style={{color:'rgba(255,255,255,0.6)',flexShrink:0}}/>, href: 'https://drive.google.com/drive/folders/14mYfQkNaSc9APr6hpOTKKTFQ02oq3uOf?usp=sharing' },
                             { id: 'Utilitarios', label: 'UTILITÁRIOS', icon: <BookMarked size={13} style={{color:'rgba(255,255,255,0.6)',flexShrink:0}}/>, action: () => setActiveBrand('Utilitarios'), isBtn: true },
@@ -1624,6 +1629,7 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
                                     { id: 'Riva',        label: 'RIVA',        icon: <span style={{width:5,height:5,borderRadius:2,background:'rgba(255,255,255,0.7)',flexShrink:0,display:'inline-block'}}/>, action: () => setActiveBrand('Riva'),        isBtn: true },
                                     { id: 'Ranking',     label: 'VER RANKING', icon: <Trophy size={13} style={{color:'rgba(255,255,255,0.6)',flexShrink:0}}/>, href: 'https://ranking-direcional.streamlit.app/' },
                                     { id: 'Calculadora', label: 'CALCULAR ITBI', icon: <Calculator size={13} style={{color:'rgba(255,255,255,0.6)',flexShrink:0}}/>, action: () => setShowCalculadoraItbiModal(true), isBtn: true },
+                                    { id: 'TabelaDireta', label: 'TABELA DIRETA', icon: <TableProperties size={13} style={{color:'rgba(255,255,255,0.6)',flexShrink:0}}/>, action: () => setShowCalculadoraTabelaDiretaModal(true), isBtn: true },
                                     { id: 'Simulador',   label: 'SIMULADOR',   icon: <Calculator size={13} style={{color:'rgba(255,255,255,0.6)',flexShrink:0}}/>, href: 'https://habitacao.caixa.gov.br/siopiweb-web/simulaOperacaoInternet.do?method=inicializarCasoUso' },
                                     { id: 'Tabelas',     label: 'TABELAS',     icon: <TableProperties size={13} style={{color:'rgba(255,255,255,0.6)',flexShrink:0}}/>, href: 'https://drive.google.com/drive/folders/14mYfQkNaSc9APr6hpOTKKTFQ02oq3uOf?usp=sharing' },
                                     { id: 'Utilitarios', label: 'UTILITÁRIOS', icon: <BookMarked size={13} style={{color:'rgba(255,255,255,0.6)',flexShrink:0}}/>, action: () => setActiveBrand('Utilitarios'), isBtn: true },
@@ -3085,12 +3091,9 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
                                 <Calculator size={11} className="shrink-0 relative z-10" />
                                 <span className="relative z-10" style={{letterSpacing:'0.06em'}}>Calcular ITBI</span>
                             </button>
-                            {/* Tabela Direta */}
-                            <a
-                                href="https://docs.google.com/spreadsheets/d/1dHU0XB_GuGE-APGPvqQ6IONnw6iMmzo6z5GrrnRCiRc/edit?usp=sharing"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                onClick={() => haptic('medium')}
+                            {/* Calculadora Tabela Direta */}
+                            <button
+                                onClick={() => { haptic('medium'); setShowCalculadoraTabelaDiretaModal(true); }}
                                 className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider transition-all active:scale-95 text-white relative overflow-hidden"
                                 style={{
                                     background: 'linear-gradient(135deg, #16a34a 0%, #15803d 60%, #166534 100%)',
@@ -3098,7 +3101,7 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
                                 }}>
                                 <span className="relative z-10 font-black" style={{fontSize:'10px',letterSpacing:'0.04em'}}>TD</span>
                                 <span className="relative z-10" style={{letterSpacing:'0.06em'}}>Tabela Direta</span>
-                            </a>
+                            </button>
                             {/* Nome do cliente */}
                             {clientName && (
                                 <span className={`shrink-0 flex items-center gap-1 text-[10px] font-bold px-2.5 py-1.5 rounded-full border ${modoNoturno ? 'bg-slate-700 border-slate-600 text-emerald-400' : 'bg-emerald-50 border-emerald-100 text-emerald-600'}`}>
@@ -3682,6 +3685,14 @@ compute();
                         </div>
                     </div>
                 </div>
+            )}
+
+            {/* ── MODAL: Calculadora Tabela Direta ── */}
+            {showCalculadoraTabelaDiretaModal && (
+                <CalculadoraTabelaDireta
+                    modoNoturno={modoNoturno}
+                    onClose={() => setShowCalculadoraTabelaDiretaModal(false)}
+                />
             )}
 
         </div>

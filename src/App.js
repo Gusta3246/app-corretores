@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useLayoutEffect, useRef } from 'react';
-import { Search, Building, ExternalLink, MapPin, BookOpen, Maximize, Bed, LayoutGrid, Sparkles, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, FileText, TableProperties, BookMarked, HelpCircle, Calculator, Bot, X, Send, Wand2, Paperclip, File as FileIcon, Trash2, FolderPlus, GripVertical, Plus, MessageCircle, Moon, Sun, AlertTriangle, Book, Clock, Trophy, RotateCw, RotateCcw, Phone, CreditCard, Copy, Check } from 'lucide-react';
+import { Search, Building, ExternalLink, MapPin, BookOpen, Maximize, Bed, LayoutGrid, Sparkles, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, FileText, TableProperties, BookMarked, HelpCircle, Calculator, Bot, X, Send, Wand2, Paperclip, File as FileIcon, Trash2, FolderPlus, GripVertical, Plus, MessageCircle, Moon, Sun, AlertTriangle, Book, Clock, Trophy, RotateCw, RotateCcw, Phone, CreditCard, Copy, Check, Eye, EyeOff } from 'lucide-react';
 import { buscarRespostaDoRobo, buscarRespostaGemini } from './bot/dadosFinanciamento.js';
 import { revistasDataLocal, utilitariosData, frasesMotivacionais, imagensEquipeDiarias, dayIndex } from './data/dados.js';
 import { RippleButton, CardRevista, HintPills, RevistaCloseButton } from './components/Componentes.jsx';
@@ -20,6 +20,59 @@ export default function App() {
         const t2 = setTimeout(() => { setSplashDone(true); sessionStorage.setItem('dst_splash','1'); }, 2550);
         return () => { clearTimeout(t1); clearTimeout(t2); };
     }, []);
+    // ── Login (acesso ao app) — válido por 24h, sem base de dados: valida por palavras-chave ──
+    const LOGIN_TTL_MS = 24 * 60 * 60 * 1000;
+    const [loginOk, setLoginOk] = useState(() => {
+        try {
+            const ts = parseInt(localStorage.getItem('dst_login_ts'), 10);
+            return !isNaN(ts) && (Date.now() - ts) < LOGIN_TTL_MS;
+        } catch { return false; }
+    });
+    const [loginTeam, setLoginTeam] = useState('');
+    const [loginEmail, setLoginEmail] = useState('');
+    const [loginError, setLoginError] = useState({ team: false, email: false });
+    const [loginShake, setLoginShake] = useState(false);
+    const [loginTeamVisible, setLoginTeamVisible] = useState(false);
+    const [loginEmailVisible, setLoginEmailVisible] = useState(false);
+
+    // Times aceitos — cada entrada lista as palavras que precisam aparecer no campo (em qualquer ordem)
+    const LOGIN_TEAMS = [
+        { words: ['sagazes'] },
+        { words: ['tigres', 'norte'] },
+        { words: ['aguia'] },
+        { words: ['delta'] },
+        { words: ['tubaroes'] },
+        { words: ['rafa'] },
+    ];
+    const normalizeLogin = (str = '') => str
+        .normalize('NFD').replace(/[\u0300-\u036f]/g, '') // remove acentos (Águia -> Aguia, Tubarões -> Tubaroes)
+        .toLowerCase()
+        .trim();
+    const validateLoginTeam = (input) => {
+        const norm = normalizeLogin(input);
+        if (!norm) return false;
+        return LOGIN_TEAMS.some(t => t.words.every(w => norm.includes(w)));
+    };
+    const validateLoginEmail = (input) => {
+        const norm = normalizeLogin(input);
+        return norm.includes('.direcional'); // cobre @...direcional... e @...direcionalvendas...
+    };
+    const handleLoginSubmit = (e) => {
+        e.preventDefault();
+        const teamOk = validateLoginTeam(loginTeam);
+        const emailOk = validateLoginEmail(loginEmail);
+        if (teamOk && emailOk) {
+            haptic('medium');
+            try { localStorage.setItem('dst_login_ts', String(Date.now())); } catch {}
+            setLoginOk(true);
+        } else {
+            haptic();
+            setLoginError({ team: !teamOk, email: !emailOk });
+            setLoginShake(true);
+            setTimeout(() => setLoginShake(false), 500);
+        }
+    };
+
     // Sticky tabs — abas grudam no header quando banner sai da tela
     const [tabsSticky, setTabsSticky] = useState(false);
     const bannerNavRef = useRef(null);
@@ -1010,6 +1063,118 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
                     <style>{`
                         @keyframes splash-logo-in { from { opacity:0; transform:scale(0.5); } to { opacity:1; transform:scale(1); } }
                         @keyframes splash-glow    { from { opacity:0.5; transform:scale(0.85); } to { opacity:1; transform:scale(1.2); } }
+                    `}</style>
+                </div>
+            )}
+
+            {/* ── LOGIN SCREEN — acesso ao app, válido por 24h ── */}
+            {splashDone && !loginOk && (
+                <div style={{
+                    position: 'fixed', inset: 0, zIndex: 99998,
+                    background: '#060d1a',
+                    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                    padding: '24px', overflow: 'hidden',
+                    animation: 'login-fade-in 0.5s ease both',
+                }}>
+                    <div style={{
+                        position: 'absolute', width: 500, height: 500, borderRadius: '50%',
+                        background: 'radial-gradient(circle, rgba(15,76,160,0.55) 0%, rgba(30,58,138,0.30) 45%, transparent 70%)',
+                        filter: 'blur(60px)',
+                    }}/>
+                    <img
+                        src="https://i.postimg.cc/XpWRf9pj/logo.png"
+                        alt="Destemidos"
+                        style={{ position:'relative', zIndex:1, height: 76, width: 'auto', objectFit: 'contain', marginBottom: 36, filter: 'drop-shadow(0 0 32px rgba(29,78,216,0.6))' }}
+                    />
+                    <form
+                        onSubmit={handleLoginSubmit}
+                        style={{
+                            position: 'relative', zIndex: 1, width: '100%', maxWidth: 340,
+                            display: 'flex', flexDirection: 'column', gap: 18,
+                            animation: loginShake ? 'login-shake 0.4s ease' : 'none',
+                        }}
+                    >
+                        <div>
+                            <label style={{ fontSize: 12, fontWeight: 700, color: 'rgba(255,255,255,0.65)', letterSpacing: '0.05em', textTransform: 'uppercase', marginBottom: 6, display: 'block' }}>
+                                Nome do time
+                            </label>
+                            <div style={{ position: 'relative' }}>
+                                <input
+                                    type={loginTeamVisible ? 'text' : 'password'}
+                                    value={loginTeam}
+                                    onChange={e => { setLoginTeam(e.target.value); setLoginError(prev => ({ ...prev, team: false })); }}
+                                    autoComplete="off"
+                                    style={{
+                                        width: '100%', padding: '14px 46px 14px 16px', borderRadius: 14, fontSize: 15, fontWeight: 600,
+                                        background: 'rgba(255,255,255,0.06)', color: '#fff',
+                                        border: loginError.team ? '1.5px solid #ef4444' : '1.5px solid rgba(255,255,255,0.15)',
+                                        outline: 'none', transition: 'border-color 0.2s ease', boxSizing: 'border-box',
+                                    }}
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => setLoginTeamVisible(v => !v)}
+                                    tabIndex={-1}
+                                    style={{
+                                        position: 'absolute', top: '50%', right: 14, transform: 'translateY(-50%)',
+                                        background: 'transparent', border: 'none', padding: 4, cursor: 'pointer',
+                                        color: 'rgba(255,255,255,0.55)', display: 'flex', alignItems: 'center',
+                                    }}
+                                >
+                                    {loginTeamVisible ? <EyeOff size={18}/> : <Eye size={18}/>}
+                                </button>
+                            </div>
+                        </div>
+                        <div>
+                            <label style={{ fontSize: 12, fontWeight: 700, color: 'rgba(255,255,255,0.65)', letterSpacing: '0.05em', textTransform: 'uppercase', marginBottom: 6, display: 'block' }}>
+                                Email corretor
+                            </label>
+                            <div style={{ position: 'relative' }}>
+                                <input
+                                    type={loginEmailVisible ? 'text' : 'password'}
+                                    value={loginEmail}
+                                    onChange={e => { setLoginEmail(e.target.value); setLoginError(prev => ({ ...prev, email: false })); }}
+                                    autoComplete="off"
+                                    style={{
+                                        width: '100%', padding: '14px 46px 14px 16px', borderRadius: 14, fontSize: 15, fontWeight: 600,
+                                        background: 'rgba(255,255,255,0.06)', color: '#fff',
+                                        border: loginError.email ? '1.5px solid #ef4444' : '1.5px solid rgba(255,255,255,0.15)',
+                                        outline: 'none', transition: 'border-color 0.2s ease', boxSizing: 'border-box',
+                                    }}
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => setLoginEmailVisible(v => !v)}
+                                    tabIndex={-1}
+                                    style={{
+                                        position: 'absolute', top: '50%', right: 14, transform: 'translateY(-50%)',
+                                        background: 'transparent', border: 'none', padding: 4, cursor: 'pointer',
+                                        color: 'rgba(255,255,255,0.55)', display: 'flex', alignItems: 'center',
+                                    }}
+                                >
+                                    {loginEmailVisible ? <EyeOff size={18}/> : <Eye size={18}/>}
+                                </button>
+                            </div>
+                        </div>
+                        {(loginError.team || loginError.email) && (
+                            <div style={{ fontSize: 12.5, fontWeight: 600, color: '#f87171', textAlign: 'center' }}>
+                                Verifique os dados informados e tente novamente.
+                            </div>
+                        )}
+                        <button
+                            type="submit"
+                            style={{
+                                marginTop: 6, padding: '14px', borderRadius: 14, border: 'none', cursor: 'pointer',
+                                background: 'linear-gradient(90deg,#2563eb,#1d4ed8)', color: '#fff', fontWeight: 800, fontSize: 15,
+                                boxShadow: '0 4px 18px rgba(37,99,235,0.45)',
+                            }}
+                        >
+                            Entrar
+                        </button>
+                    </form>
+                    <style>{`
+                        @keyframes login-fade-in { from { opacity:0; } to { opacity:1; } }
+                        @keyframes login-shake { 0%,100%{transform:translateX(0);} 20%{transform:translateX(-8px);} 40%{transform:translateX(8px);} 60%{transform:translateX(-6px);} 80%{transform:translateX(6px);} }
                     `}</style>
                 </div>
             )}
@@ -3456,26 +3621,25 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
                             maxWidth: 420,
                             borderRadius: 20,
                             overflow: 'hidden',
-                            background: modoNoturno ? '#0B1120' : '#ffffff',
+                            background: modoNoturno ? '#0f172a' : '#ffffff',
                             boxShadow: '0 24px 64px rgba(0,0,0,0.4)',
                             border: modoNoturno ? '1px solid rgba(255,255,255,0.08)' : '1px solid rgba(15,23,42,0.06)',
                         }}
                     >
                         <div className="relative overflow-hidden shrink-0"
                             style={{
-                                background: 'linear-gradient(135deg, #0ea5e9 0%, #0284c7 40%, #0369a1 100%)',
-                                boxShadow: '0 4px 32px rgba(14,165,233,0.45)',
+                                background: modoNoturno ? '#0f172a' : '#ffffff',
+                                borderBottom: `1px solid ${modoNoturno ? '#1e293b' : '#e2e8f0'}`,
                             }}>
-                            <div className="absolute inset-0 pointer-events-none" style={{ background: 'radial-gradient(ellipse at top right, rgba(255,255,255,0.12) 0%, transparent 60%)' }}/>
                             <div className="relative z-10 flex items-center gap-3 px-5 py-4">
                                 <div className="flex-1 min-w-0">
-                                    <h2 className="text-white font-black text-lg uppercase tracking-widest drop-shadow-md truncate">🏠 Calcular ITBI</h2>
-                                    <p className="text-sky-100 text-xs font-medium mt-0.5">Simulação de parcelamento</p>
+                                    <p className="text-[11px] font-bold uppercase tracking-widest truncate" style={{ color: '#f97316' }}>Simulação · Boleto</p>
+                                    <h2 className="font-black text-lg truncate" style={{ color: modoNoturno ? '#f1f5f9' : '#1e293b' }}>Calcular ITBI</h2>
                                 </div>
                                 <button onClick={() => setShowCalculadoraItbiModal(false)}
                                     className="w-8 h-8 rounded-xl flex items-center justify-center transition-all active:scale-90 shrink-0"
-                                    style={{ background: 'rgba(255,255,255,0.18)' }}>
-                                    <X size={16} color="white" />
+                                    style={{ background: modoNoturno ? '#1e293b' : '#f8fafc' }}>
+                                    <X size={16} color={modoNoturno ? '#94a3b8' : '#64748b'} />
                                 </button>
                             </div>
                         </div>
@@ -3491,20 +3655,18 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
   :root{
-    --navy:#101d31;
-    --navy-deep:#0a1422;
-    --paper:#efe6cf;
-    --paper-soft:#f7f1e0;
-    --ink:#1c2331;
-    --brass:#b08d4f;
-    --brass-bright:#d4ab6a;
-    --line: rgba(16,29,49,0.14);
+    --bg:#ffffff;
+    --sub:#f8fafc;
+    --text:#1e293b;
+    --sub-text:#64748b;
+    --accent:#f97316;
+    --line: #e2e8f0;
   }
   *{box-sizing:border-box;}
   body{
     margin:0;
-    background: var(--paper);
-    color: var(--paper-soft);
+    background: var(--bg);
+    color: var(--text);
     font-family:'IBM Plex Sans', sans-serif;
     min-height:100vh;
     display:flex; align-items:center; justify-content:center;
@@ -3512,70 +3674,68 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
   }
   .card{
     width:100%; max-width:440px;
-    background: var(--paper);
-    color: var(--ink);
-    border-radius:8px;
+    background: var(--bg);
+    color: var(--text);
+    border-radius:14px;
     overflow:hidden;
-    box-shadow: 0 30px 70px -25px rgba(0,0,0,0.55);
+    border: 1px solid var(--line);
   }
   .card-head{
-    padding: 28px 30px 22px;
+    padding: 18px 24px 14px;
     border-bottom:1px solid var(--line);
   }
   .eyebrow{
-    font-family:'IBM Plex Mono', monospace; font-size:10.5px; letter-spacing:.14em;
-    text-transform:uppercase; color: var(--brass); margin:0 0 8px;
+    font-family:'IBM Plex Mono', monospace; font-size:11px; font-weight:700; letter-spacing:.08em;
+    text-transform:uppercase; color: var(--accent); margin:0 0 4px;
   }
   h1{
-    font-family:'Fraunces', serif; font-weight:600; font-size:22px;
-    line-height:1.15; margin:0; color: var(--ink);
+    font-family:'Fraunces', serif; font-weight:700; font-size:19px;
+    line-height:1.15; margin:0; color: var(--text);
   }
-  .card-body{ padding: 26px 30px 8px; }
+  .card-body{ padding: 18px 24px 4px; }
   .field{ margin-bottom:22px; }
   .field label{
-    display:block; font-size:12.5px; font-weight:600; margin-bottom:8px;
-    color: rgba(28,35,49,0.72);
+    display:block; font-size:11px; font-weight:600; margin-bottom:6px;
+    color: var(--sub-text);
   }
   input[type=text]{
-    width:100%; padding:13px 14px; font-size:16px; font-family:'IBM Plex Mono', monospace;
-    border:1px solid rgba(16,29,49,0.25); border-radius:4px; background:var(--paper-soft);
-    color:var(--ink); outline:none; transition:border-color .15s;
+    width:100%; padding:9px 11px; font-size:14px; font-family:'IBM Plex Mono', monospace;
+    border:1px solid var(--line); border-radius:8px; background:var(--sub);
+    color:var(--text); outline:none; transition:border-color .15s;
   }
-  input[type=text]:focus{ border-color: var(--brass); }
+  input[type=text]:focus{ border-color: var(--accent); }
   .parcelas-row{ display:flex; align-items:center; gap:14px; }
-  input[type=range]{ flex:1; accent-color: var(--navy); }
+  input[type=range]{ flex:1; accent-color: var(--accent); }
   .parcelas-val{
-    font-family:'IBM Plex Mono',monospace; font-size:15px; font-weight:600;
-    min-width:44px; text-align:right; color:var(--navy);
+    font-family:'IBM Plex Mono',monospace; font-size:15px; font-weight:700;
+    min-width:44px; text-align:right; color:var(--accent);
   }
   .result{
-    background: linear-gradient(180deg, var(--navy) 0%, var(--navy-deep) 100%);
-    margin:6px 0 0; padding: 26px 30px 28px;
+    background: var(--sub);
+    margin:14px 24px 0; padding: 16px 18px; border-radius:14px; border:1px solid var(--line);
   }
   .result-row{
     display:flex; justify-content:space-between; align-items:baseline;
-    padding:10px 0;
+    padding:8px 0;
   }
-  .result-row + .result-row{ border-top:1px dashed rgba(239,230,207,0.16); }
-  .result-row .lbl{ font-size:13px; color: rgba(239,230,207,0.62); }
-  .result-row .val{ font-family:'IBM Plex Mono',monospace; font-weight:600; font-size:16px; }
-  .result-row.main{ padding-top:4px; padding-bottom:14px; }
-  .result-row.main .lbl{ font-family:'Fraunces',serif; font-size:15px; color: var(--paper-soft); }
-  .result-row.main .val{ font-size:26px; color: var(--brass-bright); }
-  .result-row .lbl{ color: rgba(239,230,207,0.62); }
-  .result-row .val{ color: var(--paper-soft); }
-  .val-clear{ color:#ffffff !important; }
+  .result-row + .result-row{ border-top:1px dashed var(--line); }
+  .result-row .lbl{ font-size:13px; color: var(--sub-text); }
+  .result-row .val{ font-family:'IBM Plex Mono',monospace; font-weight:700; font-size:15px; color: var(--text); }
+  .result-row.main{ padding-top:2px; padding-bottom:10px; }
+  .result-row.main .lbl{ font-family:'Fraunces',serif; font-weight:700; font-size:13px; color: var(--text); }
+  .result-row.main .val{ font-size:22px; color: var(--accent); }
+  .val-clear{ color: var(--text) !important; }
   .reveal-btn{
     display:block; width:100%; text-align:left; background:none; border:none;
-    padding:12px 0 0; margin-top:2px; font-family:'IBM Plex Mono', monospace;
-    font-size:11.5px; letter-spacing:.05em; text-transform:uppercase;
-    color: rgba(239,230,207,0.45); cursor:pointer; transition:color .15s;
+    padding:8px 0 0; margin-top:2px; font-family:'IBM Plex Mono', monospace;
+    font-size:11px; letter-spacing:.05em; text-transform:uppercase;
+    color: var(--sub-text); cursor:pointer; transition:color .15s;
   }
-  .reveal-btn:hover{ color: var(--brass-bright); }
+  .reveal-btn:hover{ color: var(--accent); }
   .result-row.is-collapsed{ display:none; }
   .disclaimer{
-    font-size:10.5px; line-height:1.6; color:rgba(28,35,49,0.4);
-    padding: 16px 30px 22px;
+    font-size:10.5px; line-height:1.6; color: var(--sub-text);
+    padding: 18px 24px 20px;
   }
 </style>
 </head>
@@ -3679,7 +3839,7 @@ compute();
                                     title="Calcular ITBI"
                                     style={{
                                         borderRadius: '8px',
-                                        backgroundColor: modoNoturno ? '#1e293b' : '#f8fafc'
+                                        backgroundColor: modoNoturno ? '#0f172a' : '#ffffff'
                                     }}
                                 />
                         </div>

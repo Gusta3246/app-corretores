@@ -9,9 +9,9 @@ export const ORDER_MAP = {
 };
 
 const VISION_MODELS = [
-  'google/gemini-2.0-flash-001',
-  'google/gemini-flash-1.5',
   'meta-llama/llama-3.2-90b-vision-instruct',
+  'openai/gpt-4o-mini',
+  'google/gemini-2.5-flash-lite',
 ];
 
 const CLASSIFY_PROMPT = `Você é especialista em classificar documentos brasileiros. Analise esta imagem com atenção — pode ser foto de celular, com ângulo ou parcialmente visível.
@@ -258,7 +258,7 @@ export function useDocClassifier({ setPendingDocs, setOrganizeProgress, setCardA
         mime = 'image/jpeg';
         b64 = await resizeImageForAI(file);
         if (!b64) return { category: 'outros', order: 99, label: 'Outro Documento' };
-        const arm4img = await classifyByOCR(masterBuffer.slice(0), mime);
+        const arm4img = await classifyByOCR(b64, mime);
         if (arm4img) return arm4img;
       } else {
         return { category: 'outros', order: 99, label: 'Outro Documento' };

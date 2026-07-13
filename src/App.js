@@ -76,6 +76,9 @@ export default function App() {
         'dorianecosta.direcional@gmail.com',
         'pathysousa.direcional@gmail.com',
         'lucianasena.direcionalvendas@gmail.com',
+        'rayssa.antunes.direcionalvendas@gmail.com',
+        'clarafeitosa.direcionalvendas@gmail.com',
+        'anagreice.direcional@gmail.com',
     ];
     const validateLoginEmail = (input) => {
         const norm = (input || '').toLowerCase().trim().replace(/\s+/g, '');

@@ -53,9 +53,31 @@ export default function App() {
         if (!norm) return false;
         return LOGIN_TEAMS.some(t => t.words.every(w => norm.includes(w)));
     };
+    const AUTHORIZED_EMAILS = [
+        'vitoriasantos3.direcionalvenda@gmail.com',
+        'gabriellaoliva.direcionalvendas@gmail.com',
+        'cristianelopes.direcional@gmail.com',
+        'anaoliva.direcionalvendas@gmail.com',
+        'sabrinasousadirecionalvendas6@gmail.com',
+        'regianeteles.direcionalvendas@gmail.com',
+        'rafaela.cezar.direcional@gmail.com',
+        'ellenduarte.direcionalvendas@gmail.com',
+        'lucasfonseca7.direcionalvendas@gmail.com',
+        'roberto.jose.direcionalvendas@gmail.com',
+        'hellen.fonsecadirecionalvendas@gmail.com',
+        'pedrothiago.direcionalvendas@gmail.com',
+        'alexandredirecional7@gmail.com',
+        'catarinasampaio.direcional@gmail.com',
+        'antoniamso.direcionalvendas@gmail.com',
+        'claudiacorretora.direcional@gmail.com',
+        'rafael.mourao@direcionalvendas.com.br',
+        'luisgustavo.direcional@gmail.com',
+        'ninabruce.direcionalvendas@gmail.com',
+        'dorianecosta.direcional@gmail.com',
+    ];
     const validateLoginEmail = (input) => {
-        const norm = normalizeLogin(input);
-        return norm.includes('.direcional'); // cobre @...direcional... e @...direcionalvendas...
+        const norm = (input || '').toLowerCase().trim().replace(/\s+/g, '');
+        return AUTHORIZED_EMAILS.includes(norm);
     };
     const handleLoginSubmit = (e) => {
         e.preventDefault();

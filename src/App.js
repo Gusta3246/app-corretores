@@ -823,7 +823,10 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
         }, 100);
     });
 
-    const pdfToImageBytes = async (arrayBuffer) => {
+    const MAX_PDF_BYTES = 20 * 1024 * 1024; // 20MB
+
+    // Renderiza todas as páginas de um PDF em canvases (uma vez só, na maior resolução)
+    const pdfToCanvases = async (arrayBuffer, scale = 3.0) => {
         await waitForPdfJs();
         const dataCopy = arrayBuffer.slice(0);
         const loadingTask = window.pdfjsLib.getDocument({
@@ -833,11 +836,10 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
             disableStream: true,
         });
         const pdfDoc = await loadingTask.promise;
-        const pages = [];
+        const canvases = [];
         for (let pageNum = 1; pageNum <= pdfDoc.numPages; pageNum++) {
             const page = await pdfDoc.getPage(pageNum);
-            // scale 3.0 + JPEG 0.97 = máxima resolução para documentos
-            const viewport = page.getViewport({ scale: 3.0 });
+            const viewport = page.getViewport({ scale });
             const canvas = document.createElement('canvas');
             canvas.width  = Math.floor(viewport.width);
             canvas.height = Math.floor(viewport.height);
@@ -845,15 +847,59 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
             ctx.fillStyle = '#ffffff';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
             await page.render({ canvasContext: ctx, viewport }).promise;
-            const dataUrl = canvas.toDataURL('image/jpeg', 0.97);
-            const base64  = dataUrl.split(',')[1];
-            const binaryStr = atob(base64);
-            const bytes = new Uint8Array(binaryStr.length);
-            for (let i = 0; i < binaryStr.length; i++) bytes[i] = binaryStr.charCodeAt(i);
-            pages.push({ bytes, widthPt: canvas.width / 3.0, heightPt: canvas.height / 3.0, isJpeg: true });
+            canvases.push({ canvas, widthPt: canvas.width / scale, heightPt: canvas.height / scale });
             page.cleanup();
         }
-        return pages;
+        return canvases;
+    };
+
+    // Desenha a imagem já com a rotação aplicada, em um canvas (uma vez só, na resolução original)
+    const imageFileToCanvas = (file, rotation = 0) => new Promise((resolve) => {
+        const img = new Image();
+        img.onload = () => {
+            const swapped = rotation === 90 || rotation === 270;
+            const cw = swapped ? img.height : img.width;
+            const ch = swapped ? img.width  : img.height;
+            const canvas = document.createElement('canvas');
+            canvas.width  = cw;
+            canvas.height = ch;
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, cw, ch);
+            ctx.translate(cw / 2, ch / 2);
+            ctx.rotate((rotation * Math.PI) / 180);
+            ctx.drawImage(img, -img.width / 2, -img.height / 2);
+            resolve(canvas);
+        };
+        img.src = URL.createObjectURL(file);
+    });
+
+    const canvasToJpegBytes = (canvas, quality) => new Promise((resolve) => {
+        canvas.toBlob(blob => { blob.arrayBuffer().then(buf => resolve(new Uint8Array(buf))); }, 'image/jpeg', quality);
+    });
+
+    // Reduz a resolução (não o tamanho físico da página) de um canvas já renderizado
+    const downscaleCanvas = (canvas, factor) => {
+        if (factor >= 1) return canvas;
+        const c = document.createElement('canvas');
+        c.width  = Math.max(1, Math.round(canvas.width  * factor));
+        c.height = Math.max(1, Math.round(canvas.height * factor));
+        c.getContext('2d').drawImage(canvas, 0, 0, c.width, c.height);
+        return c;
+    };
+
+    // Monta o PDF final a partir dos canvases já renderizados, numa dada qualidade/resolução
+    const buildPdfFromPages = async (pages, quality, resFactor) => {
+        const { PDFDocument } = window.PDFLib;
+        const mergedPdf = await PDFDocument.create();
+        for (const pg of pages) {
+            const srcCanvas = resFactor < 1 ? downscaleCanvas(pg.canvas, resFactor) : pg.canvas;
+            const bytes = await canvasToJpegBytes(srcCanvas, quality);
+            const embedded = await mergedPdf.embedJpg(bytes);
+            const pdfPage = mergedPdf.addPage([pg.widthPt, pg.heightPt]);
+            pdfPage.drawImage(embedded, { x: 0, y: 0, width: pg.widthPt, height: pg.heightPt });
+        }
+        return mergedPdf.save();
     };
 
     const generateClientPDF = async () => {
@@ -863,57 +909,32 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
         }
         setIsChatLoading(true);
         try {
-            const { PDFDocument } = window.PDFLib;
-            const mergedPdf = await PDFDocument.create();
-
+            // 1) Renderiza cada documento UMA ÚNICA VEZ, na maior qualidade possível
+            const pages = [];
             for (const doc of pendingDocs) {
-                const arrayBuffer = await doc.file.arrayBuffer();
-
                 if (doc.file.type === 'application/pdf') {
-                    const pages = await pdfToImageBytes(arrayBuffer);
-                    for (const pg of pages) {
-                        const embedded = pg.isJpeg ? await mergedPdf.embedJpg(pg.bytes) : await mergedPdf.embedPng(pg.bytes);
-                        const pdfPage  = mergedPdf.addPage([pg.widthPt, pg.heightPt]);
-                        pdfPage.drawImage(embedded, {
-                            x: 0, y: 0,
-                            width:  pg.widthPt,
-                            height: pg.heightPt,
-                        });
-                    }
+                    const arrayBuffer = await doc.file.arrayBuffer();
+                    const canvases = await pdfToCanvases(arrayBuffer, 3.0);
+                    pages.push(...canvases);
                 } else if (doc.file.type.startsWith('image/')) {
-                    const rot = doc.rotation || 0;
-
-                    // Desenha a imagem num canvas já com a rotação aplicada nos pixels
-                    const rotatedBytes = await new Promise((resolve) => {
-                        const img = new Image();
-                        img.onload = () => {
-                            const swapped = rot === 90 || rot === 270;
-                            const cw = swapped ? img.height : img.width;
-                            const ch = swapped ? img.width  : img.height;
-                            const canvas = document.createElement('canvas');
-                            canvas.width  = cw;
-                            canvas.height = ch;
-                            const ctx = canvas.getContext('2d');
-                            ctx.fillStyle = '#ffffff';
-                            ctx.fillRect(0, 0, cw, ch);
-                            ctx.translate(cw / 2, ch / 2);
-                            ctx.rotate((rot * Math.PI) / 180);
-                            ctx.drawImage(img, -img.width / 2, -img.height / 2);
-                            canvas.toBlob(blob => {
-                                blob.arrayBuffer().then(buf => resolve(new Uint8Array(buf)));
-                            }, 'image/jpeg', 0.97);
-                        };
-                        img.src = URL.createObjectURL(doc.file);
-                    });
-
-                    const image = await mergedPdf.embedJpg(rotatedBytes);
-                    const imgDims = image.scale(1);
-                    const page = mergedPdf.addPage([imgDims.width, imgDims.height]);
-                    page.drawImage(image, { x: 0, y: 0, width: imgDims.width, height: imgDims.height });
+                    const canvas = await imageFileToCanvas(doc.file, doc.rotation || 0);
+                    pages.push({ canvas, widthPt: canvas.width, heightPt: canvas.height });
                 }
             }
 
-            const pdfBytes = await mergedPdf.save();
+            // 2) Tenta gerar o PDF começando na qualidade máxima; só reduz o necessário para caber em 20MB
+            const qualitySteps = [0.95, 0.88, 0.8, 0.7, 0.6, 0.5, 0.4];
+            const resSteps = [1, 0.85, 0.7, 0.55];
+            let pdfBytes = null;
+            outer:
+            for (const resFactor of resSteps) {
+                for (const q of qualitySteps) {
+                    const bytes = await buildPdfFromPages(pages, q, resFactor);
+                    pdfBytes = bytes; // guarda sempre a última tentativa (melhor esforço)
+                    if (bytes.length <= MAX_PDF_BYTES) break outer;
+                }
+            }
+
             const blob = new Blob([pdfBytes], { type: 'application/pdf' });
             const url  = URL.createObjectURL(blob);
             const link = document.createElement('a');
@@ -2980,52 +3001,78 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
 
                 {/* ── HEADER CHATBOT ── */}
                 <div className="relative overflow-hidden shrink-0"
-                    style={{
-                        background: isCreatingFolder && folderSource === 'rapida'
-                            ? 'linear-gradient(135deg, #f97316 0%, #ef4444 45%, #f59e0b 100%)'
-                            : 'linear-gradient(135deg, #6366f1 0%, #4f46e5 40%, #7c3aed 100%)',
-                        boxShadow: isCreatingFolder && folderSource === 'rapida'
-                            ? '0 4px 32px rgba(249,115,22,0.45)'
-                            : '0 4px 32px rgba(99,102,241,0.45)',
+                    style={isCreatingFolder ? {
+                        background: modoNoturno ? '#0f172a' : '#ffffff',
+                        borderBottom: `1px solid ${modoNoturno ? '#1e293b' : '#e2e8f0'}`,
+                    } : {
+                        background: 'linear-gradient(135deg, #6366f1 0%, #4f46e5 40%, #7c3aed 100%)',
+                        boxShadow: '0 4px 32px rgba(99,102,241,0.45)',
                     }}>
-                    {/* shimmer sweep */}
-                    <div className="absolute inset-0 pointer-events-none overflow-hidden">
-                        <div style={{ position:'absolute', top:'-20%', left:0, width:'60%', height:'140%', background:'linear-gradient(105deg, transparent 10%, rgba(255,255,255,0.16) 50%, transparent 90%)', animation: isCreatingFolder && folderSource === 'rapida' ? 'light-sweep 1.8s ease-in-out infinite' : 'none', transform:'skewX(-18deg)' }}></div>
-                    </div>
-                    <div className="relative z-10 px-5 pt-5 pb-4 flex items-center justify-between pasta-header-safe">
+                    {/* shimmer sweep — só no chat normal */}
+                    {!isCreatingFolder && (
+                        <div className="absolute inset-0 pointer-events-none overflow-hidden">
+                            <div style={{ position:'absolute', top:'-20%', left:0, width:'60%', height:'140%', background:'linear-gradient(105deg, transparent 10%, rgba(255,255,255,0.16) 50%, transparent 90%)', transform:'skewX(-18deg)' }}></div>
+                        </div>
+                    )}
+                    <div className={`relative z-10 pasta-header-safe ${isCreatingFolder ? 'px-4 py-3 flex items-center gap-3' : 'px-5 pt-5 pb-4 flex items-center justify-between'}`}>
+                        {isCreatingFolder ? (
+                            <>
+                                <div className="flex-1 min-w-0 rounded-xl px-3 py-2 flex flex-col gap-1"
+                                    style={{
+                                        background: folderSource === 'rapida' ? (modoNoturno ? 'rgba(249,115,22,0.08)' : '#fff7ed') : (modoNoturno ? 'rgba(99,102,241,0.08)' : '#eef2ff'),
+                                        border: `1px solid ${folderSource === 'rapida' ? (modoNoturno ? 'rgba(249,115,22,0.25)' : '#fed7aa') : (modoNoturno ? 'rgba(99,102,241,0.25)' : '#c7d2fe')}`,
+                                    }}>
+                                    <span className="text-[9px] font-black uppercase tracking-widest flex items-center gap-1.5" style={{ color: folderSource === 'rapida' ? '#f97316' : '#6366f1' }}>
+                                        📋 Ordem sugerida
+                                    </span>
+                                    <div className="flex flex-wrap gap-x-3 gap-y-1 text-[10px] font-bold" style={{ color: modoNoturno ? '#e2e8f0' : '#334155' }}>
+                                        <span className="inline-flex items-center gap-1.5">
+                                            <span className="w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-black text-white shrink-0" style={{ background: folderSource === 'rapida' ? '#f97316' : '#6366f1' }}>1</span>
+                                            RG · CPF · Certidão · Residência
+                                        </span>
+                                        <span className="inline-flex items-center gap-1.5">
+                                            <span className="w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-black text-white shrink-0" style={{ background: folderSource === 'rapida' ? '#f97316' : '#6366f1' }}>2</span>
+                                            CTPS · Contracheque · Extrato · FGTS
+                                        </span>
+                                    </div>
+                                    <span className="text-[9px] italic font-semibold" style={{ color: modoNoturno ? '#94a3b8' : '#64748b' }}>
+                                        💡 Arraste os cards para reordenar
+                                    </span>
+                                </div>
+                                <button onClick={() => { haptic(); closeChat(); }}
+                                    className="p-2.5 rounded-2xl transition-all active:scale-90 shrink-0"
+                                    style={{ background: modoNoturno ? '#1e293b' : '#f8fafc' }}>
+                                    <X className="w-5 h-5" style={{ color: modoNoturno ? '#94a3b8' : '#64748b' }} />
+                                </button>
+                            </>
+                        ) : (
+                            <>
                         <div className="flex items-center gap-3">
-                            <div className="bg-white/15 backdrop-blur-md p-2.5 rounded-2xl border border-white/20 shadow-inner">
-                                {isCreatingFolder && folderSource === 'rapida' ? (
-                                    <Sparkles size={20} className="text-white" style={{filter:'drop-shadow(0 0 6px rgba(255,255,255,0.8))', animation:'spin 3s linear infinite'}} />
-                                ) : isCreatingFolder ? (
-                                    <FolderPlus size={20} className="text-white" />
-                                ) : (
-                                    <svg viewBox="0 0 24 24" fill="none" className="w-5 h-5" xmlns="http://www.w3.org/2000/svg">
-                                        <path d="M12 2C6.477 2 2 6.254 2 11.5c0 2.576 1.086 4.91 2.857 6.614L4 22l4.23-1.394A10.456 10.456 0 0012 21c5.523 0 10-4.254 10-9.5S17.523 2 12 2z" fill="white" fillOpacity="0.95"/>
-                                        <circle cx="8.5" cy="11.5" r="1.2" fill="#a5b4fc"/>
-                                        <circle cx="12" cy="11.5" r="1.2" fill="#a5b4fc"/>
-                                        <circle cx="15.5" cy="11.5" r="1.2" fill="#a5b4fc"/>
-                                    </svg>
-                                )}
+                            <div className="p-2.5 rounded-2xl"
+                                style={{ background:'rgba(255,255,255,0.15)', border:'1px solid rgba(255,255,255,0.2)', boxShadow:'inset 0 1px 1px rgba(0,0,0,0.08)' }}
+                            >
+                                <svg viewBox="0 0 24 24" fill="none" className="w-5 h-5" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M12 2C6.477 2 2 6.254 2 11.5c0 2.576 1.086 4.91 2.857 6.614L4 22l4.23-1.394A10.456 10.456 0 0012 21c5.523 0 10-4.254 10-9.5S17.523 2 12 2z" fill="white" fillOpacity="0.95"/>
+                                    <circle cx="8.5" cy="11.5" r="1.2" fill="#a5b4fc"/>
+                                    <circle cx="12" cy="11.5" r="1.2" fill="#a5b4fc"/>
+                                    <circle cx="15.5" cy="11.5" r="1.2" fill="#a5b4fc"/>
+                                </svg>
                             </div>
                             <div>
-                                <h3 className="font-black text-white text-lg uppercase tracking-widest drop-shadow-md">
-                                    {isCreatingFolder && folderSource === 'rapida' ? 'Pasta Rápida IA' : isCreatingFolder ? 'Pasta do Cliente' : 'IA Destemidos'}
+                                <h3 className="font-black text-lg uppercase tracking-widest text-white drop-shadow-md">
+                                    IA Destemidos
                                 </h3>
-                                <p className="text-white/70 text-[10px] font-black uppercase tracking-[0.15em] flex items-center gap-1.5">
-                                    {isCreatingFolder && folderSource === 'rapida' ? (
-                                        <><span className="w-1.5 h-1.5 rounded-full bg-yellow-300 animate-pulse"></span>IA Organizando Documentos</>
-                                    ) : isCreatingFolder ? (
-                                        <><span className="w-1.5 h-1.5 rounded-full bg-indigo-300 animate-pulse"></span>Organizar · PDF · Arrastar</>
-                                    ) : (
-                                        <><span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse"></span>Online para te apoiar</>
-                                    )}
+                                <p className="text-[10px] font-black uppercase tracking-[0.15em] flex items-center gap-1.5 text-white/70">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse"></span>Online para te apoiar
                                 </p>
                             </div>
                         </div>
-                        <button onClick={() => { haptic(); closeChat(); }} className="bg-white/10 hover:bg-white/25 active:scale-95 text-white p-2.5 rounded-2xl border border-white/20 transition-all backdrop-blur-sm">
+                        <button onClick={() => { haptic(); closeChat(); }}
+                            className="p-2.5 rounded-2xl transition-all active:scale-90 bg-white/10 hover:bg-white/25 text-white border border-white/20 backdrop-blur-sm">
                             <X className="w-5 h-5" />
                         </button>
+                            </>
+                        )}
                     </div>
                 </div>
 
@@ -3071,7 +3118,7 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
 
                         {/* Subheader da pasta */}
                         <div className={`shrink-0 border-b backdrop-blur-xl transition-colors ${modoNoturno ? 'bg-slate-900/60 border-slate-800' : 'bg-white/80 border-slate-100'}`}>
-                            <div className={`flex items-center justify-between px-4 py-2.5 border-b ${modoNoturno ? 'border-slate-800' : 'border-slate-100/80'}`}>
+                            <div className={`flex items-center justify-between px-4 py-2.5 ${modoNoturno ? '' : ''}`}>
                                 <div className="flex items-center gap-2">
                                     {pendingDocs.length > 0 && !isOrganizingDocs && (
                                         <button
@@ -3095,12 +3142,6 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
                                         ← Chat
                                     </button>
                                 </div>
-                            </div>
-                            <div className={`px-4 py-1.5 text-[9px] flex flex-wrap gap-x-2 gap-y-0.5 ${modoNoturno ? 'text-slate-500' : 'text-slate-400'}`}>
-                                <span className="font-black uppercase tracking-widest">📋 Ordem:</span>
-                                <span><b>1º</b> RG · CPF · Certidão · Residência</span>
-                                <span><b>2º</b> CTPS · Contracheque · Extrato · FGTS</span>
-                                <span className="opacity-60">💡 Arraste para reordenar</span>
                             </div>
                         </div>
 
@@ -3161,7 +3202,7 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
                                         className={`relative group border-2 border-dashed ${extraClass} ${draggedItemIndex === index ? 'border-orange-400 scale-90 opacity-30 rotate-3' : (modoNoturno ? `border-transparent bg-slate-800 ${folderSource === 'rapida' ? 'hover:border-orange-500' : 'hover:border-indigo-500'}` : `border-transparent bg-white ${folderSource === 'rapida' ? 'hover:border-orange-300' : 'hover:border-indigo-300'}`)} rounded-xl overflow-hidden shadow-sm aspect-[3/4] flex flex-col cursor-move`}>
                                         <div className="absolute top-1 left-1 text-white text-[9px] font-black w-5 h-5 flex items-center justify-center rounded-md z-10 backdrop-blur-sm"
                                             style={{ background: folderSource === 'rapida' ? 'rgba(124,58,27,0.85)' : 'rgba(67,56,202,0.85)' }}>{index + 1}</div>
-                                        <button onClick={(e) => { e.stopPropagation(); haptic('heavy'); removeDoc(doc.id); }} className="absolute top-1 right-1 bg-red-500 text-white p-1 rounded-lg opacity-0 group-hover:opacity-100 active:opacity-100 transition-all z-10 hover:bg-red-600 shadow-lg"><Trash2 size={11} /></button>
+                                        <button onClick={(e) => { e.stopPropagation(); haptic('heavy'); removeDoc(doc.id); }} className="absolute top-1 right-1 bg-red-500 text-white p-1.5 rounded-lg opacity-0 group-hover:opacity-100 active:opacity-100 transition-all z-10 hover:bg-red-600 shadow-lg"><Trash2 size={19} /></button>
                                         {/* Botões de rotação — sempre visíveis na parte inferior do card */}
                                         <div className="absolute bottom-7 left-0 right-0 flex justify-center gap-2 z-10">
                                             <button onClick={(e) => { e.stopPropagation(); haptic('light'); rotateDoc(doc.id, 'ccw'); }}

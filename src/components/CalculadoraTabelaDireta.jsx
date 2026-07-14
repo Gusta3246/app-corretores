@@ -12,6 +12,9 @@ export default function CalculadoraTabelaDireta({ modoNoturno, onClose }) {
     const [parcelasFinanciamentoTexto, setParcelasFinanciamentoTexto] = useState('120');
     // INCC-M de junho/2026 (FGV): 0,85% a.m. — atualize aqui quando o índice mudar.
     const INCC_MENSAL = 0.0085;
+    // IPCA de junho/2026 (IBGE): 0,16% a.m. — usado para corrigir o saldo devedor do
+    // financiamento (60%) mês a mês. Atualize aqui quando o índice mudar.
+    const IPCA_MENSAL = 0.0016;
 
     // Parâmetros fixos do simulador Direcional (planilha original)
     const PRAZO_MAXIMO = 120;
@@ -66,7 +69,6 @@ export default function CalculadoraTabelaDireta({ modoNoturno, onClose }) {
         if (financiado60 <= 0 || prazoFinanciamento <= 0) return { maiorParcela: 0, menorParcela: 0 };
 
         const taxaMes = Math.pow(1 + TAXA_JUROS_AA, 1 / 12) - 1;
-        const pmtConst = (financiado60 * taxaMes) / (1 - Math.pow(1 + taxaMes, -prazoFinanciamento));
 
         let saldo = financiado60;
         let somaParcelasAnteriores = 0;
@@ -74,11 +76,16 @@ export default function CalculadoraTabelaDireta({ modoNoturno, onClose }) {
         let menor = Infinity;
 
         for (let mes = 1; mes <= prazoFinanciamento; mes++) {
+            // Correção monetária mensal do saldo devedor pelo IPCA
+            saldo = saldo * (1 + IPCA_MENSAL);
+
+            const prazoRestante = prazoFinanciamento - mes + 1;
+            const pmtMes = (saldo * taxaMes) / (1 - Math.pow(1 + taxaMes, -prazoRestante));
             const juros = saldo * taxaMes;
-            const amortizacao = pmtConst - juros;
+            const amortizacao = pmtMes - juros;
             const mip = saldo * TAXA_MIP;
             const dfi = (saldo + somaParcelasAnteriores) * TAXA_DFI;
-            const parcela = pmtConst + mip + dfi;
+            const parcela = pmtMes + mip + dfi;
 
             if (parcela > maior) maior = parcela;
             if (parcela < menor) menor = parcela;
@@ -181,6 +188,7 @@ export default function CalculadoraTabelaDireta({ modoNoturno, onClose }) {
                                 <div>
                                     <div style={{ fontSize: 13, fontWeight: 700, color: text }}>10% — à vista ou 12x sem juros no cartão</div>
                                     <div style={{ fontSize: 11.5, color: sub, marginTop: 2 }}>12x de {fmtBRL(entrada10Cartao)}</div>
+                                    <div style={{ fontSize: 10.5, color: sub, marginTop: 1, fontStyle: 'italic' }}>10% de {fmtBRL(valorImovel)} = {fmtBRL(entrada10)}</div>
                                 </div>
                                 <div style={{ fontFamily: 'ui-monospace, monospace', fontWeight: 700, fontSize: 15, color: text, whiteSpace: 'nowrap', marginLeft: 12 }}>
                                     {fmtBRL(entrada10)}
@@ -191,6 +199,7 @@ export default function CalculadoraTabelaDireta({ modoNoturno, onClose }) {
                                 <div>
                                     <div style={{ fontSize: 13, fontWeight: 700, color: text }}>30% — parcelado durante a obra</div>
                                     <div style={{ fontSize: 11.5, color: sub, marginTop: 2 }}>corrigido pelo INCC-M</div>
+                                    <div style={{ fontSize: 10.5, color: sub, marginTop: 1, fontStyle: 'italic' }}>30% de {fmtBRL(valorImovel)} = {fmtBRL(obra30)}</div>
                                 </div>
                                 <div style={{ textAlign: 'right', marginLeft: 12 }}>
                                     {nParcelasObra > 0 ? (
@@ -206,6 +215,7 @@ export default function CalculadoraTabelaDireta({ modoNoturno, onClose }) {
                             <div style={{ padding: '13px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: bgSub }}>
                                 <div>
                                     <div style={{ fontSize: 13, fontWeight: 700, color: text }}>60% — financiado</div>
+                                    <div style={{ fontSize: 10.5, color: sub, marginTop: 1, marginBottom: 3, fontStyle: 'italic' }}>60% de {fmtBRL(valorImovel)} = {fmtBRL(financiado60)}</div>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4 }}>
                                         <span style={{ fontSize: 11.5, color: sub }}>Parcelas:</span>
                                         <input
@@ -235,7 +245,7 @@ export default function CalculadoraTabelaDireta({ modoNoturno, onClose }) {
                     </div>
 
                     <p style={{ fontSize: 10.5, lineHeight: 1.6, color: sub, padding: '18px 24px 20px', margin: 0 }}>
-                        60% do imóvel financiado em até {prazoFinanciamento} meses pela Tabela Price (juros de 12% a.a., seguros MIP 0,021% e DFI 0,007% sobre o saldo devedor). As parcelas de obra (30%) crescem mês a mês pelo INCC-M (0,85% a.m., referência junho/2026). Valores estimados, sujeitos a confirmação junto à incorporadora.
+                        60% do imóvel financiado em até {prazoFinanciamento} meses pela Tabela Price (juros de 12% a.a., seguros MIP 0,021% e DFI 0,007% sobre o saldo devedor), com o saldo devedor corrigido mês a mês pelo IPCA (0,16% a.m., referência junho/2026). As parcelas de obra (30%) crescem mês a mês pelo INCC-M (0,85% a.m., referência junho/2026). Valores estimados, sujeitos a confirmação junto à incorporadora.
                     </p>
                 </div>
             </div>

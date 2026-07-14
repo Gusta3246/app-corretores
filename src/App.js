@@ -84,6 +84,12 @@ export default function App() {
         'alexcastro.direcionalvendas@gmail.com',
         'jeiciferreira.direcionalvendas@gmail.com',
         'waleriatorres.direcionalvendas@gmail.com',
+        'vanusaveza.direcional@gmail.com',
+        'robertavieira.direcional@gmail.com',
+        'monyquegloria.direcional@gmail.com',
+        'jessuchoa.direcional@gmail.com',
+        'iomarpessoa.direcional@gmail.com',
+        'jericanara.direcional@gmail.com',
     ];
     const validateLoginEmail = (input) => {
         const norm = (input || '').toLowerCase().trim().replace(/\s+/g, '');

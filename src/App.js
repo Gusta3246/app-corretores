@@ -81,6 +81,9 @@ export default function App() {
         'anagreice.direcional@gmail.com',
         'kevenramos.direcionalvendas@gmail.com',
         'pedroradro.direcionalvendas@gmail.com',
+        'alexcastro.direcionalvendas@gmail.com',
+        'jeiciferreira.direcionalvendas@gmail.com',
+        'waleriatorres.direcionalvendas@gmail.com',
     ];
     const validateLoginEmail = (input) => {
         const norm = (input || '').toLowerCase().trim().replace(/\s+/g, '');

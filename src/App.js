@@ -862,7 +862,7 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
         }, 100);
     });
 
-    const MAX_PDF_BYTES = 20 * 1024 * 1024; // 20MB
+    const MAX_PDF_BYTES = 10 * 1024 * 1024; // 10MB
 
     // Renderiza todas as páginas de um PDF em canvases (uma vez só, na maior resolução)
     const pdfToCanvases = async (arrayBuffer, scale = 3.0) => {

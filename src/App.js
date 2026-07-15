@@ -91,6 +91,7 @@ export default function App() {
         'iomarpessoa.direcional@gmail.com',
         'jericanara.direcional@gmail.com',
         'carvalhopedro.direcionalvendas@gmail.com',
+        'joaoretto.direcionalvendas@gmail.com',
     ];
     const validateLoginEmail = (input) => {
         const norm = (input || '').toLowerCase().trim().replace(/\s+/g, '');

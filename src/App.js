@@ -93,7 +93,7 @@ export default function App() {
         'carvalhopedro.direcionalvendas@gmail.com',
         'joaoretto.direcionalvendas@gmail.com',
         'thamires30.direcionalvendas@gmail.com',
-        'arianabrdirecionalvendas@gmail.com',
+        'arinabrdirecionalvendas@gmail.com',
     ];
     const validateLoginEmail = (input) => {
         const norm = (input || '').toLowerCase().trim().replace(/\s+/g, '');
@@ -282,6 +282,8 @@ export default function App() {
     const [showCalculadoraItbiModal, setShowCalculadoraItbiModal] = useState(false);
     // ── Calculadora Tabela Direta ──
     const [showCalculadoraTabelaDiretaModal, setShowCalculadoraTabelaDiretaModal] = useState(false);
+    // ── Menu de opções do Simulador ──
+    const [showSimuladorModal, setShowSimuladorModal] = useState(false);
 
     const tabRefs = {
         Direcional:  useRef(null),
@@ -1455,7 +1457,7 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
                                     { id: 'Ranking',     label: 'RANK', href: 'https://ranking-direcional.streamlit.app/' },
                                     { id: 'Calculadora', label: 'ITBI', action: () => setShowCalculadoraItbiModal(true), isBtn: true },
                                     { id: 'TabelaDireta', label: 'TD', action: () => setShowCalculadoraTabelaDiretaModal(true), isBtn: true },
-                                    { id: 'Simulador',   label: 'SIM',  href: 'https://habitacao.caixa.gov.br/siopiweb-web/simulaOperacaoInternet.do?method=inicializarCasoUso' },
+                                    { id: 'Simulador',   label: 'SIM',  action: () => setShowSimuladorModal(true), isBtn: true },
                                     { id: 'Tabelas',     label: 'TAB',  href: 'https://drive.google.com/drive/folders/14mYfQkNaSc9APr6hpOTKKTFQ02oq3uOf?usp=sharing' },
                                     { id: 'Utilitarios', label: 'UTIL', action: () => setActiveBrand('Utilitarios'), isBtn: true },
                                     { id: 'Guia',        label: 'GUIA', action: () => setActiveBrand('Guia'),        isBtn: true },
@@ -1580,7 +1582,7 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
                             { id: 'Ranking',     label: 'VER RANKING', icon: <Trophy size={13} style={{color:'rgba(255,255,255,0.6)',flexShrink:0}}/>, href: 'https://ranking-direcional.streamlit.app/' },
                             { id: 'Calculadora', label: 'CALCULAR ITBI', icon: <Calculator size={13} style={{color:'rgba(255,255,255,0.6)',flexShrink:0}}/>, action: () => setShowCalculadoraItbiModal(true), isBtn: true },
                             { id: 'TabelaDireta', label: 'TABELA DIRETA', icon: <TableProperties size={13} style={{color:'rgba(255,255,255,0.6)',flexShrink:0}}/>, action: () => setShowCalculadoraTabelaDiretaModal(true), isBtn: true },
-                            { id: 'Simulador',   label: 'SIMULADOR',   icon: <Calculator size={13} style={{color:'rgba(255,255,255,0.6)',flexShrink:0}}/>, href: 'https://habitacao.caixa.gov.br/siopiweb-web/simulaOperacaoInternet.do?method=inicializarCasoUso' },
+                            { id: 'Simulador',   label: 'SIMULADOR',   icon: <Calculator size={13} style={{color:'rgba(255,255,255,0.6)',flexShrink:0}}/>, action: () => setShowSimuladorModal(true), isBtn: true },
                             { id: 'Tabelas',     label: 'TABELAS',     icon: <TableProperties size={13} style={{color:'rgba(255,255,255,0.6)',flexShrink:0}}/>, href: 'https://drive.google.com/drive/folders/14mYfQkNaSc9APr6hpOTKKTFQ02oq3uOf?usp=sharing' },
                             { id: 'Utilitarios', label: 'UTILITÁRIOS', icon: <BookMarked size={13} style={{color:'rgba(255,255,255,0.6)',flexShrink:0}}/>, action: () => setActiveBrand('Utilitarios'), isBtn: true },
                             { id: 'Guia',        label: 'GUIA',        icon: <HelpCircle size={13} style={{color:'rgba(255,255,255,0.6)',flexShrink:0}}/>, action: () => setActiveBrand('Guia'),        isBtn: true },
@@ -1858,7 +1860,7 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
                                     { id: 'Ranking',     label: 'VER RANKING', icon: <Trophy size={13} style={{color:'rgba(255,255,255,0.6)',flexShrink:0}}/>, href: 'https://ranking-direcional.streamlit.app/' },
                                     { id: 'Calculadora', label: 'CALCULAR ITBI', icon: <Calculator size={13} style={{color:'rgba(255,255,255,0.6)',flexShrink:0}}/>, action: () => setShowCalculadoraItbiModal(true), isBtn: true },
                                     { id: 'TabelaDireta', label: 'TABELA DIRETA', icon: <TableProperties size={13} style={{color:'rgba(255,255,255,0.6)',flexShrink:0}}/>, action: () => setShowCalculadoraTabelaDiretaModal(true), isBtn: true },
-                                    { id: 'Simulador',   label: 'SIMULADOR',   icon: <Calculator size={13} style={{color:'rgba(255,255,255,0.6)',flexShrink:0}}/>, href: 'https://habitacao.caixa.gov.br/siopiweb-web/simulaOperacaoInternet.do?method=inicializarCasoUso' },
+                                    { id: 'Simulador',   label: 'SIMULADOR',   icon: <Calculator size={13} style={{color:'rgba(255,255,255,0.6)',flexShrink:0}}/>, action: () => setShowSimuladorModal(true), isBtn: true },
                                     { id: 'Tabelas',     label: 'TABELAS',     icon: <TableProperties size={13} style={{color:'rgba(255,255,255,0.6)',flexShrink:0}}/>, href: 'https://drive.google.com/drive/folders/14mYfQkNaSc9APr6hpOTKKTFQ02oq3uOf?usp=sharing' },
                                     { id: 'Utilitarios', label: 'UTILITÁRIOS', icon: <BookMarked size={13} style={{color:'rgba(255,255,255,0.6)',flexShrink:0}}/>, action: () => setActiveBrand('Utilitarios'), isBtn: true },
                                     { id: 'Guia',        label: 'GUIA',        icon: <HelpCircle size={13} style={{color:'rgba(255,255,255,0.6)',flexShrink:0}}/>, action: () => setActiveBrand('Guia'),        isBtn: true },
@@ -3936,6 +3938,83 @@ compute();
                     modoNoturno={modoNoturno}
                     onClose={() => setShowCalculadoraTabelaDiretaModal(false)}
                 />
+            )}
+
+            {/* ── MODAL: Menu de opções do Simulador ── */}
+            {showSimuladorModal && (
+                <div className="fixed inset-0 z-[70] flex items-center justify-center p-4"
+                    style={{ background: 'rgba(15,23,42,0.65)', backdropFilter: 'blur(12px) saturate(160%)', WebkitBackdropFilter: 'blur(12px) saturate(160%)' }}
+                    onClick={() => setShowSimuladorModal(false)}
+                >
+                    <div
+                        onClick={(e) => e.stopPropagation()}
+                        className="modal-slide-open w-full"
+                        style={{
+                            maxWidth: 420,
+                            borderRadius: 20,
+                            overflow: 'hidden',
+                            background: modoNoturno ? '#0f172a' : '#ffffff',
+                            boxShadow: '0 24px 64px rgba(0,0,0,0.4)',
+                            border: modoNoturno ? '1px solid rgba(255,255,255,0.08)' : '1px solid rgba(15,23,42,0.06)',
+                        }}
+                    >
+                        <div className="relative overflow-hidden shrink-0"
+                            style={{
+                                background: modoNoturno ? '#0f172a' : '#ffffff',
+                                borderBottom: `1px solid ${modoNoturno ? '#1e293b' : '#e2e8f0'}`,
+                            }}>
+                            <div className="relative z-10 flex items-center gap-3 px-5 py-4">
+                                <div className="flex-1 min-w-0">
+                                    <p className="text-[11px] font-bold uppercase tracking-widest truncate" style={{ color: '#f97316' }}>Simulação · Financiamento</p>
+                                    <h2 className="font-black text-lg truncate" style={{ color: modoNoturno ? '#f1f5f9' : '#1e293b' }}>Escolha o Simulador</h2>
+                                </div>
+                                <button onClick={() => setShowSimuladorModal(false)}
+                                    className="w-8 h-8 rounded-xl flex items-center justify-center transition-all active:scale-90 shrink-0"
+                                    style={{ background: modoNoturno ? '#1e293b' : '#f8fafc' }}>
+                                    <X size={16} color={modoNoturno ? '#94a3b8' : '#64748b'} />
+                                </button>
+                            </div>
+                        </div>
+                        <div className="p-4 flex flex-col gap-3">
+                            {[
+                                {
+                                    titulo: 'Simulador Habitação (SIOPI)',
+                                    desc: 'Simulador oficial da Caixa para financiamento habitacional, incluindo faixas do MCMV.',
+                                    href: 'https://habitacao.caixa.gov.br/siopiweb-web/simulaOperacaoInternet.do?method=inicializarCasoUso',
+                                },
+                                {
+                                    titulo: 'Portal de Empreendimentos',
+                                    desc: 'Simulador da Caixa por empreendimento, com condições específicas do imóvel escolhido.',
+                                    href: 'https://www.portaldeempreendimentos.caixa.gov.br/simulador/',
+                                },
+                            ].map((opt) => (
+                                <a
+                                    key={opt.href}
+                                    href={opt.href}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    onClick={() => { haptic(); setShowSimuladorModal(false); }}
+                                    className="flex items-center gap-3 rounded-2xl p-4 transition-all active:scale-[0.98]"
+                                    style={{
+                                        textDecoration: 'none',
+                                        background: modoNoturno ? '#1e293b' : '#f8fafc',
+                                        border: `1px solid ${modoNoturno ? 'rgba(255,255,255,0.08)' : '#e2e8f0'}`,
+                                    }}
+                                >
+                                    <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+                                        style={{ background: modoNoturno ? 'rgba(249,115,22,0.12)' : '#fff7ed' }}>
+                                        <Calculator size={18} style={{ color: '#f97316' }} />
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <div className="font-bold text-sm truncate" style={{ color: modoNoturno ? '#f1f5f9' : '#1e293b' }}>{opt.titulo}</div>
+                                        <div className="text-xs mt-0.5" style={{ color: modoNoturno ? '#94a3b8' : '#64748b', lineHeight: 1.4 }}>{opt.desc}</div>
+                                    </div>
+                                    <ExternalLink size={16} style={{ color: modoNoturno ? '#64748b' : '#94a3b8', flexShrink: 0 }} />
+                                </a>
+                            ))}
+                        </div>
+                    </div>
+                </div>
             )}
 
         </div>

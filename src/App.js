@@ -20,16 +20,26 @@ export default function App() {
         const t2 = setTimeout(() => { setSplashDone(true); sessionStorage.setItem('dst_splash','1'); }, 2550);
         return () => { clearTimeout(t1); clearTimeout(t2); };
     }, []);
-    // ── Login (acesso ao app) — válido por 24h, sem base de dados: valida por palavras-chave ──
-    const LOGIN_TTL_MS = 24 * 60 * 60 * 1000;
+    // ── Login (acesso ao app) — válido por 48h (ou mais, se "salvar senha" marcado), sem base de dados: valida por palavras-chave ──
+    const LOGIN_TTL_MS = 48 * 60 * 60 * 1000; // 48h padrão
+    const LOGIN_REMEMBER_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 dias quando "salvar senha" está marcado
     const [loginOk, setLoginOk] = useState(() => {
         try {
             const ts = parseInt(localStorage.getItem('dst_login_ts'), 10);
-            return !isNaN(ts) && (Date.now() - ts) < LOGIN_TTL_MS;
+            const remembered = localStorage.getItem('dst_login_remember') === '1';
+            const ttl = remembered ? LOGIN_REMEMBER_TTL_MS : LOGIN_TTL_MS;
+            return !isNaN(ts) && (Date.now() - ts) < ttl;
         } catch { return false; }
     });
-    const [loginTeam, setLoginTeam] = useState('');
-    const [loginEmail, setLoginEmail] = useState('');
+    const [loginTeam, setLoginTeam] = useState(() => {
+        try { return localStorage.getItem('dst_login_saved_team') || ''; } catch { return ''; }
+    });
+    const [loginEmail, setLoginEmail] = useState(() => {
+        try { return localStorage.getItem('dst_login_saved_email') || ''; } catch { return ''; }
+    });
+    const [loginRemember, setLoginRemember] = useState(() => {
+        try { return localStorage.getItem('dst_login_remember') === '1'; } catch { return false; }
+    });
     const [loginError, setLoginError] = useState({ team: false, email: false });
     const [loginShake, setLoginShake] = useState(false);
     const [loginTeamVisible, setLoginTeamVisible] = useState(false);
@@ -105,7 +115,18 @@ export default function App() {
         const emailOk = validateLoginEmail(loginEmail);
         if (teamOk && emailOk) {
             haptic('medium');
-            try { localStorage.setItem('dst_login_ts', String(Date.now())); } catch {}
+            try {
+                localStorage.setItem('dst_login_ts', String(Date.now()));
+                if (loginRemember) {
+                    localStorage.setItem('dst_login_remember', '1');
+                    localStorage.setItem('dst_login_saved_team', loginTeam);
+                    localStorage.setItem('dst_login_saved_email', loginEmail);
+                } else {
+                    localStorage.removeItem('dst_login_remember');
+                    localStorage.removeItem('dst_login_saved_team');
+                    localStorage.removeItem('dst_login_saved_email');
+                }
+            } catch {}
             setLoginOk(true);
         } else {
             haptic();
@@ -1226,6 +1247,18 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
                                 Verifique os dados informados e tente novamente.
                             </div>
                         )}
+                        <label style={{
+                            display: 'flex', alignItems: 'center', gap: 9, cursor: 'pointer',
+                            fontSize: 12.5, fontWeight: 600, color: 'rgba(255,255,255,0.75)', userSelect: 'none',
+                        }}>
+                            <input
+                                type="checkbox"
+                                checked={loginRemember}
+                                onChange={e => setLoginRemember(e.target.checked)}
+                                style={{ width: 16, height: 16, accentColor: '#2563eb', cursor: 'pointer' }}
+                            />
+                            Salvar senha neste dispositivo
+                        </label>
                         <button
                             type="submit"
                             style={{

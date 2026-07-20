@@ -194,7 +194,43 @@ export const imagensEquipeDiarias = [
   "https://i.postimg.cc/rpyKsVDp/Whats-App-Image-2026-04-18-at-16-14-11.jpg",
   "https://i.postimg.cc/3xFk34xh/Whats-App-Image-2026-04-18-at-16-14-11-(1).jpg",
   "https://i.postimg.cc/52SXfY21/Whats-App-Image-2026-04-18-at-16-14-11-(3).jpg",
+  "https://i.postimg.cc/SKypKBsR/Copia-de-IMG-9723.jpg",
+  "https://i.postimg.cc/W3yRXt7J/Copia-de-IMG-9784.jpg",
+  "https://i.postimg.cc/85fD8hc5/IMG-2229.jpg",
+  "https://i.postimg.cc/BvVswhSt/IMG-2231.jpg",
+  "https://i.postimg.cc/CK1S7yVN/IMG-2275.jpg",
+  "https://i.postimg.cc/NjbQRsZK/IMG-2282-(1).jpg",
+  "https://i.postimg.cc/dVJq7kN0/IMG-2310.jpg",
+  "https://i.postimg.cc/G3s361TW/IMG-2556-(1).jpg",
+  "https://i.postimg.cc/g2p0vBJB/IMG-2568-(1).jpg",
+  "https://i.postimg.cc/mg4rQ6kL/IMG-2570.jpg",
+  "https://i.postimg.cc/9X4zV7KN/IMG-2646.jpg",
+  "https://i.postimg.cc/Wbg3qP2W/IMG-2653.jpg",
+  "https://i.postimg.cc/kMVD9bzQ/IMG-2656.jpg",
+  "https://i.postimg.cc/59Hj1CTw/IMG-2681.jpg",
+  "https://i.postimg.cc/fW3kZ9pY/IMG-2710.jpg",
+  "https://i.postimg.cc/5jchWGTN/IMG-2731.jpg",
+  "https://i.postimg.cc/C12ymd4H/IMG-2781.jpg",
+  "https://i.postimg.cc/vBKR3DvT/IMG-2806.jpg",
+  "https://i.postimg.cc/tTc027z6/IMG-2833.jpg",
+  "https://i.postimg.cc/g0NbLgXB/IMG-6823.jpg",
+  "https://i.postimg.cc/BvMfPmL5/IMG-6848.jpg",
+  "https://i.postimg.cc/KYJh30kL/IMG-6872.jpg",
+  "https://i.postimg.cc/YSbBLdGF/IMG-6873.jpg",
+  "https://i.postimg.cc/GpqnTX8B/IMG-6881.jpg",
+  "https://i.postimg.cc/q7kd7PRK/IMG-6884.jpg",
+  "https://i.postimg.cc/rp8LpBmr/IMG-6898.jpg",
+  "https://i.postimg.cc/8C1VC257/IMG-7066.jpg",
+  "https://i.postimg.cc/LsK6HQdW/Copia-de-IMG-0648.jpg",
+  "https://i.postimg.cc/V64YWYJG/Copia-de-IMG-0780.jpg",
+  "https://i.postimg.cc/3xDxQ5qp/Copia-de-IMG-0805.jpg",
+  "https://i.postimg.cc/nL4VMKpc/Copia-de-IMG-9604-(1).jpg",
 ];
 
 const today = new Date();
 export const dayIndex = Math.floor((today.getTime() - today.getTimezoneOffset() * 60000) / (1000 * 60 * 60 * 24));
+
+// Rotação de 3 fotos por dia: manhã (00h-11h59), tarde (12h-17h59) e noite (18h-23h59)
+const horaLocal = today.getHours();
+const periodoAtual = horaLocal < 12 ? 0 : (horaLocal < 18 ? 1 : 2);
+export const periodoIndex = dayIndex * 3 + periodoAtual;

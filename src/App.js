@@ -266,6 +266,14 @@ export default function App() {
 
     // Estados para a aba Guia e Modal de POIs
     const [openGuiaIndex, setOpenGuiaIndex] = useState(null);
+    const [copiedGuiaItem, setCopiedGuiaItem] = useState(null);
+    const copiarTextoGuia = (texto, chave) => {
+        haptic();
+        navigator.clipboard?.writeText(texto).then(() => {
+            setCopiedGuiaItem(chave);
+            setTimeout(() => setCopiedGuiaItem(prev => (prev === chave ? null : prev)), 1600);
+        }).catch(() => {});
+    };
     const [rankingExpandido, setRankingExpandido] = useState(false);
     const rankingAnimDoneRef = useRef(false);
     useEffect(() => {
@@ -2300,15 +2308,30 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
                                         <div className={`p-4 rounded-xl border ${modoNoturno ? 'bg-slate-900 border-slate-700' : 'bg-white border-slate-200'}`}>
                                             <p className="font-bold mb-3 uppercase text-xs text-orange-500 tracking-widest">Cliente Direcional</p>
                                             <div className="space-y-2.5">
-                                                <a href="tel:+553140022600" onClick={haptic} className={`flex items-center gap-2 text-sm hover:underline ${modoNoturno ? 'text-slate-300' : 'text-slate-700'}`}>
-                                                    <Phone size={15} className="text-orange-500 shrink-0" /> Central: (031) 4002-2600
-                                                </a>
-                                                <a href="https://wa.me/553140022600" target="_blank" rel="noopener noreferrer" onClick={haptic} className={`flex items-center gap-2 text-sm hover:underline ${modoNoturno ? 'text-slate-300' : 'text-slate-700'}`}>
-                                                    <MessageCircle size={15} className="text-orange-500 shrink-0" /> WhatsApp: (031) 4002-2600
-                                                </a>
-                                                <a href="https://www.direcional.com.br/cliente" target="_blank" rel="noopener noreferrer" onClick={haptic} className={`flex items-center gap-2 text-sm hover:underline ${modoNoturno ? 'text-slate-300' : 'text-slate-700'}`}>
-                                                    <Globe size={15} className="text-orange-500 shrink-0" /> Portal do cliente
-                                                </a>
+                                                <div className="flex items-center justify-between gap-2">
+                                                    <a href="tel:+553140022600" onClick={haptic} className={`flex items-center gap-2 text-sm hover:underline ${modoNoturno ? 'text-slate-300' : 'text-slate-700'}`}>
+                                                        <Phone size={15} className="text-orange-500 shrink-0" /> Central: (031) 4002-2600
+                                                    </a>
+                                                    <button onClick={() => copiarTextoGuia('(031) 4002-2600', 'dir-central')} className={`shrink-0 p-1.5 rounded-md transition-colors ${modoNoturno ? 'hover:bg-slate-700' : 'hover:bg-slate-100'}`}>
+                                                        {copiedGuiaItem === 'dir-central' ? <Check size={14} className="text-emerald-500" /> : <Copy size={14} className="text-slate-400" />}
+                                                    </button>
+                                                </div>
+                                                <div className="flex items-center justify-between gap-2">
+                                                    <a href="https://wa.me/553140022600" target="_blank" rel="noopener noreferrer" onClick={haptic} className={`flex items-center gap-2 text-sm hover:underline ${modoNoturno ? 'text-slate-300' : 'text-slate-700'}`}>
+                                                        <MessageCircle size={15} className="text-orange-500 shrink-0" /> WhatsApp: (031) 4002-2600
+                                                    </a>
+                                                    <button onClick={() => copiarTextoGuia('(031) 4002-2600', 'dir-whats')} className={`shrink-0 p-1.5 rounded-md transition-colors ${modoNoturno ? 'hover:bg-slate-700' : 'hover:bg-slate-100'}`}>
+                                                        {copiedGuiaItem === 'dir-whats' ? <Check size={14} className="text-emerald-500" /> : <Copy size={14} className="text-slate-400" />}
+                                                    </button>
+                                                </div>
+                                                <div className="flex items-center justify-between gap-2">
+                                                    <a href="https://www.direcional.com.br/cliente" target="_blank" rel="noopener noreferrer" onClick={haptic} className={`flex items-center gap-2 text-sm hover:underline truncate ${modoNoturno ? 'text-slate-300' : 'text-slate-700'}`}>
+                                                        <Globe size={15} className="text-orange-500 shrink-0" /> Portal do cliente
+                                                    </a>
+                                                    <button onClick={() => copiarTextoGuia('www.direcional.com.br/cliente', 'dir-portal')} className={`shrink-0 p-1.5 rounded-md transition-colors ${modoNoturno ? 'hover:bg-slate-700' : 'hover:bg-slate-100'}`}>
+                                                        {copiedGuiaItem === 'dir-portal' ? <Check size={14} className="text-emerald-500" /> : <Copy size={14} className="text-slate-400" />}
+                                                    </button>
+                                                </div>
                                             </div>
                                         </div>
 
@@ -2316,59 +2339,80 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
                                         <div className={`p-4 rounded-xl border ${modoNoturno ? 'bg-slate-900 border-slate-700' : 'bg-white border-slate-200'}`}>
                                             <p className="font-bold mb-3 uppercase text-xs text-blue-500 tracking-widest">Cliente Riva</p>
                                             <div className="space-y-2.5">
-                                                <a href="tel:+553140071620" onClick={haptic} className={`flex items-center gap-2 text-sm hover:underline ${modoNoturno ? 'text-slate-300' : 'text-slate-700'}`}>
-                                                    <Phone size={15} className="text-blue-500 shrink-0" /> Central: (031) 4007-1620
-                                                </a>
-                                                <a href="https://wa.me/553140071620" target="_blank" rel="noopener noreferrer" onClick={haptic} className={`flex items-center gap-2 text-sm hover:underline ${modoNoturno ? 'text-slate-300' : 'text-slate-700'}`}>
-                                                    <MessageCircle size={15} className="text-blue-500 shrink-0" /> WhatsApp: (031) 4007-1620
-                                                </a>
-                                                <a href="https://www.rivaincorporadora.com.br/cliente" target="_blank" rel="noopener noreferrer" onClick={haptic} className={`flex items-center gap-2 text-sm hover:underline ${modoNoturno ? 'text-slate-300' : 'text-slate-700'}`}>
-                                                    <Globe size={15} className="text-blue-500 shrink-0" /> Portal do cliente
-                                                </a>
+                                                <div className="flex items-center justify-between gap-2">
+                                                    <a href="tel:+553140071620" onClick={haptic} className={`flex items-center gap-2 text-sm hover:underline ${modoNoturno ? 'text-slate-300' : 'text-slate-700'}`}>
+                                                        <Phone size={15} className="text-blue-500 shrink-0" /> Central: (031) 4007-1620
+                                                    </a>
+                                                    <button onClick={() => copiarTextoGuia('(031) 4007-1620', 'riva-central')} className={`shrink-0 p-1.5 rounded-md transition-colors ${modoNoturno ? 'hover:bg-slate-700' : 'hover:bg-slate-100'}`}>
+                                                        {copiedGuiaItem === 'riva-central' ? <Check size={14} className="text-emerald-500" /> : <Copy size={14} className="text-slate-400" />}
+                                                    </button>
+                                                </div>
+                                                <div className="flex items-center justify-between gap-2">
+                                                    <a href="https://wa.me/553140071620" target="_blank" rel="noopener noreferrer" onClick={haptic} className={`flex items-center gap-2 text-sm hover:underline ${modoNoturno ? 'text-slate-300' : 'text-slate-700'}`}>
+                                                        <MessageCircle size={15} className="text-blue-500 shrink-0" /> WhatsApp: (031) 4007-1620
+                                                    </a>
+                                                    <button onClick={() => copiarTextoGuia('(031) 4007-1620', 'riva-whats')} className={`shrink-0 p-1.5 rounded-md transition-colors ${modoNoturno ? 'hover:bg-slate-700' : 'hover:bg-slate-100'}`}>
+                                                        {copiedGuiaItem === 'riva-whats' ? <Check size={14} className="text-emerald-500" /> : <Copy size={14} className="text-slate-400" />}
+                                                    </button>
+                                                </div>
+                                                <div className="flex items-center justify-between gap-2">
+                                                    <a href="https://www.rivaincorporadora.com.br/cliente" target="_blank" rel="noopener noreferrer" onClick={haptic} className={`flex items-center gap-2 text-sm hover:underline truncate ${modoNoturno ? 'text-slate-300' : 'text-slate-700'}`}>
+                                                        <Globe size={15} className="text-blue-500 shrink-0" /> Portal do cliente
+                                                    </a>
+                                                    <button onClick={() => copiarTextoGuia('www.rivaincorporadora.com.br/cliente', 'riva-portal')} className={`shrink-0 p-1.5 rounded-md transition-colors ${modoNoturno ? 'hover:bg-slate-700' : 'hover:bg-slate-100'}`}>
+                                                        {copiedGuiaItem === 'riva-portal' ? <Check size={14} className="text-emerald-500" /> : <Copy size={14} className="text-slate-400" />}
+                                                    </button>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
 
                                     <p className="text-sm font-semibold mt-5 mb-3">O cliente deve obter o aplicativo para celular <span className="text-emerald-500">PODE MORAR</span>:</p>
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                        <a
-                                            href="https://play.google.com/store/apps/details?id=com.podemorar&pcampaignid=web_share"
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            onClick={haptic}
-                                            className={`p-4 rounded-xl border transition-all hover:scale-[1.02] active:scale-[0.98] cursor-pointer flex items-center gap-3 ${
-                                                modoNoturno
-                                                    ? 'bg-slate-900 border-slate-700 hover:border-emerald-500/50 hover:bg-slate-800'
-                                                    : 'bg-white border-slate-200 hover:border-emerald-500/50 hover:bg-emerald-50/30'
-                                            }`}
-                                        >
-                                            <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${modoNoturno ? 'bg-emerald-500/20' : 'bg-emerald-100'}`}>
-                                                <Smartphone size={18} className="text-emerald-500" />
-                                            </div>
-                                            <div>
-                                                <p className={`font-bold text-sm ${modoNoturno ? 'text-white' : 'text-slate-900'}`}>Google Play</p>
-                                                <p className={`text-xs ${modoNoturno ? 'text-slate-400' : 'text-slate-500'}`}>Baixar para Android</p>
-                                            </div>
-                                        </a>
-                                        <a
-                                            href="https://apps.apple.com/br/app/pode-morar/id1569813219"
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            onClick={haptic}
-                                            className={`p-4 rounded-xl border transition-all hover:scale-[1.02] active:scale-[0.98] cursor-pointer flex items-center gap-3 ${
-                                                modoNoturno
-                                                    ? 'bg-slate-900 border-slate-700 hover:border-emerald-500/50 hover:bg-slate-800'
-                                                    : 'bg-white border-slate-200 hover:border-emerald-500/50 hover:bg-emerald-50/30'
-                                            }`}
-                                        >
-                                            <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${modoNoturno ? 'bg-emerald-500/20' : 'bg-emerald-100'}`}>
-                                                <Smartphone size={18} className="text-emerald-500" />
-                                            </div>
-                                            <div>
-                                                <p className={`font-bold text-sm ${modoNoturno ? 'text-white' : 'text-slate-900'}`}>App Store</p>
-                                                <p className={`text-xs ${modoNoturno ? 'text-slate-400' : 'text-slate-500'}`}>Baixar para iPhone</p>
-                                            </div>
-                                        </a>
+                                        <div className={`p-4 rounded-xl border flex items-center gap-3 ${
+                                            modoNoturno ? 'bg-slate-900 border-slate-700' : 'bg-white border-slate-200'
+                                        }`}>
+                                            <a
+                                                href="https://play.google.com/store/apps/details?id=com.podemorar&pcampaignid=web_share"
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                onClick={haptic}
+                                                className="flex items-center gap-3 flex-1 min-w-0"
+                                            >
+                                                <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${modoNoturno ? 'bg-emerald-500/20' : 'bg-emerald-100'}`}>
+                                                    <Smartphone size={18} className="text-emerald-500" />
+                                                </div>
+                                                <div className="min-w-0">
+                                                    <p className={`font-bold text-sm ${modoNoturno ? 'text-white' : 'text-slate-900'}`}>Google Play</p>
+                                                    <p className={`text-xs ${modoNoturno ? 'text-slate-400' : 'text-slate-500'}`}>Baixar para Android</p>
+                                                </div>
+                                            </a>
+                                            <button onClick={() => copiarTextoGuia('https://play.google.com/store/apps/details?id=com.podemorar&pcampaignid=web_share', 'app-android')} className={`shrink-0 p-1.5 rounded-md transition-colors ${modoNoturno ? 'hover:bg-slate-700' : 'hover:bg-slate-100'}`}>
+                                                {copiedGuiaItem === 'app-android' ? <Check size={14} className="text-emerald-500" /> : <Copy size={14} className="text-slate-400" />}
+                                            </button>
+                                        </div>
+                                        <div className={`p-4 rounded-xl border flex items-center gap-3 ${
+                                            modoNoturno ? 'bg-slate-900 border-slate-700' : 'bg-white border-slate-200'
+                                        }`}>
+                                            <a
+                                                href="https://apps.apple.com/br/app/pode-morar/id1569813219"
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                onClick={haptic}
+                                                className="flex items-center gap-3 flex-1 min-w-0"
+                                            >
+                                                <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${modoNoturno ? 'bg-emerald-500/20' : 'bg-emerald-100'}`}>
+                                                    <Smartphone size={18} className="text-emerald-500" />
+                                                </div>
+                                                <div className="min-w-0">
+                                                    <p className={`font-bold text-sm ${modoNoturno ? 'text-white' : 'text-slate-900'}`}>App Store</p>
+                                                    <p className={`text-xs ${modoNoturno ? 'text-slate-400' : 'text-slate-500'}`}>Baixar para iPhone</p>
+                                                </div>
+                                            </a>
+                                            <button onClick={() => copiarTextoGuia('https://apps.apple.com/br/app/pode-morar/id1569813219', 'app-ios')} className={`shrink-0 p-1.5 rounded-md transition-colors ${modoNoturno ? 'hover:bg-slate-700' : 'hover:bg-slate-100'}`}>
+                                                {copiedGuiaItem === 'app-ios' ? <Check size={14} className="text-emerald-500" /> : <Copy size={14} className="text-slate-400" />}
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
                             )}

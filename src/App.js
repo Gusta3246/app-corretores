@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useLayoutEffect, useRef } from 'react';
-import { Search, Building, ExternalLink, MapPin, BookOpen, Maximize, Bed, LayoutGrid, Sparkles, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, FileText, TableProperties, BookMarked, HelpCircle, Calculator, Bot, X, Send, Wand2, Paperclip, File as FileIcon, Trash2, FolderPlus, GripVertical, Plus, MessageCircle, Moon, Sun, AlertTriangle, Book, Clock, Trophy, RotateCw, RotateCcw, Phone, CreditCard, Copy, Check, Eye, EyeOff } from 'lucide-react';
+import { Search, Building, ExternalLink, MapPin, BookOpen, Maximize, Bed, LayoutGrid, Sparkles, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, FileText, TableProperties, BookMarked, HelpCircle, Calculator, Bot, X, Send, Wand2, Paperclip, File as FileIcon, Trash2, FolderPlus, GripVertical, Plus, MessageCircle, Moon, Sun, AlertTriangle, Book, Clock, Trophy, RotateCw, RotateCcw, Phone, CreditCard, Copy, Check, Eye, EyeOff, Smartphone, Globe } from 'lucide-react';
 import { buscarRespostaDoRobo, buscarRespostaGemini } from './bot/dadosFinanciamento.js';
 import { revistasDataLocal, utilitariosData, frasesMotivacionais, imagensEquipeDiarias, dayIndex } from './data/dados.js';
 import { RippleButton, CardRevista, HintPills, RevistaCloseButton } from './components/Componentes.jsx';
@@ -2282,6 +2282,93 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
                                     }`}>
                                         <Phone size={14} className="shrink-0 mt-0.5" />
                                         <p>Clique em qualquer cartório para abrir o WhatsApp direto com o número.</p>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* ITEM 5: CENTRAL DE RELACIONAMENTO */}
+                        <div className={`card-entry border rounded-xl overflow-hidden shadow-sm transition-colors ${modoNoturno ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`} style={{ animationDelay: '320ms' }}>
+                            <button onClick={() => { haptic(); setOpenGuiaIndex(openGuiaIndex === 4 ? null : 4); }} className={`w-full text-left p-5 flex justify-between items-center transition-colors ${modoNoturno ? 'bg-slate-800 hover:bg-slate-700' : 'bg-white hover:bg-slate-50'}`}>
+                                <h3 className={`font-bold text-lg flex items-center gap-2 ${modoNoturno ? 'text-white' : 'text-slate-800'}`}><MessageCircle className="text-emerald-500" size={20} /> CENTRAL DE RELACIONAMENTO</h3>
+                                {openGuiaIndex === 4 ? <ChevronUp className="text-slate-400" /> : <ChevronDown className="text-slate-400" />}
+                            </button>
+                            {openGuiaIndex === 4 && (
+                                <div className={`p-5 pt-0 border-t transition-colors ${modoNoturno ? 'border-slate-700 text-slate-300 bg-slate-800/50' : 'border-slate-100 text-slate-600 bg-slate-50/50'}`}>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
+                                        {/* DIRECIONAL */}
+                                        <div className={`p-4 rounded-xl border ${modoNoturno ? 'bg-slate-900 border-slate-700' : 'bg-white border-slate-200'}`}>
+                                            <p className="font-bold mb-3 uppercase text-xs text-orange-500 tracking-widest">Cliente Direcional</p>
+                                            <div className="space-y-2.5">
+                                                <a href="tel:+553140022600" onClick={haptic} className={`flex items-center gap-2 text-sm hover:underline ${modoNoturno ? 'text-slate-300' : 'text-slate-700'}`}>
+                                                    <Phone size={15} className="text-orange-500 shrink-0" /> Central: (031) 4002-2600
+                                                </a>
+                                                <a href="https://wa.me/553140022600" target="_blank" rel="noopener noreferrer" onClick={haptic} className={`flex items-center gap-2 text-sm hover:underline ${modoNoturno ? 'text-slate-300' : 'text-slate-700'}`}>
+                                                    <MessageCircle size={15} className="text-orange-500 shrink-0" /> WhatsApp: (031) 4002-2600
+                                                </a>
+                                                <a href="https://www.direcional.com.br/cliente" target="_blank" rel="noopener noreferrer" onClick={haptic} className={`flex items-center gap-2 text-sm hover:underline ${modoNoturno ? 'text-slate-300' : 'text-slate-700'}`}>
+                                                    <Globe size={15} className="text-orange-500 shrink-0" /> Portal do cliente
+                                                </a>
+                                            </div>
+                                        </div>
+
+                                        {/* RIVA */}
+                                        <div className={`p-4 rounded-xl border ${modoNoturno ? 'bg-slate-900 border-slate-700' : 'bg-white border-slate-200'}`}>
+                                            <p className="font-bold mb-3 uppercase text-xs text-blue-500 tracking-widest">Cliente Riva</p>
+                                            <div className="space-y-2.5">
+                                                <a href="tel:+553140071620" onClick={haptic} className={`flex items-center gap-2 text-sm hover:underline ${modoNoturno ? 'text-slate-300' : 'text-slate-700'}`}>
+                                                    <Phone size={15} className="text-blue-500 shrink-0" /> Central: (031) 4007-1620
+                                                </a>
+                                                <a href="https://wa.me/553140071620" target="_blank" rel="noopener noreferrer" onClick={haptic} className={`flex items-center gap-2 text-sm hover:underline ${modoNoturno ? 'text-slate-300' : 'text-slate-700'}`}>
+                                                    <MessageCircle size={15} className="text-blue-500 shrink-0" /> WhatsApp: (031) 4007-1620
+                                                </a>
+                                                <a href="https://www.rivaincorporadora.com.br/cliente" target="_blank" rel="noopener noreferrer" onClick={haptic} className={`flex items-center gap-2 text-sm hover:underline ${modoNoturno ? 'text-slate-300' : 'text-slate-700'}`}>
+                                                    <Globe size={15} className="text-blue-500 shrink-0" /> Portal do cliente
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <p className="text-sm font-semibold mt-5 mb-3">O cliente deve obter o aplicativo para celular <span className="text-emerald-500">PODE MORAR</span>:</p>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                        <a
+                                            href="https://play.google.com/store/apps/details?id=com.podemorar&pcampaignid=web_share"
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            onClick={haptic}
+                                            className={`p-4 rounded-xl border transition-all hover:scale-[1.02] active:scale-[0.98] cursor-pointer flex items-center gap-3 ${
+                                                modoNoturno
+                                                    ? 'bg-slate-900 border-slate-700 hover:border-emerald-500/50 hover:bg-slate-800'
+                                                    : 'bg-white border-slate-200 hover:border-emerald-500/50 hover:bg-emerald-50/30'
+                                            }`}
+                                        >
+                                            <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${modoNoturno ? 'bg-emerald-500/20' : 'bg-emerald-100'}`}>
+                                                <Smartphone size={18} className="text-emerald-500" />
+                                            </div>
+                                            <div>
+                                                <p className={`font-bold text-sm ${modoNoturno ? 'text-white' : 'text-slate-900'}`}>Google Play</p>
+                                                <p className={`text-xs ${modoNoturno ? 'text-slate-400' : 'text-slate-500'}`}>Baixar para Android</p>
+                                            </div>
+                                        </a>
+                                        <a
+                                            href="https://apps.apple.com/br/app/pode-morar/id1569813219"
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            onClick={haptic}
+                                            className={`p-4 rounded-xl border transition-all hover:scale-[1.02] active:scale-[0.98] cursor-pointer flex items-center gap-3 ${
+                                                modoNoturno
+                                                    ? 'bg-slate-900 border-slate-700 hover:border-emerald-500/50 hover:bg-slate-800'
+                                                    : 'bg-white border-slate-200 hover:border-emerald-500/50 hover:bg-emerald-50/30'
+                                            }`}
+                                        >
+                                            <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${modoNoturno ? 'bg-emerald-500/20' : 'bg-emerald-100'}`}>
+                                                <Smartphone size={18} className="text-emerald-500" />
+                                            </div>
+                                            <div>
+                                                <p className={`font-bold text-sm ${modoNoturno ? 'text-white' : 'text-slate-900'}`}>App Store</p>
+                                                <p className={`text-xs ${modoNoturno ? 'text-slate-400' : 'text-slate-500'}`}>Baixar para iPhone</p>
+                                            </div>
+                                        </a>
                                     </div>
                                 </div>
                             )}

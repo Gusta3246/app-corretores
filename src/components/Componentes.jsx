@@ -356,6 +356,14 @@ export function CardRevista({ revista, cardIdx, modoNoturno, haptic, setPdfLeito
                             <div className="flex items-center text-slate-500 text-sm gap-1.5"><Bed size={16} className="text-slate-400 shrink-0"/><span className={modoNoturno?'text-slate-400':''}>{revista.bedrooms}</span></div>
                             <div className="flex items-center text-slate-500 text-sm gap-1.5"><LayoutGrid size={16} className="text-slate-400 shrink-0"/><span className={modoNoturno?'text-slate-400':''}>{revista.flooring}</span></div>
                         </div>
+                        {typeof revista.rendaMinima === 'number' && (
+                            <div className="flex items-baseline gap-1.5 text-sm mt-1">
+                                <span className={modoNoturno?'text-slate-400':'text-slate-500'}>Renda mínima:</span>
+                                <span style={{ fontWeight:700, color: isDir ? '#f97316' : '#2563eb' }}>
+                                    R$ {revista.rendaMinima.toLocaleString('pt-BR')}
+                                </span>
+                            </div>
+                        )}
                     </div>
                     <div className="mt-auto flex flex-col gap-2">
                         <div style={{ display:'flex', gap:8, alignItems:'stretch' }}>

@@ -4144,7 +4144,7 @@ compute();
                                 {
                                     titulo: 'Simulador Habitação (SIOPI)',
                                     desc: 'Simulador oficial da Caixa para financiamento habitacional, incluindo faixas do MCMV.',
-                                    href: 'https://habitacao.caixa.gov.br/siopiweb-web/simulaOperacaoInternet.do?method=inicializarCasoUso',
+                                    href: 'https://simuladorhabitacao.caixa.gov.br/home',
                                 },
                                 {
                                     titulo: 'Portal de Empreendimentos',

@@ -103,6 +103,7 @@ export default function App() {
         'carvalhopedro.direcionalvendas@gmail.com',
         'joaoretto.direcionalvendas@gmail.com',
         'thamires30.direcionalvendas@gmail.com',
+        'Rafaelafreitas.direcional@gmail.com',
         'arianabrdirecionalvendas@gmail.com',
     ];
     const validateLoginEmail = (input) => {

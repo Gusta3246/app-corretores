@@ -681,7 +681,7 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
         const msgLower = userMessage.toLowerCase();
         if ((msgLower.includes('cpf') && (msgLower.includes('temporario') || msgLower.includes('temporário') || msgLower.includes('teste') || msgLower.includes('gerar') || msgLower.includes('gera ') || msgLower.includes('fake') || msgLower.includes('falso') || msgLower.includes('valido') || msgLower.includes('válido')))) {
             const cpfGerado = gerarCPFValido();
-            setChatMessages(prev => [...prev, { role: 'bot', content: `Aqui está um **CPF temporário válido** para teste: \`${cpfGerado}\`\n\n⚠️ É um número gerado aleatoriamente que passa na validação matemática de CPF, mas não pertence a nenhuma pessoa real. Use apenas para testar formulários/cadastros, nunca em documentos oficiais.` }]);
+            setChatMessages(prev => [...prev, { role: 'bot', content: '', cpf: cpfGerado }]);
             setIsChatLoading(false);
             return;
         }
@@ -3348,7 +3348,17 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
                                     : (modoNoturno ? 'bg-slate-800/80 border border-slate-700/60 text-slate-200 rounded-tl-sm shadow-sm' : 'bg-white border border-slate-100 text-slate-700 rounded-tl-sm shadow-sm')
                                 }`}
                                 style={msg.role === 'user' ? { background: 'linear-gradient(135deg, #6366f1 0%, #4f46e5 60%, #7c3aed 100%)', boxShadow: '0 2px 12px rgba(99,102,241,0.35)' } : {}}>
-                                    {msg.role === 'bot' ? renderChatMessage(msg.content) : msg.content}
+                                    {msg.cpf ? (
+                                        <div className="flex items-center gap-2">
+                                            <span className="font-black tracking-wide">CPF GERADO: {msg.cpf}</span>
+                                            <button
+                                                onClick={() => copiarTextoGuia(msg.cpf, `cpf-${idx}`)}
+                                                className={`shrink-0 p-1.5 rounded-lg transition-all active:scale-90 ${modoNoturno ? 'hover:bg-slate-700' : 'hover:bg-slate-100'}`}
+                                                title="Copiar CPF">
+                                                {copiedGuiaItem === `cpf-${idx}` ? <Check size={14} className="text-emerald-500" /> : <Copy size={14} className={modoNoturno ? 'text-slate-400' : 'text-slate-400'} />}
+                                            </button>
+                                        </div>
+                                    ) : (msg.role === 'bot' ? renderChatMessage(msg.content) : msg.content)}
                                 </div>
                             </div>
                         ))}
@@ -3538,7 +3548,7 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
                                 onClick={() => {
                                     haptic('medium');
                                     const cpfGerado = gerarCPFValido();
-                                    setChatMessages(prev => [...prev, { role: 'bot', content: `Aqui está um **CPF temporário válido** para teste: \`${cpfGerado}\`\n\n⚠️ É um número gerado aleatoriamente que passa na validação matemática de CPF, mas não pertence a nenhuma pessoa real. Use apenas para testar formulários/cadastros, nunca em documentos oficiais.` }]);
+                                    setChatMessages(prev => [...prev, { role: 'bot', content: '', cpf: cpfGerado }]);
                                 }}
                                 className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider transition-all active:scale-95 text-white relative overflow-hidden"
                                 style={{

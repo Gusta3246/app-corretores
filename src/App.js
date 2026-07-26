@@ -624,6 +624,45 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
     }
     return botResponse;
   };
+    // ── Gerador de CPF temporário (válido, com dígitos verificadores corretos) ──
+    // Uso: testes de formulário/cadastro. Gera números aleatórios que passam na validação
+    // matemática de CPF, mas não correspondem a nenhuma pessoa real.
+    const gerarCPFValido = () => {
+        const rnd = () => Math.floor(Math.random() * 10);
+        const calcDigito = (nums) => {
+            let soma = 0;
+            let peso = nums.length + 1;
+            for (let i = 0; i < nums.length; i++) {
+                soma += nums[i] * peso;
+                peso--;
+            }
+            const resto = soma % 11;
+            return resto < 2 ? 0 : 11 - resto;
+        };
+        let base = Array.from({ length: 9 }, rnd);
+        // evita gerar sequência de dígitos repetidos (ex: 111111111), que é inválida na prática
+        if (base.every(d => d === base[0])) return gerarCPFValido();
+        const d1 = calcDigito(base);
+        const d2 = calcDigito([...base, d1]);
+        const cpfNums = [...base, d1, d2];
+        const cpfStr = cpfNums.join('');
+        return cpfStr.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
+    };
+    const validarCPF = (cpf) => {
+        const nums = (cpf || '').replace(/\D/g, '');
+        if (nums.length !== 11 || /^(\d)\1{10}$/.test(nums)) return false;
+        const calcDigito = (arr) => {
+            let soma = 0, peso = arr.length + 1;
+            for (let i = 0; i < arr.length; i++) { soma += Number(arr[i]) * peso; peso--; }
+            const resto = soma % 11;
+            return resto < 2 ? 0 : 11 - resto;
+        };
+        const base = nums.slice(0, 9).split('');
+        const d1 = calcDigito(base);
+        const d2 = calcDigito([...base, d1]);
+        return Number(nums[9]) === d1 && Number(nums[10]) === d2;
+    };
+
     const handleSendChatMessage = async () => {
         if (!chatInput.trim() || isChatLoading) return;
         const userMessage = chatInput;
@@ -635,6 +674,14 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
         if (userMessage.toLowerCase().includes('criar pasta') || userMessage.toLowerCase().includes('pasta do cliente') || userMessage.toLowerCase().includes('subir pasta')) {
             setIsCreatingFolder(true);
             setChatMessages(prev => [...prev, { role: 'bot', content: "Com certeza! Modo **Criar Pasta do Cliente** ativado! 📂✨\n\nÉ só clicar no botão de anexo ou arrastar os documentos pra cá. Vou te ajudar a organizar tudo na ordem certinha para o seu PDF sair perfeito!" }]);
+            setIsChatLoading(false);
+            return;
+        }
+
+        const msgLower = userMessage.toLowerCase();
+        if ((msgLower.includes('cpf') && (msgLower.includes('temporario') || msgLower.includes('temporário') || msgLower.includes('teste') || msgLower.includes('gerar') || msgLower.includes('gera ') || msgLower.includes('fake') || msgLower.includes('falso') || msgLower.includes('valido') || msgLower.includes('válido')))) {
+            const cpfGerado = gerarCPFValido();
+            setChatMessages(prev => [...prev, { role: 'bot', content: `Aqui está um **CPF temporário válido** para teste: \`${cpfGerado}\`\n\n⚠️ É um número gerado aleatoriamente que passa na validação matemática de CPF, mas não pertence a nenhuma pessoa real. Use apenas para testar formulários/cadastros, nunca em documentos oficiais.` }]);
             setIsChatLoading(false);
             return;
         }

@@ -3533,6 +3533,23 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
                     <div className="px-3 pb-3" style={{ paddingBottom: 'max(12px, calc(env(safe-area-inset-bottom) + 8px))' }}>
                         {/* ── PÍLULAS ACIMA DO INPUT — só desktop (sm+) ── */}
                         <div className="flex gap-1.5 items-center overflow-x-auto pb-2 pt-2" style={{scrollbarWidth:'none', msOverflowStyle:'none'}}>
+                            {/* CPF Temporário */}
+                            <button
+                                onClick={() => {
+                                    haptic('medium');
+                                    const cpfGerado = gerarCPFValido();
+                                    setChatMessages(prev => [...prev, { role: 'bot', content: `Aqui está um **CPF temporário válido** para teste: \`${cpfGerado}\`\n\n⚠️ É um número gerado aleatoriamente que passa na validação matemática de CPF, mas não pertence a nenhuma pessoa real. Use apenas para testar formulários/cadastros, nunca em documentos oficiais.` }]);
+                                }}
+                                className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider transition-all active:scale-95 text-white relative overflow-hidden"
+                                style={{
+                                    background: 'linear-gradient(135deg, #f97316 0%, #ea580c 60%, #c2410c 100%)',
+                                    boxShadow: '0 0 0 2px rgba(249,115,22,0.3), 0 0 14px 3px rgba(249,115,22,0.35)',
+                                }}>
+                                <CreditCard size={11} className="shrink-0 relative z-10" />
+                                <span className="relative z-10" style={{letterSpacing:'0.06em'}}>CPF Temp</span>
+                            </button>
+                            {/* Separador */}
+                            <div className={`shrink-0 w-px h-3.5 ${modoNoturno ? 'bg-slate-600' : 'bg-slate-200'}`}/>
                             {/* Pasta */}
                             <button onClick={() => { haptic(); setFolderSource('manual'); setIsCreatingFolder(true); fileInputRef.current?.click(); }}
                                 className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider transition-all active:scale-95 text-white relative overflow-hidden"

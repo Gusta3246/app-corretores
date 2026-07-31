@@ -105,6 +105,7 @@ export default function App() {
         'thamires30.direcionalvendas@gmail.com',
         'rafaelafreitas.direcional@gmail.com',
         'arianabrdirecionalvendas@gmail.com',
+        'lucascomercial.direcional@gmail.com',
     ];
     const validateLoginEmail = (input) => {
         const norm = (input || '').toLowerCase().trim().replace(/\s+/g, '');
@@ -946,6 +947,25 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
 
     const MAX_PDF_BYTES = 10 * 1024 * 1024; // 10MB
 
+    // Conta as páginas de um PDF SEM renderizar nada (leitura leve, só para decidir a escala ideal)
+    const getPdfPageCount = async (arrayBuffer) => {
+        try {
+            await waitForPdfJs();
+            const dataCopy = arrayBuffer.slice(0);
+            const pdfDoc = await window.pdfjsLib.getDocument({
+                data: new Uint8Array(dataCopy),
+                password: '',
+                disableRange: true,
+                disableStream: true,
+            }).promise;
+            const n = pdfDoc.numPages;
+            if (pdfDoc.destroy) pdfDoc.destroy();
+            return n;
+        } catch {
+            return 1;
+        }
+    };
+
     // Renderiza todas as páginas de um PDF em canvases (uma vez só, na maior resolução)
     const pdfToCanvases = async (arrayBuffer, scale = 3.0) => {
         await waitForPdfJs();
@@ -1010,13 +1030,17 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
     };
 
     // Monta o PDF final a partir dos canvases já renderizados, numa dada qualidade/resolução
+    // A etapa mais cara (comprimir cada página em JPEG) roda em paralelo, não uma por uma
     const buildPdfFromPages = async (pages, quality, resFactor) => {
         const { PDFDocument } = window.PDFLib;
         const mergedPdf = await PDFDocument.create();
-        for (const pg of pages) {
+        const allBytes = await Promise.all(pages.map((pg) => {
             const srcCanvas = resFactor < 1 ? downscaleCanvas(pg.canvas, resFactor) : pg.canvas;
-            const bytes = await canvasToJpegBytes(srcCanvas, quality);
-            const embedded = await mergedPdf.embedJpg(bytes);
+            return canvasToJpegBytes(srcCanvas, quality);
+        }));
+        for (let i = 0; i < pages.length; i++) {
+            const pg = pages[i];
+            const embedded = await mergedPdf.embedJpg(allBytes[i]);
             const pdfPage = mergedPdf.addPage([pg.widthPt, pg.heightPt]);
             pdfPage.drawImage(embedded, { x: 0, y: 0, width: pg.widthPt, height: pg.heightPt });
         }
@@ -1030,12 +1054,28 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
         }
         setIsChatLoading(true);
         try {
-            // 1) Renderiza cada documento UMA ÚNICA VEZ, na maior qualidade possível
-            const pages = [];
+            // 0) Conta o total de páginas ANTES de renderizar, para escolher uma escala
+            //    proporcional. Documentos com muitas páginas (extratos bancários, por
+            //    exemplo) não precisam da mesma resolução de uma foto única — isso é o
+            //    que mais pesava no tempo de geração.
+            let totalPages = 0;
             for (const doc of pendingDocs) {
                 if (doc.file.type === 'application/pdf') {
                     const arrayBuffer = await doc.file.arrayBuffer();
-                    const canvases = await pdfToCanvases(arrayBuffer, 3.0);
+                    doc._arrayBuffer = arrayBuffer; // reaproveita, evita ler o arquivo 2x
+                    totalPages += await getPdfPageCount(arrayBuffer);
+                } else {
+                    totalPages += 1;
+                }
+            }
+            const renderScale = totalPages > 20 ? 1.8 : totalPages > 10 ? 2.2 : 3.0;
+
+            // 1) Renderiza cada documento UMA ÚNICA VEZ, na escala já ajustada
+            const pages = [];
+            for (const doc of pendingDocs) {
+                if (doc.file.type === 'application/pdf') {
+                    const arrayBuffer = doc._arrayBuffer || await doc.file.arrayBuffer();
+                    const canvases = await pdfToCanvases(arrayBuffer, renderScale);
                     pages.push(...canvases);
                 } else if (doc.file.type.startsWith('image/')) {
                     const canvas = await imageFileToCanvas(doc.file, doc.rotation || 0);
@@ -1043,9 +1083,11 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
                 }
             }
 
-            // 2) Tenta gerar o PDF começando na qualidade máxima; só reduz o necessário para caber em 20MB
-            const qualitySteps = [0.95, 0.88, 0.8, 0.7, 0.6, 0.5, 0.4];
-            const resSteps = [1, 0.85, 0.7, 0.55];
+            // 2) Tenta gerar o PDF começando na qualidade máxima; só reduz o necessário para caber no limite.
+            //    Menos combinações testadas (cada tentativa reprocessa todas as páginas),
+            //    e a compressão de cada página já roda em paralelo dentro de buildPdfFromPages.
+            const qualitySteps = [0.9, 0.75, 0.6, 0.45];
+            const resSteps = [1, 0.7, 0.5];
             let pdfBytes = null;
             outer:
             for (const resFactor of resSteps) {

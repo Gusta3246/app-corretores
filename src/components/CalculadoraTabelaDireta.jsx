@@ -3,18 +3,14 @@ import { X } from 'lucide-react';
 
 // ── CalculadoraTabelaDireta ──────────────────────────────────────
 // Simulador de financiamento "Tabela Direta" (Direcional Engenharia).
-// 10% à vista/cartão · 30% parcelado na obra (corrigido pelo INCC-M,
-// crescente mês a mês) · 60% financiado pela Tabela Price (mostramos
-// apenas a parcela mais alta e a mais baixa).
+// 10% à vista/cartão · 30% parcelado na obra (parcelas iguais, sem
+// correção) · 60% financiado pela Tabela Price (parcela constante) + MIP
+// + DFI, réplica exata da planilha "Simulador de Tabela Direta" (aba
+// Direcional/Auxiliar) — mostramos apenas a parcela mais alta e a mais baixa.
 export default function CalculadoraTabelaDireta({ modoNoturno, onClose }) {
     const [valorImovelTexto, setValorImovelTexto] = useState('');
     const [parcelasObraTexto, setParcelasObraTexto] = useState('');
     const [parcelasFinanciamentoTexto, setParcelasFinanciamentoTexto] = useState('120');
-    // INCC-M de junho/2026 (FGV): 0,85% a.m. — atualize aqui quando o índice mudar.
-    const INCC_MENSAL = 0.0085;
-    // IPCA de junho/2026 (IBGE): 0,16% a.m. — usado para corrigir o saldo devedor do
-    // financiamento (60%) mês a mês. Atualize aqui quando o índice mudar.
-    const IPCA_MENSAL = 0.0016;
 
     // Parâmetros fixos do simulador Direcional (planilha original)
     const PRAZO_MAXIMO = 120;
@@ -54,38 +50,32 @@ export default function CalculadoraTabelaDireta({ modoNoturno, onClose }) {
     const obra30 = valorImovel * 0.30;
     const financiado60 = valorImovel * 0.60;
 
-    // Parcelas de obra crescentes pelo INCC-M, mantendo a soma total = 30% do imóvel
-    const { obraUltima } = useMemo(() => {
-        if (nParcelasObra <= 0 || obra30 <= 0) return { obraBase: 0, obraUltima: 0 };
-        const i = INCC_MENSAL;
-        const base = i === 0
-            ? obra30 / nParcelasObra
-            : (obra30 * i) / (Math.pow(1 + i, nParcelasObra) - 1);
-        const ultima = base * Math.pow(1 + i, nParcelasObra - 1);
-        return { obraBase: base, obraUltima: ultima };
+    // Parcelas de obra iguais mês a mês, sem correção, somando 30% do imóvel
+    const obraParcela = useMemo(() => {
+        if (nParcelasObra <= 0 || obra30 <= 0) return 0;
+        return obra30 / nParcelasObra;
     }, [obra30, nParcelasObra]);
 
     const { maiorParcela, menorParcela } = useMemo(() => {
         if (financiado60 <= 0 || prazoFinanciamento <= 0) return { maiorParcela: 0, menorParcela: 0 };
 
+        // Réplica das fórmulas da planilha "Direcional" (aba Auxiliar D1/D2):
+        // TX MÊS = (1+taxa a.a.)^(1/12) - 1
+        // PMT constante = (taxaMes * saldo) / (1 - (1+taxaMes)^-prazo)  [equivalente a -PMT(D2,C8,C6)]
         const taxaMes = Math.pow(1 + TAXA_JUROS_AA, 1 / 12) - 1;
+        const pmtConstante = (taxaMes * financiado60) / (1 - Math.pow(1 + taxaMes, -prazoFinanciamento));
 
         let saldo = financiado60;
-        let somaParcelasAnteriores = 0;
+        let somaParcelasAnteriores = 0; // SUM($G$17:G_anterior)
         let maior = 0;
         let menor = Infinity;
 
         for (let mes = 1; mes <= prazoFinanciamento; mes++) {
-            // Correção monetária mensal do saldo devedor pelo IPCA
-            saldo = saldo * (1 + IPCA_MENSAL);
-
-            const prazoRestante = prazoFinanciamento - mes + 1;
-            const pmtMes = (saldo * taxaMes) / (1 - Math.pow(1 + taxaMes, -prazoRestante));
-            const juros = saldo * taxaMes;
-            const amortizacao = pmtMes - juros;
-            const mip = saldo * TAXA_MIP;
-            const dfi = (saldo + somaParcelasAnteriores) * TAXA_DFI;
-            const parcela = pmtMes + mip + dfi;
+            const juros = saldo * taxaMes;              // = H_ant * (Auxiliar!$D$2)
+            const amortizacao = pmtConstante - juros;    // = Auxiliar!$D$1 - Juros
+            const mip = saldo * TAXA_MIP;                // = H_ant * $E$6
+            const dfi = (saldo + somaParcelasAnteriores) * TAXA_DFI; // = (H_ant + SUM(G_ant)) * $E$4
+            const parcela = pmtConstante + mip + dfi;    // = PMT + MIP + DFI
 
             if (parcela > maior) maior = parcela;
             if (parcela < menor) menor = parcela;
@@ -198,13 +188,13 @@ export default function CalculadoraTabelaDireta({ modoNoturno, onClose }) {
                             <div style={{ padding: '13px 16px', borderBottom: `1px solid ${divider}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                 <div>
                                     <div style={{ fontSize: 13, fontWeight: 700, color: text }}>30% — parcelado durante a obra</div>
-                                    <div style={{ fontSize: 11.5, color: sub, marginTop: 2 }}>corrigido pelo INCC-M</div>
+                                    <div style={{ fontSize: 11.5, color: sub, marginTop: 2 }}>parcelas iguais, sem correção</div>
                                     <div style={{ fontSize: 10.5, color: sub, marginTop: 1, fontStyle: 'italic' }}>30% de {fmtBRL(valorImovel)} = {fmtBRL(obra30)}</div>
                                 </div>
                                 <div style={{ textAlign: 'right', marginLeft: 12 }}>
                                     {nParcelasObra > 0 ? (
                                         <div style={{ fontFamily: 'ui-monospace, monospace', fontWeight: 700, fontSize: 15, color: text, whiteSpace: 'nowrap' }}>
-                                            {nParcelasObra}x de {fmtBRL(obraUltima)}
+                                            {nParcelasObra}x de {fmtBRL(obraParcela)}
                                         </div>
                                     ) : (
                                         <div style={{ fontSize: 12, color: sub }}>Informe as parcelas</div>
@@ -245,7 +235,7 @@ export default function CalculadoraTabelaDireta({ modoNoturno, onClose }) {
                     </div>
 
                     <p style={{ fontSize: 10.5, lineHeight: 1.6, color: sub, padding: '18px 24px 20px', margin: 0 }}>
-                        60% do imóvel financiado em até {prazoFinanciamento} meses pela Tabela Price (juros de 12% a.a., seguros MIP 0,021% e DFI 0,007% sobre o saldo devedor), com o saldo devedor corrigido mês a mês pelo IPCA (0,16% a.m., referência junho/2026). As parcelas de obra (30%) crescem mês a mês pelo INCC-M (0,85% a.m., referência junho/2026). Valores estimados, sujeitos a confirmação junto à incorporadora.
+                        60% do imóvel financiado em até {prazoFinanciamento} meses pela Tabela Price (juros de 12% a.a., parcela constante), acrescido de seguros MIP 0,021% e DFI 0,007% sobre o saldo devedor a cada mês. As parcelas de 10% e 30% não têm correção. Valores estimados, sujeitos a confirmação junto à incorporadora.
                     </p>
                 </div>
             </div>

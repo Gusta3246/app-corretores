@@ -225,6 +225,9 @@ export const imagensEquipeDiarias = [
   "https://i.postimg.cc/V64YWYJG/Copia-de-IMG-0780.jpg",
   "https://i.postimg.cc/3xDxQ5qp/Copia-de-IMG-0805.jpg",
   "https://i.postimg.cc/nL4VMKpc/Copia-de-IMG-9604-(1).jpg",
+  "https://i.postimg.cc/KcMsgsDf/Whats-App-Image-2026-07-21-at-17-13-35.jpg",
+  "https://i.postimg.cc/449FhFQv/Whats-App-Image-2026-07-21-at-17-13-36.jpg",
+  "https://i.postimg.cc/pVF1n1JG/Whats-App-Image-2026-08-08-at-14-03-11-(2).jpg",
 ];
 
 const today = new Date();

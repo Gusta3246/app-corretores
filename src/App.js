@@ -2124,11 +2124,11 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
 
                         {/* 5 colunas */}
                         {[
-                            { short:'DIA',  full:'DIAMANTE', color:'#60a5fa', val:'25%', bar:1.00, rows:[['PRO SOLUTO','25%'],['FINANC. 84X','50%'],['COMP. RENDA','20%']] },
-                            { short:'OURO', full:'OURO',     color:'#fbbf24', val:'20%', bar:.80,  rows:[['PRO SOLUTO','20%'],['FINANC. 84X','50%'],['COMP. RENDA','20%']] },
-                            { short:'PRA',  full:'PRATA',    color:'#94a3b8', val:'18%', bar:.72,  rows:[['PRO SOLUTO','18%'],['FINANC. 84X','48%'],['COMP. RENDA','18%']] },
-                            { short:'BRO',  full:'BRONZE',   color:'#fb923c', val:'15%', bar:.60,  rows:[['PRO SOLUTO','15%'],['FINANC. 84X','45%'],['COMP. RENDA','15%']] },
-                            { short:'AÇO',  full:'AÇO',      color:'#64748b', val:'12%', bar:.48,  rows:[['PRO SOLUTO','12%'],['FINANC. 84X','40%'],['COMP. RENDA','10%']] },
+                            { short:'DIA',  full:'DIAMANTE', color:'#60a5fa', val:'25%', bar:1.00, rows:[['% PRO SOLUTO','25%'],['MAX. DE RENDA MENSAL','50%'],['COMP. DE RENDA PRO SOLUTO','20%']] },
+                            { short:'OURO', full:'OURO',     color:'#fbbf24', val:'20%', bar:.80,  rows:[['% PRO SOLUTO','20%'],['MAX. DE RENDA MENSAL','50%'],['COMP. DE RENDA PRO SOLUTO','20%']] },
+                            { short:'PRA',  full:'PRATA',    color:'#94a3b8', val:'18%', bar:.72,  rows:[['% PRO SOLUTO','18%'],['MAX. DE RENDA MENSAL','48%'],['COMP. DE RENDA PRO SOLUTO','18%']] },
+                            { short:'BRO',  full:'BRONZE',   color:'#fb923c', val:'15%', bar:.60,  rows:[['% PRO SOLUTO','15%'],['MAX. DE RENDA MENSAL','45%'],['COMP. DE RENDA PRO SOLUTO','15%']] },
+                            { short:'AÇO',  full:'AÇO',      color:'#64748b', val:'12%', bar:.48,  rows:[['% PRO SOLUTO','12%'],['MAX. DE RENDA MENSAL','40%'],['COMP. DE RENDA PRO SOLUTO','10%']] },
                         ].map((r, i) => (
                             <div key={r.short} style={{ flex:'1 1 0%', borderRight: i<4 ? (modoNoturno?'0.5px solid rgba(255,255,255,.08)':'0.5px solid rgba(0,0,0,.07)') : 'none', display:'flex', flexDirection:'column' }}>
 

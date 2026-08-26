@@ -122,10 +122,16 @@ export const revistasDataLocal = [
     ],
     link: "https://drive.google.com/file/d/1qCCNbu_w4zzzSS9eAi-vTCS8YpW6AZvY/view?usp=sharing", aliases: ["moratta", "moratta home", "moratta riva"], pois: ["Carrefour Flores (ao lado - 24h)", "Amazonas Shopping (5 min)", "Manaus Plaza Shopping (5 min)", "Millennium Shopping (8 min)", "UEA - Universidade Estadual do Amazonas (5 min)", "UniNorte Campus Djalma Batista (5 min)", "Samel Centro Médico Djalma Batista (10 min)", "Sushi Ponta Negra - Djalma Batista (8 min)", "Garrafeira 351 - Restaurante (5 min)", "Gendai Restaurante Japonês - Amazonas Shopping (5 min)"] },
 
-  { id: 19, title: "Grand Golf Home Club", brand: "Riva", region: "Centro Sul", size: "48m² a 75m²", bedrooms: "1 e 2 quartos", flooring: "Todo o apê", entrega: "2029", rendaMinima: 9000,
-    cover: "",
-    fotosExtras: [],
-    link: "", aliases: ["grand golf", "golf", "grand golf home club"], pois: [] },
+  { id: 19, title: "Grand Golf Home Club", brand: "Riva", region: "Colônia Japonesa - Zona Centro-Sul", size: "48m² a 75m²", bedrooms: "1 e 2 quartos", flooring: "Todo o apê", entrega: "2029", rendaMinima: 9000,
+    cover: "https://i.postimg.cc/qvWsVdVQ/Copia-de-Guarita-REV07HR.jpg",
+    fotosExtras: [
+      "https://i.postimg.cc/9DtRZKfq/Copia-de-Guarita-REV07HR.jpg",
+      "https://i.postimg.cc/XXRph4Gp/Copia-de-Fachada-REV08HR.jpg",
+      "https://i.postimg.cc/ft3R2rMV/Copia-de-Piscina-REV07HR.jpg",
+      "https://i.postimg.cc/4mRxPPqX/Copia-de-Piscina-Topo-REV05HR.jpg",
+      "https://i.postimg.cc/8FXCbSgc/Copia-de-Piscinafrontal02-REV06HR.jpg",
+    ],
+    link: "https://drive.google.com/file/d/1BOVh2bJk-8-65ym0wMlFEx90aFZ31a5S/view?usp=sharing", aliases: ["grand golf", "golf", "grand golf home club"], pois: [] },
 ];
 
 export const utilitariosData = [

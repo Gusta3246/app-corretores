@@ -53,6 +53,7 @@ export default function App() {
         { words: ['delta'] },
         { words: ['tubaroes'] },
         { words: ['rafa'] },
+        { words: ['diretoria'] },
     ];
     const normalizeLogin = (str = '') => str
         .normalize('NFD').replace(/[\u0300-\u036f]/g, '') // remove acentos (Águia -> Aguia, Tubarões -> Tubaroes)
@@ -108,6 +109,7 @@ export default function App() {
         'lucascomercial.direcional@gmail.com',
         'dhiekson.direcionalvendas@gmail.com',
         'amandaalbuquerque.direcional@gmail.com',
+        'gleycimar.santiago@direcionalvendas.com.br',
     ];
     const validateLoginEmail = (input) => {
         const norm = (input || '').toLowerCase().trim().replace(/\s+/g, '');

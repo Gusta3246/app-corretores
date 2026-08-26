@@ -17,13 +17,14 @@ export const LOGOS_EMPREENDIMENTO = {
   rio_negro: "https://i.postimg.cc/NFKMd7M6/DIR-Conquista-Rio-Negro-Logo.png",
   rio_tapajos: "https://i.postimg.cc/xCx8GF0c/Copia-de-DIR-Rio-Tapajos-logo.png",
   moratta: "https://i.postimg.cc/bvTVQqdd/248-3-LOGO-MORATTA-FIORE-PRETO-V1F.png",
+  grand_golf: "https://i.postimg.cc/MKYgtdBn/Copia-de-468-2-LOGO-GRAND-GOLF-V1F-Prancheta-1.png",
 };
 
 export const REVISTA_LOGO_MAP = {
   1: 'brisas', 2: 'orquidea', 3: 'village_torres', 4: 'conquista_jb',
   5: 'viva_coral', 6: 'jardim_norte', 7: 'rio_amazonas', 8: 'bosque_torres',
   9: 'lirio_azul', 10: 'boulevard_classic', 11: 'boulevard_prime',
-  12: 'oasis_azzure', 13: 'zenith', 14: 'topazio', 16: 'rio_negro', 17: 'rio_tapajos', 18: 'moratta',
+  12: 'oasis_azzure', 13: 'zenith', 14: 'topazio', 16: 'rio_negro', 17: 'rio_tapajos', 18: 'moratta', 19: 'grand_golf',
 };
 
 const D = 'https://www.direcional.com.br/wp-content/uploads';
@@ -120,6 +121,11 @@ export const revistasDataLocal = [
       `https://i.postimg.cc/jdSf5tY9/DIRECIONAL-CARREFOUR-LAVANDERIA-FINAL.jpg`,
     ],
     link: "https://drive.google.com/file/d/1qCCNbu_w4zzzSS9eAi-vTCS8YpW6AZvY/view?usp=sharing", aliases: ["moratta", "moratta home", "moratta riva"], pois: ["Carrefour Flores (ao lado - 24h)", "Amazonas Shopping (5 min)", "Manaus Plaza Shopping (5 min)", "Millennium Shopping (8 min)", "UEA - Universidade Estadual do Amazonas (5 min)", "UniNorte Campus Djalma Batista (5 min)", "Samel Centro Médico Djalma Batista (10 min)", "Sushi Ponta Negra - Djalma Batista (8 min)", "Garrafeira 351 - Restaurante (5 min)", "Gendai Restaurante Japonês - Amazonas Shopping (5 min)"] },
+
+  { id: 19, title: "Grand Golf Home Club", brand: "Riva", region: "Centro Sul", size: "48m² a 75m²", bedrooms: "1 e 2 quartos", flooring: "Todo o apê", entrega: "2029", rendaMinima: 9000,
+    cover: "",
+    fotosExtras: [],
+    link: "", aliases: ["grand golf", "golf", "grand golf home club"], pois: [] },
 ];
 
 export const utilitariosData = [

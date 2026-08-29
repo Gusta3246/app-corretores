@@ -248,4 +248,18 @@ export const dayIndex = Math.floor((today.getTime() - today.getTimezoneOffset() 
 // Rotação de 3 fotos por dia: manhã (00h-11h59), tarde (12h-17h59) e noite (18h-23h59)
 const horaLocal = today.getHours();
 const periodoAtual = horaLocal < 12 ? 0 : (horaLocal < 18 ? 1 : 2);
-export const periodoIndex = dayIndex * 3 + periodoAtual;
+
+// === FIXAÇÃO TEMPORÁRIA DE FOTOS DO DIA (1 semana) ===
+// As 3 fotos abaixo (já presentes no fim de imagensEquipeDiarias) ficarão
+// fixas como "fotos do dia" de 29/08/2026 até 05/09/2026.
+const FOTOS_FIXAS_INICIO = new Date(2026, 7, 29); // 29/08/2026 (mês 7 = agosto, zero-indexed)
+const FOTOS_FIXAS_FIM = new Date(2026, 8, 5, 23, 59, 59); // 05/09/2026 fim do dia
+
+const dentroDoPeriodoFixo = today >= FOTOS_FIXAS_INICIO && today <= FOTOS_FIXAS_FIM;
+
+// Índice, dentro de imagensEquipeDiarias, das 3 últimas fotos (as fixadas)
+const INDICE_INICIO_FOTOS_FIXAS = imagensEquipeDiarias.length - 3;
+
+export const periodoIndex = dentroDoPeriodoFixo
+  ? INDICE_INICIO_FOTOS_FIXAS + periodoAtual
+  : dayIndex * 3 + periodoAtual;

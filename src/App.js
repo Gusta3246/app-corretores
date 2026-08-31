@@ -50,7 +50,7 @@ export default function App() {
         { words: ['sagazes'] },
         { words: ['tigres', 'norte'] },
         { words: ['aguia'] },
-        { words: ['Raposa'] },
+        { words: ['raposa'] },
         { words: ['tubaroes'] },
         { words: ['rafa'] },
         { words: ['diretoria'] },
@@ -62,7 +62,7 @@ export default function App() {
     const validateLoginTeam = (input) => {
         const norm = normalizeLogin(input);
         if (!norm) return false;
-        return LOGIN_TEAMS.some(t => t.words.every(w => norm.includes(w)));
+        return LOGIN_TEAMS.some(t => t.words.every(w => norm.includes(w.toLowerCase())));
     };
     const AUTHORIZED_EMAILS = [
         'vitoriasantos3.direcionalvenda@gmail.com',
@@ -90,7 +90,7 @@ export default function App() {
         'rayssa.antunes.direcionalvendas@gmail.com',
         'clarafeitosa.direcionalvendas@gmail.com',
         'eirabolívar.direcionalvendas@gmail.com',
-        'Kleberson.direcionalvendas@gmail.com',
+        'kleberson.direcionalvendas@gmail.com',
         'pedroradro.direcionalvendas@gmail.com',
         'alexcastro.direcionalvendas@gmail.com',
         'jeiciferreira.direcionalvendas@gmail.com',
@@ -111,7 +111,7 @@ export default function App() {
     ];
     const validateLoginEmail = (input) => {
         const norm = (input || '').toLowerCase().trim().replace(/\s+/g, '');
-        return AUTHORIZED_EMAILS.includes(norm);
+        return AUTHORIZED_EMAILS.some(e => e.toLowerCase() === norm);
     };
     const handleLoginSubmit = (e) => {
         e.preventDefault();

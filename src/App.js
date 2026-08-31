@@ -90,7 +90,7 @@ export default function App() {
         'rayssa.antunes.direcionalvendas@gmail.com',
         'clarafeitosa.direcionalvendas@gmail.com',
         'eirabolívar.direcionalvendas@gmail.com',
-        'Kleberson.direcionalvendas@gmail.com ',
+        'Kleberson.direcionalvendas@gmail.com',
         'pedroradro.direcionalvendas@gmail.com',
         'alexcastro.direcionalvendas@gmail.com',
         'jeiciferreira.direcionalvendas@gmail.com',

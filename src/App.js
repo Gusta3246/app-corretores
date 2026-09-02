@@ -106,6 +106,7 @@ export default function App() {
         'lucascomercial.direcional@gmail.com',
         'Olavoholanda.direcional@gmail.com',
         'gleycimar.santiago@direcionalvendas.com.br',
+        'juliane.jhullydirecionalvendas@gmail.com',
         'miqueiasnunes.direcionalvendas@gmail.com',
         'salesadm.direcionalvendas@gmail.com',
     ];

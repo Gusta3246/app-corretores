@@ -316,6 +316,8 @@ export default function App() {
     const [showCalculadoraItbiModal, setShowCalculadoraItbiModal] = useState(false);
     // ── Calculadora Tabela Direta ──
     const [showCalculadoraTabelaDiretaModal, setShowCalculadoraTabelaDiretaModal] = useState(false);
+    // ── Calculadora de Entrada ──
+    const [showCalculadoraEntradaModal, setShowCalculadoraEntradaModal] = useState(false);
     // ── Menu de opções do Simulador ──
     const [showSimuladorModal, setShowSimuladorModal] = useState(false);
 
@@ -1654,6 +1656,19 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
                                 title={modoNoturno ? "Ativar Modo Claro" : "Ativar Modo Noturno"}
                             >
                                 {modoNoturno ? <Sun size={20} /> : <Moon size={20} />}
+                            </button>
+
+                            {/* Botão Calculadora de Entrada no Header */}
+                            <button
+                                onClick={() => { haptic('medium'); setShowCalculadoraEntradaModal(true); }}
+                                className={`shrink-0 p-2.5 rounded-2xl border transition-all duration-300 hover:scale-105 ${
+                                    modoNoturno
+                                    ? 'bg-amber-500/20 border-amber-400/30 text-amber-300 hover:bg-amber-500/30'
+                                    : 'bg-amber-50 border-amber-200 text-amber-600 hover:bg-amber-100'
+                                }`}
+                                title="Calculadora de Entrada"
+                            >
+                                <Calculator size={20} />
                             </button>
 
                             {/* Botão Pasta no Header */}
@@ -4222,6 +4237,523 @@ compute();
                     modoNoturno={modoNoturno}
                     onClose={() => setShowCalculadoraTabelaDiretaModal(false)}
                 />
+            )}
+
+            {/* ── MODAL: Calculadora de Entrada ── */}
+            {showCalculadoraEntradaModal && (
+                <div className="fixed inset-0 z-[70] flex items-center justify-center p-4"
+                    style={{ background: 'rgba(15,23,42,0.65)', backdropFilter: 'blur(12px) saturate(160%)', WebkitBackdropFilter: 'blur(12px) saturate(160%)' }}
+                    onClick={() => setShowCalculadoraEntradaModal(false)}
+                >
+                    <div
+                        onClick={(e) => e.stopPropagation()}
+                        className="modal-slide-open w-full"
+                        style={{
+                            maxWidth: 720,
+                            borderRadius: 20,
+                            overflow: 'hidden',
+                            background: modoNoturno ? '#0f172a' : '#ffffff',
+                            boxShadow: '0 24px 64px rgba(0,0,0,0.4)',
+                            border: modoNoturno ? '1px solid rgba(255,255,255,0.08)' : '1px solid rgba(15,23,42,0.06)',
+                        }}
+                    >
+                        <div className="relative overflow-hidden shrink-0"
+                            style={{
+                                background: modoNoturno ? '#0f172a' : '#ffffff',
+                                borderBottom: `1px solid ${modoNoturno ? '#1e293b' : '#e2e8f0'}`,
+                            }}>
+                            <div className="relative z-10 flex items-center gap-3 px-5 py-4">
+                                <div className="flex-1 min-w-0">
+                                    <p className="text-[11px] font-bold uppercase tracking-widest truncate" style={{ color: '#c08a3e' }}>Simulação · Ato à vista</p>
+                                    <h2 className="font-black text-lg truncate" style={{ color: modoNoturno ? '#f1f5f9' : '#1e293b' }}>Calculadora de Entrada</h2>
+                                </div>
+                                <button onClick={() => setShowCalculadoraEntradaModal(false)}
+                                    className="w-8 h-8 rounded-xl flex items-center justify-center transition-all active:scale-90 shrink-0"
+                                    style={{ background: modoNoturno ? '#1e293b' : '#f8fafc' }}>
+                                    <X size={16} color={modoNoturno ? '#94a3b8' : '#64748b'} />
+                                </button>
+                            </div>
+                        </div>
+                        <div className="relative" style={{ height: 700, maxHeight: '82vh' }}>
+                            <iframe
+                                srcDoc={`<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Calculadora de entrada</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#10151b;
+    --surface:#1b232c;
+    --surface-2:#212b35;
+    --border:#2d3946;
+    --accent:#c08a3e;
+    --accent-soft:rgba(192,138,62,0.14);
+    --text:#f1ede4;
+    --text-muted:#8fa0ac;
+    --positive:#9bbb8f;
+    --warn:#d99a5b;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--text);
+    font-family:'IBM Plex Sans', sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{
+    max-width:1040px;
+    margin:0 auto;
+    padding:40px 24px 72px;
+  }
+  header{
+    margin-bottom:32px;
+  }
+  header h1{
+    font-family:'Fraunces', serif;
+    font-weight:500;
+    font-size:clamp(28px,4vw,38px);
+    margin:0 0 8px;
+    letter-spacing:-0.01em;
+  }
+  header p{
+    margin:0;
+    color:var(--text-muted);
+    font-size:15px;
+    max-width:56ch;
+    line-height:1.5;
+  }
+  .grid{
+    display:grid;
+    grid-template-columns:1fr 1.25fr;
+    gap:28px;
+    align-items:start;
+  }
+  @media (max-width:800px){
+    .grid{grid-template-columns:1fr;}
+  }
+  .card{
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:14px;
+    padding:26px;
+  }
+  .card h2{
+    font-family:'Fraunces', serif;
+    font-weight:500;
+    font-size:19px;
+    margin:0 0 20px;
+  }
+  .field{
+    margin-bottom:18px;
+  }
+  .field label{
+    display:block;
+    font-size:13px;
+    color:var(--text-muted);
+    margin-bottom:6px;
+  }
+  .field input, .field select{
+    width:100%;
+    background:var(--surface-2);
+    border:1px solid var(--border);
+    border-radius:8px;
+    color:var(--text);
+    font-family:'IBM Plex Mono', monospace;
+    font-size:15px;
+    padding:11px 12px;
+    outline:none;
+    transition:border-color .15s ease;
+  }
+  .field select{
+    font-family:'IBM Plex Sans', sans-serif;
+  }
+  .field input:focus, .field select:focus{
+    border-color:var(--accent);
+  }
+  .field-row{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:14px;
+  }
+  .tiers{
+    display:grid;
+    grid-template-columns:repeat(5,1fr);
+    gap:6px;
+  }
+  @media (max-width:520px){
+    .tiers{grid-template-columns:repeat(2,1fr);}
+  }
+  .tier{
+    background:var(--surface-2);
+    border:1px solid var(--border);
+    border-radius:8px;
+    padding:9px 6px;
+    font-size:12px;
+    font-family:'IBM Plex Sans', sans-serif;
+    cursor:pointer;
+    text-align:center;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:5px;
+    transition:border-color .15s ease, background .15s ease;
+  }
+  .tier .dot{
+    width:8px;
+    height:8px;
+    border-radius:50%;
+  }
+  .tier.selected{
+    border-color:var(--accent);
+    background:var(--accent-soft);
+    color:var(--text);
+  }
+  .tier-info{
+    margin-top:12px;
+    background:var(--surface-2);
+    border:1px solid var(--border);
+    border-radius:8px;
+    padding:4px 14px;
+  }
+  .tier-info .trow{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    padding:8px 0;
+    font-size:13px;
+    border-bottom:1px dashed var(--border);
+  }
+  .tier-info .trow:last-child{border-bottom:none;}
+  .tier-info .trow span:first-child{color:var(--text-muted);}
+  .tier-info .trow.highlight span:last-child{
+    font-family:'IBM Plex Mono', monospace;
+    color:var(--accent);
+    font-weight:600;
+  }
+  .tier-info .trow:not(.highlight) span:last-child{
+    font-family:'IBM Plex Mono', monospace;
+    color:var(--text-muted);
+  }
+
+  /* ledger / receipt */
+  .ledger{
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:14px;
+    padding:26px 26px 8px;
+  }
+  .ledger h2{
+    font-family:'Fraunces', serif;
+    font-weight:500;
+    font-size:19px;
+    margin:0 0 18px;
+  }
+  .final-box{
+    margin-top:14px;
+    padding:20px;
+    border-radius:10px;
+    background:var(--accent-soft);
+    border:1px solid rgba(192,138,62,0.35);
+  }
+  .final-box .label{
+    font-size:13px;
+    color:var(--text-muted);
+    margin-bottom:6px;
+  }
+  .final-box .val{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:clamp(26px,3.6vw,34px);
+    font-weight:600;
+    color:var(--positive);
+  }
+  .warn-box{
+    margin-top:14px;
+    padding:14px 16px;
+    border-radius:10px;
+    background:rgba(217,154,91,0.1);
+    border:1px solid rgba(217,154,91,0.35);
+    color:var(--warn);
+    font-size:13px;
+    line-height:1.5;
+  }
+  .section-divider{
+    border:none;
+    border-top:1px solid var(--border);
+    margin:26px 0 22px;
+  }
+  .subsection-title{
+    font-family:'Fraunces', serif;
+    font-weight:500;
+    font-size:16px;
+    margin:0 0 18px;
+  }
+  .info-line{
+    margin-top:14px;
+    padding-top:14px;
+    border-top:1px dashed var(--border);
+    font-size:13px;
+    color:var(--text-muted);
+    line-height:1.5;
+  }
+  .info-line b{
+    color:var(--text);
+    font-weight:600;
+  }
+  .info-line .obs{
+    display:block;
+    margin-top:8px;
+    font-size:12px;
+    font-style:italic;
+    color:var(--text-muted);
+  }
+  .info-line .rule-row{
+    margin-bottom:4px;
+  }
+  .info-line .rule-row:last-of-type{
+    margin-bottom:0;
+  }
+  .notice-box{
+    margin-bottom:24px;
+    padding:14px 16px;
+    border-radius:10px;
+    background:rgba(217,91,91,0.12);
+    border:1px solid rgba(217,91,91,0.4);
+    color:#e57373;
+    font-size:13px;
+    line-height:1.5;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Calculadora de entrada</h1>
+    <p>Calcula o valor total do ato à vista com base nos dados do imóvel e do cliente.</p>
+  </header>
+
+  <div class="notice-box">
+    Esses valores são apenas simulados. Caso alguma das porcentagens esteja fora do limite, ajustem aumentando o valor do ato para conseguirmos enquadrar a proposta.
+  </div>
+
+  <div class="grid">
+    <div class="card">
+      <h2>Dados do imóvel e do cliente</h2>
+
+      <div class="field">
+        <label for="valorImovel">Valor final do imóvel (R$)</label>
+        <input type="text" inputmode="numeric" id="valorImovel" placeholder="228.500,00">
+      </div>
+
+      <div class="field">
+        <label for="pctFinanciamento">Financiamento/subsídio (%)</label>
+        <input type="number" id="pctFinanciamento" placeholder="76.98" step="0.01">
+      </div>
+
+      <div class="field">
+        <label>Faixa / ranking do cliente</label>
+        <div class="tiers" id="tiers"></div>
+        <div class="tier-info" id="tierInfo"></div>
+      </div>
+
+      <div class="field" style="display:none;">
+        <label for="margem">Margem de segurança (pontos percentuais)</label>
+        <input type="number" id="margem" value="1" step="0.01">
+      </div>
+
+      <hr class="section-divider">
+      <h3 class="subsection-title">Renda do cliente</h3>
+
+      <div class="field">
+        <label for="rendaBruta">Renda bruta mensal do cliente (R$)</label>
+        <input type="text" inputmode="numeric" id="rendaBruta" placeholder="2.500,00">
+      </div>
+
+      <div class="field">
+        <label for="parcelaFinanciamento">Parcela de financiamento (R$)</label>
+        <input type="text" inputmode="numeric" id="parcelaFinanciamento" placeholder="737,05">
+      </div>
+    </div>
+
+    <div class="ledger">
+      <h2>Ato à vista</h2>
+      <div class="final-box">
+        <div class="label">Valor total do ato</div>
+        <div class="val" id="valorTotalAto">R$ 0,00</div>
+      </div>
+      <div class="info-line" id="infoRenda"></div>
+      <div id="avisoGeral"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+function fmtMoeda(v){
+  if(!isFinite(v)) v = 0;
+  return v.toLocaleString('pt-BR', {style:'currency', currency:'BRL'});
+}
+function round2(v){
+  return Math.round((v + Number.EPSILON) * 100) / 100;
+}
+function num(id){
+  const v = parseFloat(document.getElementById(id).value);
+  return isFinite(v) ? v : 0;
+}
+function maskCurrencyInput(el){
+  let digits = el.value.replace(/\\D/g,'');
+  digits = digits.replace(/^0+(?=\\d)/, '');
+  if(digits === '') digits = '0';
+  const cents = parseInt(digits, 10);
+  const reais = cents/100;
+  el.value = reais.toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2});
+  el.dataset.raw = reais;
+}
+function currencyVal(id){
+  const el = document.getElementById(id);
+  const v = parseFloat(el.dataset.raw);
+  return isFinite(v) ? v : 0;
+}
+
+const valorImovelInput = document.getElementById('valorImovel');
+valorImovelInput.addEventListener('input', () => { maskCurrencyInput(valorImovelInput); calcular(); });
+
+const rendaInput = document.getElementById('rendaBruta');
+rendaInput.addEventListener('input', () => { maskCurrencyInput(rendaInput); calcular(); });
+
+const parcelaFinInput = document.getElementById('parcelaFinanciamento');
+parcelaFinInput.addEventListener('input', () => { maskCurrencyInput(parcelaFinInput); calcular(); });
+
+let ultimoValorEntrada = 0;
+let pctMinimoNegativo = false;
+
+const FAIXAS = [
+  { nome:'Diamante', cor:'#5b8def', proSoluto:25, maxRenda:50, compRenda:20 },
+  { nome:'Ouro',     cor:'#d4ab27', proSoluto:20, maxRenda:50, compRenda:20 },
+  { nome:'Prata',    cor:'#9aa4ad', proSoluto:18, maxRenda:48, compRenda:18 },
+  { nome:'Bronze',   cor:'#c9702f', proSoluto:15, maxRenda:45, compRenda:15 },
+  { nome:'Aço',      cor:'#3d4552', proSoluto:12, maxRenda:40, compRenda:10 }
+];
+let faixaSelecionada = 4; // Aço, como no exemplo
+
+const tiersEl = document.getElementById('tiers');
+const tierInfoEl = document.getElementById('tierInfo');
+
+function renderTiers(){
+  let html = FAIXAS.map((f, i) => \`
+    <div class="tier \${i === faixaSelecionada ? 'selected' : ''}" data-idx="\${i}">
+      <span class="dot" style="background:\${f.cor}"></span>
+      <span>\${f.nome}</span>
+    </div>\`).join('');
+  tiersEl.innerHTML = html;
+
+  tiersEl.querySelectorAll('.tier').forEach(el => {
+    el.addEventListener('click', () => {
+      faixaSelecionada = parseInt(el.dataset.idx, 10);
+      renderTiers();
+      renderTierInfo();
+      calcular();
+    });
+  });
+}
+
+function renderTierInfo(){
+  const f = FAIXAS[faixaSelecionada];
+  tierInfoEl.innerHTML = \`
+    <div class="trow highlight"><span>% pró soluto (usado no cálculo)</span><span>\${f.proSoluto}%</span></div>
+    <div class="trow"><span>Máx. renda mensal</span><span>\${f.maxRenda}%</span></div>
+    <div class="trow"><span>Comprometimento de renda pró soluto</span><span>\${f.compRenda}%</span></div>\`;
+}
+
+function pctRankingAtual(){
+  return FAIXAS[faixaSelecionada].proSoluto;
+}
+
+renderTiers();
+renderTierInfo();
+
+
+
+function calcular(){
+  const valorFinal = currencyVal('valorImovel');
+  const pctFinanciamento = num('pctFinanciamento');
+  const pctRanking = pctRankingAtual();
+  const margem = num('margem');
+
+  const pctRestante = round2(100 - pctFinanciamento);
+  const pctMinimo = round2(pctRestante - pctRanking);
+  const pctFinalEntrada = round2(pctMinimo + margem);
+  const valorEntrada = valorFinal * (pctFinalEntrada/100);
+
+  ultimoValorEntrada = valorEntrada < 0 ? 0 : valorEntrada;
+  pctMinimoNegativo = pctMinimo < 0;
+
+  validarRenda();
+}
+
+// Regras 1 e 2 (comprometimento de renda) seguem calculadas internamente para
+// validar a viabilidade, mas não têm mais uma seção própria: o "1º sinal" foi
+// eliminado como valor exibido e é sempre somado ao ato à vista.
+function validarRenda(){
+  const renda = currencyVal('rendaBruta');
+  const parcelaFin = currencyVal('parcelaFinanciamento');
+  const avisoGeral = document.getElementById('avisoGeral');
+  const infoRenda = document.getElementById('infoRenda');
+
+  // [VARIABLE_NAME: valorTotalAto] — antes era "1º sinal" + "ato à vista" (restante);
+  // agora é o valor integral da entrada calculada.
+  const valorTotalAto = ultimoValorEntrada;
+  document.getElementById('valorTotalAto').textContent = fmtMoeda(valorTotalAto);
+
+  if(pctMinimoNegativo){
+    avisoGeral.innerHTML = \`<div class="warn-box">O percentual mínimo de entrada ficou negativo — revise os dados informados antes de usar este resultado com o cliente.</div>\`;
+    return;
+  }
+
+  const f = FAIXAS[faixaSelecionada];
+  const limiteComprometimento = renda * (f.compRenda / 100);
+  const limiteRendaMensal = renda * (f.maxRenda / 100);
+  const margemDisponivel = limiteRendaMensal - parcelaFin;
+
+  // Painel objetivo: quanto da renda pode ser comprometido na regra pró soluto.
+  infoRenda.innerHTML =
+    \`<div class="rule-row">Comprometimento de renda pró soluto \${f.compRenda}% = <b>\${fmtMoeda(limiteComprometimento)}</b></div>\` +
+    \`<span class="obs">Observação: o menor valor pró soluto não pode ultrapassar esse valor.</span>\`;
+
+  if(parcelaFin > limiteRendaMensal){
+    avisoGeral.innerHTML = \`<div class="warn-box">A parcela de financiamento (\${fmtMoeda(parcelaFin)}) já ultrapassa o limite de \${f.maxRenda}% da renda mensal do cliente (\${fmtMoeda(limiteRendaMensal)}). Confirme a viabilidade antes de fechar.</div>\`;
+  } else if(margemDisponivel < limiteComprometimento){
+    avisoGeral.innerHTML = \`<div class="warn-box">A renda do cliente pode não ser suficiente para este valor de ato à vista — confirme a viabilidade antes de fechar.</div>\`;
+  } else {
+    avisoGeral.innerHTML = '';
+  }
+}
+
+document.querySelectorAll('input').forEach(el => {
+  if(['valorImovel','rendaBruta','parcelaFinanciamento'].includes(el.id)) return;
+  el.addEventListener('input', calcular);
+});
+
+document.getElementById('margem').value = 1;
+
+calcular();
+</script>
+</body>
+</html>
+`}
+                                className="w-full h-full border-0"
+                                title="Calculadora de Entrada"
+                                style={{
+                                    borderRadius: '8px',
+                                    backgroundColor: '#10151b'
+                                }}
+                            />
+                        </div>
+                    </div>
+                </div>
             )}
 
             {/* ── MODAL: Menu de opções do Simulador ── */}

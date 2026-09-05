@@ -131,7 +131,7 @@ export const revistasDataLocal = [
       "https://i.postimg.cc/4mRxPPqX/Copia-de-Piscina-Topo-REV05HR.jpg",
       "https://i.postimg.cc/8FXCbSgc/Copia-de-Piscinafrontal02-REV06HR.jpg",
     ],
-    link: "https://drive.google.com/file/d/1BOVh2bJk-8-65ym0wMlFEx90aFZ31a5S/view?usp=sharing", aliases: ["grand golf", "golf", "grand golf home club"], pois: [] },
+    link: "https://drive.google.com/file/d/1vVhUk9xRBpn9HdX2yMkxyK9Ps9txiDqr/view?usp=drive_link", aliases: ["grand golf", "golf", "grand golf home club"], pois: [] },
 ];
 
 export const utilitariosData = [

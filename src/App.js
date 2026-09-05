@@ -4545,12 +4545,12 @@ compute();
       <h2>Dados do imóvel e do cliente</h2>
 
       <div class="field">
-        <label for="valorImovel">Valor final do imóvel (R$)</label>
+        <label for="valorImovel">Valor final com desconto:</label>
         <input type="text" inputmode="numeric" id="valorImovel" placeholder="228.500,00">
       </div>
 
       <div class="field">
-        <label for="pctFinanciamento">Financiamento/subsídio (%)</label>
+        <label for="pctFinanciamento"> Soma do percentual:</label>
         <input type="number" id="pctFinanciamento" placeholder="76.98" step="0.01">
       </div>
 

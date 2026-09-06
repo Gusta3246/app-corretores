@@ -174,8 +174,7 @@ export function BannerExpandido({ revista, onClose, modoNoturno, onVerRevista, o
 // ── ObraTaxaModal ──────────────────────────────────────────────────
 export function ObraTaxaModal({ revista, onClose, modoNoturno }) {
     const [parcela, setParcela] = useState('');
-    const isDir = revista.brand === 'Direcional';
-    const accent = isDir ? '#f97316' : '#007AFF';
+    const accent = '#007AFF';
     const bg      = modoNoturno ? '#0f172a' : '#ffffff';
     const text    = modoNoturno ? '#f1f5f9' : '#1e293b';
     const sub     = modoNoturno ? '#94a3b8' : '#64748b';

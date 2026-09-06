@@ -154,9 +154,7 @@ export default function App() {
 
     // Sticky tabs — abas grudam no header quando banner sai da tela
     const [tabsSticky, setTabsSticky] = useState(false);
-    const [dockPillStyle, setDockPillStyle] = useState({ left: 0, top: 0, width: 0, height: 0, opacity: 0 });
-    const dockNavRef = useRef(null);
-    const dockTabRefs = useRef({});
+    const [sidebarNavOpen, setSidebarNavOpen] = useState(false);
     const bannerNavRef = useRef(null);
     const headerRef = useRef(null);
     // Search bar visibility (esconde no mobile ao scrollar para baixo)
@@ -394,28 +392,6 @@ export default function App() {
         const id = requestAnimationFrame(() => calcPill(activeBrand));
         return () => cancelAnimationFrame(id);
     }, []);
-
-    // ── Pílula deslizante do dock inferior mobile ──
-    const calcDockPill = (brand) => {
-        const activeEl = dockTabRefs.current[brand];
-        const navEl = dockNavRef.current;
-        if (!activeEl || !navEl) return;
-        const navRect = navEl.getBoundingClientRect();
-        const tabRect = activeEl.getBoundingClientRect();
-        setDockPillStyle({
-            left: tabRect.left - navRect.left + navEl.scrollLeft,
-            top: tabRect.top - navRect.top,
-            width: tabRect.width,
-            height: tabRect.height,
-            opacity: 1,
-        });
-        activeEl.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
-    };
-    useEffect(() => {
-        if (!tabsSticky) return;
-        const id = requestAnimationFrame(() => calcDockPill(activeBrand));
-        return () => cancelAnimationFrame(id);
-    }, [activeBrand, tabsSticky]);
 
     const [perfilSelecionado, setPerfilSelecionado] = useState(null); // 'diamante'|'ouro'|'prata'|'bronze'|'aco'
     const [perfilExpandido, setPerfilExpandido] = useState(null);
@@ -1524,8 +1500,14 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
                 @media (min-width: 640px) {
                     nav[aria-label="Tabs"] { justify-content: center !important; overflow-x: visible !important; flex-wrap: wrap; padding-left: 0 !important; padding-right: 0 !important; }
                 }
-                .dock-tabs-bar::-webkit-scrollbar { display: none; }
-                .dock-tabs-bar { -ms-overflow-style: none; scrollbar-width: none; }
+                @keyframes sidebar-overlay-in {
+                    0% { opacity: 0; }
+                    100% { opacity: 1; }
+                }
+                @keyframes sidebar-slide-in {
+                    0% { transform: translateX(100%); }
+                    100% { transform: translateX(0); }
+                }
                 @keyframes shimmer-sweep {
                     0%   { transform: translateX(-150%) skewX(-18deg); }
                     100% { transform: translateX(280%)  skewX(-18deg); }
@@ -1848,89 +1830,120 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
 
             </header>
 
-            {/* ── DOCK INFERIOR MOBILE (estilo iOS) — substitui as abas sticky do header no mobile ── */}
+            {/* ── BOTÃO FLUTUANTE: abre sidebar de navegação (mobile) ── */}
             <div className="sm:hidden"
                 style={{
                     position: 'fixed',
-                    left: 0, right: 0, bottom: 0,
+                    right: 16,
+                    bottom: 'calc(20px + env(safe-area-inset-bottom, 0px))',
                     zIndex: 40,
-                    transform: tabsSticky ? 'translateY(0)' : 'translateY(110%)',
+                    transform: tabsSticky ? 'scale(1)' : 'scale(0)',
                     opacity: tabsSticky ? 1 : 0,
-                    transition: 'transform 0.32s cubic-bezier(0.22,1,0.36,1), opacity 0.24s ease',
+                    transition: 'transform 0.28s cubic-bezier(0.22,1,0.36,1), opacity 0.22s ease',
                     pointerEvents: tabsSticky ? 'auto' : 'none',
                 }}>
-                <div style={{
-                    margin: 0,
-                    paddingBottom: 'env(safe-area-inset-bottom, 0px)',
-                    background: modoNoturno ? 'rgba(15,23,42,0.55)' : 'rgba(255,255,255,0.55)',
-                    backdropFilter: 'blur(24px) saturate(180%)',
-                    WebkitBackdropFilter: 'blur(24px) saturate(180%)',
-                    borderLeft: 'none',
-                    borderRight: 'none',
-                    borderBottom: 'none',
-                    borderTop: modoNoturno ? '1px solid rgba(255,255,255,0.08)' : '1px solid rgba(15,23,42,0.08)',
-                    borderTopLeftRadius: 24,
-                    borderTopRightRadius: 24,
-                    borderBottomLeftRadius: 0,
-                    borderBottomRightRadius: 0,
-                    boxShadow: modoNoturno
-                        ? '0 10px 32px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.06)'
-                        : '0 10px 32px rgba(15,23,42,0.14), inset 0 1px 0 rgba(255,255,255,0.6)',
-                }}>
-                    <div className="dock-tabs-bar" ref={dockNavRef} style={{ position: 'relative', display: 'flex', gap: 8, alignItems: 'center', overflowX: 'auto', WebkitOverflowScrolling: 'touch', scrollbarWidth: 'none', msOverflowStyle: 'none', padding: '10px 12px' }}>
-                        {/* Pílula azul deslizante */}
-                        <div aria-hidden="true" style={{
-                            position: 'absolute',
-                            left: dockPillStyle.left,
-                            top: dockPillStyle.top,
-                            width: dockPillStyle.width,
-                            height: dockPillStyle.height,
-                            borderRadius: 999,
-                            background: '#2563eb',
-                            opacity: dockPillStyle.opacity,
-                            transition: 'left 0.38s cubic-bezier(0.22,1,0.36,1), top 0.38s cubic-bezier(0.22,1,0.36,1), width 0.38s cubic-bezier(0.22,1,0.36,1), height 0.38s cubic-bezier(0.22,1,0.36,1), opacity 0.2s ease',
-                            pointerEvents: 'none',
-                            zIndex: 0,
-                        }} />
-                        {[
-                            { id: 'Direcional',  label: 'DIRECIONAL',  icon: <span style={{width:5,height:5,borderRadius:2,background: modoNoturno ? 'rgba(255,255,255,0.7)' : 'rgba(30,41,59,0.6)',flexShrink:0,display:'inline-block'}}/>, action: () => setActiveBrand('Direcional'), isBtn: true },
-                            { id: 'Riva',        label: 'RIVA',        icon: <span style={{width:5,height:5,borderRadius:2,background: modoNoturno ? 'rgba(255,255,255,0.7)' : 'rgba(30,41,59,0.6)',flexShrink:0,display:'inline-block'}}/>, action: () => setActiveBrand('Riva'),        isBtn: true },
-                            { id: 'Ranking',     label: 'RANKING',     icon: <Trophy size={13} style={{color: modoNoturno ? 'rgba(255,255,255,0.6)' : 'rgba(30,41,59,0.55)',flexShrink:0}}/>, href: 'https://ranking-direcional.streamlit.app/' },
-                            { id: 'Calculadora', label: 'ITBI',        icon: <Calculator size={13} style={{color: modoNoturno ? 'rgba(255,255,255,0.6)' : 'rgba(30,41,59,0.55)',flexShrink:0}}/>, action: () => setShowCalculadoraItbiModal(true), isBtn: true },
-                            { id: 'TabelaDireta', label: 'T. DIRETA',  icon: <TableProperties size={13} style={{color: modoNoturno ? 'rgba(255,255,255,0.6)' : 'rgba(30,41,59,0.55)',flexShrink:0}}/>, action: () => setShowCalculadoraTabelaDiretaModal(true), isBtn: true },
-                            { id: 'Simulador',   label: 'SIMULADOR',   icon: <Calculator size={13} style={{color: modoNoturno ? 'rgba(255,255,255,0.6)' : 'rgba(30,41,59,0.55)',flexShrink:0}}/>, action: () => window.open('https://simuladorhabitacao.caixa.gov.br/home', '_blank', 'noopener,noreferrer'), isBtn: true },
-                            { id: 'Tabelas',     label: 'TABELAS',     icon: <TableProperties size={13} style={{color: modoNoturno ? 'rgba(255,255,255,0.6)' : 'rgba(30,41,59,0.55)',flexShrink:0}}/>, action: () => setShowTabelasModal(true), isBtn: true },
-                            { id: 'Utilitarios', label: 'UTILITÁRIOS', icon: <BookMarked size={13} style={{color: modoNoturno ? 'rgba(255,255,255,0.6)' : 'rgba(30,41,59,0.55)',flexShrink:0}}/>, action: () => setActiveBrand('Utilitarios'), isBtn: true },
-                            { id: 'Guia',        label: 'GUIA',        icon: <HelpCircle size={13} style={{color: modoNoturno ? 'rgba(255,255,255,0.6)' : 'rgba(30,41,59,0.55)',flexShrink:0}}/>, action: () => setActiveBrand('Guia'),        isBtn: true },
-                        ].map((tab) => {
-                            const isActive = activeBrand === tab.id;
-                            const tabStyle = {
-                                position: 'relative', zIndex: 1,
-                                borderRadius: 999,
-                                padding: '9px 16px',
-                                cursor: 'pointer', textDecoration: 'none',
-                                display: 'flex', alignItems: 'center', gap: 7, flexShrink: 0, whiteSpace: 'nowrap',
-                                transition: 'background 0.22s ease, border-color 0.22s ease',
-                                background: isActive ? 'transparent' : (modoNoturno ? 'rgba(255,255,255,0.06)' : 'rgba(15,23,42,0.05)'),
-                                border: isActive ? '1px solid transparent' : (modoNoturno ? '1px solid rgba(255,255,255,0.08)' : '1px solid rgba(15,23,42,0.08)'),
-                            };
-                            const labelColor = isActive ? '#fff' : (modoNoturno ? 'rgba(255,255,255,0.55)' : 'rgba(30,41,59,0.55)');
-                            const inner = (
-                                <>
-                                    <span style={{ fontSize: 13, fontWeight: 800, letterSpacing: '0.04em', color: labelColor, transition: 'color 0.22s' }}>{tab.label}</span>
-                                    <span style={{ opacity: isActive ? 1 : 0.55, display: 'flex', alignItems: 'center', color: isActive ? '#fff' : undefined, transition: 'opacity 0.22s' }}>{tab.icon}</span>
-                                </>
-                            );
-                            const setRef = (el) => { dockTabRefs.current[tab.id] = el; };
-                            return tab.isBtn ? (
-                                <button key={tab.id} ref={setRef} onClick={(e) => { haptic(); captureZoomOrigin(e); tab.action(); }} style={tabStyle}>{inner}</button>
-                            ) : (
-                                <a key={tab.id} ref={setRef} href={tab.href} target="_blank" rel="noopener noreferrer" style={tabStyle}>{inner}</a>
-                            );
-                        })}
-                    </div>
-                </div>
+                <button
+                    onClick={(e) => { haptic(); captureZoomOrigin(e); setSidebarNavOpen(true); }}
+                    style={{
+                        width: 54, height: 54,
+                        borderRadius: '50%',
+                        border: 'none',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        background: '#2563eb',
+                        boxShadow: '0 6px 20px rgba(37,99,235,0.45), 0 2px 8px rgba(0,0,0,0.2)',
+                        cursor: 'pointer',
+                    }}
+                    title="Menu"
+                >
+                    <LayoutGrid size={22} color="#fff" />
+                </button>
             </div>
+
+            {/* ── SIDEBAR DE NAVEGAÇÃO (mobile) ── */}
+            {sidebarNavOpen && (
+                <>
+                    <div
+                        className="sm:hidden"
+                        onClick={() => setSidebarNavOpen(false)}
+                        style={{
+                            position: 'fixed', inset: 0, zIndex: 60,
+                            background: 'rgba(0,0,0,0.45)',
+                            backdropFilter: 'blur(2px)',
+                            WebkitBackdropFilter: 'blur(2px)',
+                            animation: 'sidebar-overlay-in 0.24s ease both',
+                        }}
+                    />
+                    <div
+                        className="sm:hidden"
+                        style={{
+                            position: 'fixed', top: 0, right: 0, bottom: 0,
+                            zIndex: 61,
+                            width: 'min(78vw, 300px)',
+                            display: 'flex', flexDirection: 'column',
+                            background: modoNoturno ? '#0f172a' : '#ffffff',
+                            borderLeft: modoNoturno ? '1px solid rgba(255,255,255,0.08)' : '1px solid rgba(15,23,42,0.08)',
+                            boxShadow: '-8px 0 32px rgba(0,0,0,0.35)',
+                            paddingTop: 'env(safe-area-inset-top, 0px)',
+                            paddingBottom: 'env(safe-area-inset-bottom, 0px)',
+                            animation: 'sidebar-slide-in 0.30s cubic-bezier(0.22,1,0.36,1) both',
+                        }}
+                    >
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '18px 18px 12px' }}>
+                            <span style={{ fontSize: 13, fontWeight: 800, letterSpacing: '0.08em', textTransform: 'uppercase', color: modoNoturno ? 'rgba(255,255,255,0.5)' : 'rgba(30,41,59,0.5)' }}>Navegação</span>
+                            <button
+                                onClick={() => setSidebarNavOpen(false)}
+                                style={{
+                                    width: 32, height: 32, borderRadius: '50%',
+                                    border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                    background: modoNoturno ? 'rgba(255,255,255,0.08)' : 'rgba(15,23,42,0.06)',
+                                    cursor: 'pointer',
+                                }}
+                            >
+                                <X size={16} color={modoNoturno ? '#fff' : '#1e293b'} />
+                            </button>
+                        </div>
+                        <div style={{ flex: 1, overflowY: 'auto', padding: '4px 12px 18px', display: 'flex', flexDirection: 'column', gap: 6 }}>
+                            {[
+                                { id: 'Direcional',  label: 'Direcional',   icon: <span style={{width:6,height:6,borderRadius:3,background:'#2563eb',flexShrink:0,display:'inline-block'}}/>, action: () => setActiveBrand('Direcional'), isBtn: true },
+                                { id: 'Riva',        label: 'Riva',         icon: <span style={{width:6,height:6,borderRadius:3,background:'#2563eb',flexShrink:0,display:'inline-block'}}/>, action: () => setActiveBrand('Riva'),        isBtn: true },
+                                { id: 'Ranking',     label: 'Ver Ranking',  icon: <Trophy size={16}/>, href: 'https://ranking-direcional.streamlit.app/' },
+                                { id: 'Calculadora', label: 'Calcular ITBI',icon: <Calculator size={16}/>, action: () => setShowCalculadoraItbiModal(true), isBtn: true },
+                                { id: 'TabelaDireta', label: 'Tabela Direta', icon: <TableProperties size={16}/>, action: () => setShowCalculadoraTabelaDiretaModal(true), isBtn: true },
+                                { id: 'Simulador',   label: 'Simulador',    icon: <Calculator size={16}/>, action: () => window.open('https://simuladorhabitacao.caixa.gov.br/home', '_blank', 'noopener,noreferrer'), isBtn: true },
+                                { id: 'Tabelas',     label: 'Tabelas',      icon: <TableProperties size={16}/>, action: () => setShowTabelasModal(true), isBtn: true },
+                                { id: 'Utilitarios', label: 'Utilitários',  icon: <BookMarked size={16}/>, action: () => setActiveBrand('Utilitarios'), isBtn: true },
+                                { id: 'Guia',        label: 'Guia',         icon: <HelpCircle size={16}/>, action: () => setActiveBrand('Guia'),        isBtn: true },
+                            ].map((tab) => {
+                                const isActive = activeBrand === tab.id;
+                                const itemStyle = {
+                                    display: 'flex', alignItems: 'center', gap: 12,
+                                    padding: '12px 14px',
+                                    borderRadius: 14,
+                                    textDecoration: 'none',
+                                    cursor: 'pointer',
+                                    transition: 'background 0.2s ease',
+                                    background: isActive
+                                        ? '#2563eb'
+                                        : 'transparent',
+                                };
+                                const labelColor = isActive ? '#fff' : (modoNoturno ? 'rgba(255,255,255,0.75)' : 'rgba(30,41,59,0.75)');
+                                const iconColor = isActive ? '#fff' : (modoNoturno ? 'rgba(255,255,255,0.5)' : 'rgba(30,41,59,0.5)');
+                                const inner = (
+                                    <>
+                                        <span style={{ display: 'flex', alignItems: 'center', color: iconColor }}>{tab.icon}</span>
+                                        <span style={{ fontSize: 14.5, fontWeight: 700, color: labelColor }}>{tab.label}</span>
+                                    </>
+                                );
+                                return tab.isBtn ? (
+                                    <button key={tab.id} onClick={(e) => { haptic(); captureZoomOrigin(e); tab.action(); setSidebarNavOpen(false); }} style={itemStyle}>{inner}</button>
+                                ) : (
+                                    <a key={tab.id} href={tab.href} target="_blank" rel="noopener noreferrer" onClick={() => setSidebarNavOpen(false)} style={itemStyle}>{inner}</a>
+                                );
+                            })}
+                        </div>
+                    </div>
+                </>
+            )}
 
             {/* ── PAINEL INFORMAÇÕES COMERCIAIS — visível até domingo 22/03/2026, some na segunda ── */}
             {(() => {
@@ -3531,7 +3544,7 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
                         .chat-folder-full { top: 0 !important; left: 0 !important; right: 0 !important; bottom: 0 !important; height: 100dvh !important; border-radius: 0 !important; }
                     }
                     /* Padding do main para compensar o header fixed (inclui notch no PWA) */
-                    .main-content { padding-top: calc(80px + env(safe-area-inset-top, 0px)); padding-bottom: calc(78px + env(safe-area-inset-bottom, 0px)); }
+                    .main-content { padding-top: calc(80px + env(safe-area-inset-top, 0px)); padding-bottom: 0; }
                     @media (min-width: 640px) { .main-content { padding-top: calc(80px + env(safe-area-inset-top, 0px)); padding-bottom: 0; } }
                     /* Folder → Chat collapse/expand */
                     @keyframes folder-collapse-kf { 0% { opacity:1; transform: scaleY(1) translateY(0); } 40% { opacity:0.6; transform: scaleY(0.85) translateY(8px); } 100% { opacity:0; transform: scaleY(0.55) translateY(20px); } }

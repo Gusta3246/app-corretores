@@ -1861,7 +1861,7 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
                     pointerEvents: tabsSticky ? 'auto' : 'none',
                 }}>
                 <div style={{
-                    margin: '0 10px 10px',
+                    margin: '0 10px 4px',
                     background: modoNoturno ? 'rgba(15,23,42,0.55)' : 'rgba(255,255,255,0.55)',
                     backdropFilter: 'blur(24px) saturate(180%)',
                     WebkitBackdropFilter: 'blur(24px) saturate(180%)',
@@ -3525,7 +3525,7 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
                         .chat-folder-full { top: 0 !important; left: 0 !important; right: 0 !important; bottom: 0 !important; height: 100dvh !important; border-radius: 0 !important; }
                     }
                     /* Padding do main para compensar o header fixed (inclui notch no PWA) */
-                    .main-content { padding-top: calc(80px + env(safe-area-inset-top, 0px)); padding-bottom: calc(84px + env(safe-area-inset-bottom, 0px)); }
+                    .main-content { padding-top: calc(80px + env(safe-area-inset-top, 0px)); padding-bottom: calc(78px + env(safe-area-inset-bottom, 0px)); }
                     @media (min-width: 640px) { .main-content { padding-top: calc(80px + env(safe-area-inset-top, 0px)); padding-bottom: 0; } }
                     /* Folder → Chat collapse/expand */
                     @keyframes folder-collapse-kf { 0% { opacity:1; transform: scaleY(1) translateY(0); } 40% { opacity:0.6; transform: scaleY(0.85) translateY(8px); } 100% { opacity:0; transform: scaleY(0.55) translateY(20px); } }

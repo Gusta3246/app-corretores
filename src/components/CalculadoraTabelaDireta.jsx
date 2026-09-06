@@ -91,7 +91,7 @@ export default function CalculadoraTabelaDireta({ modoNoturno, onClose }) {
     const text = modoNoturno ? '#f1f5f9' : '#1e293b';
     const sub = modoNoturno ? '#94a3b8' : '#64748b';
     const divider = modoNoturno ? '#1e293b' : '#e2e8f0';
-    const accent = '#f97316'; // laranja Direcional
+    const accent = '#007AFF'; // azul iOS
 
     const handleSelectAll = (e) => e.target.select();
 

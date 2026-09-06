@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useLayoutEffect, useRef } from 'react';
-import { Search, Building, ExternalLink, MapPin, BookOpen, Maximize, Bed, LayoutGrid, Sparkles, Star, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, FileText, TableProperties, BookMarked, HelpCircle, Calculator, Bot, X, Send, Wand2, Paperclip, File as FileIcon, Trash2, FolderPlus, GripVertical, Plus, MessageCircle, Moon, Sun, AlertTriangle, Book, Clock, Trophy, RotateCw, RotateCcw, Phone, CreditCard, Copy, Check, Eye, EyeOff, Smartphone, Globe, Gem, Hexagon } from 'lucide-react';
+import { Search, Building, ExternalLink, MapPin, BookOpen, Maximize, Bed, LayoutGrid, Menu, Sparkles, Star, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, FileText, TableProperties, BookMarked, HelpCircle, Calculator, Bot, X, Send, Wand2, Paperclip, File as FileIcon, Trash2, FolderPlus, GripVertical, Plus, MessageCircle, Moon, Sun, AlertTriangle, Book, Clock, Trophy, RotateCw, RotateCcw, Phone, CreditCard, Copy, Check, Eye, EyeOff, Smartphone, Globe, Gem, Hexagon } from 'lucide-react';
 import { buscarRespostaDoRobo, buscarRespostaGemini } from './bot/dadosFinanciamento.js';
 import { revistasDataLocal, utilitariosData, frasesMotivacionais, imagensEquipeDiarias, dayIndex, periodoIndex } from './data/dados.js';
 import { RippleButton, CardRevista, HintPills, RevistaCloseButton } from './components/Componentes.jsx';
@@ -1855,7 +1855,7 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
                     }}
                     title="Menu"
                 >
-                    <LayoutGrid size={22} color="#fff" />
+                    <Menu size={22} color="#fff" />
                 </button>
             </div>
 

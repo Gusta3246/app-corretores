@@ -73,12 +73,13 @@
         html, body {
             margin: 0;
             padding: 0;
-            background-color: #ffffff;
+            background-color: transparent;
             overscroll-behavior-y: none;
         }
         #root {
             padding-bottom: env(safe-area-inset-bottom);
             min-height: 100dvh;
+            background-color: transparent;
         }
         #install-popup {
             transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
@@ -195,7 +196,7 @@
         if (isIos && !isStandalone()) {
             txtInstalar.innerHTML = "Toque no ícone de <b>compartilhar</b> <span class='text-xl'>⎋</span> e depois em <b>'Adicionar à Tela de Início'</b>.";
             btnInstalar.innerText = "Entendi";
-            setTimeout(showPopup, 3000); 
+            setTimeout(showPopup, 3000);
         }
 
         btnInstalar.onclick = async () => {

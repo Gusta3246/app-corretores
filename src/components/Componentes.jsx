@@ -392,39 +392,10 @@ const HINT_PILLS_DATA = [
 ];
 
 export function HintPills({ onPhaseChange }) {
-    const [phase, setPhase] = useState('idle');
-    useEffect(() => {
-        if (sessionStorage.getItem('dst_hint_done')) return;
-        const t1 = setTimeout(() => { setPhase('show'); onPhaseChange?.('show'); }, 5800);
-        const t2 = setTimeout(() => { setPhase('fly');  onPhaseChange?.('fly');  }, 8500);
-        const t3 = setTimeout(() => { setPhase('gone'); onPhaseChange?.('gone'); sessionStorage.setItem('dst_hint_done', '1'); }, 9400);
-        return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); };
-    }, []);
-    if (phase === 'idle' || phase === 'gone') return null;
-    const pillAnims = HINT_PILLS_DATA.map((_, i) => ({ enter: `hint-enter-${i}`, delay: `${i * 0.18}s` }));
-    return (
-        <>
-            <style>{`
-                @keyframes hint-enter-0{0%{opacity:0;transform:translateX(120px) translateY(-30px) rotate(12deg) scale(0.4)}55%{opacity:1;transform:translateX(-8px) translateY(4px) rotate(-2deg) scale(1.08)}75%{transform:translateX(4px) translateY(-2px) rotate(1deg) scale(0.97)}100%{opacity:1;transform:translateX(0) translateY(0) rotate(0deg) scale(1)}}
-                @keyframes hint-enter-1{0%{opacity:0;transform:translateX(140px) translateY(-20px) rotate(8deg) scale(0.35)}55%{opacity:1;transform:translateX(-6px) translateY(3px) rotate(-2deg) scale(1.06)}75%{transform:translateX(3px) translateY(-1px) rotate(1deg) scale(0.98)}100%{opacity:1;transform:translateX(0) translateY(0) rotate(0deg) scale(1)}}
-                @keyframes hint-enter-2{0%{opacity:0;transform:translateX(160px) translateY(-10px) rotate(5deg) scale(0.3)}55%{opacity:1;transform:translateX(-5px) translateY(2px) rotate(-1deg) scale(1.05)}75%{transform:translateX(2px) translateY(-1px) rotate(0deg) scale(0.98)}100%{opacity:1;transform:translateX(0) translateY(0) rotate(0deg) scale(1)}}
-                @keyframes hint-fly-0{0%{opacity:1;transform:translateX(0) translateY(0) scale(1)}30%{transform:translateX(10px) translateY(-8px) scale(1.1)}100%{opacity:0;transform:translateX(60px) translateY(90px) scale(0.05)}}
-                @keyframes hint-fly-1{0%{opacity:1;transform:translateX(0) translateY(0) scale(1)}30%{transform:translateX(8px) translateY(-5px) scale(1.08)}100%{opacity:0;transform:translateX(55px) translateY(75px) scale(0.05)}}
-                @keyframes hint-fly-2{0%{opacity:1;transform:translateX(0) translateY(0) scale(1)}30%{transform:translateX(6px) translateY(-4px) scale(1.06)}100%{opacity:0;transform:translateX(50px) translateY(60px) scale(0.05)}}
-                @keyframes hint-shine{0%{left:-80%}100%{left:160%}}
-            `}</style>
-            <div style={{ position:'fixed', bottom:108, right:36, zIndex:44, display:'flex', flexDirection:'column', alignItems:'flex-end', gap:10, pointerEvents:'none' }}>
-                {HINT_PILLS_DATA.map((p, i) => (
-                    <div key={i} style={{ position:'relative', display:'flex', alignItems:'center', gap:8, padding:'9px 16px 9px 10px', borderRadius:99, background:p.color, color:'#fff', fontSize:11.5, fontWeight:800, textTransform:'uppercase', letterSpacing:'0.08em', boxShadow:`0 0 0 1.5px rgba(255,255,255,0.15), 0 4px 20px ${p.glow}, 0 2px 6px rgba(0,0,0,0.3)`, whiteSpace:'nowrap', overflow:'hidden', animation: phase === 'show' ? `hint-enter-${i} 0.65s cubic-bezier(0.22,1,0.36,1) ${pillAnims[i].delay} both` : `hint-fly-${i} 0.65s cubic-bezier(0.55,0,1,0.45) ${i*0.07}s both` }}>
-                        <div style={{ width:22, height:22, borderRadius:'50%', background:'rgba(255,255,255,0.22)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}><svg width="11" height="11" viewBox="0 0 24 24">{p.icon}</svg></div>
-                        {p.label}
-                        <div style={{ position:'absolute', top:0, width:'45%', height:'100%', background:'linear-gradient(90deg, transparent, rgba(255,255,255,0.28), transparent)', transform:'skewX(-18deg)', animation:`hint-shine 2.2s ease-in-out ${0.8+i*0.4}s infinite`, pointerEvents:'none' }}/>
-                    </div>
-                ))}
-            </div>
-        </>
-    );
+    // Animação de dicas flutuantes desativada.
+    return null;
 }
+
 
 // ── CountdownLancamento ──────────────────────────────────────────
 export function CountdownLancamento({ modoNoturno }) {

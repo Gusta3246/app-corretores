@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { MapPin, BookOpen, Maximize, Bed, LayoutGrid, Clock, ChevronLeft, ChevronRight, X, Download, MousePointer2 } from 'lucide-react';
+import { MapPin, BookOpen, Maximize, Bed, LayoutGrid, Clock, ChevronLeft, ChevronRight, X, Download, MousePointer2, Bus } from 'lucide-react';
 import { LOGOS_EMPREENDIMENTO, REVISTA_LOGO_MAP } from '../data/dados.js';
 
 // ── RippleButton ────────────────────────────────────────────────
@@ -57,8 +57,8 @@ export function BannerExpandido({ revista, onClose, modoNoturno, onVerRevista, o
     const goDot  = (i, e) => { e.stopPropagation(); if (i !== idx) goTo(i, i > idx ? 'left' : 'right'); };
 
     const isDir = revista.brand === 'Direcional';
-    const accent     = isDir ? '#f97316' : '#2563eb';
-    const accentDark = isDir ? '#c2410c' : '#1d4ed8';
+    const accent     = isDir ? '#f97316' : '#007AFF';
+    const accentDark = isDir ? '#c2410c' : '#084d73';
     const bg      = modoNoturno ? '#0f172a' : '#ffffff';
     const bgSub   = modoNoturno ? '#1e293b' : '#f1f5f9';
     const text    = modoNoturno ? '#f1f5f9' : '#1e293b';
@@ -175,7 +175,7 @@ export function BannerExpandido({ revista, onClose, modoNoturno, onVerRevista, o
 export function ObraTaxaModal({ revista, onClose, modoNoturno }) {
     const [parcela, setParcela] = useState('');
     const isDir = revista.brand === 'Direcional';
-    const accent = isDir ? '#f97316' : '#2563eb';
+    const accent = isDir ? '#f97316' : '#007AFF';
     const bg      = modoNoturno ? '#0f172a' : '#ffffff';
     const text    = modoNoturno ? '#f1f5f9' : '#1e293b';
     const sub     = modoNoturno ? '#94a3b8' : '#64748b';
@@ -235,13 +235,14 @@ export function ObraTaxaModal({ revista, onClose, modoNoturno }) {
 }
 
 // ── CardRevista ──────────────────────────────────────────────────
-export function CardRevista({ revista, cardIdx, modoNoturno, haptic, setPdfLeitor, setSelectedPois, setPdfLeitorLogoAnim, onVerOnibus }) {
+export function CardRevista({ revista, cardIdx, modoNoturno, haptic, setPdfLeitor, setSelectedPois, setPdfLeitorLogoAnim, onVerOnibus, captureZoomOrigin }) {
     const DELAY = 15000;
     const [expanded, setExpanded] = useState(false);
     const [obraHover, setObraHover] = useState(false);
     const [showObraModal, setShowObraModal] = useState(false);
     const timerRef = useRef(null);
     const isDir = revista.brand === 'Direcional';
+    const accentObra = '#007AFF';
     const isTouchDevice = () => window.matchMedia('(hover: none) and (pointer: coarse)').matches;
 
     const startHover = () => {
@@ -251,8 +252,9 @@ export function CardRevista({ revista, cardIdx, modoNoturno, haptic, setPdfLeito
     const stopHover = () => { clearTimeout(timerRef.current); };
     useEffect(() => () => clearTimeout(timerRef.current), []);
 
-    const handleVerRevista = () => {
+    const handleVerRevista = (e) => {
         haptic('medium');
+        captureZoomOrigin?.(e);
         const previewUrl = revista.link.replace(/\/view(\?.*)?$/, '/preview');
         const logoKey = REVISTA_LOGO_MAP[revista.id];
         const logoSrc = logoKey ? LOGOS_EMPREENDIMENTO[logoKey] : null;
@@ -263,7 +265,7 @@ export function CardRevista({ revista, cardIdx, modoNoturno, haptic, setPdfLeito
             setPdfLeitor({ title: revista.title, url: previewUrl, brand: revista.brand });
         }
     };
-    const handleVerPois = () => { haptic(); setSelectedPois(revista); };
+    const handleVerPois = (e) => { haptic(); captureZoomOrigin?.(e); setSelectedPois(revista); };
 
     const handleDownload = (e) => {
         e.preventDefault();
@@ -282,106 +284,102 @@ export function CardRevista({ revista, cardIdx, modoNoturno, haptic, setPdfLeito
         <>
             {expanded && (<BannerExpandido revista={revista} onClose={() => setExpanded(false)} modoNoturno={modoNoturno} onVerRevista={handleVerRevista} onVerPois={handleVerPois} onVerOnibus={()=>onVerOnibus && onVerOnibus(revista)}/>)}
             {showObraModal && (<ObraTaxaModal revista={revista} onClose={() => setShowObraModal(false)} modoNoturno={modoNoturno}/>)}
-            <div className="card-entry overflow-hidden flex flex-col group" style={{ animationDelay:`${cardIdx*90}ms`, position:'relative', borderRadius:'24px', background: modoNoturno ? 'rgba(255,255,255,0.07)' : 'rgba(255,255,255,0.55)', backdropFilter:'blur(28px) saturate(200%) brightness(1.02)', WebkitBackdropFilter:'blur(28px) saturate(200%) brightness(1.02)', border: modoNoturno ? '1px solid rgba(255,255,255,0.12)' : '1px solid rgba(255,255,255,0.90)', boxShadow: modoNoturno ? '0 2px 8px rgba(0,0,0,0.30), 0 8px 32px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.14)' : '0 2px 6px rgba(100,130,200,0.10), 0 8px 28px rgba(100,130,200,0.14), inset 0 1.5px 0 rgba(255,255,255,1)', transition:'transform 0.45s cubic-bezier(0.25,0.46,0.45,0.94), box-shadow 0.45s ease' }}
-                onMouseEnter={e => { if (isTouchDevice()) return; e.currentTarget.style.transform = 'translateY(-10px)'; e.currentTarget.style.boxShadow = modoNoturno ? '0 8px 24px rgba(0,0,0,0.40), 0 24px 64px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.18)' : '0 8px 24px rgba(100,130,200,0.18), 0 24px 64px rgba(100,130,200,0.22), inset 0 1.5px 0 rgba(255,255,255,1)'; startHover(); }}
-                onMouseLeave={e => { if (isTouchDevice()) return; e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = modoNoturno ? '0 2px 8px rgba(0,0,0,0.30), 0 8px 32px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.14)' : '0 2px 6px rgba(100,130,200,0.10), 0 8px 28px rgba(100,130,200,0.14), inset 0 1.5px 0 rgba(255,255,255,1)'; stopHover(); }}>
-                <div className="relative h-48 overflow-hidden bg-slate-100">
+            <div className="card-entry overflow-hidden flex flex-col group" style={{ animationDelay:`${cardIdx*90}ms`, position:'relative', borderRadius:'24px', background: modoNoturno ? 'rgba(255,255,255,0.04)' : '#f8fafc', border: modoNoturno ? '1px solid rgba(255,255,255,0.10)' : '1px solid rgba(15,23,42,0.08)', transition:'background-color 0.45s ease-in-out' }}
+                onMouseEnter={e => { if (isTouchDevice()) return; e.currentTarget.style.background = modoNoturno ? 'rgba(59,130,246,0.16)' : 'rgba(219,234,254,0.85)'; startHover(); }}
+                onMouseLeave={e => { if (isTouchDevice()) return; e.currentTarget.style.background = modoNoturno ? 'rgba(255,255,255,0.04)' : '#f8fafc'; stopHover(); }}>
+                <div className="relative h-48 overflow-hidden bg-slate-100" style={{ borderRadius: '24px 24px 20px 20px', margin: '0 0 8px 0' }}>
                     <img src={revista.cover} onError={(e)=>{e.target.onerror=null;e.target.src='https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&q=80&w=400';}} alt={`Capa ${revista.title}`} className="w-full h-full object-cover group-hover:scale-115 transition-transform duration-700 ease-out" style={{ transformOrigin:'center center', willChange:'transform' }}/>
                     {/* Gradiente fade na borda inferior */}
-                    <div style={{ position:'absolute', bottom:0, left:0, right:0, height:'60px', background:'linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.3) 100%)', zIndex:5, pointerEvents:'none' }}/>
-                    <div className="absolute inset-0 pointer-events-none z-10 overflow-hidden"><div className="card-shimmer-sweep" style={{ position:'absolute', top:0, left:0, width:'55%', height:'100%', background:'linear-gradient(105deg, transparent 0%, rgba(255,255,255,0.38) 50%, transparent 100%)', transform:'translateX(-150%) skewX(-18deg)' }}/></div>
+                    <div style={{ position:'absolute', bottom:0, left:0, right:0, height:'60px', background:'linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.3) 100%)', zIndex:5, pointerEvents:'none', borderRadius:'0 0 20px 20px' }}/>
+                    <div className="absolute inset-0 pointer-events-none z-10 overflow-hidden" style={{ borderRadius:'24px 24px 20px 20px' }}><div className="card-shimmer-sweep" style={{ position:'absolute', top:0, left:0, width:'55%', height:'100%', background:'linear-gradient(105deg, transparent 0%, rgba(255,255,255,0.38) 50%, transparent 100%)', transform:'translateX(-150%) skewX(-18deg)' }}/></div>
                     <div style={{ position:'absolute', top:10, left:10, zIndex:10, width:110, height:70, display:'flex', alignItems:'flex-start', justifyContent:'flex-start' }}>
                         {(() => { const logoKey = REVISTA_LOGO_MAP[revista.id]; const logoSrc = logoKey ? LOGOS_EMPREENDIMENTO[logoKey] : null; if (!logoSrc) return null; return (<img src={logoSrc} alt={revista.title} style={{ maxHeight: logoKey === 'brisas' ? 62 : 68, maxWidth: logoKey === 'brisas' ? 108 : 105, width:'auto', height:'auto', objectFit:'contain', objectPosition:'top left', filter:'drop-shadow(0 0 8px rgba(0,0,0,0.9)) drop-shadow(0 2px 12px rgba(0,0,0,0.7)) drop-shadow(0 0 3px rgba(255,255,255,0.25))' }}/>); })()}
                     </div>
                     {revista.entrega && (
-                        <div className="absolute inset-0 z-20 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-500" style={{ background:'rgba(255,255,255,0.18)', backdropFilter:'blur(18px) saturate(180%)', WebkitBackdropFilter:'blur(18px) saturate(180%)' }}>
+                        <div className="absolute inset-0 z-20 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-500" style={{ background:'rgba(255,255,255,0.18)', backdropFilter:'blur(18px) saturate(180%)', WebkitBackdropFilter:'blur(18px) saturate(180%)', borderRadius:'24px 24px 20px 20px', overflow:'hidden' }}>
                             {(()=>{ const meses=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro']; if(revista.entrega==='Entregue') return(<div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:4}}><span style={{fontSize:24,fontWeight:900,color:'#fff',textShadow:'0 2px 16px rgba(0,0,0,0.6)',lineHeight:1.1}}>Entregue!</span><span style={{fontSize:11,fontWeight:600,color:'rgba(255,255,255,0.8)',letterSpacing:'0.15em',textTransform:'uppercase'}}>pronto pra morar</span></div>); const p=revista.entrega.split('/'); const mes=meses[parseInt(p[0])-1]||''; const ano=p[1]||p[0]; const hoje=new Date(); const diff=(parseInt(p[1])-hoje.getFullYear())*12+(parseInt(p[0])-(hoje.getMonth()+1)); const restante=diff>0?`faltam ${diff} ${diff===1?'mês':'meses'}`:'chegando!'; return(<div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:1}}><span style={{fontSize:10,fontWeight:700,color:'rgba(255,255,255,0.55)',letterSpacing:'0.3em',textTransform:'uppercase'}}>entrega</span><span style={{fontSize:46,fontWeight:900,color:'#fff',letterSpacing:'-0.04em',textShadow:'0 4px 24px rgba(0,0,0,0.5)',lineHeight:0.95}}>{ano}</span><span style={{fontSize:14,fontWeight:800,color:'rgba(255,255,255,0.9)',letterSpacing:'0.08em',textTransform:'uppercase'}}>{mes}</span><div style={{marginTop:10,padding:'4px 12px',borderRadius:999,background:'rgba(255,255,255,0.22)',backdropFilter:'blur(8px)',border:'1px solid rgba(255,255,255,0.3)'}}><span style={{fontSize:11,fontWeight:800,color:'#fff'}}>{restante}</span></div></div>); })()}
                         </div>
                     )}
                 </div>
                 {typeof revista.obraPercent === 'number' && (
-                    <div style={{ position:'relative', padding:'12px 20px 0', zIndex:25 }}>
+                    <div style={{ position:'relative', padding:'14px 20px 0', zIndex:25 }}>
                         <div
                             onMouseEnter={() => { if (!isTouchDevice()) setObraHover(true); }}
                             onMouseLeave={() => setObraHover(false)}
                             onClick={(e) => { e.stopPropagation(); haptic(); setShowObraModal(true); }}
                             title="Calcular Taxa de Obra"
-                            style={{ position:'relative', height:22, display:'flex', alignItems:'center', cursor:'pointer' }}
+                            style={{ position:'relative', height:26, display:'flex', alignItems:'center', cursor:'pointer' }}
                         >
-                        <div style={{ position:'relative', height:5, width:'100%', borderRadius:99, background: modoNoturno ? 'rgba(255,255,255,0.15)' : '#e2e8f0', boxShadow: modoNoturno ? 'inset 0 1px 2px rgba(0,0,0,0.4)' : 'inset 0 1px 2px rgba(0,0,0,0.10)' }}>
-                            <div style={{ position:'absolute', top:0, left:0, height:'100%', width:`${Math.min(100, Math.max(0, revista.obraPercent))}%`, borderRadius:99, background: isDir ? 'linear-gradient(90deg,#fb923c,#ea580c)' : 'linear-gradient(90deg,#60a5fa,#2563eb)', boxShadow:'0 0 6px rgba(0,0,0,0.15)' }}/>
-                            <div
-                                style={{
-                                    position:'absolute', top:'50%',
-                                    left: obraHover ? '50%' : `${Math.min(100, Math.max(0, revista.obraPercent))}%`,
-                                    transform:'translate(-50%,-50%)',
-                                    height: obraHover ? 24 : 22,
-                                    width: obraHover ? 186 : 22,
-                                    borderRadius:99,
-                                    background: isDir ? 'linear-gradient(90deg,#fb923c,#ea580c)' : 'linear-gradient(90deg,#60a5fa,#2563eb)',
-                                    color:'#fff', display:'flex', alignItems:'center', justifyContent:'center',
-                                    fontWeight:800, whiteSpace:'nowrap', cursor:'pointer', overflow:'hidden',
-                                    boxShadow: modoNoturno ? '0 2px 8px rgba(0,0,0,0.5), 0 0 0 2px rgba(15,23,42,0.9)' : '0 2px 8px rgba(0,0,0,0.35), 0 0 0 2px #ffffff',
-                                    transition:'left 0.38s cubic-bezier(0.34,1.56,0.64,1), width 0.38s cubic-bezier(0.34,1.56,0.64,1), height 0.28s cubic-bezier(0.34,1.56,0.64,1)',
-                                    zIndex:30
-                                }}
-                            >
-                                <span style={{
-                                    position:'absolute', fontSize:8,
-                                    opacity: obraHover ? 0 : 1,
-                                    transform: obraHover ? 'scale(0.6)' : 'scale(1)',
-                                    transition:'opacity 0.15s ease, transform 0.15s ease'
-                                }}>
-                                    {Math.round(revista.obraPercent)}%
-                                </span>
-                                <span style={{
-                                    position:'absolute', fontSize:10.5,
-                                    opacity: obraHover ? 1 : 0,
-                                    transform: obraHover ? 'scale(1)' : 'scale(0.7)',
-                                    transition: obraHover ? 'opacity 0.22s ease 0.16s, transform 0.22s ease 0.16s' : 'opacity 0.1s ease, transform 0.1s ease'
-                                }}>
-                                    Calcular Taxa de Obra
-                                </span>
+                            {/* Estado padrão — minimalista: apenas barra fina e percentual, sem ícone */}
+                            <div style={{
+                                position:'absolute', inset:0, display:'flex', alignItems:'center', gap:8,
+                                opacity: obraHover ? 0 : 1,
+                                transform: obraHover ? 'translateY(-5px)' : 'translateY(0)',
+                                transition: obraHover ? 'opacity 0.15s ease, transform 0.15s ease' : 'opacity 0.2s ease 0.08s, transform 0.2s ease 0.08s'
+                            }}>
+                                <div style={{ flex:1, height:4, borderRadius:99, background: modoNoturno ? 'rgba(255,255,255,0.12)' : '#e2e8f0', overflow:'hidden' }}>
+                                    <div style={{ height:'100%', width:`${Math.min(100, Math.max(0, revista.obraPercent))}%`, borderRadius:99, background: accentObra, transition:'width 0.6s cubic-bezier(0.22,1,0.36,1)' }}/>
+                                </div>
+                                <span style={{ fontSize:11.5, fontWeight:800, color: accentObra, flexShrink:0, minWidth:28, textAlign:'right', fontVariantNumeric:'tabular-nums' }}>{Math.round(revista.obraPercent)}%</span>
                             </div>
-                        </div>
+
+                            {/* Estado hover — texto de ação no lugar da barra, sem ícone */}
+                            <div style={{
+                                position:'absolute', inset:0, display:'flex', alignItems:'center', justifyContent:'center',
+                                opacity: obraHover ? 1 : 0,
+                                transform: obraHover ? 'translateY(0)' : 'translateY(5px)',
+                                transition: obraHover ? 'opacity 0.18s ease 0.05s, transform 0.18s ease 0.05s' : 'opacity 0.1s ease, transform 0.1s ease',
+                                pointerEvents:'none'
+                            }}>
+                                <span style={{ fontSize:11.5, fontWeight:800, color: accentObra, letterSpacing:'0.01em' }}>Calcular Taxa de Obra</span>
+                            </div>
                         </div>
                     </div>
                 )}
                 <div className="p-5 flex flex-col flex-grow">
-                    <h3 className={`text-xl font-bold mb-2 ${modoNoturno?'text-white':'text-slate-800'}`}>{revista.title}</h3>
-                    <div className="flex flex-col gap-2 mb-6">
-                        <div className="flex items-center text-slate-500 text-sm gap-2"><MapPin size={16} className="text-slate-400 shrink-0"/><span className={`line-clamp-1 ${modoNoturno?'text-slate-400':''}`}>{revista.region}</span></div>
-                        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mt-1">
-                            <div className="flex items-center text-slate-500 text-sm gap-1.5"><Maximize size={16} className="text-slate-400 shrink-0"/><span className={modoNoturno?'text-slate-400':''}>{revista.size}</span></div>
-                            <div className="flex items-center text-slate-500 text-sm gap-1.5"><Bed size={16} className="text-slate-400 shrink-0"/><span className={modoNoturno?'text-slate-400':''}>{revista.bedrooms}</span></div>
-                            <div className="flex items-center text-slate-500 text-sm gap-1.5"><LayoutGrid size={16} className="text-slate-400 shrink-0"/><span className={modoNoturno?'text-slate-400':''}>{revista.flooring}</span></div>
-                        </div>
-                        {typeof revista.rendaMinima === 'number' && (
-                            <div className="flex items-baseline gap-1.5 text-sm mt-1">
-                                <span className={modoNoturno?'text-slate-400':'text-slate-500'}>Renda mínima:</span>
-                                <span style={{ fontWeight:700, color: isDir ? '#f97316' : '#2563eb' }}>
-                                    R$ {revista.rendaMinima.toLocaleString('pt-BR')}
-                                </span>
-                            </div>
-                        )}
+                    {/* Bloco 1 — identidade */}
+                    <h3 className={`text-xl font-bold leading-snug mb-1.5 ${modoNoturno?'text-white':'text-slate-800'}`}>{revista.title}</h3>
+                    <div className="flex items-center gap-1.5 text-xs"><MapPin size={13} className={modoNoturno?'text-slate-500':'text-slate-400'}/><span className={`line-clamp-1 ${modoNoturno?'text-slate-500':'text-slate-400'}`}>{revista.region}</span></div>
+
+                    {/* Bloco 2 — specs essenciais, compactas, sem separadores soltos */}
+                    <div className={`flex items-center gap-3 text-xs mt-3 ${modoNoturno?'text-slate-400':'text-slate-500'}`}>
+                        <span className="flex items-center gap-1"><Maximize size={14} className={modoNoturno?'text-slate-500':'text-slate-400'}/>{revista.size}</span>
+                        <span className="flex items-center gap-1"><Bed size={14} className={modoNoturno?'text-slate-500':'text-slate-400'}/>{revista.bedrooms}</span>
                     </div>
+
+                    {/* Descrição de acabamento — linha própria, não compete visualmente com as specs */}
+                    {revista.flooring && (
+                        <p className={`text-xs mt-1.5 line-clamp-1 ${modoNoturno?'text-slate-500':'text-slate-400'}`}>{revista.flooring}</p>
+                    )}
+
+                    {/* Espaçador flexível — garante que o bloco de decisão fique sempre à mesma altura, colado nos botões, independente de quanto texto houver acima */}
+                    <div className="flex-grow min-h-[12px]" />
+
+                    {/* Bloco 3 — decisão, sempre na mesma altura relativa aos botões, sem divisor e sem cor de destaque no valor */}
+                    {typeof revista.rendaMinima === 'number' && (
+                        <div className="flex items-baseline gap-1.5 pt-3 pb-4">
+                            <span className={`text-[10px] uppercase tracking-wide ${modoNoturno?'text-slate-500':'text-slate-400'}`}>Renda mínima</span>
+                            <span className={`text-sm font-bold ${modoNoturno?'text-white':'text-slate-800'}`}>
+                                R$ {revista.rendaMinima.toLocaleString('pt-BR')}
+                            </span>
+                        </div>
+                    )}
                     <div className="mt-auto flex flex-col gap-2">
                         <div style={{ display:'flex', gap:8, alignItems:'stretch' }}>
-                            <RippleButton onClick={handleVerRevista} className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl font-semibold transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg ${isDir?'bg-gradient-to-r from-orange-500 via-red-500 to-orange-600 hover:from-orange-600 hover:to-red-600 shadow-orange-300/30 text-white':'bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 hover:from-blue-700 hover:to-indigo-700 shadow-blue-300/30 text-white'}`}><BookOpen size={18}/> Ver Revista</RippleButton>
-                            <button onClick={handleDownload} title="Baixar revista" style={{ flexShrink:0, width:46, height:46, borderRadius:'50%', border: isDir ? '1.5px solid rgba(249,115,22,0.35)' : '1.5px solid rgba(37,99,235,0.35)', display:'flex', alignItems:'center', justifyContent:'center', background: isDir ? 'rgba(249,115,22,0.12)' : 'rgba(37,99,235,0.12)', color: isDir ? '#f97316' : '#2563eb', cursor:'pointer', transition:'background 0.15s, transform 0.12s' }} onMouseEnter={e=>{e.currentTarget.style.background=isDir?'rgba(249,115,22,0.22)':'rgba(37,99,235,0.22)';e.currentTarget.style.transform='scale(1.08)';}} onMouseLeave={e=>{e.currentTarget.style.background=isDir?'rgba(249,115,22,0.12)':'rgba(37,99,235,0.12)';e.currentTarget.style.transform='scale(1)';}}>
+                            <RippleButton onClick={handleVerRevista} className="flex-1 flex items-center justify-center gap-2 py-3 rounded-full font-semibold transition-all duration-200 text-white hover:brightness-90" style={{ background: accentObra }}><BookOpen size={18}/> Ver Revista</RippleButton>
+                            <button onClick={handleDownload} title="Baixar revista" style={{ flexShrink:0, width:46, height:46, borderRadius:'50%', border: modoNoturno ? '1px solid rgba(255,255,255,0.12)' : '1px solid rgba(15,23,42,0.10)', display:'flex', alignItems:'center', justifyContent:'center', background: modoNoturno ? 'rgba(255,255,255,0.08)' : '#f1f5f9', color: modoNoturno ? '#cbd5e1' : '#475569', cursor:'pointer', transition:'background 0.15s, transform 0.12s' }} onMouseEnter={e=>{e.currentTarget.style.background=modoNoturno?'rgba(255,255,255,0.14)':'#e2e8f0';e.currentTarget.style.transform='scale(1.08)';}} onMouseLeave={e=>{e.currentTarget.style.background=modoNoturno?'rgba(255,255,255,0.08)':'#f1f5f9';e.currentTarget.style.transform='scale(1)';}}>
                                 <Download size={18}/>
                             </button>
                         </div>
                         <div style={{ display:'flex', gap:8, alignItems:'stretch' }}>
-                            <RippleButton onClick={handleVerPois} style={{ cursor:'pointer' }} className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-2xl font-semibold transition-colors duration-200 border text-sm ${modoNoturno?'bg-slate-700 border-slate-600 text-slate-200 hover:bg-slate-600':'bg-slate-100 border-slate-200 text-slate-700 hover:bg-slate-200'}`}><MousePointer2 size={16} className="text-rose-500"/> Pontos de ref. Clicável</RippleButton>
-                            <RippleButton onClick={()=>onVerOnibus && onVerOnibus(revista)} title="Linhas de ônibus próximas" style={{ cursor:'pointer', flexShrink:0, width:46 }} className={`flex items-center justify-center rounded-2xl font-semibold transition-colors duration-200 border text-sm ${modoNoturno?'bg-green-900/40 border-green-700/50 text-green-300 hover:bg-green-800/50':'bg-green-50 border-green-200 text-green-700 hover:bg-green-100'}`}>
-                                <span style={{ fontSize:20, lineHeight:1 }}>🚌</span>
+                            <RippleButton onClick={handleVerPois} style={{ cursor:'pointer' }} className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-full font-semibold transition-colors duration-200 border text-sm ${modoNoturno?'bg-slate-700 border-slate-600 text-slate-200 hover:bg-slate-600':'bg-slate-100 border-slate-200 text-slate-700 hover:bg-slate-200'}`}><MousePointer2 size={16} className="text-slate-400"/> Pontos de ref. Clicável</RippleButton>
+                            <RippleButton onClick={(e)=>{ captureZoomOrigin?.(e); onVerOnibus && onVerOnibus(revista); }} title="Linhas de ônibus próximas" style={{ cursor:'pointer', flexShrink:0, width:46 }} className={`flex items-center justify-center rounded-full font-semibold transition-colors duration-200 border text-sm ${modoNoturno?'bg-slate-700 border-slate-600 text-slate-200 hover:bg-slate-600':'bg-slate-100 border-slate-200 text-slate-700 hover:bg-slate-200'}`}>
+                                <Bus size={18}/>
                             </RippleButton>
                         </div>
                     </div>
                 </div>
             </div>
-            <style>{`@keyframes obra-tooltip-in{0%{opacity:0;transform:translateX(-50%) scale(0.15);border-radius:99px}55%{opacity:1;transform:translateX(-50%) scale(1.06)}100%{opacity:1;transform:translateX(-50%) scale(1);border-radius:99px}}`}</style>
         </>
     );
 }

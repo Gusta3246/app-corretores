@@ -1854,19 +1854,22 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
                     position: 'fixed',
                     left: 0, right: 0, bottom: 0,
                     zIndex: 40,
-                    paddingBottom: 'env(safe-area-inset-bottom, 0px)',
                     transform: tabsSticky ? 'translateY(0)' : 'translateY(110%)',
                     opacity: tabsSticky ? 1 : 0,
                     transition: 'transform 0.32s cubic-bezier(0.22,1,0.36,1), opacity 0.24s ease',
                     pointerEvents: tabsSticky ? 'auto' : 'none',
                 }}>
                 <div style={{
-                    margin: '0 10px 4px',
+                    margin: '0 10px',
+                    paddingBottom: 'env(safe-area-inset-bottom, 0px)',
                     background: modoNoturno ? 'rgba(15,23,42,0.55)' : 'rgba(255,255,255,0.55)',
                     backdropFilter: 'blur(24px) saturate(180%)',
                     WebkitBackdropFilter: 'blur(24px) saturate(180%)',
                     border: modoNoturno ? '1px solid rgba(255,255,255,0.08)' : '1px solid rgba(15,23,42,0.08)',
-                    borderRadius: 24,
+                    borderTopLeftRadius: 24,
+                    borderTopRightRadius: 24,
+                    borderBottomLeftRadius: 0,
+                    borderBottomRightRadius: 0,
                     boxShadow: modoNoturno
                         ? '0 10px 32px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.06)'
                         : '0 10px 32px rgba(15,23,42,0.14), inset 0 1px 0 rgba(255,255,255,0.6)',

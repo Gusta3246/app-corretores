@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useLayoutEffect, useRef } from 'react';
-import { Search, Building, ExternalLink, MapPin, BookOpen, Maximize, Bed, LayoutGrid, Menu, Sparkles, Star, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, FileText, TableProperties, BookMarked, HelpCircle, Calculator, Bot, X, Send, Wand2, Paperclip, File as FileIcon, Trash2, FolderPlus, GripVertical, Plus, MessageCircle, Moon, Sun, AlertTriangle, Book, Clock, Trophy, RotateCw, RotateCcw, Phone, CreditCard, Copy, Check, Eye, EyeOff, Smartphone, Globe, Gem, Hexagon } from 'lucide-react';
+import { Search, Building, ExternalLink, MapPin, BookOpen, Maximize, Bed, LayoutGrid, Sparkles, Star, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, FileText, TableProperties, BookMarked, HelpCircle, Calculator, Bot, X, Send, Wand2, Paperclip, File as FileIcon, Trash2, FolderPlus, GripVertical, Plus, MessageCircle, Moon, Sun, AlertTriangle, Book, Clock, Trophy, RotateCw, RotateCcw, Phone, CreditCard, Copy, Check, Eye, EyeOff, Smartphone, Globe, Gem, Hexagon } from 'lucide-react';
 import { buscarRespostaDoRobo, buscarRespostaGemini } from './bot/dadosFinanciamento.js';
 import { revistasDataLocal, utilitariosData, frasesMotivacionais, imagensEquipeDiarias, dayIndex, periodoIndex } from './data/dados.js';
 import { RippleButton, CardRevista, HintPills, RevistaCloseButton } from './components/Componentes.jsx';
@@ -154,7 +154,9 @@ export default function App() {
 
     // Sticky tabs — abas grudam no header quando banner sai da tela
     const [tabsSticky, setTabsSticky] = useState(false);
-    const [sidebarNavOpen, setSidebarNavOpen] = useState(false);
+    const [dockPillStyle, setDockPillStyle] = useState({ left: 0, top: 0, width: 0, height: 0, opacity: 0 });
+    const dockNavRef = useRef(null);
+    const dockTabRefs = useRef({});
     const bannerNavRef = useRef(null);
     const headerRef = useRef(null);
     // Search bar visibility (esconde no mobile ao scrollar para baixo)
@@ -292,6 +294,8 @@ export default function App() {
         }).catch(() => {});
     };
     const [rankingExpandido, setRankingExpandido] = useState(true);
+    const [cpfToast, setCpfToast] = useState(null);
+    const [cpfToastCopiado, setCpfToastCopiado] = useState(false);
     const [selectedPois, setSelectedPois] = useState(null);
     const [closingPoi, setClosingPoi] = useState(false);
     const [selectedOnibus, setSelectedOnibus] = useState(null); // empreendimento para modal de ônibus
@@ -392,6 +396,28 @@ export default function App() {
         const id = requestAnimationFrame(() => calcPill(activeBrand));
         return () => cancelAnimationFrame(id);
     }, []);
+
+    // ── Pílula deslizante do dock inferior mobile ──
+    const calcDockPill = (brand) => {
+        const activeEl = dockTabRefs.current[brand];
+        const navEl = dockNavRef.current;
+        if (!activeEl || !navEl) return;
+        const navRect = navEl.getBoundingClientRect();
+        const tabRect = activeEl.getBoundingClientRect();
+        setDockPillStyle({
+            left: tabRect.left - navRect.left + navEl.scrollLeft,
+            top: tabRect.top - navRect.top,
+            width: tabRect.width,
+            height: tabRect.height,
+            opacity: 1,
+        });
+        activeEl.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+    };
+    useEffect(() => {
+        if (!tabsSticky) return;
+        const id = requestAnimationFrame(() => calcDockPill(activeBrand));
+        return () => cancelAnimationFrame(id);
+    }, [activeBrand, tabsSticky]);
 
     const [perfilSelecionado, setPerfilSelecionado] = useState(null); // 'diamante'|'ouro'|'prata'|'bronze'|'aco'
     const [perfilExpandido, setPerfilExpandido] = useState(null);
@@ -708,6 +734,16 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
         const cpfStr = cpfNums.join('');
         return cpfStr.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
     };
+    const handleGerarCpfNav = () => {
+        haptic('medium');
+        const cpfGerado = gerarCPFValido();
+        setCpfToastCopiado(false);
+        setCpfToast(cpfGerado);
+        navigator.clipboard?.writeText(cpfGerado).then(() => {
+            setCpfToastCopiado(true);
+        }).catch(() => {});
+        setTimeout(() => { setCpfToast(prev => (prev === cpfGerado ? null : prev)); }, 5000);
+    };
     const validarCPF = (cpf) => {
         const nums = (cpf || '').replace(/\D/g, '');
         if (nums.length !== 11 || /^(\d)\1{10}$/.test(nums)) return false;
@@ -857,8 +893,7 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
         if (quickFolderInputRef.current) quickFolderInputRef.current.value = '';
 
         if (!OPENROUTER_KEY) {
-            setIsChatOpen(true);
-            setChatMessages(prev => [...prev, { role: 'bot', content: '⚠️ **Pasta Rápida precisa da chave do OpenRouter.**\n\n1. Acesse: https://openrouter.ai\n2. Crie conta gratuita (sem cartão)\n3. Vá em **Settings → Keys** e crie uma chave\n4. Adicione no `.env`:\n```\nREACT_APP_OPENROUTER_KEY=sk-or-...\n```\n5. Reinicie com `npm start` 🔑' }]);
+            alert('Pasta Rápida precisa da chave do OpenRouter.\n\n1. Acesse: https://openrouter.ai\n2. Crie conta gratuita (sem cartão)\n3. Vá em Settings → Keys e crie uma chave\n4. Adicione no .env:\nREACT_APP_OPENROUTER_KEY=sk-or-...\n5. Reinicie com npm start');
             return;
         }
 
@@ -1294,6 +1329,9 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
                 <img
                     src={imagemDoDia}
                     alt=""
+                    fetchpriority="high"
+                    loading="eager"
+                    decoding="async"
                     onError={(e) => { e.target.style.display = 'none'; }}
                     style={{
                         width: '100%',
@@ -1500,14 +1538,8 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
                 @media (min-width: 640px) {
                     nav[aria-label="Tabs"] { justify-content: center !important; overflow-x: visible !important; flex-wrap: wrap; padding-left: 0 !important; padding-right: 0 !important; }
                 }
-                @keyframes sidebar-overlay-in {
-                    0% { opacity: 0; }
-                    100% { opacity: 1; }
-                }
-                @keyframes sidebar-slide-in {
-                    0% { transform: translateX(100%); }
-                    100% { transform: translateX(0); }
-                }
+                .dock-tabs-bar::-webkit-scrollbar { display: none; }
+                .dock-tabs-bar { -ms-overflow-style: none; scrollbar-width: none; }
                 @keyframes shimmer-sweep {
                     0%   { transform: translateX(-150%) skewX(-18deg); }
                     100% { transform: translateX(280%)  skewX(-18deg); }
@@ -1699,7 +1731,7 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
                                 const STICKY_TABS = [
                                     { id: 'Direcional',  label: 'DIR',  action: () => setActiveBrand('Direcional'), isBtn: true },
                                     { id: 'Riva',        label: 'RIVA', action: () => setActiveBrand('Riva'),        isBtn: true },
-                                    { id: 'Ranking',     label: 'RANK', href: 'https://ranking-direcional.streamlit.app/' },
+                                    { id: 'GerarCpf',    label: 'CPF',  action: handleGerarCpfNav, isBtn: true },
                                     { id: 'Calculadora', label: 'ITBI', action: () => setShowCalculadoraItbiModal(true), isBtn: true },
                                     { id: 'TabelaDireta', label: 'TD', action: () => setShowCalculadoraTabelaDiretaModal(true), isBtn: true },
                                     { id: 'Simulador',   label: 'SIM',  action: () => window.open('https://simuladorhabitacao.caixa.gov.br/home', '_blank', 'noopener,noreferrer'), isBtn: true },
@@ -1794,19 +1826,6 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
                                 <FolderPlus size={20} />
                             </button>
 
-                            {/* Botão Chat no Header */}
-                            <button
-                                onClick={(e) => { haptic('medium'); captureZoomOrigin(e); setIsChatOpen(true); }}
-                                className={`shrink-0 p-2.5 rounded-full border transition-all duration-300 hover:scale-105 ${
-                                    modoNoturno
-                                    ? 'bg-white/10 border-white/15 text-slate-200 hover:bg-white/20'
-                                    : 'bg-slate-100 border-slate-200 text-slate-600 hover:bg-slate-200'
-                                }`}
-                                style={{ boxShadow: modoNoturno ? '0 1px 2px rgba(0,0,0,0.15)' : '0 1px 2px rgba(15,23,42,0.05)' }}
-                                title="Abrir Chat IA"
-                            >
-                                <MessageCircle size={20} />
-                            </button>
 
                             {/* Botão Tabela Direta no Header */}
                             <a
@@ -1830,120 +1849,83 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
 
             </header>
 
-            {/* ── BOTÃO FLUTUANTE: abre sidebar de navegação (mobile) ── */}
+            {/* ── DOCK INFERIOR MOBILE (estilo iOS) — substitui as abas sticky do header no mobile ── */}
             <div className="sm:hidden"
                 style={{
                     position: 'fixed',
-                    right: 16,
-                    bottom: 'calc(20px + env(safe-area-inset-bottom, 0px))',
+                    left: 0, right: 0, bottom: 0,
                     zIndex: 40,
-                    transform: tabsSticky ? 'scale(1)' : 'scale(0)',
+                    paddingBottom: 'env(safe-area-inset-bottom, 0px)',
+                    transform: tabsSticky ? 'translateY(0)' : 'translateY(110%)',
                     opacity: tabsSticky ? 1 : 0,
-                    transition: 'transform 0.28s cubic-bezier(0.22,1,0.36,1), opacity 0.22s ease',
+                    transition: 'transform 0.32s cubic-bezier(0.22,1,0.36,1), opacity 0.24s ease',
                     pointerEvents: tabsSticky ? 'auto' : 'none',
                 }}>
-                <button
-                    onClick={(e) => { haptic(); captureZoomOrigin(e); setSidebarNavOpen(true); }}
-                    style={{
-                        width: 54, height: 54,
-                        borderRadius: '50%',
-                        border: 'none',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        background: '#2563eb',
-                        boxShadow: '0 6px 20px rgba(37,99,235,0.45), 0 2px 8px rgba(0,0,0,0.2)',
-                        cursor: 'pointer',
-                    }}
-                    title="Menu"
-                >
-                    <Menu size={22} color="#fff" />
-                </button>
-            </div>
-
-            {/* ── SIDEBAR DE NAVEGAÇÃO (mobile) ── */}
-            {sidebarNavOpen && (
-                <>
-                    <div
-                        className="sm:hidden"
-                        onClick={() => setSidebarNavOpen(false)}
-                        style={{
-                            position: 'fixed', inset: 0, zIndex: 60,
-                            background: 'rgba(0,0,0,0.45)',
-                            backdropFilter: 'blur(2px)',
-                            WebkitBackdropFilter: 'blur(2px)',
-                            animation: 'sidebar-overlay-in 0.24s ease both',
-                        }}
-                    />
-                    <div
-                        className="sm:hidden"
-                        style={{
-                            position: 'fixed', top: 0, right: 0, bottom: 0,
-                            zIndex: 61,
-                            width: 'min(78vw, 300px)',
-                            display: 'flex', flexDirection: 'column',
-                            background: modoNoturno ? '#0f172a' : '#ffffff',
-                            borderLeft: modoNoturno ? '1px solid rgba(255,255,255,0.08)' : '1px solid rgba(15,23,42,0.08)',
-                            boxShadow: '-8px 0 32px rgba(0,0,0,0.35)',
-                            paddingTop: 'env(safe-area-inset-top, 0px)',
-                            paddingBottom: 'env(safe-area-inset-bottom, 0px)',
-                            animation: 'sidebar-slide-in 0.30s cubic-bezier(0.22,1,0.36,1) both',
-                        }}
-                    >
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '18px 18px 12px' }}>
-                            <span style={{ fontSize: 13, fontWeight: 800, letterSpacing: '0.08em', textTransform: 'uppercase', color: modoNoturno ? 'rgba(255,255,255,0.5)' : 'rgba(30,41,59,0.5)' }}>Navegação</span>
-                            <button
-                                onClick={() => setSidebarNavOpen(false)}
-                                style={{
-                                    width: 32, height: 32, borderRadius: '50%',
-                                    border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                    background: modoNoturno ? 'rgba(255,255,255,0.08)' : 'rgba(15,23,42,0.06)',
-                                    cursor: 'pointer',
-                                }}
-                            >
-                                <X size={16} color={modoNoturno ? '#fff' : '#1e293b'} />
-                            </button>
-                        </div>
-                        <div style={{ flex: 1, overflowY: 'auto', padding: '4px 12px 18px', display: 'flex', flexDirection: 'column', gap: 6 }}>
-                            {[
-                                { id: 'Direcional',  label: 'Direcional',   icon: <span style={{width:6,height:6,borderRadius:3,background:'#2563eb',flexShrink:0,display:'inline-block'}}/>, action: () => setActiveBrand('Direcional'), isBtn: true },
-                                { id: 'Riva',        label: 'Riva',         icon: <span style={{width:6,height:6,borderRadius:3,background:'#2563eb',flexShrink:0,display:'inline-block'}}/>, action: () => setActiveBrand('Riva'),        isBtn: true },
-                                { id: 'Ranking',     label: 'Ver Ranking',  icon: <Trophy size={16}/>, href: 'https://ranking-direcional.streamlit.app/' },
-                                { id: 'Calculadora', label: 'Calcular ITBI',icon: <Calculator size={16}/>, action: () => setShowCalculadoraItbiModal(true), isBtn: true },
-                                { id: 'TabelaDireta', label: 'Tabela Direta', icon: <TableProperties size={16}/>, action: () => setShowCalculadoraTabelaDiretaModal(true), isBtn: true },
-                                { id: 'Simulador',   label: 'Simulador',    icon: <Calculator size={16}/>, action: () => window.open('https://simuladorhabitacao.caixa.gov.br/home', '_blank', 'noopener,noreferrer'), isBtn: true },
-                                { id: 'Tabelas',     label: 'Tabelas',      icon: <TableProperties size={16}/>, action: () => setShowTabelasModal(true), isBtn: true },
-                                { id: 'Utilitarios', label: 'Utilitários',  icon: <BookMarked size={16}/>, action: () => setActiveBrand('Utilitarios'), isBtn: true },
-                                { id: 'Guia',        label: 'Guia',         icon: <HelpCircle size={16}/>, action: () => setActiveBrand('Guia'),        isBtn: true },
-                            ].map((tab) => {
-                                const isActive = activeBrand === tab.id;
-                                const itemStyle = {
-                                    display: 'flex', alignItems: 'center', gap: 12,
-                                    padding: '12px 14px',
-                                    borderRadius: 14,
-                                    textDecoration: 'none',
-                                    cursor: 'pointer',
-                                    transition: 'background 0.2s ease',
-                                    background: isActive
-                                        ? '#2563eb'
-                                        : 'transparent',
-                                };
-                                const labelColor = isActive ? '#fff' : (modoNoturno ? 'rgba(255,255,255,0.75)' : 'rgba(30,41,59,0.75)');
-                                const iconColor = isActive ? '#fff' : (modoNoturno ? 'rgba(255,255,255,0.5)' : 'rgba(30,41,59,0.5)');
-                                const inner = (
-                                    <>
-                                        <span style={{ display: 'flex', alignItems: 'center', color: iconColor }}>{tab.icon}</span>
-                                        <span style={{ fontSize: 14.5, fontWeight: 700, color: labelColor }}>{tab.label}</span>
-                                    </>
-                                );
-                                return tab.isBtn ? (
-                                    <button key={tab.id} onClick={(e) => { haptic(); captureZoomOrigin(e); tab.action(); setSidebarNavOpen(false); }} style={itemStyle}>{inner}</button>
-                                ) : (
-                                    <a key={tab.id} href={tab.href} target="_blank" rel="noopener noreferrer" onClick={() => setSidebarNavOpen(false)} style={itemStyle}>{inner}</a>
-                                );
-                            })}
-                        </div>
+                <div style={{
+                    margin: '0 10px 4px',
+                    background: modoNoturno ? 'rgba(15,23,42,0.55)' : 'rgba(255,255,255,0.55)',
+                    backdropFilter: 'blur(24px) saturate(180%)',
+                    WebkitBackdropFilter: 'blur(24px) saturate(180%)',
+                    border: modoNoturno ? '1px solid rgba(255,255,255,0.08)' : '1px solid rgba(15,23,42,0.08)',
+                    borderRadius: 24,
+                    boxShadow: modoNoturno
+                        ? '0 10px 32px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.06)'
+                        : '0 10px 32px rgba(15,23,42,0.14), inset 0 1px 0 rgba(255,255,255,0.6)',
+                }}>
+                    <div className="dock-tabs-bar" ref={dockNavRef} style={{ position: 'relative', display: 'flex', gap: 8, alignItems: 'center', overflowX: 'auto', WebkitOverflowScrolling: 'touch', scrollbarWidth: 'none', msOverflowStyle: 'none', padding: '10px 12px' }}>
+                        {/* Pílula azul deslizante */}
+                        <div aria-hidden="true" style={{
+                            position: 'absolute',
+                            left: dockPillStyle.left,
+                            top: dockPillStyle.top,
+                            width: dockPillStyle.width,
+                            height: dockPillStyle.height,
+                            borderRadius: 999,
+                            background: '#2563eb',
+                            opacity: dockPillStyle.opacity,
+                            transition: 'left 0.38s cubic-bezier(0.22,1,0.36,1), top 0.38s cubic-bezier(0.22,1,0.36,1), width 0.38s cubic-bezier(0.22,1,0.36,1), height 0.38s cubic-bezier(0.22,1,0.36,1), opacity 0.2s ease',
+                            pointerEvents: 'none',
+                            zIndex: 0,
+                        }} />
+                        {[
+                            { id: 'Direcional',  label: 'DIRECIONAL',  icon: <span style={{width:5,height:5,borderRadius:2,background: modoNoturno ? 'rgba(255,255,255,0.7)' : 'rgba(30,41,59,0.6)',flexShrink:0,display:'inline-block'}}/>, action: () => setActiveBrand('Direcional'), isBtn: true },
+                            { id: 'Riva',        label: 'RIVA',        icon: <span style={{width:5,height:5,borderRadius:2,background: modoNoturno ? 'rgba(255,255,255,0.7)' : 'rgba(30,41,59,0.6)',flexShrink:0,display:'inline-block'}}/>, action: () => setActiveBrand('Riva'),        isBtn: true },
+                            { id: 'GerarCpf',    label: 'GERAR CPF',   icon: <CreditCard size={13} style={{color: modoNoturno ? 'rgba(255,255,255,0.6)' : 'rgba(30,41,59,0.55)',flexShrink:0}}/>, action: handleGerarCpfNav, isBtn: true },
+                            { id: 'Calculadora', label: 'ITBI',        icon: <Calculator size={13} style={{color: modoNoturno ? 'rgba(255,255,255,0.6)' : 'rgba(30,41,59,0.55)',flexShrink:0}}/>, action: () => setShowCalculadoraItbiModal(true), isBtn: true },
+                            { id: 'TabelaDireta', label: 'T. DIRETA',  icon: <TableProperties size={13} style={{color: modoNoturno ? 'rgba(255,255,255,0.6)' : 'rgba(30,41,59,0.55)',flexShrink:0}}/>, action: () => setShowCalculadoraTabelaDiretaModal(true), isBtn: true },
+                            { id: 'Simulador',   label: 'SIMULADOR',   icon: <Calculator size={13} style={{color: modoNoturno ? 'rgba(255,255,255,0.6)' : 'rgba(30,41,59,0.55)',flexShrink:0}}/>, action: () => window.open('https://simuladorhabitacao.caixa.gov.br/home', '_blank', 'noopener,noreferrer'), isBtn: true },
+                            { id: 'Tabelas',     label: 'TABELAS',     icon: <TableProperties size={13} style={{color: modoNoturno ? 'rgba(255,255,255,0.6)' : 'rgba(30,41,59,0.55)',flexShrink:0}}/>, action: () => setShowTabelasModal(true), isBtn: true },
+                            { id: 'Utilitarios', label: 'UTILITÁRIOS', icon: <BookMarked size={13} style={{color: modoNoturno ? 'rgba(255,255,255,0.6)' : 'rgba(30,41,59,0.55)',flexShrink:0}}/>, action: () => setActiveBrand('Utilitarios'), isBtn: true },
+                            { id: 'Guia',        label: 'GUIA',        icon: <HelpCircle size={13} style={{color: modoNoturno ? 'rgba(255,255,255,0.6)' : 'rgba(30,41,59,0.55)',flexShrink:0}}/>, action: () => setActiveBrand('Guia'),        isBtn: true },
+                        ].map((tab) => {
+                            const isActive = activeBrand === tab.id;
+                            const tabStyle = {
+                                position: 'relative', zIndex: 1,
+                                borderRadius: 999,
+                                padding: '9px 16px',
+                                cursor: 'pointer', textDecoration: 'none',
+                                display: 'flex', alignItems: 'center', gap: 7, flexShrink: 0, whiteSpace: 'nowrap',
+                                transition: 'background 0.22s ease, border-color 0.22s ease',
+                                background: isActive ? 'transparent' : (modoNoturno ? 'rgba(255,255,255,0.06)' : 'rgba(15,23,42,0.05)'),
+                                border: isActive ? '1px solid transparent' : (modoNoturno ? '1px solid rgba(255,255,255,0.08)' : '1px solid rgba(15,23,42,0.08)'),
+                            };
+                            const labelColor = isActive ? '#fff' : (modoNoturno ? 'rgba(255,255,255,0.55)' : 'rgba(30,41,59,0.55)');
+                            const inner = (
+                                <>
+                                    <span style={{ fontSize: 13, fontWeight: 800, letterSpacing: '0.04em', color: labelColor, transition: 'color 0.22s' }}>{tab.label}</span>
+                                    <span style={{ opacity: isActive ? 1 : 0.55, display: 'flex', alignItems: 'center', color: isActive ? '#fff' : undefined, transition: 'opacity 0.22s' }}>{tab.icon}</span>
+                                </>
+                            );
+                            const setRef = (el) => { dockTabRefs.current[tab.id] = el; };
+                            return tab.isBtn ? (
+                                <button key={tab.id} ref={setRef} onClick={(e) => { haptic(); captureZoomOrigin(e); tab.action(); }} style={tabStyle}>{inner}</button>
+                            ) : (
+                                <a key={tab.id} ref={setRef} href={tab.href} target="_blank" rel="noopener noreferrer" style={tabStyle}>{inner}</a>
+                            );
+                        })}
                     </div>
-                </>
-            )}
+                </div>
+            </div>
 
             {/* ── PAINEL INFORMAÇÕES COMERCIAIS — visível até domingo 22/03/2026, some na segunda ── */}
             {(() => {
@@ -2110,7 +2092,7 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
                     marginLeft: 0,
                     marginRight: 0,
                 }}>
-                    <img src={imagemDoDia} onError={(e) => { e.target.src = '' }} alt="Equipe Destemidos" className="w-full h-screen sm:h-screen object-cover bg-slate-200 banner-ken-burns" style={{ objectPosition: `center ${bannerFocusY}`, display: 'block', maxHeight: '560px' }} />
+                    <img src={imagemDoDia} fetchpriority="high" loading="eager" decoding="async" onError={(e) => { e.target.src = '' }} alt="Equipe Destemidos" className="w-full h-screen sm:h-screen object-cover bg-slate-200 banner-ken-burns" style={{ objectPosition: `center ${bannerFocusY}`, display: 'block', maxHeight: '560px' }} />
                     {/* Camada 1: blur progressivo de baixo pra cima */}
                     <div className="absolute inset-0 pointer-events-none" style={{
                         backdropFilter: 'blur(14px)',
@@ -2230,7 +2212,7 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
                                 const TABS = [
                                     { id: 'Direcional',  label: 'DIRECIONAL', icon: <span style={{width:5,height:5,borderRadius:2,background:'rgba(255,255,255,0.7)',flexShrink:0,display:'inline-block'}}/>, action: () => setActiveBrand('Direcional'), isBtn: true },
                                     { id: 'Riva',        label: 'RIVA',        icon: <span style={{width:5,height:5,borderRadius:2,background:'rgba(255,255,255,0.7)',flexShrink:0,display:'inline-block'}}/>, action: () => setActiveBrand('Riva'),        isBtn: true },
-                                    { id: 'Ranking',     label: 'VER RANKING', icon: <Trophy size={13} style={{color:'rgba(255,255,255,0.6)',flexShrink:0}}/>, href: 'https://ranking-direcional.streamlit.app/' },
+                                    { id: 'GerarCpf',    label: 'GERAR CPF', icon: <CreditCard size={13} style={{color:'rgba(255,255,255,0.6)',flexShrink:0}}/>, action: handleGerarCpfNav, isBtn: true },
                                     { id: 'Calculadora', label: 'CALCULAR ITBI', icon: <Calculator size={13} style={{color:'rgba(255,255,255,0.6)',flexShrink:0}}/>, action: () => setShowCalculadoraItbiModal(true), isBtn: true },
                                     { id: 'TabelaDireta', label: 'TABELA DIRETA', icon: <TableProperties size={13} style={{color:'rgba(255,255,255,0.6)',flexShrink:0}}/>, action: () => setShowCalculadoraTabelaDiretaModal(true), isBtn: true },
                                     { id: 'Simulador',   label: 'SIMULADOR',   icon: <Calculator size={13} style={{color:'rgba(255,255,255,0.6)',flexShrink:0}}/>, action: () => window.open('https://simuladorhabitacao.caixa.gov.br/home', '_blank', 'noopener,noreferrer'), isBtn: true },
@@ -3280,13 +3262,8 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
                 );
             })()}
 
-            {/* --- ÍCONE DO ROBÔ E BALÃO AMIGÁVEL --- */}
-            {/* ── HINT PILLS — renderizado como componente fixo ── */}
-            <HintPills onPhaseChange={setHintPhase} />
-
-            <div className={`fixed bottom-8 right-8 z-40 flex flex-col items-end gap-3 transition-all duration-500 ${isChatOpen ? 'scale-0 opacity-0 pointer-events-none' : 'scale-0 opacity-0 pointer-events-none'}`}>
-                {/* Botões movidos para o header */}
-
+            {/* --- BOTÃO FLUTUANTE DE PASTA (oculto — botões movidos para o header) --- */}
+            <div className={`fixed bottom-8 right-8 z-40 flex flex-col items-end gap-3 transition-all duration-500 scale-0 opacity-0 pointer-events-none`}>
                 {/* Botão Pasta flutuante */}
                 <button
                     onClick={() => { haptic('medium'); setFolderSource('manual'); setIsCreatingFolder(true); setIsChatOpen(true); setTimeout(() => fileInputRef.current?.click(), 100); }}
@@ -3297,51 +3274,6 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
                     <FolderPlus size={22} />
                 </button>
 
-                {/* Balão de frase + botão chatbot */}
-                <div className="flex flex-row items-end gap-3">
-                <div 
-                    className={`px-5 py-3 rounded-2xl shadow-xl border relative flex items-center gap-2 group cursor-pointer transition-all duration-500 origin-bottom-right ${
-                        isScrolling 
-                        ? 'scale-0 opacity-0 translate-y-8 pointer-events-none' 
-                        : 'scale-100 opacity-100 translate-y-0 animate-float'
-                    } ${modoNoturno ? 'bg-slate-800 border-slate-700' : 'bg-white border-[#4A85DC]/20'}`}
-                    onClick={() => setIsChatOpen(true)}
-                >
-                    <div className="bg-[#4A85DC]/10 p-1.5 rounded-lg text-[#4A85DC] shrink-0">
-                        <Sparkles size={14} className="animate-pulse" />
-                    </div>
-                    <span className={`font-bold text-sm whitespace-nowrap overflow-hidden transition-all duration-300 ${modoNoturno ? 'text-white' : 'text-slate-700'} ${isScrolling ? 'max-w-0' : 'max-w-xs'}`}>
-                        {robotFloatingPhrases[robotPhraseIndex]}
-                    </span>
-                    <div className={`absolute -right-2 bottom-4 w-4 h-4 border-r border-b rotate-[-45deg] ${modoNoturno ? 'bg-slate-800 border-slate-700' : 'bg-white border-[#4A85DC]/20'}`}></div>
-                </div>
-
-                <button
-                    onClick={() => { haptic('medium'); setIsChatOpen(true); }}
-                    className={`w-14 h-14 bg-gradient-to-br from-[#4A85DC] via-[#4A85DC] to-[#4A85DC] text-white rounded-[1.75rem] hover:rounded-[1rem] hover:scale-110 active:scale-95 transition-all duration-500 flex items-center justify-center relative group overflow-hidden border-2 border-white/20 ${hintPhase === 'show' ? 'chat-btn-calling' : ''} ${hintPhase === 'fly' ? 'chat-btn-absorb' : ''}`}
-                    style={{ animation: 'ia-btn-enter 0.6s cubic-bezier(0.34,1.56,0.64,1) both' }}
-                >
-                    <div className="absolute inset-0 bg-gradient-to-tr from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                    {/* smooth sweep shine */}
-                    <div className="btn-shine-layer absolute inset-0"></div>
-                    <div className="ia-ring" aria-hidden="true"></div>
-                    <div className="relative z-10 w-7 h-7 flex items-center justify-center" style={{opacity: chatBtnIconVisible ? 1 : 0, transition: 'opacity 1.1s ease'}}>
-                        {chatBtnIcon === 'chat' ? (
-                            <svg viewBox="0 0 24 24" fill="none" className="w-7 h-7" style={{animation:'icon-pop 0.35s cubic-bezier(0.34,1.6,0.64,1)'}} xmlns="http://www.w3.org/2000/svg">
-                                <path d="M12 2C6.477 2 2 6.254 2 11.5c0 2.576 1.086 4.91 2.857 6.614L4 22l4.23-1.394A10.456 10.456 0 0012 21c5.523 0 10-4.254 10-9.5S17.523 2 12 2z" fill="white" fillOpacity="0.95"/>
-                                <circle cx="8.5" cy="11.5" r="1.2" fill="#4A85DC"/>
-                                <circle cx="12" cy="11.5" r="1.2" fill="#4A85DC"/>
-                                <circle cx="15.5" cy="11.5" r="1.2" fill="#4A85DC"/>
-                            </svg>
-                        ) : (
-                            <svg viewBox="0 0 24 24" fill="none" className="w-7 h-7" style={{animation:'icon-pop 0.35s cubic-bezier(0.34,1.6,0.64,1)'}} xmlns="http://www.w3.org/2000/svg">
-                                <path d="M3 7a2 2 0 012-2h3.586a1 1 0 01.707.293L10.707 6.7A1 1 0 0011.414 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V7z" fill="white" fillOpacity="0.95" stroke="rgba(255,255,255,0.4)" strokeWidth="0.5"/>
-                                <path d="M7 13h10M7 16h6" stroke="#4A85DC" strokeWidth="1.5" strokeLinecap="round"/>
-                            </svg>
-                        )}
-                    </div>
-                </button>
-                </div>{/* fim flex-row chatbot */}
                 <style dangerouslySetInnerHTML={{ __html: `
 
                     /* ── FONTE SF PRO — SISTEMA iOS/macOS ── */
@@ -3544,7 +3476,7 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
                         .chat-folder-full { top: 0 !important; left: 0 !important; right: 0 !important; bottom: 0 !important; height: 100dvh !important; border-radius: 0 !important; }
                     }
                     /* Padding do main para compensar o header fixed (inclui notch no PWA) */
-                    .main-content { padding-top: calc(80px + env(safe-area-inset-top, 0px)); padding-bottom: 0; }
+                    .main-content { padding-top: calc(80px + env(safe-area-inset-top, 0px)); padding-bottom: calc(78px + env(safe-area-inset-bottom, 0px)); }
                     @media (min-width: 640px) { .main-content { padding-top: calc(80px + env(safe-area-inset-top, 0px)); padding-bottom: 0; } }
                     /* Folder → Chat collapse/expand */
                     @keyframes folder-collapse-kf { 0% { opacity:1; transform: scaleY(1) translateY(0); } 40% { opacity:0.6; transform: scaleY(0.85) translateY(8px); } 100% { opacity:0; transform: scaleY(0.55) translateY(20px); } }
@@ -3566,7 +3498,7 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
                 `}} />
             </div>
 
-            {/* BACKDROP DO CHAT IA */}
+            {/* BACKDROP DO PAINEL CRIAR PASTA */}
             {isChatOpen && (
                 <div
                     onClick={closeChat}
@@ -3580,140 +3512,82 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
                 />
             )}
 
-            {/* CHATBOT CONTAINER */}
+            {/* TOAST — CPF TEMPORÁRIO GERADO */}
+            {cpfToast && (
+                <div
+                    className="fixed bottom-8 left-1/2 z-[70] flex items-center gap-3 px-5 py-3.5 rounded-2xl shadow-2xl"
+                    style={{
+                        transform: 'translateX(-50%)',
+                        background: modoNoturno ? '#0f172a' : '#ffffff',
+                        border: `1px solid ${modoNoturno ? 'rgba(255,255,255,0.12)' : 'rgba(15,23,42,0.08)'}`,
+                        animation: 'cpf-toast-in 0.28s cubic-bezier(0.34,1.3,0.64,1) both',
+                    }}
+                >
+                    <CreditCard size={18} style={{ color: '#007AFF', flexShrink: 0 }} />
+                    <div className="flex flex-col">
+                        <span className="text-[9px] font-black uppercase tracking-widest" style={{ color: modoNoturno ? '#94a3b8' : '#64748b' }}>
+                            {cpfToastCopiado ? 'CPF gerado e copiado' : 'CPF temporário gerado'}
+                        </span>
+                        <span className="text-sm font-black tracking-wide" style={{ color: modoNoturno ? '#f1f5f9' : '#1e293b' }}>{cpfToast}</span>
+                    </div>
+                    <button
+                        onClick={() => { navigator.clipboard?.writeText(cpfToast).then(() => setCpfToastCopiado(true)).catch(() => {}); }}
+                        className="p-2 rounded-xl transition-all active:scale-90"
+                        style={{ background: modoNoturno ? 'rgba(0,122,255,0.15)' : 'rgba(0,122,255,0.10)' }}
+                        title="Copiar CPF"
+                    >
+                        {cpfToastCopiado ? <Check size={16} style={{ color: '#22c55e' }} /> : <Copy size={16} style={{ color: '#007AFF' }} />}
+                    </button>
+                    <style>{`@keyframes cpf-toast-in{from{opacity:0;transform:translate(-50%,12px)}to{opacity:1;transform:translate(-50%,0)}}`}</style>
+                </div>
+            )}
+
+            {/* PAINEL CRIAR PASTA DO CLIENTE */}
             <div className={`fixed z-50 overflow-hidden flex flex-col shadow-2xl
-                ${isCreatingFolder ? 'chat-folder-full' : 'chat-mobile-full'}
+                chat-folder-full
                 ${isChatOpen ? (closingChat ? 'chat-closing' : 'chat-opening') : 'scale-0 opacity-0 pointer-events-none'}
-                ${isCreatingFolder
-                    ? 'left-0 right-0 bottom-0 rounded-none'
-                    : 'left-0 right-0 bottom-0 rounded-none md:bottom-6 md:right-6 md:left-auto md:rounded-3xl md:w-[350px] lg:w-[420px] md:h-[600px] md:max-h-[85vh] origin-bottom-right'}
+                left-0 right-0 bottom-0 rounded-none
                 ${modoNoturno ? 'bg-[#0B1120]' : 'bg-slate-50'}`}>
 
-                {/* ── HEADER CHATBOT ── */}
+                {/* ── HEADER PASTA ── */}
                 <div className="relative overflow-hidden shrink-0"
-                    style={isCreatingFolder ? {
+                    style={{
                         background: modoNoturno ? '#0f172a' : '#ffffff',
                         borderBottom: `1px solid ${modoNoturno ? '#1e293b' : '#e2e8f0'}`,
-                    } : {
-                        background: 'linear-gradient(135deg, #4A85DC 0%, #4A85DC 40%, #4A85DC 100%)',
-                        boxShadow: '0 4px 32px rgba(99,102,241,0.45)',
                     }}>
-                    {/* shimmer sweep — só no chat normal */}
-                    {!isCreatingFolder && (
-                        <div className="absolute inset-0 pointer-events-none overflow-hidden">
-                            <div style={{ position:'absolute', top:'-20%', left:0, width:'60%', height:'140%', background:'linear-gradient(105deg, transparent 10%, rgba(255,255,255,0.16) 50%, transparent 90%)', transform:'skewX(-18deg)' }}></div>
-                        </div>
-                    )}
-                    <div className={`relative z-10 pasta-header-safe ${isCreatingFolder ? 'px-4 py-3 flex items-center gap-3' : 'px-5 pt-5 pb-4 flex items-center justify-between'}`}>
-                        {isCreatingFolder ? (
-                            <>
-                                <div className="flex-1 min-w-0 rounded-xl px-3 py-2 flex flex-col gap-1"
-                                    style={{
-                                        background: folderSource === 'rapida' ? (modoNoturno ? 'rgba(249,115,22,0.08)' : '#fff7ed') : (modoNoturno ? 'rgba(99,102,241,0.08)' : '#eef2ff'),
-                                        border: `1px solid ${folderSource === 'rapida' ? (modoNoturno ? 'rgba(249,115,22,0.25)' : '#fed7aa') : (modoNoturno ? 'rgba(99,102,241,0.25)' : '#c7d2fe')}`,
-                                    }}>
-                                    <span className="text-[9px] font-black uppercase tracking-widest flex items-center gap-1.5" style={{ color: folderSource === 'rapida' ? '#f97316' : '#4A85DC' }}>
-                                        📋 Ordem sugerida
-                                    </span>
-                                    <div className="flex flex-wrap gap-x-3 gap-y-1 text-[10px] font-bold" style={{ color: modoNoturno ? '#e2e8f0' : '#334155' }}>
-                                        <span className="inline-flex items-center gap-1.5">
-                                            <span className="w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-black text-white shrink-0" style={{ background: folderSource === 'rapida' ? '#f97316' : '#4A85DC' }}>1</span>
-                                            RG · CPF · Certidão · Residência
-                                        </span>
-                                        <span className="inline-flex items-center gap-1.5">
-                                            <span className="w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-black text-white shrink-0" style={{ background: folderSource === 'rapida' ? '#f97316' : '#4A85DC' }}>2</span>
-                                            CTPS · Contracheque · Extrato · FGTS
-                                        </span>
-                                    </div>
-                                    <span className="text-[9px] italic font-semibold" style={{ color: modoNoturno ? '#94a3b8' : '#64748b' }}>
-                                        💡 Arraste os cards para reordenar
-                                    </span>
-                                </div>
-                                <button onClick={() => { haptic(); closeChat(); }}
-                                    className="p-2.5 rounded-2xl transition-all active:scale-90 shrink-0"
-                                    style={{ background: modoNoturno ? '#1e293b' : '#f8fafc' }}>
-                                    <X className="w-5 h-5" style={{ color: modoNoturno ? '#94a3b8' : '#64748b' }} />
-                                </button>
-                            </>
-                        ) : (
-                            <>
-                        <div className="flex items-center gap-3">
-                            <div className="p-2.5 rounded-2xl"
-                                style={{ background:'rgba(255,255,255,0.15)', border:'1px solid rgba(255,255,255,0.2)', boxShadow:'inset 0 1px 1px rgba(0,0,0,0.08)' }}
-                            >
-                                <svg viewBox="0 0 24 24" fill="none" className="w-5 h-5" xmlns="http://www.w3.org/2000/svg">
-                                    <path d="M12 2C6.477 2 2 6.254 2 11.5c0 2.576 1.086 4.91 2.857 6.614L4 22l4.23-1.394A10.456 10.456 0 0012 21c5.523 0 10-4.254 10-9.5S17.523 2 12 2z" fill="white" fillOpacity="0.95"/>
-                                    <circle cx="8.5" cy="11.5" r="1.2" fill="#4A85DC"/>
-                                    <circle cx="12" cy="11.5" r="1.2" fill="#4A85DC"/>
-                                    <circle cx="15.5" cy="11.5" r="1.2" fill="#4A85DC"/>
-                                </svg>
+                    <div className="relative z-10 pasta-header-safe px-4 py-3 flex items-center gap-3">
+                        <div className="flex-1 min-w-0 rounded-xl px-3 py-2 flex flex-col gap-1"
+                            style={{
+                                background: folderSource === 'rapida' ? (modoNoturno ? 'rgba(249,115,22,0.08)' : '#fff7ed') : (modoNoturno ? 'rgba(99,102,241,0.08)' : '#eef2ff'),
+                                border: `1px solid ${folderSource === 'rapida' ? (modoNoturno ? 'rgba(249,115,22,0.25)' : '#fed7aa') : (modoNoturno ? 'rgba(99,102,241,0.25)' : '#c7d2fe')}`,
+                            }}>
+                            <span className="text-[9px] font-black uppercase tracking-widest flex items-center gap-1.5" style={{ color: folderSource === 'rapida' ? '#f97316' : '#4A85DC' }}>
+                                📋 Ordem sugerida
+                            </span>
+                            <div className="flex flex-wrap gap-x-3 gap-y-1 text-[10px] font-bold" style={{ color: modoNoturno ? '#e2e8f0' : '#334155' }}>
+                                <span className="inline-flex items-center gap-1.5">
+                                    <span className="w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-black text-white shrink-0" style={{ background: folderSource === 'rapida' ? '#f97316' : '#4A85DC' }}>1</span>
+                                    RG · CPF · Certidão · Residência
+                                </span>
+                                <span className="inline-flex items-center gap-1.5">
+                                    <span className="w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-black text-white shrink-0" style={{ background: folderSource === 'rapida' ? '#f97316' : '#4A85DC' }}>2</span>
+                                    CTPS · Contracheque · Extrato · FGTS
+                                </span>
                             </div>
-                            <div>
-                                <h3 className="font-black text-lg uppercase tracking-widest text-white drop-shadow-md">
-                                    IA Destemidos
-                                </h3>
-                                <p className="text-[10px] font-black uppercase tracking-[0.15em] flex items-center gap-1.5 text-white/70">
-                                    <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse"></span>Online para te apoiar
-                                </p>
-                            </div>
+                            <span className="text-[9px] italic font-semibold" style={{ color: modoNoturno ? '#94a3b8' : '#64748b' }}>
+                                💡 Arraste os cards para reordenar
+                            </span>
                         </div>
                         <button onClick={() => { haptic(); closeChat(); }}
-                            className="p-2.5 rounded-2xl transition-all active:scale-90 bg-white/10 hover:bg-white/25 text-white border border-white/20 backdrop-blur-sm">
-                            <X className="w-5 h-5" />
+                            className="p-2.5 rounded-2xl transition-all active:scale-90 shrink-0"
+                            style={{ background: modoNoturno ? '#1e293b' : '#f8fafc' }}>
+                            <X className="w-5 h-5" style={{ color: modoNoturno ? '#94a3b8' : '#64748b' }} />
                         </button>
-                            </>
-                        )}
                     </div>
                 </div>
 
-                {!isCreatingFolder && (
-                    <div ref={chatScrollRef} className={`overflow-y-auto px-4 py-5 space-y-4 custom-scrollbar flex-1 transition-colors ${modoNoturno ? 'bg-[#0B1120]' : 'bg-slate-50'}`}>
-                        {chatMessages.map((msg, idx) => (
-                            <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                                {msg.role === 'bot' && (
-                                    <div className="w-7 h-7 rounded-2xl shrink-0 mr-2 mt-0.5 flex items-center justify-center"
-                                        style={{ background: 'linear-gradient(135deg, #4A85DC 0%, #4A85DC 100%)', boxShadow: '0 2px 8px rgba(99,102,241,0.4)' }}>
-                                        <Sparkles size={12} className="text-white" />
-                                    </div>
-                                )}
-                                <div className={`max-w-[80%] rounded-2xl px-4 py-3 text-sm leading-relaxed ${
-                                    msg.role === 'user'
-                                    ? 'rounded-tr-sm text-white'
-                                    : (modoNoturno ? 'bg-slate-800/80 border border-slate-700/60 text-slate-200 rounded-tl-sm shadow-sm' : 'bg-white border border-slate-100 text-slate-700 rounded-tl-sm shadow-sm')
-                                }`}
-                                style={msg.role === 'user' ? { background: 'linear-gradient(135deg, #4A85DC 0%, #4A85DC 60%, #4A85DC 100%)', boxShadow: '0 2px 12px rgba(99,102,241,0.35)' } : {}}>
-                                    {msg.cpf ? (
-                                        <div className="flex items-center gap-2">
-                                            <span className="font-black tracking-wide">CPF GERADO: {msg.cpf}</span>
-                                            <button
-                                                onClick={() => copiarTextoGuia(msg.cpf, `cpf-${idx}`)}
-                                                className={`shrink-0 p-1.5 rounded-lg transition-all active:scale-90 ${modoNoturno ? 'hover:bg-slate-700' : 'hover:bg-slate-100'}`}
-                                                title="Copiar CPF">
-                                                {copiedGuiaItem === `cpf-${idx}` ? <Check size={14} className="text-emerald-500" /> : <Copy size={14} className={modoNoturno ? 'text-slate-400' : 'text-slate-400'} />}
-                                            </button>
-                                        </div>
-                                    ) : (msg.role === 'bot' ? renderChatMessage(msg.content) : msg.content)}
-                                </div>
-                            </div>
-                        ))}
-                        {isChatLoading && (
-                            <div className="flex justify-start items-end gap-2">
-                                <div className="w-7 h-7 rounded-2xl shrink-0 flex items-center justify-center"
-                                    style={{ background: 'linear-gradient(135deg, #4A85DC 0%, #4A85DC 100%)', boxShadow: '0 2px 8px rgba(99,102,241,0.4)' }}>
-                                    <Sparkles size={12} className="text-white" style={{animation:'spin 2s linear infinite'}} />
-                                </div>
-                                <div className={`border rounded-2xl rounded-tl-sm px-4 py-3 shadow-sm flex gap-1.5 items-center ${modoNoturno ? 'bg-slate-800/80 border-slate-700/60' : 'bg-white border-slate-100'}`}>
-                                    <div className="w-1.5 h-1.5 rounded-full animate-bounce" style={{background:'#4A85DC'}}></div>
-                                    <div className="w-1.5 h-1.5 rounded-full animate-bounce" style={{background:'#4A85DC', animationDelay:'0.2s'}}></div>
-                                    <div className="w-1.5 h-1.5 rounded-full animate-bounce" style={{background:'#4A85DC', animationDelay:'0.4s'}}></div>
-                                </div>
-                            </div>
-                        )}
-                        <div ref={messagesEndRef} />
-                    </div>
-                )}
+                {(
 
-                {isCreatingFolder && (
                     <div className={`flex-1 overflow-hidden flex flex-col transition-colors ${closingFolder ? 'folder-collapsing' : 'folder-expanding'} ${modoNoturno ? 'bg-[#0B1120]' : 'bg-slate-50'}`}>
 
                         {/* Subheader da pasta */}
@@ -3733,14 +3607,6 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
                                             <span className="relative z-10">Organizar IA</span>
                                         </button>
                                     )}
-                                    <button onClick={() => { haptic(); backToChat(); }}
-                                        className={`text-[10px] font-black uppercase tracking-wider px-3 py-1.5 rounded-xl border transition-all flex items-center gap-1 ${
-                                            folderSource === 'rapida'
-                                                ? (modoNoturno ? 'bg-slate-800 border-slate-700 text-orange-300 hover:bg-slate-700' : 'bg-orange-50 text-orange-600 border-orange-100 hover:bg-orange-100')
-                                                : (modoNoturno ? 'bg-slate-800 border-slate-700 text-indigo-300 hover:bg-slate-700' : 'bg-indigo-50 text-indigo-600 border-indigo-100 hover:bg-indigo-100')
-                                        }`}>
-                                        ← Chat
-                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -3872,91 +3738,9 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
                     </div>
                 )}
 
-                <div className={`border-t rounded-b-3xl shrink-0 flex flex-col transition-colors ${isCreatingFolder ? 'hidden' : ''} ${modoNoturno ? 'bg-[#0B1120] border-slate-800' : 'bg-white border-slate-100'}`}>
-                    <input type="file" ref={quickFolderInputRef} onChange={handleQuickFolderUpload} multiple accept="image/*,application/pdf" className="hidden" />
-                    <div className="px-3 pb-3" style={{ paddingBottom: 'max(12px, calc(env(safe-area-inset-bottom) + 8px))' }}>
-                        {/* ── PÍLULAS ACIMA DO INPUT — só desktop (sm+) ── */}
-                        <div className="flex gap-1.5 items-center overflow-x-auto pb-2 pt-2" style={{scrollbarWidth:'none', msOverflowStyle:'none'}}>
-                            {/* CPF Temporário */}
-                            <button
-                                onClick={() => {
-                                    haptic('medium');
-                                    const cpfGerado = gerarCPFValido();
-                                    setChatMessages(prev => [...prev, { role: 'bot', content: '', cpf: cpfGerado }]);
-                                }}
-                                className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider transition-all active:scale-95 text-white relative overflow-hidden"
-                                style={{
-                                    background: 'linear-gradient(135deg, #f97316 0%, #ea580c 60%, #c2410c 100%)',
-                                    boxShadow: '0 0 0 2px rgba(249,115,22,0.3), 0 0 14px 3px rgba(249,115,22,0.35)',
-                                }}>
-                                <CreditCard size={11} className="shrink-0 relative z-10" />
-                                <span className="relative z-10" style={{letterSpacing:'0.06em'}}>CPF Temp</span>
-                            </button>
-                            {/* Separador */}
-                            <div className={`shrink-0 w-px h-3.5 ${modoNoturno ? 'bg-slate-600' : 'bg-slate-200'}`}/>
-                            {/* Pasta */}
-                            <button onClick={() => { haptic(); setFolderSource('manual'); setIsCreatingFolder(true); fileInputRef.current?.click(); }}
-                                className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider transition-all active:scale-95 text-white relative overflow-hidden"
-                                style={{ background: 'linear-gradient(135deg, #4A85DC 0%, #4A85DC 100%)', boxShadow: '0 2px 8px rgba(99,102,241,0.35)' }}>
-                                <FolderPlus size={11} className="relative z-10" />
-                                <span className="relative z-10">Pasta</span>
-                            </button>
-                            {/* Separador */}
-                            <div className={`shrink-0 w-px h-3.5 ${modoNoturno ? 'bg-slate-600' : 'bg-slate-200'}`}/>
-                            {/* Calculadora ITBI */}
-                            <button
-                                onClick={(e) => { haptic('medium'); captureZoomOrigin(e); setShowCalculadoraItbiModal(true); }}
-                                className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider transition-all active:scale-95 text-white relative overflow-hidden"
-                                style={{
-                                    background: 'linear-gradient(135deg, #4A85DC 0%, #4A85DC 60%, #4A85DC 100%)',
-                                    boxShadow: '0 0 0 2px rgba(14,165,233,0.3), 0 0 14px 3px rgba(14,165,233,0.35)',
-                                }}>
-                                <Calculator size={11} className="shrink-0 relative z-10" />
-                                <span className="relative z-10" style={{letterSpacing:'0.06em'}}>Calcular ITBI</span>
-                            </button>
-                            {/* Calculadora Tabela Direta */}
-                            <button
-                                onClick={(e) => { haptic('medium'); captureZoomOrigin(e); setShowCalculadoraTabelaDiretaModal(true); }}
-                                className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider transition-all active:scale-95 text-white relative overflow-hidden"
-                                style={{
-                                    background: 'linear-gradient(135deg, #16a34a 0%, #15803d 60%, #166534 100%)',
-                                    boxShadow: '0 0 0 2px rgba(22,163,74,0.3), 0 0 14px 3px rgba(22,163,74,0.35)',
-                                }}>
-                                <span className="relative z-10 font-black" style={{fontSize:'10px',letterSpacing:'0.04em'}}>TD</span>
-                                <span className="relative z-10" style={{letterSpacing:'0.06em'}}>Tabela Direta</span>
-                            </button>
-                            {/* Nome do cliente */}
-                            {clientName && (
-                                <span className={`shrink-0 flex items-center gap-1 text-[10px] font-bold px-2.5 py-1.5 rounded-full border ${modoNoturno ? 'bg-slate-700 border-slate-600 text-emerald-400' : 'bg-emerald-50 border-emerald-100 text-emerald-600'}`}>
-                                    👤 {clientName}
-                                </span>
-                            )}
-                            {/* DEV reset */}
-                            <button onClick={() => { pastaRapidaClicksRef.current = 0; localStorage.setItem('dst_pr_clicks', '0'); }}
-                                title="DEV: reset PR" className="shrink-0 text-[9px] font-bold px-2 py-1 rounded-full border border-dashed border-slate-300 text-slate-300 hover:border-orange-400 hover:text-orange-400 transition-all">
-                                ↺ PR
-                            </button>
-                        </div>
-                        <div className="relative flex items-center">
-                            <input type="file" ref={fileInputRef} onChange={handleFileUpload} multiple accept="image/*,application/pdf" className="hidden" />
-                            <input 
-                                ref={chatInputRef}
-                                type="text" 
-                                value={chatInput} 
-                                onChange={(e) => setChatInput(e.target.value)} 
-                                onKeyDown={(e) => e.key === 'Enter' && handleSendChatMessage()} 
-                                placeholder="Posso te ajudar com algo?" 
-                                className={`w-full rounded-2xl px-5 py-3 pr-14 text-base focus:outline-none focus:ring-2 focus:ring-indigo-500/25 transition-all ${modoNoturno ? 'bg-slate-800/80 text-white border border-slate-700/60 placeholder-slate-500' : 'bg-slate-100/80 text-slate-800 placeholder-slate-400 border border-slate-200/60'}`} 
-                                disabled={isChatLoading} 
-                            />
-                            <button onClick={() => { haptic('medium'); handleSendChatMessage(); }} disabled={!chatInput.trim() || isChatLoading}
-                                className="absolute right-2 text-white p-2.5 rounded-xl transition-all flex items-center justify-center shadow-md active:scale-95 disabled:opacity-30"
-                                style={{ background: !chatInput.trim() || isChatLoading ? undefined : 'linear-gradient(135deg, #4A85DC 0%, #4A85DC 100%)', backgroundColor: !chatInput.trim() || isChatLoading ? (modoNoturno ? '#334155' : '#e2e8f0') : undefined }}>
-                                <Send className="w-4 h-4" />
-                            </button>
-                        </div>
-                    </div>
-                </div>
+                {/* Inputs de arquivo ocultos, usados pelos botões de Criar Pasta espalhados pelo app */}
+                <input type="file" ref={quickFolderInputRef} onChange={handleQuickFolderUpload} multiple accept="image/*,application/pdf" className="hidden" />
+                <input type="file" ref={fileInputRef} onChange={handleFileUpload} multiple accept="image/*,application/pdf" className="hidden" />
             </div>
             
             {/* MODAL PARA FINALIZAR */}

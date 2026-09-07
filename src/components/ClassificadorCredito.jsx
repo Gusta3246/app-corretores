@@ -416,10 +416,37 @@ function parseRaioXSheet(arrayBuffer, expectedCategory) {
   return records;
 }
 
-// Agrupa por corretor, desconsiderando repetições do mesmo cliente (a mesma
-// pessoa agendada/visitada/avaliada mais de uma vez conta só 1 vez), e acha
-// a data mais recente entre os registros do corretor naquela categoria.
-function aggregateRaioX(records) {
+// AGENDAMENTOS: desconsidera repetições apenas quando o MESMO cliente
+// aparece MAIS DE UMA VEZ NO MESMO DIA (ex.: duplicidade de sistema, ou o
+// mesmo horário lançado 2x). Reagendamento para outro dia conta como
+// trabalho novo e soma no total — só a repetição no mesmo dia é descartada.
+function aggregateAgendamentos(records) {
+  const map = new Map();
+  records.forEach((r) => {
+    if (!r.corretor) return;
+    if (!map.has(r.corretor)) map.set(r.corretor, { seen: new Set(), lastDate: null, total: 0 });
+    const entry = map.get(r.corretor);
+    // Chave de dedup: cliente + dia (repetições só são descartadas se caírem
+    // no mesmo dia). Quando não há data disponível, cai de volta para dedup
+    // só por cliente.
+    const dayKey = r.date
+      ? `${r.date.getFullYear()}-${r.date.getMonth()}-${r.date.getDate()}`
+      : "SEM-DATA";
+    const key = `${norm(r.conta)}|${dayKey}`;
+    if (entry.seen.has(key)) return; // mesmo cliente, mesmo dia -> repetição, ignora
+    entry.seen.add(key);
+    entry.total += 1;
+    if (r.date && (!entry.lastDate || r.date > entry.lastDate)) entry.lastDate = r.date;
+  });
+  const result = new Map();
+  map.forEach((entry, corretor) => result.set(corretor, { total: entry.total, lastDate: entry.lastDate }));
+  return result;
+}
+
+// VISITAS e PASTAS: desconsidera repetições do mesmo cliente independente do
+// dia — a mesma pessoa que visitou/foi cadastrada em pasta mais de uma vez
+// (mesmo dia ou dias diferentes, ex. visita retorno) conta só 1 vez.
+function aggregateClientesUnicos(records) {
   const map = new Map();
   records.forEach((r) => {
     if (!r.corretor) return;
@@ -559,6 +586,7 @@ export default function ClassificadorCredito() {
 
   const [raioXCopiedAll, setRaioXCopiedAll] = useState(false);
   const [raioXCopiedRow, setRaioXCopiedRow] = useState(null);
+  const [raioXCorretorFilter, setRaioXCorretorFilter] = useState("Todos");
 
   const handleCopy = useCallback((e, text, id) => {
     e.stopPropagation();
@@ -648,15 +676,27 @@ export default function ClassificadorCredito() {
     setPastaRecords(null);
     setPastaFileName("");
     setPastaError("");
+    setRaioXCorretorFilter("Todos");
   }, []);
 
   const raioXSummary = useMemo(() => {
     if (!agRecords && !visRecords && !pastaRecords) return null;
-    const agMap = agRecords ? aggregateRaioX(agRecords) : new Map();
-    const visMap = visRecords ? aggregateRaioX(visRecords) : new Map();
-    const pastaMap = pastaRecords ? aggregateRaioX(pastaRecords) : new Map();
+    const agMap = agRecords ? aggregateAgendamentos(agRecords) : new Map();
+    const visMap = visRecords ? aggregateClientesUnicos(visRecords) : new Map();
+    const pastaMap = pastaRecords ? aggregateClientesUnicos(pastaRecords) : new Map();
     return buildRaioXSummary(agMap, visMap, pastaMap);
   }, [agRecords, visRecords, pastaRecords]);
+
+  const raioXCorretorOptions = useMemo(() => {
+    if (!raioXSummary) return [];
+    return raioXSummary.map((r) => r.corretor);
+  }, [raioXSummary]);
+
+  const raioXVisibleRows = useMemo(() => {
+    if (!raioXSummary) return [];
+    if (raioXCorretorFilter === "Todos") return raioXSummary;
+    return raioXSummary.filter((r) => r.corretor === raioXCorretorFilter);
+  }, [raioXSummary, raioXCorretorFilter]);
 
   const handleCopyRaioXRow = useCallback((row) => {
     const text = raioXLine(row);
@@ -1180,17 +1220,18 @@ export default function ClassificadorCredito() {
           letter-spacing: 0.4px;
           color: #8A939C;
           padding: 10px 14px;
-          border-bottom: 1px solid var(--line);
+          border-bottom: 1.5px solid var(--line);
           background: #F7F8F8;
           white-space: nowrap;
         }
         .rx-table td {
           padding: 10px 14px;
-          border-bottom: 1px solid #EDEFF0;
+          border-bottom: 1px solid #E3E6E8;
           white-space: nowrap;
         }
+        .rx-table tbody tr:nth-child(even) td { background: #F5F6F7; }
         .rx-table tr:last-child td { border-bottom: none; }
-        .rx-table tr:hover td { background: #FAFBFB; }
+        .rx-table tr:hover td { background: #E9F1FF; }
 
         @media (max-width: 780px) {
           .cc-body { flex-direction: column; }
@@ -1303,6 +1344,21 @@ export default function ClassificadorCredito() {
           <>
             <div className="rx-summary-head">
               <h2>Resumo por corretor</h2>
+              <div className="cc-ranking-filter">
+                <Filter size={14} />
+                <select
+                  className="cc-select"
+                  value={raioXCorretorFilter}
+                  onChange={(e) => setRaioXCorretorFilter(e.target.value)}
+                >
+                  <option value="Todos">Todos os corretores</option>
+                  {raioXCorretorOptions.map((opt) => (
+                    <option key={opt} value={opt}>
+                      {opt}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
             <div className="rx-table-wrap">
               <table className="rx-table">
@@ -1319,7 +1375,14 @@ export default function ClassificadorCredito() {
                   </tr>
                 </thead>
                 <tbody>
-                  {raioXSummary.map((row) => (
+                  {raioXVisibleRows.length === 0 ? (
+                    <tr>
+                      <td colSpan={8} className="cc-nodata" style={{ padding: "24px 14px" }}>
+                        Nenhum corretor encontrado.
+                      </td>
+                    </tr>
+                  ) : (
+                  raioXVisibleRows.map((row) => (
                     <tr key={row.corretor}>
                       <td className="cc-corretor">{row.corretor}</td>
                       <td>{row.agendamentos.total}</td>
@@ -1338,7 +1401,8 @@ export default function ClassificadorCredito() {
                         </button>
                       </td>
                     </tr>
-                  ))}
+                  ))
+                  )}
                 </tbody>
               </table>
             </div>

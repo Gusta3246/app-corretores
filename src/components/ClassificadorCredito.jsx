@@ -93,6 +93,45 @@ function copyToClipboard(text) {
   return Promise.resolve(fallback());
 }
 
+// ---------------------------------------------------------------------------
+// Persistência local — guarda os dados já processados (planilhas, PDFs e
+// tabelas de preço) no localStorage do navegador, para que o usuário não
+// precise reenviar os arquivos toda vez que abrir o app novamente. Os dados
+// ficam salvos só no computador/navegador do próprio usuário.
+// ---------------------------------------------------------------------------
+
+const STORAGE_PREFIX = "classificadorCredito_";
+
+function saveToStorage(key, value) {
+  try {
+    if (value == null) {
+      localStorage.removeItem(STORAGE_PREFIX + key);
+    } else {
+      localStorage.setItem(STORAGE_PREFIX + key, JSON.stringify(value));
+    }
+    return true;
+  } catch (err) {
+    // Provavelmente estourou a cota do localStorage (ex.: arquivo muito
+    // grande). Não trava o app — só deixa de salvar localmente.
+    console.warn(`Não foi possível salvar "${key}" localmente:`, err);
+    return false;
+  }
+}
+
+function loadFromStorage(key) {
+  try {
+    const raw = localStorage.getItem(STORAGE_PREFIX + key);
+    return raw ? JSON.parse(raw) : null;
+  } catch (err) {
+    console.warn(`Não foi possível carregar "${key}" salvo localmente:`, err);
+    return null;
+  }
+}
+
+function clearAllStoredData() {
+  ["main", "raiox", "precos"].forEach((key) => localStorage.removeItem(STORAGE_PREFIX + key));
+}
+
 function norm(v) {
   return clean(v).toUpperCase();
 }
@@ -973,8 +1012,15 @@ function TabelaDePrecos() {
   const [progress, setProgress] = useState({ current: 0, total: 0 });
   const [error, setError] = useState(null);
   const [dragOver, setDragOver] = useState(false);
-  const [projects, setProjects] = useState(null);
+  const [projects, setProjects] = useState(() => loadFromStorage("precos")?.projects ?? null);
+  const [precosFileName, setPrecosFileName] = useState(() => loadFromStorage("precos")?.fileName ?? "");
   const fileInputRef = useRef(null);
+
+  // Salva os empreendimentos extraídos assim que forem processados, para não
+  // precisar reenviar o PDF na próxima vez que o app for aberto.
+  useEffect(() => {
+    saveToStorage("precos", projects ? { projects, fileName: precosFileName } : null);
+  }, [projects, precosFileName]);
 
   useEffect(() => {
     if (window.pdfjsLib) {
@@ -1011,6 +1057,7 @@ function TabelaDePrecos() {
     try {
       const extractedProjects = await parsePriceTablePdf(selectedFile, (current, total) => setProgress({ current, total }));
       setProjects(extractedProjects);
+      setPrecosFileName(selectedFile.name);
     } catch (err) {
       console.error(err);
       setError(err.message || "Ocorreu um erro ao processar o arquivo PDF.");
@@ -1035,6 +1082,7 @@ function TabelaDePrecos() {
   const resetPrecos = () => {
     setFile(null);
     setProjects(null);
+    setPrecosFileName("");
     setError(null);
     setLoading(false);
     if (fileInputRef.current) fileInputRef.current.value = "";
@@ -1047,7 +1095,7 @@ function TabelaDePrecos() {
           <h1 className="cc-title">Tabela de Preços</h1>
           <p className="cc-subtitle">
             {projects
-              ? `${projects.length} empreendimento${projects.length > 1 ? "s" : ""} localizado${projects.length > 1 ? "s" : ""}`
+              ? `${precosFileName ? precosFileName + " · " : ""}${projects.length} empreendimento${projects.length > 1 ? "s" : ""} localizado${projects.length > 1 ? "s" : ""}`
               : "Envie o PDF da Tabela Promocional Direcional para extrair maior Bônus Adimplência e menor diferença"}
           </p>
         </div>
@@ -1186,8 +1234,8 @@ function TabelaDePrecos() {
 // ---------------------------------------------------------------------------
 
 export default function ClassificadorCredito() {
-  const [records, setRecords] = useState(null);
-  const [fileName, setFileName] = useState("");
+  const [records, setRecords] = useState(() => loadFromStorage("main")?.records ?? null);
+  const [fileName, setFileName] = useState(() => loadFromStorage("main")?.fileName ?? "");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [selected, setSelected] = useState("Todos");
@@ -1202,20 +1250,20 @@ export default function ClassificadorCredito() {
   // ---- Raio X ----
   const [view, setView] = useState("main"); // "main" | "raiox" | "precos"
 
-  const [agFileName, setAgFileName] = useState("");
-  const [agRecords, setAgRecords] = useState(null);
+  const [agFileName, setAgFileName] = useState(() => loadFromStorage("raiox")?.agFileName ?? "");
+  const [agRecords, setAgRecords] = useState(() => loadFromStorage("raiox")?.agRecords ?? null);
   const [agError, setAgError] = useState("");
   const [agLoading, setAgLoading] = useState(false);
   const agInputRef = useRef(null);
 
-  const [visFileName, setVisFileName] = useState("");
-  const [visRecords, setVisRecords] = useState(null);
+  const [visFileName, setVisFileName] = useState(() => loadFromStorage("raiox")?.visFileName ?? "");
+  const [visRecords, setVisRecords] = useState(() => loadFromStorage("raiox")?.visRecords ?? null);
   const [visError, setVisError] = useState("");
   const [visLoading, setVisLoading] = useState(false);
   const visInputRef = useRef(null);
 
-  const [pastaFileName, setPastaFileName] = useState("");
-  const [pastaRecords, setPastaRecords] = useState(null);
+  const [pastaFileName, setPastaFileName] = useState(() => loadFromStorage("raiox")?.pastaFileName ?? "");
+  const [pastaRecords, setPastaRecords] = useState(() => loadFromStorage("raiox")?.pastaRecords ?? null);
   const [pastaError, setPastaError] = useState("");
   const [pastaLoading, setPastaLoading] = useState(false);
   const pastaInputRef = useRef(null);
@@ -1223,6 +1271,22 @@ export default function ClassificadorCredito() {
   const [raioXCopiedAll, setRaioXCopiedAll] = useState(false);
   const [raioXCopiedRow, setRaioXCopiedRow] = useState(null);
   const [raioXCorretorFilter, setRaioXCorretorFilter] = useState("Todos");
+
+  // Mantém o relatório principal salvo no navegador, para reabrir o app
+  // sem precisar reenviar a planilha.
+  useEffect(() => {
+    saveToStorage("main", records ? { records, fileName } : null);
+  }, [records, fileName]);
+
+  // Mesma ideia para os três arquivos do Raio X — cada um é salvo assim que
+  // é processado e some do armazenamento quando todos forem removidos.
+  useEffect(() => {
+    const hasData = agRecords || visRecords || pastaRecords;
+    saveToStorage(
+      "raiox",
+      hasData ? { agFileName, agRecords, visFileName, visRecords, pastaFileName, pastaRecords } : null
+    );
+  }, [agFileName, agRecords, visFileName, visRecords, pastaFileName, pastaRecords]);
 
   const handleCopy = useCallback((e, text, id) => {
     e.stopPropagation();
@@ -1314,6 +1378,17 @@ export default function ClassificadorCredito() {
     setPastaError("");
     setRaioXCorretorFilter("Todos");
   }, []);
+
+  const handleClearAllStoredData = useCallback(() => {
+    if (!window.confirm("Isso vai apagar todos os arquivos salvos neste navegador (Classificador, Raio X e Tabela de Preços). Continuar?")) {
+      return;
+    }
+    clearAllStoredData();
+    setRecords(null);
+    setFileName("");
+    resetRaioX();
+    window.location.reload();
+  }, [resetRaioX]);
 
   const raioXSummary = useMemo(() => {
     if (!agRecords && !visRecords && !pastaRecords) return null;
@@ -1450,6 +1525,19 @@ export default function ClassificadorCredito() {
         }
         .cc-nav-btn:hover { background: rgba(255,255,255,0.07); color: #E7EAEC; }
         .cc-nav-btn.active { background: rgba(255,255,255,0.14); color: #FFFFFF; }
+        .cc-nav-clear {
+          margin-top: auto;
+          border: none;
+          background: transparent;
+          color: #5B6472;
+          padding: 8px 6px;
+          font-size: 11px;
+          letter-spacing: 0.2px;
+          cursor: pointer;
+          text-align: center;
+          transition: color 0.15s;
+        }
+        .cc-nav-clear:hover { color: #98A2AE; }
         .cc-app {
           flex: 1;
           min-width: 0;
@@ -2056,6 +2144,11 @@ export default function ClassificadorCredito() {
             justify-content: center;
             padding: 8px 10px;
           }
+          .cc-nav-clear {
+            margin-top: 0;
+            margin-left: 8px;
+            align-self: center;
+          }
           .rx-uploads { grid-template-columns: 1fr; }
         }
       `}</style>
@@ -2082,6 +2175,13 @@ export default function ClassificadorCredito() {
         >
           <Tag size={18} />
           <span>Tabela de Preços</span>
+        </button>
+        <button
+          className="cc-nav-clear"
+          title="Apaga os arquivos salvos neste navegador"
+          onClick={handleClearAllStoredData}
+        >
+          Limpar dados
         </button>
       </nav>
 

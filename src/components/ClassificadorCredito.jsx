@@ -338,7 +338,26 @@ function downloadCategoryCsv(category, rows) {
 // ---------------------------------------------------------------------------
 
 function parseDateBR(value) {
-  if (value == null) return null;
+  if (value == null || value === "") return null;
+
+  // Caso 1: já é um objeto Date (algumas planilhas/células formatadas como
+  // data podem vir assim mesmo com raw:true, dependendo do arquivo de origem).
+  if (value instanceof Date) {
+    return isNaN(value.getTime()) ? null : value;
+  }
+
+  // Caso 2: número serial do Excel (dias desde 1899-12-30). Acontece quando a
+  // célula está formatada como data no Excel e lemos com raw:true.
+  if (typeof value === "number") {
+    if (!isFinite(value)) return null;
+    const epoch = new Date(Date.UTC(1899, 11, 30));
+    const dt = new Date(epoch.getTime() + value * 86400000);
+    if (isNaN(dt.getTime())) return null;
+    // Normaliza para data local sem componente de horário
+    return new Date(dt.getUTCFullYear(), dt.getUTCMonth(), dt.getUTCDate());
+  }
+
+  // Caso 3: texto no formato DD/MM/AAAA (com ou sem hora em seguida).
   const s = value.toString().trim();
   const m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
   if (!m) return null;
@@ -499,14 +518,15 @@ function aggregateAgendamentos(records) {
     // Chave de dedup: cliente + dia (repetições só são descartadas se caírem
     // no mesmo dia). Quando não há data disponível, cai de volta para dedup
     // só por cliente.
-    const dayKey = r.date
-      ? `${r.date.getFullYear()}-${r.date.getMonth()}-${r.date.getDate()}`
+    const validDate = r.date instanceof Date && !isNaN(r.date.getTime()) ? r.date : null;
+    const dayKey = validDate
+      ? `${validDate.getFullYear()}-${validDate.getMonth()}-${validDate.getDate()}`
       : "SEM-DATA";
     const key = `${norm(r.conta)}|${dayKey}`;
     if (entry.seen.has(key)) return; // mesmo cliente, mesmo dia -> repetição, ignora
     entry.seen.add(key);
     entry.total += 1;
-    if (r.date && (!entry.lastDate || r.date > entry.lastDate)) entry.lastDate = r.date;
+    if (validDate && (!entry.lastDate || validDate > entry.lastDate)) entry.lastDate = validDate;
   });
   const result = new Map();
   map.forEach((entry, corretor) => result.set(corretor, { total: entry.total, lastDate: entry.lastDate }));
@@ -523,7 +543,8 @@ function aggregateClientesUnicos(records) {
     if (!map.has(r.corretor)) map.set(r.corretor, { clients: new Set(), lastDate: null });
     const entry = map.get(r.corretor);
     entry.clients.add(norm(r.conta));
-    if (r.date && (!entry.lastDate || r.date > entry.lastDate)) entry.lastDate = r.date;
+    const validDate = r.date instanceof Date && !isNaN(r.date.getTime()) ? r.date : null;
+    if (validDate && (!entry.lastDate || validDate > entry.lastDate)) entry.lastDate = validDate;
   });
   const result = new Map();
   map.forEach((entry, corretor) => result.set(corretor, { total: entry.clients.size, lastDate: entry.lastDate }));

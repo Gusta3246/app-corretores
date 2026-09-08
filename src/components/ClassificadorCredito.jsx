@@ -1,6 +1,6 @@
-import React, { useState, useMemo, useCallback, useRef } from "react";
+import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import * as XLSX from "xlsx";
-import { Upload, FileSpreadsheet, Download, Search, ChevronDown, ChevronRight, AlertCircle, X, FileDown, Copy, Check, Filter, MessageSquare, Zap } from "lucide-react";
+import { Upload, FileSpreadsheet, Download, Search, ChevronDown, ChevronRight, AlertCircle, X, FileDown, Copy, Check, Filter, MessageSquare, Zap, Tag, Loader2 } from "lucide-react";
 
 // ---------------------------------------------------------------------------
 // Regras de leitura do relatório (exportação do Salesforce "Avaliações de
@@ -60,6 +60,37 @@ function rankingStyle(value) {
 
 function clean(v) {
   return v == null ? "" : v.toString().replace(/\s*↑\s*$/, "").trim();
+}
+
+// Tenta a Clipboard API moderna e, se falhar ou não estiver disponível
+// (contexto não seguro, iframe sem permissão, foco perdido, etc.), cai para
+// o fallback com textarea + execCommand. Retorna uma Promise<boolean>.
+function copyToClipboard(text) {
+  const fallback = () => {
+    try {
+      const textarea = document.createElement("textarea");
+      textarea.value = text;
+      textarea.style.position = "fixed";
+      textarea.style.top = "-9999px";
+      textarea.style.left = "-9999px";
+      document.body.appendChild(textarea);
+      textarea.focus();
+      textarea.select();
+      const ok = document.execCommand("copy");
+      document.body.removeChild(textarea);
+      return ok;
+    } catch {
+      return false;
+    }
+  };
+
+  if (navigator.clipboard?.writeText) {
+    return navigator.clipboard
+      .writeText(text)
+      .then(() => true)
+      .catch(() => fallback());
+  }
+  return Promise.resolve(fallback());
 }
 
 function norm(v) {
@@ -482,6 +513,19 @@ function raioXLine(row) {
   );
 }
 
+// Usado apenas pelo ícone de copiar de cada linha: só os valores (sem nome
+// do corretor nem rótulos), na mesma ordem das colunas da tabela.
+function raioXRowValues(row) {
+  return [
+    row.agendamentos.total,
+    formatDateShort(row.agendamentos.lastDate),
+    row.visitas.total,
+    formatDateShort(row.visitas.lastDate),
+    row.pastas.total,
+    formatDateShort(row.pastas.lastDate),
+  ].join("\t");
+}
+
 function downloadRaioXWorkbook(rows) {
   const wb = XLSX.utils.book_new();
   const aoa = [
@@ -548,6 +592,598 @@ function MiniDropzone({ label, hint, fileName, error, loading, count, onFile, in
 }
 
 // ---------------------------------------------------------------------------
+// Tabela de Preços — lê o PDF da Tabela Promocional Direcional e extrai, por
+// empreendimento, as unidades priorizando maior Bônus Adimplência e menor
+// diferença (Avaliação vs. Valor Final da Venda).
+//
+// A lógica é a mesma do leitor standalone: localizamos as colunas pelo texto
+// do cabeçalho (posição X na página), agrupamos os itens de texto em linhas
+// por coordenada Y, e casamos cada valor numérico com a coluna mais próxima
+// horizontalmente. Está dividida em 3 funções, na ordem em que atuam:
+//   1) parsePriceTablePdf   — função principal: percorre as páginas do PDF
+//   2) exportPriceTableXlsx — exporta o resultado para Excel
+//   (as funções utilitárias abaixo dão suporte às duas acima)
+// ---------------------------------------------------------------------------
+
+function parsePriceCurrency(valStr) {
+  if (!valStr) return 0;
+  let cleaned = valStr.replace(/[^\d.,-]/g, "");
+  if (!cleaned) return 0;
+  if (cleaned.includes(".") && cleaned.includes(",")) {
+    cleaned = cleaned.replace(/\./g, "").replace(",", ".");
+  } else if (cleaned.includes(",")) {
+    cleaned = cleaned.replace(",", ".");
+  } else if ((cleaned.match(/\./g) || []).length > 1) {
+    const parts = cleaned.split(".");
+    const decimal = parts.pop();
+    cleaned = parts.join("") + "." + decimal;
+  }
+  const num = parseFloat(cleaned);
+  return isNaN(num) ? 0 : num;
+}
+
+function groupPriceTextItemsIntoLines(items) {
+  if (!items || items.length === 0) return [];
+  const validItems = items.filter((i) => i.str && i.str.trim().length > 0);
+  const lines = [];
+  validItems.forEach((item) => {
+    const x = item.transform[4];
+    const y = item.transform[5];
+    const fontSize = Math.abs(item.transform[0]) || Math.abs(item.transform[3]) || 10;
+    let line = lines.find((l) => Math.abs(l.y - y) <= 2.5);
+    const token = { str: item.str.trim(), x, y, fontSize, width: item.width || 0 };
+    if (line) {
+      line.items.push(token);
+      line.y = (line.y * (line.items.length - 1) + y) / line.items.length;
+    } else {
+      lines.push({ y, items: [token] });
+    }
+  });
+  lines.sort((a, b) => b.y - a.y);
+  lines.forEach((line) => {
+    line.items.sort((a, b) => a.x - b.x);
+    line.fullText = line.items.map((i) => i.str).join(" ");
+  });
+  return lines;
+}
+
+function isPriceTitleExcluded(text) {
+  if (!text || text.trim().length < 3) return true;
+  const upper = text.toUpperCase().trim();
+  const exclusions = [
+    /^TABELA/i, /ITBI/i, /MINHA CASA/i, /DESCONTOS EXCLUSIVOS/i, /LANÇAMENTO/i, /LANCAMENTO/i,
+    /ÚLTIMAS UNIDADES/i, /ULTIMAS UNIDADES/i, /PARA VENDAS/i, /^\d+/,
+    /AGOSTO|JULHO|SETEMBRO|OUTUBRO|NOVEMBRO|DEZEMBRO|JANEIRO|FEVEREIRO|MARÇO|MARCO|ABRIL|MAIO|JUNHO/i,
+    /QUINZENA|VERSÃO|VERSAO/i, /^BLOCO/i, /AVALIA/i, /VALOR/i, /DESCONTO/i, /MCMV/i, /SBPE/i,
+    /CAMPANHA/i, /ADIMPL/i, /DIRECIONAL/i, /SISTEMA/i, /PÁGINA|PAGINA/i, /REVISÃO|REVISAO/i,
+    /PREVISÃO|PREVISAO/i, /COORDENADOR/i, /FIQUE ATENTO/i, /ASSOCIATIVO/i, /TIPOLOGIA/i,
+    /UNIDADES/i, /GARDEN/i, /AREA|ÁREA/i, /PRIVATIVA/i,
+  ];
+  return exclusions.some((regex) => regex.test(upper));
+}
+
+function extractPriceTableTitle(lines) {
+  let bestTitle = null;
+  let maxFontSize = 0;
+  for (const line of lines) {
+    for (const item of line.items) {
+      if (item.fontSize >= 8 && !isPriceTitleExcluded(item.str)) {
+        if (!isPriceTitleExcluded(line.fullText)) {
+          const candidate = line.fullText.replace(/[:\-\–]+$/, "").trim();
+          if (item.fontSize > maxFontSize) {
+            maxFontSize = item.fontSize;
+            bestTitle = candidate;
+          }
+        }
+      }
+    }
+  }
+  if (bestTitle) return bestTitle;
+  for (const line of lines) {
+    for (const item of line.items) {
+      if (item.fontSize >= 7 && !isPriceTitleExcluded(item.str)) return item.str.trim();
+    }
+  }
+  return null;
+}
+
+function identifyPriceTableColumns(lines) {
+  const cols = {
+    avaliacao: null, valorFinal: null, bonusAdimplencia: null, valorVenda: null,
+    desconto: null, bonusCampanha: null, mcmv: null, sbpe1: null, sbpe2: null,
+  };
+  const headerLines = lines.slice(0, 25);
+  headerLines.forEach((line) => {
+    line.items.forEach((item) => {
+      const text = item.str.toUpperCase().trim();
+      const itemCenterX = item.x + item.width / 2;
+      if (text.includes("AVALIA")) {
+        cols.avaliacao = { x: itemCenterX };
+      } else if (
+        text.includes("VALOR FINAL") || text.includes("APÓS DESCONTO") || text.includes("APOS DESCONTO") ||
+        text.includes("DESCONTOS E BÔNUS") || text.includes("DESCONTOS E BONUS") || text.includes("FINAL DA VEND")
+      ) {
+        cols.valorFinal = { x: itemCenterX };
+      } else if (text.includes("ADIMPL")) {
+        cols.bonusAdimplencia = { x: itemCenterX };
+      } else if (text.includes("VALOR DE VENDA") || text.includes("VALOR VENDA")) {
+        cols.valorVenda = { x: itemCenterX };
+      } else if (text === "DESCONTO" || text.includes("DESCONTO")) {
+        if (!cols.valorFinal) cols.desconto = { x: itemCenterX };
+      } else if (text.includes("CAMPANHA")) {
+        cols.bonusCampanha = { x: itemCenterX };
+      } else if (text.includes("MCMV")) {
+        cols.mcmv = { x: itemCenterX };
+      } else if (text.includes("SBPE 1") || text.includes("SBPE1")) {
+        cols.sbpe1 = { x: itemCenterX };
+      } else if (text.includes("SBPE 2") || text.includes("SBPE2")) {
+        cols.sbpe2 = { x: itemCenterX };
+      }
+    });
+  });
+  if (!cols.valorFinal || !cols.bonusAdimplencia) {
+    headerLines.forEach((line) => {
+      const lineUpper = line.fullText.toUpperCase();
+      if (!cols.valorFinal && (lineUpper.includes("VALOR FINAL") || lineUpper.includes("APÓS DESCONTO") || lineUpper.includes("APOS DESCONTO"))) {
+        line.items.forEach((item) => {
+          const t = item.str.toUpperCase();
+          if (t.includes("FINAL") || t.includes("DESCONTO") || t.includes("BONUS")) {
+            cols.valorFinal = { x: item.x + item.width / 2 };
+          }
+        });
+      }
+      if (!cols.bonusAdimplencia && (lineUpper.includes("ADIMPL") || lineUpper.includes("BONUS ADIMPL"))) {
+        line.items.forEach((item) => {
+          const t = item.str.toUpperCase();
+          if (t.includes("ADIMPL")) cols.bonusAdimplencia = { x: item.x + item.width / 2 };
+        });
+      }
+    });
+  }
+  return cols;
+}
+
+// FUNÇÃO 1 — percorre todas as páginas do PDF, identifica colunas e monta,
+// por empreendimento, a lista de unidades (com bônus de adimplência e menor
+// diferença já ordenados e limitados às 8 melhores por empreendimento).
+async function parsePriceTablePdf(file, onProgress) {
+  if (!window.pdfjsLib) {
+    throw new Error("A biblioteca pdfjs-dist ainda está carregando. Aguarde alguns instantes e tente novamente.");
+  }
+
+  const arrayBuffer = await file.arrayBuffer();
+  const loadingTask = window.pdfjsLib.getDocument({ data: arrayBuffer });
+  const pdfDoc = await loadingTask.promise;
+
+  const numPages = pdfDoc.numPages;
+  const projectMap = new Map();
+
+  for (let pageNum = 1; pageNum <= numPages; pageNum++) {
+    if (onProgress) onProgress(pageNum, numPages);
+
+    const page = await pdfDoc.getPage(pageNum);
+    const textContent = await page.getTextContent({ normalizeWhitespace: true });
+
+    const lines = groupPriceTextItemsIntoLines(textContent.items);
+    if (lines.length === 0) continue;
+
+    const columns = identifyPriceTableColumns(lines);
+    if (!columns.avaliacao || !columns.valorFinal) continue;
+
+    let pageTitle = extractPriceTableTitle(lines) || "Empreendimento Indefinido";
+    const projectKey = pageTitle.toLowerCase().trim();
+
+    if (!projectMap.has(projectKey)) {
+      projectMap.set(projectKey, { title: pageTitle, units: [], campanhaLines: [] });
+    }
+    const currentProject = projectMap.get(projectKey);
+
+    const avaliacaoX = columns.avaliacao.x;
+    const activeCols = [
+      { key: "avaliacao", pos: columns.avaliacao },
+      { key: "valorFinal", pos: columns.valorFinal },
+      { key: "bonusAdimplencia", pos: columns.bonusAdimplencia },
+      { key: "valorVenda", pos: columns.valorVenda },
+      { key: "desconto", pos: columns.desconto },
+      { key: "bonusCampanha", pos: columns.bonusCampanha },
+      { key: "mcmv", pos: columns.mcmv },
+      { key: "sbpe1", pos: columns.sbpe1 },
+      { key: "sbpe2", pos: columns.sbpe2 },
+    ].filter((c) => c.pos !== null);
+
+    for (const line of lines) {
+      const lineUpper = line.fullText.toUpperCase();
+      if ((lineUpper.includes("AVALIA") && lineUpper.includes("VALOR")) || lineUpper.includes("TIPOLOGIA") || lineUpper.includes("AREA PRIVATIVA")) {
+        continue;
+      }
+
+      const labelCutoffX = avaliacaoX - 20;
+      const labelItems = line.items.filter((item) => item.x + item.width < labelCutoffX);
+      const dataItems = line.items.filter((item) => item.x + item.width >= labelCutoffX);
+      const unitLabel = labelItems.map((i) => i.str).join(" ").trim();
+
+      let parsedAvaliacao = 0;
+      let parsedValorFinal = 0;
+      let parsedBonus = 0;
+
+      dataItems.forEach((item) => {
+        const val = parsePriceCurrency(item.str);
+        if (val > 0) {
+          const itemCenterX = item.x + item.width / 2;
+          let closestKey = null;
+          let minDistance = Infinity;
+          activeCols.forEach((col) => {
+            const dist = Math.abs(itemCenterX - col.pos.x);
+            if (dist < minDistance) {
+              minDistance = dist;
+              closestKey = col.key;
+            }
+          });
+          if (minDistance < 75) {
+            if (closestKey === "avaliacao") parsedAvaliacao = val;
+            else if (closestKey === "valorFinal") parsedValorFinal = val;
+            else if (closestKey === "bonusAdimplencia") parsedBonus = val;
+          }
+        }
+      });
+
+      if (parsedAvaliacao > 0 && parsedValorFinal > 0) {
+        const diferenca = Math.abs(parsedAvaliacao - parsedValorFinal);
+        currentProject.units.push({
+          unidade: unitLabel || `Unidade ${currentProject.units.length + 1}`,
+          avaliacao: parsedAvaliacao,
+          valorFinal: parsedValorFinal,
+          diferenca,
+          bonusAdimplencia: parsedBonus > 0 ? parsedBonus : 0,
+        });
+      } else {
+        const isHeaderJunk =
+          lineUpper.includes("AVALIA") || lineUpper.includes("TIPOLOGIA") || lineUpper.includes("AREA PRIVATIVA") ||
+          lineUpper.includes("VALOR FINAL") || lineUpper.includes("DESCONTO") || lineUpper.includes("GARDEN") ||
+          lineUpper.includes("SBPE") || lineUpper.includes("MCMV") || lineUpper.includes("IMÓVEL") ||
+          lineUpper.includes("IMOVEL") || lineUpper.includes("M²") || lineUpper.includes("(M²)") ||
+          lineUpper.includes("BONUS") || lineUpper.includes("BÔNUS") || lineUpper.includes("TABELA PROMOCIONAL -") ||
+          lineUpper.includes("DESCONTOS EXCLUSIVOS") || lineUpper.includes("MINHA CASA") || lineUpper.includes("QUINZENA") ||
+          lineUpper.includes("REVISÃO") || lineUpper.includes("REVISAO") || lineUpper.includes("DIRECIONAL") ||
+          lineUpper.includes("COORDENADOR") || lineUpper.includes("PREVISÃO") || lineUpper.includes("PREVISAO") ||
+          lineUpper.includes("TABELA SUJEITA") || lineUpper.includes("FIQUE ATENTO") || lineUpper.includes("APARTAMENTO DE 1 QUARTO") ||
+          lineUpper.includes("MODULO") || lineUpper.includes("MÓDULO");
+
+        const isCampaignKeyword =
+          (lineUpper.includes("CAMPANHA") && !lineUpper.includes("BONUS CAMPANHA") && !lineUpper.includes("BÔNUS CAMPANHA")) ||
+          lineUpper.includes("FOLGA COMERCIAL") || lineUpper.includes("BONIFICADO") ||
+          lineUpper.includes("ITBI REGISTRO") || lineUpper.includes("TAXAS GRATIS");
+
+        if (!isHeaderJunk && isCampaignKeyword && line.fullText.trim().length > 5) {
+          const cleanObs = line.fullText.trim();
+          if (!currentProject.campanhaLines.includes(cleanObs)) currentProject.campanhaLines.push(cleanObs);
+        }
+      }
+    }
+  }
+
+  if (projectMap.size === 0) {
+    throw new Error(
+      "Não foram encontradas as colunas 'Avaliação' e 'Valor Final da Venda Após Descontos e Bônus' no PDF. Confirme se o arquivo enviado é a Tabela de Preços promocional no formato correto."
+    );
+  }
+
+  const resultProjects = [];
+  projectMap.forEach((project) => {
+    if (project.units.length === 0) return;
+    const totalUnitsCount = project.units.length;
+
+    let campanhaFinal = "CONDIÇÃO PADRÃO";
+    if (project.campanhaLines && project.campanhaLines.length > 0) {
+      const activeCampaigns = project.campanhaLines.filter(
+        (l) => !l.toUpperCase().includes("CONDIÇÃO PADRÃO") && !l.toUpperCase().includes("CONDICAO PADRAO")
+      );
+      if (activeCampaigns.length > 0) campanhaFinal = activeCampaigns.join("; ");
+    }
+
+    const withBonus = project.units
+      .filter((u) => u.bonusAdimplencia > 0)
+      .sort((a, b) => (b.bonusAdimplencia !== a.bonusAdimplencia ? b.bonusAdimplencia - a.bonusAdimplencia : a.diferenca - b.diferenca));
+
+    const withoutBonus = project.units
+      .filter((u) => !u.bonusAdimplencia || u.bonusAdimplencia <= 0)
+      .sort((a, b) => a.diferenca - b.diferenca);
+
+    const topUnits = [...withBonus, ...withoutBonus].slice(0, 8);
+
+    resultProjects.push({ title: project.title, totalUnits: totalUnitsCount, units: topUnits, campanha: campanhaFinal });
+  });
+
+  if (resultProjects.length === 0) {
+    throw new Error("As colunas foram identificadas, mas não foi possível extrair valores válidos de unidades deste PDF.");
+  }
+
+  resultProjects.sort((a, b) => {
+    const maxBonusA = Math.max(0, ...a.units.map((u) => u.bonusAdimplencia || 0));
+    const maxBonusB = Math.max(0, ...b.units.map((u) => u.bonusAdimplencia || 0));
+    if (maxBonusA > 0 && maxBonusB === 0) return -1;
+    if (maxBonusA === 0 && maxBonusB > 0) return 1;
+    if (maxBonusA > 0 && maxBonusB > 0 && maxBonusB !== maxBonusA) return maxBonusB - maxBonusA;
+    return a.title.localeCompare(b.title, "pt-BR");
+  });
+
+  return resultProjects;
+}
+
+// FUNÇÃO 2 — exporta os empreendimentos/unidades extraídos para .xlsx.
+function exportPriceTableXlsx(projects, fileName = "Tabela_Precos_Menor_Diferenca.xlsx") {
+  if (!window.XLSX) {
+    alert("A biblioteca XLSX ainda está sendo carregada. Tente novamente em alguns segundos.");
+    return;
+  }
+
+  const rows = [];
+  projects.forEach((project) => {
+    project.units.forEach((unit) => {
+      rows.push({
+        Empreendimento: project.title,
+        "Campanha / Condição": project.campanha || "CONDIÇÃO PADRÃO",
+        Unidade: unit.unidade,
+        Avaliação: unit.avaliacao,
+        "Valor Final da Venda": unit.valorFinal,
+        Diferença: unit.diferenca,
+        "Bônus Adimplência": unit.bonusAdimplencia > 0 ? unit.bonusAdimplencia : "",
+        "Total de Unidades no Empreendimento": project.totalUnits,
+      });
+    });
+  });
+
+  const worksheet = window.XLSX.utils.json_to_sheet(rows);
+  worksheet["!cols"] = [
+    { wch: 32 }, { wch: 55 }, { wch: 25 }, { wch: 18 }, { wch: 22 }, { wch: 18 }, { wch: 20 }, { wch: 32 },
+  ];
+
+  const workbook = window.XLSX.utils.book_new();
+  window.XLSX.utils.book_append_sheet(workbook, worksheet, "Menor Diferença");
+  window.XLSX.writeFile(workbook, fileName);
+}
+
+function formatPriceBRL(amount) {
+  if (amount === undefined || amount === null || isNaN(amount)) return "R$ 0,00";
+  return amount.toLocaleString("pt-BR", { style: "currency", currency: "BRL", minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+// Carrega pdf.js e (se ainda não estiver disponível) xlsx via CDN, sob demanda.
+function loadExternalScript(src) {
+  return new Promise((resolve, reject) => {
+    if (document.querySelector(`script[src="${src}"]`)) {
+      resolve();
+      return;
+    }
+    const script = document.createElement("script");
+    script.src = src;
+    script.onload = resolve;
+    script.onerror = reject;
+    document.head.appendChild(script);
+  });
+}
+
+// FUNÇÃO 3 — componente de UI da aba "Tabela de Preços": upload do PDF,
+// progresso de leitura por página, listagem dos empreendimentos/unidades e
+// botão de exportação para Excel.
+function TabelaDePrecos() {
+  const [libsReady, setLibsReady] = useState(!!window.pdfjsLib);
+  const [file, setFile] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [progress, setProgress] = useState({ current: 0, total: 0 });
+  const [error, setError] = useState(null);
+  const [dragOver, setDragOver] = useState(false);
+  const [projects, setProjects] = useState(null);
+  const fileInputRef = useRef(null);
+
+  useEffect(() => {
+    if (window.pdfjsLib) {
+      setLibsReady(true);
+      return;
+    }
+    Promise.all([
+      loadExternalScript("https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"),
+      loadExternalScript("https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"),
+    ])
+      .then(() => {
+        if (window.pdfjsLib) {
+          window.pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+        }
+        setLibsReady(true);
+      })
+      .catch((err) => {
+        console.error("Erro ao carregar bibliotecas externas:", err);
+        setError("Falha ao carregar os módulos de leitura de PDF/Excel.");
+      });
+  }, []);
+
+  const handleFileProcess = async (selectedFile) => {
+    if (!selectedFile) return;
+    if (selectedFile.type !== "application/pdf" && !selectedFile.name.endsWith(".pdf")) {
+      setError("Por favor, selecione um arquivo válido no formato PDF (.pdf).");
+      return;
+    }
+    setFile(selectedFile);
+    setError(null);
+    setLoading(true);
+    setProgress({ current: 0, total: 0 });
+    setProjects(null);
+    try {
+      const extractedProjects = await parsePriceTablePdf(selectedFile, (current, total) => setProgress({ current, total }));
+      setProjects(extractedProjects);
+    } catch (err) {
+      console.error(err);
+      setError(err.message || "Ocorreu um erro ao processar o arquivo PDF.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    setDragOver(false);
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) handleFileProcess(e.dataTransfer.files[0]);
+  };
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    setDragOver(true);
+  };
+  const handleDragLeave = (e) => {
+    e.preventDefault();
+    setDragOver(false);
+  };
+  const resetPrecos = () => {
+    setFile(null);
+    setProjects(null);
+    setError(null);
+    setLoading(false);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  return (
+    <>
+      <div className="cc-header">
+        <div>
+          <h1 className="cc-title">Tabela de Preços</h1>
+          <p className="cc-subtitle">
+            {projects
+              ? `${projects.length} empreendimento${projects.length > 1 ? "s" : ""} localizado${projects.length > 1 ? "s" : ""}`
+              : "Envie o PDF da Tabela Promocional Direcional para extrair maior Bônus Adimplência e menor diferença"}
+          </p>
+        </div>
+        {projects && (
+          <div style={{ display: "flex", gap: 10 }}>
+            <button className="cc-btn" onClick={resetPrecos}>
+              <Upload size={15} /> Trocar arquivo
+            </button>
+            <button className="cc-btn cc-btn-primary" onClick={() => exportPriceTableXlsx(projects)}>
+              <FileDown size={15} /> Baixar Excel
+            </button>
+          </div>
+        )}
+      </div>
+
+      <div className="pt-body">
+        {!projects && (
+          <div
+            className={`pt-drop${dragOver ? " drag" : ""}`}
+            onClick={() => !loading && fileInputRef.current?.click()}
+            onDrop={handleDrop}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+          >
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".pdf"
+              style={{ display: "none" }}
+              onChange={(e) => e.target.files?.[0] && handleFileProcess(e.target.files[0])}
+            />
+            {loading ? (
+              <>
+                <Loader2 size={30} className="pt-spin" />
+                <div className="pt-drop-label">
+                  Lendo o PDF… {progress.total > 0 && `página ${progress.current} de ${progress.total}`}
+                </div>
+                <div className="pt-drop-hint">Mapeando coordenadas e colunas promocionais...</div>
+                {progress.total > 0 && (
+                  <div className="pt-progress">
+                    <div className="pt-progress-fill" style={{ width: `${(progress.current / progress.total) * 100}%` }} />
+                  </div>
+                )}
+              </>
+            ) : (
+              <>
+                <FileSpreadsheet size={30} color="#5B6472" />
+                <div className="pt-drop-label">Arraste e solte o PDF da Tabela Direcional aqui</div>
+                <div className="pt-drop-hint">ou clique para selecionar o arquivo do seu computador</div>
+                {!libsReady && <div className="pt-drop-hint" style={{ color: "#B08900" }}>Iniciando leitor de PDF...</div>}
+              </>
+            )}
+          </div>
+        )}
+
+        {error && (
+          <div className="pt-error">
+            <AlertCircle size={16} />
+            <div>
+              <div className="pt-error-title">Não foi possível ler o arquivo PDF</div>
+              <div className="pt-error-text">{error}</div>
+            </div>
+          </div>
+        )}
+
+        {projects && (
+          <div className="pt-projects">
+            {projects.map((project, idx) => (
+              <div key={idx} className="pt-card">
+                <div className="pt-card-head">
+                  <div className="pt-card-head-top">
+                    <div className="pt-card-title">
+                      <span className="pt-card-num">{idx + 1}</span>
+                      <h2>{project.title}</h2>
+                    </div>
+                    <span className="pt-card-count">Total de unidades encontradas: {project.totalUnits}</span>
+                  </div>
+                  <div className="pt-card-campanha">
+                    {project.campanha && project.campanha !== "CONDIÇÃO PADRÃO" ? (
+                      <span className="pt-badge-campanha">
+                        <b>Campanha do Mês</b> {project.campanha}
+                      </span>
+                    ) : (
+                      <span className="pt-badge-padrao">
+                        <Check size={13} /> Condição Padrão
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                <div className="pt-table-wrap">
+                  <table className="pt-table">
+                    <thead>
+                      <tr>
+                        <th>Unidade</th>
+                        <th>Avaliação</th>
+                        <th>Valor Final da Venda</th>
+                        <th>Diferença</th>
+                        <th>Bônus Adimplência</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {project.units.map((unit, uIdx) => {
+                        const hasBonus = unit.bonusAdimplencia > 0;
+                        return (
+                          <tr key={uIdx} className={hasBonus ? "has-bonus" : ""}>
+                            <td>
+                              <span className="pt-unit-label">{unit.unidade}</span>
+                              {hasBonus && <span className="pt-badge-bonus">BÔNUS ADIMPLÊNCIA</span>}
+                            </td>
+                            <td>{formatPriceBRL(unit.avaliacao)}</td>
+                            <td>{formatPriceBRL(unit.valorFinal)}</td>
+                            <td className="pt-diferenca">{formatPriceBRL(unit.diferenca)}</td>
+                            <td>
+                              {hasBonus ? (
+                                <span className="pt-bonus-value">{formatPriceBRL(unit.bonusAdimplencia)}</span>
+                              ) : (
+                                <span className="pt-dash">—</span>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </>
+  );
+}
+
+// ---------------------------------------------------------------------------
 
 export default function ClassificadorCredito() {
   const [records, setRecords] = useState(null);
@@ -564,7 +1200,7 @@ export default function ClassificadorCredito() {
   const inputRef = useRef(null);
 
   // ---- Raio X ----
-  const [view, setView] = useState("main"); // "main" | "raiox"
+  const [view, setView] = useState("main"); // "main" | "raiox" | "precos"
 
   const [agFileName, setAgFileName] = useState("");
   const [agRecords, setAgRecords] = useState(null);
@@ -590,11 +1226,11 @@ export default function ClassificadorCredito() {
 
   const handleCopy = useCallback((e, text, id) => {
     e.stopPropagation();
-    if (navigator.clipboard?.writeText) {
-      navigator.clipboard.writeText(text).catch(() => {});
-    }
-    setCopiedId(id);
-    setTimeout(() => setCopiedId((cur) => (cur === id ? null : cur)), 1400);
+    copyToClipboard(text).then((ok) => {
+      if (!ok) return;
+      setCopiedId(id);
+      setTimeout(() => setCopiedId((cur) => (cur === id ? null : cur)), 1400);
+    });
   }, []);
 
   const handleFile = useCallback((file) => {
@@ -699,18 +1335,28 @@ export default function ClassificadorCredito() {
   }, [raioXSummary, raioXCorretorFilter]);
 
   const handleCopyRaioXRow = useCallback((row) => {
-    const text = raioXLine(row);
-    if (navigator.clipboard?.writeText) navigator.clipboard.writeText(text).catch(() => {});
-    setRaioXCopiedRow(row.corretor);
-    setTimeout(() => setRaioXCopiedRow((cur) => (cur === row.corretor ? null : cur)), 1400);
+    const text = raioXRowValues(row);
+    copyToClipboard(text).then((ok) => {
+      if (!ok) {
+        alert("Não foi possível copiar automaticamente. Copie manualmente: " + text);
+        return;
+      }
+      setRaioXCopiedRow(row.corretor);
+      setTimeout(() => setRaioXCopiedRow((cur) => (cur === row.corretor ? null : cur)), 1400);
+    });
   }, []);
 
   const handleCopyRaioXAll = useCallback(() => {
     if (!raioXSummary || raioXSummary.length === 0) return;
     const text = raioXSummary.map(raioXLine).join("\n");
-    if (navigator.clipboard?.writeText) navigator.clipboard.writeText(text).catch(() => {});
-    setRaioXCopiedAll(true);
-    setTimeout(() => setRaioXCopiedAll(false), 1400);
+    copyToClipboard(text).then((ok) => {
+      if (!ok) {
+        alert("Não foi possível copiar automaticamente.");
+        return;
+      }
+      setRaioXCopiedAll(true);
+      setTimeout(() => setRaioXCopiedAll(false), 1400);
+    });
   }, [raioXSummary]);
 
   const byCategory = useMemo(() => (records ? buildIndex(records) : {}), [records]);
@@ -1233,6 +1879,159 @@ export default function ClassificadorCredito() {
         .rx-table tr:last-child td { border-bottom: none; }
         .rx-table tr:hover td { background: #E9F1FF; }
 
+        .pt-body {
+          flex: 1;
+          min-height: 0;
+          overflow-y: auto;
+          padding: 22px 28px;
+          display: flex;
+          flex-direction: column;
+          gap: 18px;
+        }
+        .pt-drop {
+          border: 2px dashed var(--line);
+          border-radius: 14px;
+          padding: 44px 24px;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          gap: 10px;
+          text-align: center;
+          cursor: pointer;
+          background: #FAFAFA;
+          transition: border-color 0.15s, background 0.15s;
+        }
+        .pt-drop.drag { border-color: #1C2430; background: #F6F7F7; }
+        .pt-drop-label { font-family: Georgia, serif; font-size: 16px; color: var(--ink); }
+        .pt-drop-hint { font-size: 13px; color: var(--ink-soft); }
+        .pt-spin { animation: pt-spin-anim 1s linear infinite; color: #1C2430; }
+        @keyframes pt-spin-anim { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        .pt-progress {
+          width: 100%;
+          max-width: 320px;
+          height: 6px;
+          border-radius: 999px;
+          background: #E4E6E9;
+          overflow: hidden;
+          margin-top: 4px;
+        }
+        .pt-progress-fill { height: 100%; background: #1C2430; transition: width 0.2s; }
+        .pt-error {
+          display: flex;
+          align-items: flex-start;
+          gap: 10px;
+          padding: 14px 16px;
+          border-radius: 10px;
+          background: #F5E4E6;
+          color: #A6394A;
+        }
+        .pt-error-title { font-weight: 700; font-size: 13.5px; }
+        .pt-error-text { font-size: 13px; margin-top: 2px; }
+        .pt-projects { display: flex; flex-direction: column; gap: 18px; }
+        .pt-card {
+          border: 1px solid var(--line);
+          border-radius: 14px;
+          overflow: hidden;
+          background: var(--panel);
+        }
+        .pt-card-head { padding: 16px 18px; background: #F5F6F7; border-bottom: 1px solid var(--line); }
+        .pt-card-head-top {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 12px;
+          flex-wrap: wrap;
+        }
+        .pt-card-title { display: flex; align-items: center; gap: 10px; }
+        .pt-card-title h2 { margin: 0; font-family: Georgia, serif; font-size: 16.5px; }
+        .pt-card-num {
+          width: 26px;
+          height: 26px;
+          border-radius: 8px;
+          background: #1C2430;
+          color: #FFFFFF;
+          font-size: 12.5px;
+          font-weight: 700;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          flex-shrink: 0;
+        }
+        .pt-card-count {
+          font-size: 12px;
+          font-weight: 600;
+          color: var(--ink-soft);
+          background: #E4E6E9;
+          padding: 4px 10px;
+          border-radius: 999px;
+        }
+        .pt-card-campanha { margin-top: 10px; padding-top: 10px; border-top: 1px solid #E4E6E9; }
+        .pt-badge-campanha {
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          font-size: 12.5px;
+          padding: 6px 12px;
+          border-radius: 10px;
+          background: #F4E6BE;
+          color: #7A5B12;
+          border: 1px solid #E9D2B8;
+        }
+        .pt-badge-campanha b {
+          background: #7A5B12;
+          color: #FFFFFF;
+          padding: 2px 7px;
+          border-radius: 6px;
+          font-size: 10px;
+          text-transform: uppercase;
+        }
+        .pt-badge-padrao {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          font-size: 12.5px;
+          font-weight: 600;
+          padding: 6px 12px;
+          border-radius: 10px;
+          background: #E9EBEE;
+          color: #2F6E51;
+        }
+        .pt-table-wrap { overflow-x: auto; }
+        .pt-table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+        .pt-table th {
+          text-align: left;
+          font-size: 11px;
+          text-transform: uppercase;
+          letter-spacing: 0.3px;
+          color: var(--ink-soft);
+          padding: 10px 16px;
+          border-bottom: 1px solid var(--line);
+          background: #FAFAFA;
+        }
+        .pt-table td {
+          padding: 11px 16px;
+          border-bottom: 1px solid var(--line);
+          white-space: nowrap;
+        }
+        .pt-table tr:last-child td { border-bottom: none; }
+        .pt-table tr:hover td { background: #E9F1FF; }
+        .pt-table tr.has-bonus td { background: #F3F9F3; }
+        .pt-unit-label { font-weight: 600; }
+        .pt-badge-bonus {
+          margin-left: 8px;
+          font-size: 10px;
+          font-weight: 700;
+          padding: 2px 7px;
+          border-radius: 6px;
+          background: #E4EFE8;
+          color: #2F6E51;
+          border: 1px solid #BFDBBF;
+        }
+        .pt-diferenca { font-weight: 700; color: #1C2430; }
+        .pt-bonus-value { font-weight: 700; color: #2F6E51; }
+        .pt-dash { color: #98A2AE; }
+
         @media (max-width: 780px) {
           .cc-body { flex-direction: column; }
           .cc-sidebar {
@@ -1276,6 +2075,13 @@ export default function ClassificadorCredito() {
         >
           <Zap size={18} />
           <span>Raio X</span>
+        </button>
+        <button
+          className={`cc-nav-btn${view === "precos" ? " active" : ""}`}
+          onClick={() => setView("precos")}
+        >
+          <Tag size={18} />
+          <span>Tabela de Preços</span>
         </button>
       </nav>
 
@@ -1414,6 +2220,8 @@ export default function ClassificadorCredito() {
         )}
       </div>
         </>
+      ) : view === "precos" ? (
+        <TabelaDePrecos />
       ) : (
         <>
       <div className="cc-header">

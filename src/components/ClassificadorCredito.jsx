@@ -2586,28 +2586,16 @@ export default function ClassificadorCredito() {
                                 )}
                                 <dl className="cc-detail-grid">
                                   <div>
-                                    <dt>Empreendimento</dt>
-                                    <dd>{r.empreendimento || "—"}</dd>
-                                  </div>
-                                  <div>
-                                    <dt>Imobiliária</dt>
-                                    <dd>{r.nomeImobiliaria || "—"}</dd>
-                                  </div>
-                                  <div>
-                                    <dt>Status original</dt>
-                                    <dd>{r.status || "—"}</dd>
-                                  </div>
-                                  <div>
-                                    <dt>Data de criação</dt>
-                                    <dd>{r.dataCriacao || "—"}</dd>
-                                  </div>
-                                  <div>
-                                    <dt>Data da análise</dt>
-                                    <dd>{r.dataAnalise || "—"}</dd>
-                                  </div>
-                                  <div>
                                     <dt>Valor financiamento</dt>
                                     <dd>{r.valorFinanciamento ? Number(r.valorFinanciamento).toLocaleString("pt-BR", { style: "currency", currency: "BRL" }) : "—"}</dd>
+                                  </div>
+                                  <div>
+                                    <dt>Renda apurada</dt>
+                                    <dd>{r.rendaApurada ? Number(r.rendaApurada).toLocaleString("pt-BR", { style: "currency", currency: "BRL" }) : "—"}</dd>
+                                  </div>
+                                  <div>
+                                    <dt>Valor parcela aprovada</dt>
+                                    <dd>{r.valorParcela ? Number(r.valorParcela).toLocaleString("pt-BR", { style: "currency", currency: "BRL" }) : "—"}</dd>
                                   </div>
                                 </dl>
                               </div>

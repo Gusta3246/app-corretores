@@ -120,6 +120,9 @@ export default function App() {
         'gleycimar.santiago@direcionalvendas.com.br',
         'juliane.jhullydirecionalvendas@gmail.com',
         'miqueiasnunes.direcionalvendas@gmail.com',
+        'rafaelymedeiros.direcional@gmail.com',
+        'pedrojr.direcionalvendas@gmail.com',
+        
         'salesadm.direcionalvendas@gmail.com',
     ];
     const validateLoginEmail = (input) => {

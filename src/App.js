@@ -104,7 +104,7 @@ export default function App() {
         'eirabolívar.direcionalvendas@gmail.com',
         'kleberson.direcionalvendas@gmail.com',
         'pedroradro.direcionalvendas@gmail.com',
-        'alexcastro.direcionalvendas@gmail.com',
+        'erikc.autocons.direcionalvendas@gmail.com',
         'jeiciferreira.direcionalvendas@gmail.com',
         'waleriatorres.direcionalvendas@gmail.com',
         'vanusaveza.direcional@gmail.com',

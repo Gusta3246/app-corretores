@@ -240,6 +240,17 @@ export const imagensEquipeDiarias = [
   "https://i.postimg.cc/KcMsgsDf/Whats-App-Image-2026-07-21-at-17-13-35.jpg",
   "https://i.postimg.cc/449FhFQv/Whats-App-Image-2026-07-21-at-17-13-36.jpg",
   "https://i.postimg.cc/pVF1n1JG/Whats-App-Image-2026-08-08-at-14-03-11-(2).jpg",
+  "https://i.postimg.cc/QtjYtGrb/Copia-de-IMG-1894.jpg",
+  "https://i.postimg.cc/pTPcTbty/Copia-de-IMG-1898.jpg",
+  "https://i.postimg.cc/DzrYnfRG/Copia-de-IMG-1917.jpg",
+  "https://i.postimg.cc/1zGYsRb5/Copia-de-IMG-1950.jpg",
+  "https://i.postimg.cc/BvTw4ZRG/Copia-de-IMG-2089.jpg",
+  "https://i.postimg.cc/hGW3kQyY/Copia-de-IMG-2185.jpg",
+  "https://i.postimg.cc/R05bkJs7/Copia-de-IMG-2222.jpg",
+  "https://i.postimg.cc/R05bkJsQ/Copia-de-IMG-2342.jpg",
+  "https://i.postimg.cc/YCmsDz3R/Copia-de-IMG-2363.jpg",
+  "https://i.postimg.cc/YCmsDz3b/Copia-de-IMG-2373.jpg",
+  "https://i.postimg.cc/KvjVB23d/Copia-de-IMG-2431.jpg",
 ];
 
 const today = new Date();
@@ -249,17 +260,20 @@ export const dayIndex = Math.floor((today.getTime() - today.getTimezoneOffset() 
 const horaLocal = today.getHours();
 const periodoAtual = horaLocal < 12 ? 0 : (horaLocal < 18 ? 1 : 2);
 
-// === FIXAÇÃO TEMPORÁRIA DE FOTOS DO DIA (1 semana) ===
-// As 3 fotos abaixo (já presentes no fim de imagensEquipeDiarias) ficarão
-// fixas como "fotos do dia" de 29/08/2026 até 05/09/2026.
-const FOTOS_FIXAS_INICIO = new Date(2026, 7, 29); // 29/08/2026 (mês 7 = agosto, zero-indexed)
-const FOTOS_FIXAS_FIM = new Date(2026, 8, 5, 23, 59, 59); // 05/09/2026 fim do dia
+// === FIXAÇÃO TEMPORÁRIA DE FOTOS DO DIA ===
+// As 11 fotos mais recentes (no fim de imagensEquipeDiarias) são as fotos
+// atuais, em rotação (manhã/tarde/noite) a partir de 13/10/2026.
+// Para voltar à rotação normal, defina FOTOS_FIXAS_FIM com uma data
+// (ex.: new Date(2026, 10, 13, 23, 59, 59)).
+const QTD_FOTOS_FIXAS = 11;
+const FOTOS_FIXAS_INICIO = new Date(2026, 9, 13); // 13/10/2026 (mês 9 = outubro, zero-indexed)
+const FOTOS_FIXAS_FIM = null; // sem data de término
 
-const dentroDoPeriodoFixo = today >= FOTOS_FIXAS_INICIO && today <= FOTOS_FIXAS_FIM;
+const dentroDoPeriodoFixo = today >= FOTOS_FIXAS_INICIO && (FOTOS_FIXAS_FIM === null || today <= FOTOS_FIXAS_FIM);
 
-// Índice, dentro de imagensEquipeDiarias, das 3 últimas fotos (as fixadas)
-const INDICE_INICIO_FOTOS_FIXAS = imagensEquipeDiarias.length - 3;
+// Índice, dentro de imagensEquipeDiarias, da primeira foto fixada
+const INDICE_INICIO_FOTOS_FIXAS = imagensEquipeDiarias.length - QTD_FOTOS_FIXAS;
 
 export const periodoIndex = dentroDoPeriodoFixo
-  ? INDICE_INICIO_FOTOS_FIXAS + periodoAtual
+  ? INDICE_INICIO_FOTOS_FIXAS + ((dayIndex * 3 + periodoAtual) % QTD_FOTOS_FIXAS)
   : dayIndex * 3 + periodoAtual;

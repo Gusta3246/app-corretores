@@ -122,7 +122,7 @@ export default function App() {
         'miqueiasnunes.direcionalvendas@gmail.com',
         'rafaelymedeiros.direcional@gmail.com',
         'pedrojr.direcionalvendas@gmail.com',
-        
+        'Kelvim.monteiro.direcionalvendas@gmail.com',
         'salesadm.direcionalvendas@gmail.com',
     ];
     const validateLoginEmail = (input) => {

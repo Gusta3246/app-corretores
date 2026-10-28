@@ -9,6 +9,8 @@ export const LOGOS_EMPREENDIMENTO = {
   rio_amazonas: "https://i.postimg.cc/D0SZxdZP/DIR-Rio-AM-logo-AZUL.png",
   bosque_torres: "https://i.postimg.cc/Kj1z0rzs/Copia-de-Logo-Bosque-das-Torres-Prancheta-1.png",
   lirio_azul: "https://i.postimg.cc/Wzd3563y/Copia-de-DIR-PVLirio-Azul-Logo.png",
+  lirio_rosa: "https://i.postimg.cc/qqdD41t0/Copia-de-DIR-PVLirio-Rosa-Logo.png",
+  viva_safira: "https://i.postimg.cc/XvsnZyfT/Copia-de-Logo-Viva-Vida-Safira-Prancheta-1.png",
   boulevard_classic: "https://i.postimg.cc/6qbHXwBJ/Logo-AMAZOM-BOULEVARD-CLASSIC.png",
   boulevard_prime: "https://i.postimg.cc/PJV6jhdG/Copia-de-LOGO-AMAZON-BOULEVARD-PRIME-OK-01.png",
   oasis_azzure: "https://i.postimg.cc/bJCr0Fzk/Copia-de-LOGO-OASIS-AZZURE-BRANCA.png",
@@ -24,13 +26,23 @@ export const REVISTA_LOGO_MAP = {
   1: 'brisas', 2: 'orquidea', 3: 'village_torres', 4: 'conquista_jb',
   5: 'viva_coral', 6: 'jardim_norte', 7: 'rio_amazonas', 8: 'bosque_torres',
   9: 'lirio_azul', 10: 'boulevard_classic', 11: 'boulevard_prime',
-  12: 'oasis_azzure', 13: 'zenith', 14: 'topazio', 16: 'rio_negro', 17: 'rio_tapajos', 18: 'moratta', 19: 'grand_golf',
+  20: 'lirio_rosa', 21: 'viva_safira', 12: 'oasis_azzure', 13: 'zenith', 14: 'topazio', 16: 'rio_negro', 17: 'rio_tapajos', 18: 'moratta', 19: 'grand_golf',
 };
 
 const D = 'https://www.direcional.com.br/wp-content/uploads';
 const R = 'https://www.rivaincorporadora.com.br/wp-content/uploads';
 
 export const revistasDataLocal = [
+  { id: 20, title: "Parque Ville Lírio Rosa", brand: "Direcional", region: "Lago Azul - Zona Norte", size: "41m²", bedrooms: "2 quartos", flooring: "Cozinha, banheiro e lavatório", entrega: "11/2029", obraPercent: 0, rendaMinima: 2200, pinned: true,
+    cover: "https://i.postimg.cc/HnCvd6JC/Copia-de-GUARITA-DELIVERY.jpg",
+    fotosExtras: [],
+    link: "https://drive.google.com/file/d/1b3mUcVFRKIhyR3CLE-CDL_G3Bc_S_buR/view?usp=drive_link", aliases: ["lirio rosa", "lírio rosa", "parque ville lirio rosa"], pois: ["Escola Integral João S. Braga (1 min)", "Colégio Militar da PM VI (2 min)", "Escola Est. Eliana Braga (2 min)", "Nova Era Supermercado (2 min)", "Clínica da Família C. Gracie (2 min)", "UBS José Fligliuolo (4 min)", "Clínica da Família C. Nicolau (4 min)", "Terminal 6 e 7 (4 min)", "Shopping Via Norte / Havan / Fun Park (7 min)", "Hospital Delphina Aziz (8 min)"] },
+
+  { id: 21, title: "Viva Vida Safira", brand: "Direcional", region: "Colônia Terra Nova - Zona Norte", size: "41m² a 51m²", bedrooms: "2 quartos", flooring: "Cozinha, banheiro e lavatório", entrega: "11/2029", obraPercent: 0, rendaMinima: 4000, pinned: true,
+    cover: "https://i.postimg.cc/N0dQyr6z/Copia-de-Guarita-REV05HR.jpg",
+    fotosExtras: [],
+    link: "https://drive.google.com/file/d/1e0_qV8ViWwTP9Ihu2dhtmbA4HbsWNPqu/view?usp=drive_link", aliases: ["safira", "viva vida safira"], pois: ["Shopping Via Norte", "Loja Havan", "Atacadão", "Hospital Delphina Aziz", "Posto Atem (famoso na entrada do bairro)"] },
+
   { id: 1, title: "Brisas do Horizonte", brand: "Direcional", region: "Coroado - Zona Leste", size: "43m² a 45m²", bedrooms: "2 quartos", flooring: "Todo o apê", entrega: "08/2028", obraPercent: 10.08, rendaMinima: 7000,
     cover: `${D}/2025/06/Perspectiva-Guarita-BrisasdoHorizonte.jpg.webp`,
     fotosExtras: [`https://api.apto.vc/images/realties/9440/brisas-do-horizonte-condominio-2.webp`,`https://api.apto.vc/images/realties/9440/brisas-do-horizonte-condominio-3.webp`,`https://api.apto.vc/images/realties/9440/brisas-do-horizonte-condominio-4.webp`,`https://api.apto.vc/images/realties/9440/brisas-do-horizonte-condominio-5.webp`,`https://api.apto.vc/images/realties/9440/brisas-do-horizonte-condominio-6.webp`],

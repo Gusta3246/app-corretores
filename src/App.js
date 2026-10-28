@@ -2882,6 +2882,8 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
                     'Viva Vida Rio Amazonas':       '-2.9835792,-60.0470611',
                     'Bosque das Torres':            '-2.9696927,-59.997579',
                     'Parque Ville Lírio Azul':      '-2.9759258,-60.0065576',
+                    'Parque Ville Lírio Rosa':      '-2.9759258,-60.0065576',
+                    'Viva Vida Safira':             '-3.01547,-60.018348',
                     'Amazon Boulevard Classic':     '-3.060292,-60.0253649',
                     'Amazon Boulevard Prime':       '-3.060292,-60.0253649',
                     'Città Oasis Azzure':           '-3.0732449,-60.0158834',
@@ -3118,6 +3120,13 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
                         { linha: '450', nome: 'Lago Azul / Dom Pedro', cor: '#dc2626' },
                         { linha: '640', nome: 'Lago Azul / Sumaúma Park', cor: '#d97706' },
                     ],
+                    'Parque Ville Lírio Rosa': [
+                        { linha: '120', nome: 'Lago Azul / Centro (via Torquato Tapajós)', cor: '#16a34a' },
+                        { linha: '121', nome: 'Lago Azul / Terminal 6', cor: '#4A85DC' },
+                        { linha: '122', nome: 'Lago Azul / Via Norte Shopping', cor: '#9333ea' },
+                        { linha: '450', nome: 'Lago Azul / Dom Pedro', cor: '#dc2626' },
+                        { linha: '640', nome: 'Lago Azul / Sumaúma Park', cor: '#d97706' },
+                    ],
                     'Conquista Jardim Botânico': [
                         { linha: '040', nome: 'Nova Cidade / Centro (via Torquato)', cor: '#16a34a' },
                         { linha: '041', nome: 'Nova Cidade / Sumaúma Park', cor: '#4A85DC' },
@@ -3126,6 +3135,13 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
                         { linha: '310', nome: 'Nova Cidade / Cachoeirinha / Centro', cor: '#d97706' },
                     ],
                     'Viva Vida Coral': [
+                        { linha: '051', nome: 'Colônia Terra Nova / Centro', cor: '#16a34a' },
+                        { linha: '052', nome: 'Colônia Terra Nova / Sumaúma Park', cor: '#4A85DC' },
+                        { linha: '053', nome: 'Colônia Terra Nova / Terminal 6', cor: '#9333ea' },
+                        { linha: '054', nome: 'Colônia Terra Nova / Via Norte Shopping', cor: '#dc2626' },
+                        { linha: '450', nome: 'Colônia Terra Nova / Dom Pedro', cor: '#d97706' },
+                    ],
+                    'Viva Vida Safira': [
                         { linha: '051', nome: 'Colônia Terra Nova / Centro', cor: '#16a34a' },
                         { linha: '052', nome: 'Colônia Terra Nova / Sumaúma Park', cor: '#4A85DC' },
                         { linha: '053', nome: 'Colônia Terra Nova / Terminal 6', cor: '#9333ea' },

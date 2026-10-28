@@ -4,7 +4,6 @@ import { buscarRespostaDoRobo, buscarRespostaGemini } from './bot/dadosFinanciam
 import { revistasDataLocal, utilitariosData, frasesMotivacionais, imagensEquipeDiarias, dayIndex, periodoIndex } from './data/dados.js';
 import { RippleButton, CardRevista, HintPills, RevistaCloseButton } from './components/Componentes.jsx';
 import CalculadoraTabelaDireta from './components/CalculadoraTabelaDireta.jsx';
-import ClassificadorCredito from './components/ClassificadorCredito.jsx';
 import { useDocClassifier } from './hooks/useDocClassifier.js';
 
 export default function App() {
@@ -327,8 +326,6 @@ export default function App() {
     const [showCalculadoraItbiModal, setShowCalculadoraItbiModal] = useState(false);
     // ── Calculadora Tabela Direta ──
     const [showCalculadoraTabelaDiretaModal, setShowCalculadoraTabelaDiretaModal] = useState(false);
-    // ── Classificador de Crédito ──
-    const [showClassificadorCreditoModal, setShowClassificadorCreditoModal] = useState(false);
     // ── Menu de opções do Simulador ──
 
     // ── Modal Tabelas (Drive embutido) ──
@@ -1800,20 +1797,6 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
                                 title={modoNoturno ? "Ativar Modo Claro" : "Ativar Modo Noturno"}
                             >
                                 {modoNoturno ? <Sun size={20} /> : <Moon size={20} />}
-                            </button>
-
-                            {/* Botão Classificador de Crédito no Header */}
-                            <button
-                                onClick={(e) => { haptic('medium'); captureZoomOrigin(e); setShowClassificadorCreditoModal(true); }}
-                                className={`shrink-0 p-2.5 rounded-full border transition-all duration-300 hover:scale-105 ${
-                                    modoNoturno
-                                    ? 'bg-white/10 border-white/15 text-slate-200 hover:bg-white/20'
-                                    : 'bg-slate-100 border-slate-200 text-slate-600 hover:bg-slate-200'
-                                }`}
-                                style={{ boxShadow: modoNoturno ? '0 1px 2px rgba(0,0,0,0.15)' : '0 1px 2px rgba(15,23,42,0.05)' }}
-                                title="Classificador de Crédito"
-                            >
-                                <FileSpreadsheet size={20} />
                             </button>
 
                             {/* Botão Pasta no Header */}
@@ -4435,24 +4418,6 @@ compute();
                     modoNoturno={modoNoturno}
                     onClose={() => setShowCalculadoraTabelaDiretaModal(false)}
                 />
-            )}
-
-            {/* ── MODAL: Classificador de Crédito ── */}
-            {showClassificadorCreditoModal && (
-                <div
-                    className="fixed inset-0 z-[70] zoom-origin-in"
-                    style={{ '--ox': zoomOrigin.x, '--oy': zoomOrigin.y }}
-                >
-                    <button
-                        onClick={() => setShowClassificadorCreditoModal(false)}
-                        className="absolute top-3 right-3 z-[80] w-9 h-9 rounded-xl flex items-center justify-center transition-all active:scale-90"
-                        style={{ background: '#1C2430', boxShadow: '0 4px 16px rgba(0,0,0,0.35)' }}
-                        title="Fechar"
-                    >
-                        <X size={18} color="#ffffff" />
-                    </button>
-                    <ClassificadorCredito />
-                </div>
             )}
 
 

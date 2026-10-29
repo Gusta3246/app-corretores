@@ -289,7 +289,10 @@ export function CardRevista({ revista, cardIdx, modoNoturno, haptic, setPdfLeito
                 @keyframes novoRing{0%,100%{box-shadow:inset 0 0 0 2px rgba(251,191,36,0.55),inset 0 0 14px rgba(251,191,36,0.18)}50%{box-shadow:inset 0 0 0 2px rgba(251,191,36,0.85),inset 0 0 24px rgba(251,191,36,0.32)}}
                 @keyframes novoShine{0%{transform:translateX(-150%) skewX(-20deg);opacity:0}15%{opacity:1}45%{transform:translateX(350%) skewX(-20deg);opacity:1}55%,100%{transform:translateX(350%) skewX(-20deg);opacity:0}}
             `}</style>)}
-            <div className="card-entry overflow-hidden flex flex-col group" style={{ animationDelay:`${cardIdx*90}ms`, position:'relative', borderRadius:'24px', background: modoNoturno ? 'rgba(255,255,255,0.04)' : '#f8fafc', border: modoNoturno ? '1px solid rgba(255,255,255,0.10)' : '1px solid rgba(15,23,42,0.08)', transition:'background-color 0.45s ease-in-out' }}
+            {/* Efeito "modo cinema": luz difusa da capa vazando por baixo do card */}
+            <div style={{ position:'relative', display:'flex', flexDirection:'column' }}>
+            <img src={revista.cover} alt="" aria-hidden="true" draggable={false} style={{ position:'absolute', left:'7%', right:'7%', bottom:-14, height:'58%', width:'86%', objectFit:'cover', borderRadius:24, filter:'blur(22px) saturate(1.35)', opacity: modoNoturno ? 0.62 : 0.5, zIndex:0, pointerEvents:'none', transform:'translateZ(0)' }}/>
+            <div className="card-entry overflow-hidden flex flex-col group" style={{ animationDelay:`${cardIdx*90}ms`, position:'relative', zIndex:1, flex:1, borderRadius:'24px', background: modoNoturno ? 'rgba(255,255,255,0.04)' : '#f8fafc', border: modoNoturno ? '1px solid rgba(255,255,255,0.10)' : '1px solid rgba(15,23,42,0.08)', transition:'background-color 0.45s ease-in-out' }}
                 onMouseEnter={e => { if (isTouchDevice()) return; e.currentTarget.style.background = modoNoturno ? 'rgba(59,130,246,0.16)' : 'rgba(219,234,254,0.85)'; startHover(); }}
                 onMouseLeave={e => { if (isTouchDevice()) return; e.currentTarget.style.background = modoNoturno ? 'rgba(255,255,255,0.04)' : '#f8fafc'; stopHover(); }}>
                 <div className="relative h-48 overflow-hidden bg-slate-100" style={{ borderRadius: '24px 24px 20px 20px', margin: '0 0 8px 0' }}>
@@ -391,6 +394,7 @@ export function CardRevista({ revista, cardIdx, modoNoturno, haptic, setPdfLeito
                         </div>
                     </div>
                 </div>
+            </div>
             </div>
         </>
     );

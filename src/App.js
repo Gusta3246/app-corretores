@@ -2864,6 +2864,7 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
                     'Conquista Jardim Norte':       '-2.9878435,-60.004704',
                     'Viva Vida Rio Amazonas':       '-2.9835792,-60.0470611',
                     'Bosque das Torres':            '-2.9696927,-59.997579',
+                    'Campo das Torres':             '-2.9696927,-59.997579',
                     'Parque Ville Lírio Azul':      '-2.9759258,-60.0065576',
                     'Parque Ville Lírio Rosa':      '-2.9759258,-60.0065576',
                     'Viva Vida Safira':             '-3.01547,-60.018348',
@@ -3091,6 +3092,13 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
                         { linha: '640', nome: 'Lago Azul / Sumaúma Park', cor: '#d97706' },
                     ],
                     'Bosque das Torres': [
+                        { linha: '120', nome: 'Lago Azul / Centro (via Torquato Tapajós)', cor: '#16a34a' },
+                        { linha: '121', nome: 'Lago Azul / Terminal 6', cor: '#4A85DC' },
+                        { linha: '122', nome: 'Lago Azul / Via Norte Shopping', cor: '#9333ea' },
+                        { linha: '450', nome: 'Lago Azul / Dom Pedro', cor: '#dc2626' },
+                        { linha: '640', nome: 'Lago Azul / Sumaúma Park', cor: '#d97706' },
+                    ],
+                    'Campo das Torres': [
                         { linha: '120', nome: 'Lago Azul / Centro (via Torquato Tapajós)', cor: '#16a34a' },
                         { linha: '121', nome: 'Lago Azul / Terminal 6', cor: '#4A85DC' },
                         { linha: '122', nome: 'Lago Azul / Via Norte Shopping', cor: '#9333ea' },

@@ -292,8 +292,6 @@ export function CardRevista({ revista, cardIdx, modoNoturno, haptic, setPdfLeito
             <div className="card-entry overflow-hidden flex flex-col group" style={{ animationDelay:`${cardIdx*90}ms`, position:'relative', borderRadius:'24px', background: modoNoturno ? 'rgba(255,255,255,0.04)' : '#f8fafc', border: modoNoturno ? '1px solid rgba(255,255,255,0.10)' : '1px solid rgba(15,23,42,0.08)', transition:'background-color 0.45s ease-in-out' }}
                 onMouseEnter={e => { if (isTouchDevice()) return; e.currentTarget.style.background = modoNoturno ? 'rgba(59,130,246,0.16)' : 'rgba(219,234,254,0.85)'; startHover(); }}
                 onMouseLeave={e => { if (isTouchDevice()) return; e.currentTarget.style.background = modoNoturno ? 'rgba(255,255,255,0.04)' : '#f8fafc'; stopHover(); }}>
-                {/* Brilho suave em semicírculo sob a capa (efeito cinema) */}
-                <img src={revista.cover} alt="" aria-hidden="true" draggable={false} style={{ position:'absolute', top:170, left:'3%', width:'94%', height:64, objectFit:'cover', borderRadius:'0 0 50% 50% / 0 0 100% 100%', filter:'blur(24px) saturate(1.2)', WebkitMaskImage:'linear-gradient(to right, transparent 0%, #000 28%, #000 72%, transparent 100%)', maskImage:'linear-gradient(to right, transparent 0%, #000 28%, #000 72%, transparent 100%)', opacity: modoNoturno ? 0.3 : 0.22, pointerEvents:'none', zIndex:0 }}/>
                 <div className="relative h-48 overflow-hidden bg-slate-100" style={{ borderRadius: '24px 24px 20px 20px', margin: '0 0 8px 0' }}>
                     {isNovo && (<>
                         <div style={{ position:'absolute', inset:0, borderRadius:'24px 24px 20px 20px', pointerEvents:'none', zIndex:12, animation:'novoRing 4s ease-in-out infinite' }}/>

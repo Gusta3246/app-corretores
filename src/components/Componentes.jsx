@@ -241,6 +241,8 @@ export function CardRevista({ revista, cardIdx, modoNoturno, haptic, setPdfLeito
     const [showObraModal, setShowObraModal] = useState(false);
     const timerRef = useRef(null);
     const isDir = revista.brand === 'Direcional';
+    // Destaque "NOVO": ativo até a data em revista.destaqueAte (7 dias); depois o card volta ao normal
+    const isNovo = !!revista.destaqueAte && Date.now() < new Date(revista.destaqueAte).getTime();
     const accentObra = '#007AFF';
     const isTouchDevice = () => window.matchMedia('(hover: none) and (pointer: coarse)').matches;
 
@@ -283,10 +285,22 @@ export function CardRevista({ revista, cardIdx, modoNoturno, haptic, setPdfLeito
         <>
             {expanded && (<BannerExpandido revista={revista} onClose={() => setExpanded(false)} modoNoturno={modoNoturno} onVerRevista={handleVerRevista} onVerPois={handleVerPois} onVerOnibus={()=>onVerOnibus && onVerOnibus(revista)}/>)}
             {showObraModal && (<ObraTaxaModal revista={revista} onClose={() => setShowObraModal(false)} modoNoturno={modoNoturno}/>)}
+            {isNovo && (<style>{`
+                @keyframes novoRing{0%,100%{box-shadow:inset 0 0 0 2px rgba(251,191,36,0.95),inset 0 0 18px rgba(251,191,36,0.35)}50%{box-shadow:inset 0 0 0 3px rgba(34,211,238,0.95),inset 0 0 30px rgba(34,211,238,0.55)}}
+                @keyframes novoBadge{0%,100%{transform:scale(1)}50%{transform:scale(1.1)}}
+                @keyframes novoShine{0%{transform:translateX(-120%) skewX(-20deg)}60%,100%{transform:translateX(320%) skewX(-20deg)}}
+            `}</style>)}
             <div className="card-entry overflow-hidden flex flex-col group" style={{ animationDelay:`${cardIdx*90}ms`, position:'relative', borderRadius:'24px', background: modoNoturno ? 'rgba(255,255,255,0.04)' : '#f8fafc', border: modoNoturno ? '1px solid rgba(255,255,255,0.10)' : '1px solid rgba(15,23,42,0.08)', transition:'background-color 0.45s ease-in-out' }}
                 onMouseEnter={e => { if (isTouchDevice()) return; e.currentTarget.style.background = modoNoturno ? 'rgba(59,130,246,0.16)' : 'rgba(219,234,254,0.85)'; startHover(); }}
                 onMouseLeave={e => { if (isTouchDevice()) return; e.currentTarget.style.background = modoNoturno ? 'rgba(255,255,255,0.04)' : '#f8fafc'; stopHover(); }}>
                 <div className="relative h-48 overflow-hidden bg-slate-100" style={{ borderRadius: '24px 24px 20px 20px', margin: '0 0 8px 0' }}>
+                    {isNovo && (<>
+                        <div style={{ position:'absolute', inset:0, borderRadius:'24px 24px 20px 20px', pointerEvents:'none', zIndex:12, animation:'novoRing 1.8s ease-in-out infinite' }}/>
+                        <div style={{ position:'absolute', top:10, right:10, zIndex:13, padding:'4px 11px', borderRadius:999, overflow:'hidden', background:'linear-gradient(135deg,#f59e0b,#ef4444)', color:'#fff', fontSize:11, fontWeight:900, letterSpacing:'0.12em', boxShadow:'0 4px 14px rgba(239,68,68,0.55)', animation:'novoBadge 1.4s ease-in-out infinite' }}>
+                            NOVO
+                            <span style={{ position:'absolute', top:0, left:0, width:'40%', height:'100%', background:'rgba(255,255,255,0.55)', animation:'novoShine 2.4s ease-in-out infinite' }}/>
+                        </div>
+                    </>)}
                     <img src={revista.cover} onError={(e)=>{e.target.onerror=null;e.target.src='https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&q=80&w=400';}} alt={`Capa ${revista.title}`} className="w-full h-full object-cover group-hover:scale-115 transition-transform duration-700 ease-out" style={{ transformOrigin:'center center', willChange:'transform' }}/>
                     {/* Gradiente fade na borda inferior */}
                     <div style={{ position:'absolute', bottom:0, left:0, right:0, height:'60px', background:'linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.3) 100%)', zIndex:5, pointerEvents:'none', borderRadius:'0 0 20px 20px' }}/>

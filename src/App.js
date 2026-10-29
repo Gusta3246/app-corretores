@@ -2873,6 +2873,7 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
                     'Zenith Condomínio Clube':      '-3.1040641,-59.9993555',
                     'Conquista Topázio':            '-3.01547,-60.018348',
                     'Conquista Rio Negro':          '-3.0401114,-60.0800979',
+                    'Encontro das Águas':           '-3.0401114,-60.0800979',
                     'Viva Vida Rio Tapajós':        '-2.9835792,-60.0470611',
                     'Moratta Home Riva':            '-3.077466,-60.020464',
                 };
@@ -3190,6 +3191,13 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
                         { linha: '215', nome: 'São Francisco / Distrito Industrial', cor: '#d97706' },
                     ],
                     'Conquista Rio Negro': [
+                        { linha: '113', nome: 'Ponta Negra / Centro (via Av. N.S. do Carmo)', cor: '#16a34a' },
+                        { linha: '320', nome: 'Ponta Negra / Shopping Ponta Negra', cor: '#4A85DC' },
+                        { linha: '421', nome: 'Ponta Negra / Flores / Aleixo', cor: '#9333ea' },
+                        { linha: '450', nome: 'Ponta Negra / Dom Pedro / Centro', cor: '#dc2626' },
+                        { linha: '640', nome: 'Ponta Negra / Tarumã / Centro', cor: '#d97706' },
+                    ],
+                    'Encontro das Águas': [
                         { linha: '113', nome: 'Ponta Negra / Centro (via Av. N.S. do Carmo)', cor: '#16a34a' },
                         { linha: '320', nome: 'Ponta Negra / Shopping Ponta Negra', cor: '#4A85DC' },
                         { linha: '421', nome: 'Ponta Negra / Flores / Aleixo', cor: '#9333ea' },

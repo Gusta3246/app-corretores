@@ -10,6 +10,7 @@ export const LOGOS_EMPREENDIMENTO = {
   bosque_torres: "https://i.postimg.cc/Kj1z0rzs/Copia-de-Logo-Bosque-das-Torres-Prancheta-1.png",
   lirio_azul: "https://i.postimg.cc/Wzd3563y/Copia-de-DIR-PVLirio-Azul-Logo.png",
   lirio_rosa: "https://i.postimg.cc/qqdD41t0/Copia-de-DIR-PVLirio-Rosa-Logo.png",
+  encontro_aguas: "https://i.postimg.cc/YSjr710L/Copia-de-VLogo-Encontro-das-Aguas.png",
   viva_safira: "https://i.postimg.cc/XvsnZyfT/Copia-de-Logo-Viva-Vida-Safira-Prancheta-1.png",
   boulevard_classic: "https://i.postimg.cc/6qbHXwBJ/Logo-AMAZOM-BOULEVARD-CLASSIC.png",
   boulevard_prime: "https://i.postimg.cc/PJV6jhdG/Copia-de-LOGO-AMAZON-BOULEVARD-PRIME-OK-01.png",
@@ -26,19 +27,24 @@ export const REVISTA_LOGO_MAP = {
   1: 'brisas', 2: 'orquidea', 3: 'village_torres', 4: 'conquista_jb',
   5: 'viva_coral', 6: 'jardim_norte', 7: 'rio_amazonas', 8: 'bosque_torres',
   9: 'lirio_azul', 10: 'boulevard_classic', 11: 'boulevard_prime',
-  20: 'lirio_rosa', 21: 'viva_safira', 12: 'oasis_azzure', 13: 'zenith', 14: 'topazio', 16: 'rio_negro', 17: 'rio_tapajos', 18: 'moratta', 19: 'grand_golf',
+  22: 'encontro_aguas', 20: 'lirio_rosa', 21: 'viva_safira', 12: 'oasis_azzure', 13: 'zenith', 14: 'topazio', 16: 'rio_negro', 17: 'rio_tapajos', 18: 'moratta', 19: 'grand_golf',
 };
 
 const D = 'https://www.direcional.com.br/wp-content/uploads';
 const R = 'https://www.rivaincorporadora.com.br/wp-content/uploads';
 
 export const revistasDataLocal = [
-  { id: 20, title: "Parque Ville Lírio Rosa", brand: "Direcional", region: "Lago Azul - Zona Norte", size: "41m²", bedrooms: "2 quartos", flooring: "Cozinha, banheiro e lavatório", entrega: "11/2029", obraPercent: 0, rendaMinima: 2200, pinned: true,
+  { id: 22, title: "Encontro das Águas", brand: "Direcional", region: "Ponta Negra - Zona Oeste", size: "41m²", bedrooms: "2 quartos", flooring: "Todo o apê", entrega: "11/2029", obraPercent: 0, rendaMinima: 4800, pinned: true, destaqueAte: "2026-11-05T23:59:59-04:00",
+    cover: "https://i.postimg.cc/ncYcGFNQ/Guarita.jpg",
+    fotosExtras: [],
+    link: "https://drive.google.com/file/d/1s-bEA7kBg_ZrDid2We2fBjknilTZXZLc/view?usp=drive_link", aliases: ["encontro das aguas", "encontro das águas", "encontro"], pois: ["Shopping Ponta Negra", "DB Ponta Negra", "Orla 92 Mall", "Supermercado Veneza", "Orla da Ponta Negra", "Praia Dourada", "Marina Tauá", "Balneário do SESC", "Aeroporto Eduardo Gomes", "Policlínica José Lins", "Colégio Século"] },
+
+  { id: 20, title: "Parque Ville Lírio Rosa", brand: "Direcional", region: "Lago Azul - Zona Norte", size: "41m²", bedrooms: "2 quartos", flooring: "Cozinha, banheiro e lavatório", entrega: "11/2029", obraPercent: 0, rendaMinima: 2200, pinned: true, destaqueAte: "2026-11-05T23:59:59-04:00",
     cover: "https://i.postimg.cc/HnCvd6JC/Copia-de-GUARITA-DELIVERY.jpg",
     fotosExtras: [],
     link: "https://drive.google.com/file/d/1b3mUcVFRKIhyR3CLE-CDL_G3Bc_S_buR/view?usp=drive_link", aliases: ["lirio rosa", "lírio rosa", "parque ville lirio rosa"], pois: ["Escola Integral João S. Braga (1 min)", "Colégio Militar da PM VI (2 min)", "Escola Est. Eliana Braga (2 min)", "Nova Era Supermercado (2 min)", "Clínica da Família C. Gracie (2 min)", "UBS José Fligliuolo (4 min)", "Clínica da Família C. Nicolau (4 min)", "Terminal 6 e 7 (4 min)", "Shopping Via Norte / Havan / Fun Park (7 min)", "Hospital Delphina Aziz (8 min)"] },
 
-  { id: 21, title: "Viva Vida Safira", brand: "Direcional", region: "Colônia Terra Nova - Zona Norte", size: "41m² a 51m²", bedrooms: "2 quartos", flooring: "Cozinha, banheiro e lavatório", entrega: "11/2029", obraPercent: 0, rendaMinima: 4000, pinned: true,
+  { id: 21, title: "Viva Vida Safira", brand: "Direcional", region: "Colônia Terra Nova - Zona Norte", size: "41m² a 51m²", bedrooms: "2 quartos", flooring: "Cozinha, banheiro e lavatório", entrega: "11/2029", obraPercent: 0, rendaMinima: 4000, pinned: true, destaqueAte: "2026-11-05T23:59:59-04:00",
     cover: "https://i.postimg.cc/N0dQyr6z/Copia-de-Guarita-REV05HR.jpg",
     fotosExtras: [],
     link: "https://drive.google.com/file/d/1e0_qV8ViWwTP9Ihu2dhtmbA4HbsWNPqu/view?usp=drive_link", aliases: ["safira", "viva vida safira"], pois: ["Shopping Via Norte", "Loja Havan", "Atacadão", "Hospital Delphina Aziz", "Posto Atem (famoso na entrada do bairro)"] },

@@ -1,58 +1,293 @@
-import React from 'react';
-
-// Morcego em SVG (usa currentColor)
-const Bat = ({ size = 28, style }) => (
-  <svg width={size} height={size * 0.55} viewBox="0 0 64 36" fill="currentColor" style={style} aria-hidden="true">
-    <path d="M32 10c-2 0-3 2-4 4-3-3-7-5-12-5-5 0-10 2-14 6 4 0 7 2 8 5 3-2 6-2 8 0 2 2 3 5 3 8 2-2 4-3 7-3 1 3 3 5 4 5s3-2 4-5c3 0 5 1 7 3 0-3 1-6 3-8 2-2 5-2 8 0 1-3 4-5 8-5-4-4-9-6-14-6-5 0-9 2-12 5-1-2-2-4-4-4z" />
-  </svg>
-);
-
-// Teia de aranha no canto (flip controla qual canto)
-export const Cobweb = ({ size = 120, flip = false, style }) => (
-  <svg width={size} height={size} viewBox="0 0 100 100" fill="none" stroke="currentColor" strokeWidth="0.8"
-    style={{ transform: flip ? 'scaleX(-1)' : undefined, ...style }} aria-hidden="true">
-    <path d="M0 0 L100 0 M0 0 L0 100 M0 0 L88 52 M0 0 L52 88 M0 0 L98 22 M0 0 L22 98" />
-    <path d="M18 0 Q14 14 0 18 M36 0 Q28 28 0 36 M56 0 Q42 42 0 56 M78 0 Q58 58 0 78" />
-  </svg>
-);
-
-const Ghost = ({ size = 34 }) => (
-  <svg width={size} height={size} viewBox="0 0 40 40" aria-hidden="true">
-    <path d="M20 3C12 3 7 9 7 17v18l4-3 4 4 5-4 5 4 4-4 4 3V17C33 9 28 3 20 3z" fill="rgba(255,255,255,0.92)" />
-    <circle cx="15" cy="17" r="2.6" fill="#1a0b2e" /><circle cx="25" cy="17" r="2.6" fill="#1a0b2e" />
-    <ellipse cx="20" cy="24" rx="3" ry="3.6" fill="#1a0b2e" />
-  </svg>
-);
-
-// Decoração do HERO (lua, morcegos voando, fantasmas, teias, névoa)
-export function HalloweenHeroDecor() {
-  return (
-    <div className="hw-hero-decor" aria-hidden="true">
-      <div className="hw-hero-wash" />
-      <div className="hw-moon" />
-      <Cobweb size={240} style={{ position: 'absolute', top: 0, left: 0, color: 'rgba(255,255,255,0.35)' }} />
-      <Cobweb size={240} flip style={{ position: 'absolute', top: 0, right: 0, color: 'rgba(255,255,255,0.35)' }} />
-      <span className="hw-bat hw-bat-1"><Bat size={78} /></span>
-      <span className="hw-bat hw-bat-2"><Bat size={52} /></span>
-      <span className="hw-bat hw-bat-3"><Bat size={64} /></span>
-      <span className="hw-bat hw-bat-4"><Bat size={96} /></span>
-      <span className="hw-ghost hw-ghost-1"><Ghost size={88} /></span>
-      <span className="hw-ghost hw-ghost-2"><Ghost size={58} /></span>
-      <div className="hw-fog" />
-    </div>
-  );
+/* ════════════════════════════════════════════════════════════
+   TEMA HALLOWEEN 🎃 — só vale com <html class="hw">
+   (ativado por src/theme/halloween.js entre 20/10 e 03/11).
+   Fora do período, nada aqui é aplicado.
+   ════════════════════════════════════════════════════════════ */
+html.hw {
+  --hw-orange: #ff7a18;
+  --hw-orange-2: #ffa94d;
+  --hw-purple: #7c3aed;
+  --hw-night: #1a0b2e;
+  --hw-night-2: #2b1055;
+  --hw-bone: #fff4e0;
 }
 
-// Decoração do HEADER (teias nos cantos + aranha pendurada + morcego)
-export function HalloweenHeaderDecor() {
-  return (
-    <div className="hw-header-decor" aria-hidden="true">
-      <Cobweb size={64} style={{ position: 'absolute', top: 0, left: 0, color: 'rgba(255,170,60,0.45)' }} />
-      <Cobweb size={64} flip style={{ position: 'absolute', top: 0, right: 0, color: 'rgba(255,170,60,0.45)' }} />
-      <span className="hw-spider"><i /><b>🕷️</b></span>
-      <span className="hw-header-bat"><Bat size={18} /></span>
-    </div>
-  );
+/* ── Fundo da página ─────────────────────────────────────── */
+html.hw body {
+  background:
+    radial-gradient(ellipse 70% 40% at 85% 0%, rgba(255,122,24,0.14), transparent 70%),
+    radial-gradient(ellipse 60% 40% at 0% 100%, rgba(124,58,237,0.14), transparent 70%),
+    #fff7ed !important;
+}
+html.hw.hw-dark body {
+  background:
+    radial-gradient(ellipse 70% 40% at 85% 0%, rgba(255,122,24,0.16), transparent 70%),
+    radial-gradient(ellipse 60% 45% at 0% 100%, rgba(124,58,237,0.26), transparent 70%),
+    #120820 !important;
 }
 
-export const PumpkinIcon = ({ size = 14 }) => <span style={{ fontSize: size, lineHeight: 1 }}>🎃</span>;
+/* ── HEADER ──────────────────────────────────────────────── */
+html.hw .hw-header {
+  background: linear-gradient(180deg, rgba(26,11,46,0.92), rgba(43,16,85,0.88)) !important;
+  border-bottom: 1px solid rgba(255,122,24,0.55) !important;
+  box-shadow: 0 4px 24px rgba(255,122,24,0.22), 0 2px 8px rgba(0,0,0,0.35) !important;
+}
+html.hw .hw-header h1 {
+  color: #ffb25b !important;
+  text-shadow: 0 0 14px rgba(255,122,24,0.55);
+}
+html.hw .hw-header p { color: rgba(255,226,190,0.7) !important; }
+html.hw .hw-header .search-input-premium {
+  background: rgba(255,255,255,0.09) !important;
+  border: 1px solid rgba(255,170,60,0.35) !important;
+  color: #fff !important;
+}
+html.hw .hw-header .search-input-premium::placeholder { color: rgba(255,226,190,0.55) !important; }
+html.hw .hw-header .search-input-premium:focus {
+  box-shadow: 0 0 0 2px rgba(255,122,24,0.45), 0 0 18px rgba(255,122,24,0.25) !important;
+}
+html.hw .hw-header button:not(.hw-tab) {
+  background: rgba(255,122,24,0.16) !important;
+  border-color: rgba(255,170,60,0.45) !important;
+  color: #ffd9a8 !important;
+}
+html.hw .hw-header button:not(.hw-tab):hover { background: rgba(255,122,24,0.3) !important; }
+html.hw .hw-header svg:not(.hw-keep) { color: inherit; }
+
+.hw-header-decor { position: absolute; inset: 0; pointer-events: none; overflow: visible; }
+.hw-spider { position: absolute; left: 14%; top: 0; display: flex; flex-direction: column; align-items: center;
+  animation: hw-spider-drop 5.5s ease-in-out infinite; transform-origin: top center; }
+.hw-spider i { display: block; width: 1px; height: 26px; background: rgba(255,255,255,0.55); }
+.hw-spider b { font-size: 15px; line-height: 1; font-weight: 400; margin-top: -2px; filter: drop-shadow(0 2px 4px rgba(0,0,0,.5)); }
+.hw-header-bat { position: absolute; right: 18%; top: 10px; color: rgba(255,200,120,0.75); animation: hw-bat-hover 3.2s ease-in-out infinite; }
+@keyframes hw-spider-drop { 0%,100% { transform: translateY(-14px) rotate(-2deg); } 50% { transform: translateY(14px) rotate(2deg); } }
+@keyframes hw-bat-hover { 0%,100% { transform: translate(0,0) rotate(-6deg); } 50% { transform: translate(-10px,6px) rotate(6deg); } }
+@media (max-width: 639px) { .hw-spider { left: 6%; } .hw-header-bat { right: 8%; } }
+
+/* ── HERO ────────────────────────────────────────────────── */
+html.hw .hw-hero { box-shadow: 0 18px 50px rgba(124,58,237,0.28), 0 0 0 1px rgba(255,122,24,0.35); }
+html.hw .hw-hero .hw-left-grad {
+  background: linear-gradient(90deg, rgba(26,11,46,0.92) 0%, rgba(45,16,80,0.68) 28%, rgba(26,11,46,0.2) 58%, rgba(0,0,0,0.04) 100%) !important;
+}
+html.hw .hw-hero .hw-blue-glow {
+  background: radial-gradient(ellipse 60% 45% at 8% 100%, rgba(255,122,24,0.38) 0%, rgba(255,122,24,0.12) 45%, transparent 72%) !important;
+}
+html.hw .hw-hero h2 strong { color: #ffa94d !important; text-shadow: 0 0 18px rgba(255,122,24,0.6); }
+html.hw .hw-hero h2 + p, html.hw .hw-hero .banner-text-2 p { color: rgba(255,238,215,0.78) !important; }
+
+.hw-hero-decor { position: absolute; inset: 0; pointer-events: none; overflow: hidden; z-index: 1; }
+.hw-hero-wash { position: absolute; inset: 0;
+  background: linear-gradient(180deg, rgba(76,29,149,0.50) 0%, rgba(124,58,237,0.16) 38%, rgba(255,122,24,0.12) 75%, transparent 100%); }
+.hw-moon { position: absolute; top: 7%; right: 9%; width: clamp(52px, 8.5vw, 90px); aspect-ratio: 1; border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #fffbe8 0%, #ffe9a8 45%, #ffc861 100%);
+  box-shadow: 0 0 32px 8px rgba(255,200,100,0.45), 0 0 90px 28px rgba(255,150,50,0.22);
+  animation: hw-moon-glow 6s ease-in-out infinite; }
+.hw-moon::after { content: ''; position: absolute; inset: 0; border-radius: 50%;
+  background: radial-gradient(circle at 62% 30%, rgba(210,160,70,0.35) 0 9%, transparent 10%),
+              radial-gradient(circle at 38% 66%, rgba(210,160,70,0.30) 0 12%, transparent 13%),
+              radial-gradient(circle at 70% 68%, rgba(210,160,70,0.25) 0 7%, transparent 8%); }
+@keyframes hw-moon-glow { 0%,100% { filter: brightness(1); } 50% { filter: brightness(1.12); } }
+
+.hw-bat { position: absolute; color: #0d0618; filter: drop-shadow(0 0 6px rgba(255,122,24,0.35)); left: -110px; }
+.hw-bat-1 { top: 12%; animation: hw-fly 17s linear infinite; }
+.hw-bat-2 { top: 26%; animation: hw-fly 23s linear infinite 4s; }
+.hw-bat-3 { top: 8%;  animation: hw-fly 20s linear infinite 9s; }
+.hw-bat-4 { top: 20%; animation: hw-fly 28s linear infinite 13s; opacity: .9; }
+@keyframes hw-fly {
+  0%   { transform: translate(0, 0) scaleY(1); }
+  25%  { transform: translate(28vw, 44px) scaleY(0.7); }
+  50%  { transform: translate(56vw, -24px) scaleY(1); }
+  75%  { transform: translate(84vw, 36px) scaleY(0.7); }
+  100% { transform: translate(112vw, -6px) scaleY(1); }
+}
+.hw-ghost { position: absolute; opacity: 0.85; filter: drop-shadow(0 0 10px rgba(255,255,255,0.5)); }
+.hw-ghost-1 { top: 34%; right: 22%; animation: hw-float 5s ease-in-out infinite; }
+.hw-ghost-2 { top: 52%; right: 6%;  animation: hw-float 6.5s ease-in-out infinite 1.2s; opacity: .6; }
+@keyframes hw-float { 0%,100% { transform: translateY(0) rotate(-4deg); } 50% { transform: translateY(-26px) rotate(4deg); } }
+.hw-fog { position: absolute; left: -10%; right: -10%; bottom: 0; height: 38%;
+  background: radial-gradient(ellipse 60% 100% at 30% 100%, rgba(255,255,255,0.20), transparent 70%),
+              radial-gradient(ellipse 50% 90% at 75% 100%, rgba(190,160,255,0.22), transparent 70%);
+  animation: hw-fog 14s ease-in-out infinite alternate; }
+@keyframes hw-fog { from { transform: translateX(-3%); } to { transform: translateX(3%); } }
+
+/* ── BOTÕES / ABAS ───────────────────────────────────────── */
+html.hw .hw-tab {
+  background: rgba(255,255,255,0.08) !important;
+  border: 1px solid rgba(255,170,60,0.28) !important;
+}
+html.hw .hw-tab:hover { background: rgba(255,122,24,0.22) !important; border-color: rgba(255,170,60,0.6) !important; }
+html.hw .hw-tab-active {
+  background: linear-gradient(135deg, rgba(255,122,24,0.55), rgba(124,58,237,0.45)) !important;
+  border: 1px solid rgba(255,190,110,0.65) !important;
+  box-shadow: 0 4px 18px rgba(255,122,24,0.4), inset 0 1px 0 rgba(255,255,255,0.2) !important;
+}
+html.hw .hw-tab span { color: #fff !important; }
+html.hw .hw-tab:not(.hw-tab-active) span { color: rgba(255,230,200,0.78) !important; }
+
+/* Botões primários escuros (bg-black / bg-slate-900) e botão de instalar */
+html.hw button.bg-black, html.hw a.bg-black,
+html.hw button.bg-slate-900, html.hw a.bg-slate-900,
+html.hw .hw-btn.bg-black, html.hw #install-button {
+  background: linear-gradient(135deg, #ff7a18 0%, #e8590c 55%, #7c3aed 130%) !important;
+  color: #fff !important;
+  box-shadow: 0 6px 20px rgba(255,122,24,0.38) !important;
+  border: 1px solid rgba(255,200,130,0.45) !important;
+}
+html.hw button.bg-black:hover, html.hw button.bg-slate-900:hover { filter: brightness(1.08); }
+html.hw .hw-btn { transition: filter .2s ease, box-shadow .2s ease; }
+html.hw .hw-btn:hover { box-shadow: 0 0 18px rgba(255,122,24,0.45); }
+html.hw .hw-btn:focus-visible, html.hw button:focus-visible { outline: 2px solid #ffa94d; outline-offset: 2px; }
+
+/* ── CARDS (versão leve) ─────────────────────────────────── */
+html.hw .card-entry, html.hw .pinned-lg-card {
+  box-shadow: 0 2px 10px rgba(0,0,0,0.08) !important;
+  border-color: rgba(148,163,184,0.22) !important;
+  position: relative;
+}
+html.hw.hw-dark .card-entry, html.hw.hw-dark .pinned-lg-card { border-color: rgba(255,255,255,0.08) !important; }
+/* remove o anel laranja/âmbar piscando dos cards "novo" */
+html.hw .card-entry div[style*="novoRing"] { display: none !important; }
+html.hw .card-entry:hover, html.hw .pinned-lg-card:hover {
+  background: rgba(255,247,237,0.85) !important;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.10) !important;
+}
+html.hw.hw-dark .card-entry:hover, html.hw.hw-dark .pinned-lg-card:hover {
+  background: rgba(124,58,237,0.16) !important;
+}
+/* teia discreta no canto + abóbora só no hover */
+html.hw .card-entry::before {
+  content: ''; position: absolute; top: 0; left: 0; width: 38px; height: 38px; z-index: 12; pointer-events: none; opacity: .28;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' fill='none' stroke='%23ffffff' stroke-width='1.6'%3E%3Cpath d='M0 0L100 0M0 0L0 100M0 0L88 52M0 0L52 88M0 0L98 22M0 0L22 98'/%3E%3Cpath d='M18 0Q14 14 0 18M36 0Q28 28 0 36M56 0Q42 42 0 56M78 0Q58 58 0 78'/%3E%3C/svg%3E") no-repeat top left / contain;
+}
+html.hw .card-entry::after {
+  content: '🎃'; position: absolute; right: 10px; bottom: 8px; font-size: 15px; z-index: 12; pointer-events: none;
+  opacity: 0; transform: scale(.6) rotate(-12deg); transition: opacity .3s ease, transform .3s ease;
+}
+html.hw .card-entry:hover::after { opacity: .9; transform: scale(1) rotate(0); }
+
+/* ── MODAIS / OVERLAYS ───────────────────────────────────── */
+html.hw .fixed.inset-0.zoom-origin-in:not(.bg-black\/90),
+html.hw .fixed.inset-0.zoom-origin-out {
+  background: radial-gradient(ellipse at 50% 0%, rgba(124,58,237,0.38), rgba(18,8,32,0.78) 70%) !important;
+}
+/* painel do modal = filho direto do overlay */
+html.hw .fixed.inset-0.zoom-origin-in > div[class*="rounded"],
+html.hw .fixed.inset-0.zoom-origin-out > div[class*="rounded"],
+html.hw .fixed.inset-0 > .modal-slide-open,
+html.hw .fixed.inset-0 > .animate-slide-up {
+  border: 1px solid rgba(255,122,24,0.6) !important;
+  box-shadow: 0 0 0 1px rgba(255,122,24,0.18), 0 0 38px rgba(255,122,24,0.28), 0 24px 64px rgba(10,4,20,0.55) !important;
+  position: relative;
+}
+/* faixa laranja/roxa no topo e teia no canto do painel */
+html.hw .fixed.inset-0.zoom-origin-in > div[class*="rounded"]::before,
+html.hw .fixed.inset-0.zoom-origin-out > div[class*="rounded"]::before,
+html.hw .fixed.inset-0 > .modal-slide-open::before,
+html.hw .fixed.inset-0 > .animate-slide-up::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px; z-index: 30; pointer-events: none;
+  background: linear-gradient(90deg, #7c3aed, #ff7a18 50%, #ffa94d 75%, #7c3aed);
+}
+html.hw .fixed.inset-0.zoom-origin-in > div[class*="rounded"]::after,
+html.hw .fixed.inset-0.zoom-origin-out > div[class*="rounded"]::after,
+html.hw .fixed.inset-0 > .modal-slide-open::after,
+html.hw .fixed.inset-0 > .animate-slide-up::after {
+  content: '🎃'; position: absolute; right: 14px; bottom: 10px; font-size: 18px; z-index: 30; pointer-events: none; opacity: .85;
+  filter: drop-shadow(0 0 8px rgba(255,122,24,0.6));
+}
+/* botões de fechar dentro dos modais */
+html.hw .fixed.inset-0 button[class*="hover:bg-slate-200"]:hover { background: rgba(255,122,24,0.2) !important; color: #ff7a18 !important; }
+
+/* ── POPUP DE INSTALAÇÃO (public/index.html) ─────────────── */
+html.hw #install-popup {
+  border: 1px solid rgba(255,122,24,0.6);
+  box-shadow: 0 0 40px rgba(255,122,24,0.3), 0 25px 50px -12px rgba(0,0,0,0.5) !important;
+}
+html.hw #install-popup h4::after { content: ' 🎃'; }
+
+/* ── DOCK MOBILE + SIDEBAR ───────────────────────────────── */
+/* Liquid glass: bem transparente, blur leve, o que está atrás aparece */
+.hw-liquid {
+  background: linear-gradient(135deg, rgba(255,255,255,0.14), rgba(255,255,255,0.04) 45%, rgba(255,255,255,0.10)) !important;
+  backdrop-filter: blur(7px) saturate(190%) brightness(1.06) !important;
+  -webkit-backdrop-filter: blur(7px) saturate(190%) brightness(1.06) !important;
+  border: 1px solid rgba(255,255,255,0.28) !important;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.28), inset 0 1.5px 0 rgba(255,255,255,0.55), inset 0 -1px 0 rgba(255,255,255,0.12), inset 0 0 18px rgba(255,255,255,0.07) !important;
+}
+html.hw .hw-dock {
+  background: linear-gradient(135deg, rgba(255,170,80,0.16), rgba(124,58,237,0.08) 50%, rgba(255,255,255,0.08)) !important;
+  border: 1px solid rgba(255,190,110,0.38) !important;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.32), 0 0 20px rgba(255,122,24,0.16), inset 0 1.5px 0 rgba(255,255,255,0.5), inset 0 -1px 0 rgba(255,255,255,0.1) !important;
+}
+html.hw .hw-dock-item { color: rgba(255,244,224,0.85) !important; }
+html.hw .hw-dock-item-active { background: transparent !important; color: #fff !important; }
+html.hw .hw-dock-pill {
+  background: linear-gradient(135deg, rgba(255,122,24,0.50), rgba(255,255,255,0.18)) !important;
+  border: 1px solid rgba(255,210,150,0.5);
+  box-shadow: 0 4px 16px rgba(255,122,24,0.35), inset 0 1px 0 rgba(255,255,255,0.55) !important;
+}
+html.hw .hw-drawer {
+  background: linear-gradient(180deg, rgba(43,16,85,0.97), rgba(18,8,32,0.98)) !important;
+  border-left: 1px solid rgba(255,122,24,0.45) !important;
+  box-shadow: -16px 0 48px rgba(0,0,0,0.5), 0 0 30px rgba(255,122,24,0.2) !important;
+}
+html.hw .hw-drawer-item { background: rgba(255,255,255,0.06) !important; }
+html.hw .hw-drawer-item:active, html.hw .hw-drawer-item-active { background: rgba(255,122,24,0.25) !important; }
+
+/* ── Acessibilidade: sem animações para quem prefere ─────── */
+/* ── CARDS DE REVISTA (leve) ─────────────────────────────── */
+html.hw.hw-dark .card-entry {
+  background: linear-gradient(160deg, rgba(124,58,237,0.12) 0%, rgba(255,255,255,0.03) 100%) !important;
+}
+html.hw .card-entry .h-48::after {
+  content: ''; position: absolute; inset: 0; z-index: 6; pointer-events: none;
+  background: linear-gradient(to top, rgba(26,11,46,0.35) 0%, transparent 55%);
+}
+/* Barra da taxa de obra em laranja */
+html.hw .hw-obra-fill {
+  background: linear-gradient(90deg, #ff7a18, #ffa94d) !important;
+  box-shadow: 0 0 8px rgba(255,122,24,0.55);
+}
+html.hw .hw-obra-text { color: #ffa94d !important; }
+/* Botões do card */
+html.hw .hw-btn-primary {
+  background: linear-gradient(135deg, #ff7a18 0%, #e8590c 60%, #7c3aed 140%) !important;
+  color: #fff !important;
+  border: 1px solid rgba(255,200,130,0.4) !important;
+  box-shadow: 0 6px 18px rgba(255,122,24,0.35), inset 0 1px 0 rgba(255,255,255,0.22) !important;
+}
+html.hw .hw-btn-primary:hover { filter: brightness(1.1) !important; box-shadow: 0 8px 24px rgba(255,122,24,0.5) !important; }
+html.hw .hw-card-btn, html.hw .hw-card-icon {
+  background: rgba(124,58,237,0.22) !important;
+  border: 1px solid rgba(255,255,255,0.14) !important;
+  color: #ffc58a !important;
+}
+html.hw .hw-card-btn:hover, html.hw .hw-card-icon:hover {
+  background: rgba(255,122,24,0.26) !important;
+  color: #fff !important;
+  box-shadow: 0 0 14px rgba(255,122,24,0.35);
+}
+
+/* ── RANKINGS (Diamante, Ouro, Prata, Bronze, Aço) ───────── */
+html.hw .hw-rank-card {
+  background: linear-gradient(155deg, rgba(124,58,237,0.16), rgba(255,255,255,0.03)) !important;
+  border: 1px solid rgba(255,255,255,0.10) !important;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.14) !important;
+  transition: transform .25s ease, box-shadow .25s ease;
+}
+html.hw .hw-rank-card:hover { transform: translateY(-3px); box-shadow: 0 10px 26px rgba(124,58,237,0.25) !important; }
+html.hw .hw-rank-card > svg { display: none; } /* troca a marca d'água por um símbolo de Halloween */
+html.hw .hw-rank-card::before {
+  content: '🎃'; position: absolute; right: 10px; bottom: 4px; font-size: 54px; line-height: 1; opacity: .16; pointer-events: none;
+  filter: drop-shadow(0 0 10px rgba(255,122,24,0.6));
+}
+html.hw .hw-rank-card[data-tier="OURO"]::before   { content: '👻'; }
+html.hw .hw-rank-card[data-tier="PRATA"]::before  { content: '🦇'; }
+html.hw .hw-rank-card[data-tier="BRONZE"]::before { content: '🕸️'; }
+html.hw .hw-rank-card[data-tier="AÇO"]::before    { content: '💀'; }
+html.hw .hw-rank-card:hover::before { opacity: .5; }
+html.hw .hw-rank-card span:first-of-type { text-shadow: 0 0 10px rgba(255,170,60,0.45); }
+
+@media (prefers-reduced-motion: reduce) {
+  .hw-bat, .hw-bat-4, .hw-ghost, .hw-fog, .hw-moon, .hw-spider, .hw-header-bat { animation: none !important; }
+  .hw-bat { display: none; }
+}

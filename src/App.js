@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useLayoutEffect, useRef } from 'react';
-import { Search, Building, ExternalLink, MapPin, BookOpen, Maximize, Bed, LayoutGrid, Sparkles, Star, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, FileText, FileSpreadsheet, TableProperties, BookMarked, HelpCircle, Calculator, Bot, X, Send, Wand2, Paperclip, File as FileIcon, Trash2, FolderPlus, GripVertical, Plus, MessageCircle, Moon, Sun, AlertTriangle, Book, Clock, Trophy, RotateCw, RotateCcw, Phone, CreditCard, Copy, Check, Eye, EyeOff, Smartphone, Globe, Gem, Hexagon } from 'lucide-react';
+import { Search, Building, ExternalLink, MapPin, BookOpen, Maximize, Bed, LayoutGrid, Sparkles, Star, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, FileText, FileSpreadsheet, TableProperties, BookMarked, HelpCircle, Calculator, Bot, X, Send, Wand2, Paperclip, File as FileIcon, Trash2, FolderPlus, GripVertical, Plus, MessageCircle, Moon, Sun, AlertTriangle, Book, Clock, Trophy, RotateCw, RotateCcw, Phone, CreditCard, Copy, Check, Eye, EyeOff, Smartphone, Globe, Gem, Hexagon, Home, Building2, Menu } from 'lucide-react';
 import { buscarRespostaDoRobo, buscarRespostaGemini } from './bot/dadosFinanciamento.js';
 import { revistasDataLocal, utilitariosData, frasesMotivacionais, imagensEquipeDiarias, dayIndex, periodoIndex } from './data/dados.js';
 import { RippleButton, CardRevista, HintPills, RevistaCloseButton } from './components/Componentes.jsx';
 import CalculadoraTabelaDireta from './components/CalculadoraTabelaDireta.jsx';
 import { useDocClassifier } from './hooks/useDocClassifier.js';
+import { HALLOWEEN, LOGO_URL, frasesHalloween, robotFrasesHalloween } from './theme/halloween.js';
+import { HalloweenHeroDecor, HalloweenHeaderDecor } from './theme/HalloweenDecor.jsx';
 
 export default function App() {
     const [headerHeight, setHeaderHeight] = useState(0);
@@ -157,7 +159,11 @@ export default function App() {
 
     // Sticky tabs — abas grudam no header quando banner sai da tela
     const [tabsSticky, setTabsSticky] = useState(false);
-    const [dockPillStyle, setDockPillStyle] = useState({ left: 0, top: 0, width: 0, height: 0, opacity: 0 });
+    const [showMoreDrawer, setShowMoreDrawer] = useState(false); // sidebar direita do dock mobile
+    const [dockPillStyle, setDockPillStyle] = useState({ left: 0, width: 0, opacity: 0 });
+    const [dockVisible, setDockVisible] = useState(false);    // dock aparece ao rolar pra baixo
+    const [headerHidden, setHeaderHidden] = useState(false);  // header (logo Destemidos) recolhe no mobile
+    const [dockTransient, setDockTransient] = useState(null); // aba "tocada" que abre modal/gaveta (pílula desliza até ela e volta)
     const dockNavRef = useRef(null);
     const dockTabRefs = useRef({});
     const bannerNavRef = useRef(null);
@@ -228,10 +234,12 @@ export default function App() {
     const [searchTerm, setSearchTerm] = useState('');
     const revistasData = revistasDataLocal;
     const [activeBrand, setActiveBrand] = useState('Direcional');
-    const [fraseDoDia] = useState(frasesMotivacionais[dayIndex % frasesMotivacionais.length]);
+    const [fraseDoDia] = useState(HALLOWEEN ? frasesHalloween[dayIndex % frasesHalloween.length] : frasesMotivacionais[dayIndex % frasesMotivacionais.length]);
     const [imagemDoDia] = useState(imagensEquipeDiarias[periodoIndex % imagensEquipeDiarias.length]);
-    const [modoNoturno, setModoNoturno] = useState(() => localStorage.getItem('modoNoturno') === 'true');
+    const [modoNoturno, setModoNoturno] = useState(() => HALLOWEEN ? true : localStorage.getItem('modoNoturno') === 'true'); // Halloween: sempre modo noturno (a preferência salva volta depois de 03/11)
     const [bannerFocusY, setBannerFocusY] = useState('30%');
+    // Tema Halloween: informa ao CSS se o modo noturno está ativo
+    useEffect(() => { document.documentElement.classList.toggle('hw-dark', modoNoturno); }, [modoNoturno]);
 
     // Detecta a região com mais "peso visual" no terço superior da imagem
     // para enquadrar rostos sem depender de API externa (evita CORS)
@@ -398,27 +406,24 @@ export default function App() {
         return () => cancelAnimationFrame(id);
     }, []);
 
-    // ── Pílula deslizante do dock inferior mobile ──
-    const calcDockPill = (brand) => {
-        const activeEl = dockTabRefs.current[brand];
-        const navEl = dockNavRef.current;
-        if (!activeEl || !navEl) return;
-        const navRect = navEl.getBoundingClientRect();
-        const tabRect = activeEl.getBoundingClientRect();
-        setDockPillStyle({
-            left: tabRect.left - navRect.left + navEl.scrollLeft,
-            top: tabRect.top - navRect.top,
-            width: tabRect.width,
-            height: tabRect.height,
-            opacity: 1,
-        });
-        activeEl.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
-    };
+    // ── Pílula de vidro deslizante do dock inferior mobile ──
+    const DOCK_IDS = ['Direcional', 'Riva', 'Tabelas', 'Guia'];
+    const DOCK_MORE_IDS = ['TabelaDireta', 'Utilitarios', 'GerarCpf', 'Calculadora', 'Simulador'];
+    const dockTarget = showMoreDrawer ? 'menu'
+        : (dockTransient || (DOCK_IDS.includes(activeBrand) ? activeBrand : (DOCK_MORE_IDS.includes(activeBrand) ? 'menu' : null)));
+    useLayoutEffect(() => {
+        const el = dockTarget ? dockTabRefs.current[dockTarget] : null;
+        if (!el) { setDockPillStyle(p => ({ ...p, opacity: 0 })); return; }
+        setDockPillStyle({ left: el.offsetLeft, width: el.offsetWidth, opacity: 1 });
+    }, [dockTarget]);
     useEffect(() => {
-        if (!tabsSticky) return;
-        const id = requestAnimationFrame(() => calcDockPill(activeBrand));
-        return () => cancelAnimationFrame(id);
-    }, [activeBrand, tabsSticky]);
+        const onResize = () => {
+            const el = dockTarget ? dockTabRefs.current[dockTarget] : null;
+            if (el) setDockPillStyle({ left: el.offsetLeft, width: el.offsetWidth, opacity: 1 });
+        };
+        window.addEventListener('resize', onResize);
+        return () => window.removeEventListener('resize', onResize);
+    }, [dockTarget]);
 
     const [perfilSelecionado, setPerfilSelecionado] = useState(null); // 'diamante'|'ouro'|'prata'|'bronze'|'aco'
     const [perfilExpandido, setPerfilExpandido] = useState(null);
@@ -445,6 +450,16 @@ export default function App() {
                     setSearchBarVisible(true);
                 }
             }
+            // Mobile (<640px): header (Destemidos) e dock recolhem ao rolar pra baixo e voltam ao rolar pra cima
+            if (window.innerWidth < 640) {
+                if (current > lastScrollY.current + 8 && current > 60) {
+                    setHeaderHidden(true);
+                } else if (current < lastScrollY.current - 8 || current <= 60) {
+                    setHeaderHidden(false);
+                }
+                // dock aparece quando o usuário rola pra baixo (passou do topo) e permanece visível
+                setDockVisible(current > 80);
+            } else { setHeaderHidden(false); setDockVisible(true); }
             // (texto do logo permanece sempre visível)
             lastScrollY.current = current;
             // Sticky tabs: gruda no header quando o nav de abas sai da tela
@@ -503,7 +518,7 @@ export default function App() {
     const [isScrolling, setIsScrolling] = useState(false);
     const scrollTimeoutRef = useRef(null);
 
-    const robotFloatingPhrases = [
+    const robotFloatingPhrases = HALLOWEEN ? robotFrasesHalloween : [
         "Posso te ajudar? 😊",
         "Vamos subir uma pasta? 📂",
         "Bora bater a meta? 🚀",
@@ -543,6 +558,7 @@ export default function App() {
     const [logoPhase, setLogoPhase] = useState('logo'); // 'logo' | 'saudacao'
     const [logoSlideOut, setLogoSlideOut] = useState(false);
     const [logoTextCollapsed, setLogoTextCollapsed] = useState(false);
+    const stickyDesk = tabsSticky && typeof window !== 'undefined' && window.innerWidth >= 640; // abas no header só no desktop
 
     const triggerLogoGreeting = () => {
         if (logoPhase !== 'logo') return;
@@ -1370,7 +1386,7 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
                     }}/>
                     {/* Só o logo — sem texto */}
                     <img
-                        src="https://i.postimg.cc/XpWRf9pj/logo.png"
+                        src={LOGO_URL}
                         alt="Destemidos"
                         style={{
                             height: 120, width: 'auto', objectFit: 'contain',
@@ -1400,7 +1416,7 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
                         filter: 'blur(60px)',
                     }}/>
                     <img
-                        src="https://i.postimg.cc/XpWRf9pj/logo.png"
+                        src={LOGO_URL}
                         alt="Destemidos"
                         style={{ position:'relative', zIndex:1, height: 76, width: 'auto', objectFit: 'contain', marginBottom: 36, filter: 'drop-shadow(0 0 32px rgba(29,78,216,0.6))' }}
                     />
@@ -1539,6 +1555,7 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
                 @media (min-width: 640px) {
                     nav[aria-label="Tabs"] { justify-content: center !important; overflow-x: visible !important; flex-wrap: wrap; padding-left: 0 !important; padding-right: 0 !important; }
                 }
+                @media (max-width: 639px) { .main-content { padding-bottom: calc(96px + env(safe-area-inset-bottom, 0px)); } }
                 .dock-tabs-bar::-webkit-scrollbar { display: none; }
                 .dock-tabs-bar { -ms-overflow-style: none; scrollbar-width: none; }
                 @keyframes shimmer-sweep {
@@ -1617,9 +1634,10 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
 
             <header
                 ref={headerRef}
-                className="fixed left-0 right-0 z-30 transition-colors duration-500 header-slide-in"
+                className="fixed left-0 right-0 z-30 transition-colors duration-500 header-slide-in hw-header"
                 style={{
-                    top: 0,
+                    top: headerHidden ? -(headerHeight + 24) : 0,
+                    transition: 'top 0.38s cubic-bezier(0.22,1,0.36,1), background-color 0.5s, color 0.5s, border-color 0.5s',
                     position: 'fixed',
                     paddingTop: 'env(safe-area-inset-top, 0px)',
                     background: modoNoturno ? 'rgba(15,23,42,0.70)' : 'rgba(255,255,255,0.75)',
@@ -1632,6 +1650,7 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
                     borderBottomLeftRadius: 24,
                     borderBottomRightRadius: 24,
                 }}>
+                {HALLOWEEN && <HalloweenHeaderDecor />}
                 <div className="w-full px-[7.2%]">
                     <div className="flex flex-col sm:flex-row sm:items-center sm:gap-4 sm:py-3">
 
@@ -1651,7 +1670,7 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
                                     onClick={triggerLogoGreeting}
                                 >
                                     <img
-                                            src="https://i.postimg.cc/XpWRf9pj/logo.png"
+                                            src={LOGO_URL}
                                             alt="Logo"
                                             className="h-10 w-auto object-contain rounded shrink-0"
                             style={{
@@ -1678,7 +1697,7 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
                                             whiteSpace: 'nowrap',
                                         }}>
                                             <h1 className={`text-xl font-black tracking-widest uppercase leading-tight ${modoNoturno ? 'text-white' : 'text-slate-800'}`}>Destemidos</h1>
-                                            <p className="text-[9px] font-bold tracking-widest uppercase text-slate-400">A sorte favorece os ousados</p>
+                                            <p className="text-[9px] font-bold tracking-widest uppercase text-slate-400">{HALLOWEEN ? 'Doces ou travessuras? 🎃' : 'A sorte favorece os ousados'}</p>
                                         </div>
 
                                         {/* FASE saudação */}
@@ -1689,7 +1708,7 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
                                             transition: 'transform 0.45s cubic-bezier(0.4,0,0.2,1)',
                                             whiteSpace: 'nowrap',
                                         }}>
-                                            <h1 className={`text-sm font-black tracking-widest uppercase leading-tight ${modoNoturno ? 'text-white' : 'text-slate-800'}`}>{saudacao}</h1>
+                                            <h1 className={`text-sm font-black tracking-widest uppercase leading-tight ${modoNoturno ? 'text-white' : 'text-slate-800'}`}>{saudacao}{HALLOWEEN ? ' 🎃' : ''}</h1>
                                             <p className="text-[9px] font-bold tracking-widest uppercase text-slate-400">Equipe Destemidos</p>
                                         </div>
                                     </div>
@@ -1699,16 +1718,14 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
 
                         {/* Busca + Botões — sempre visível, ocupa o espaço central */}
                         <div className={`flex items-center gap-2 pb-3 sm:pb-0 sm:flex-1 transition-all duration-300 ${
-                            searchBarVisible && !tabsSticky
-                            ? 'opacity-100 max-h-20'
-                            : 'opacity-0 max-h-0 overflow-hidden pointer-events-none sm:opacity-100 sm:max-h-none sm:pointer-events-auto'
+                            'opacity-100 max-h-20 sm:max-h-none'
                         }`}>
                             {/* Barra de pesquisa — ocupa todo espaço disponível, encolhe quando abas aparecem */}
                             <div className="relative transition-all"
                                 style={{
                                     flexShrink: 0,
-                                    width: tabsSticky ? '160px' : '100%',
-                                    flex: tabsSticky ? '0 0 160px' : '1 1 0%',
+                                    width: stickyDesk ? '160px' : '100%',
+                                    flex: stickyDesk ? '0 0 160px' : '1 1 0%',
                                     transition: 'flex 0.32s cubic-bezier(0.25,0.46,0.45,0.94), width 0.32s cubic-bezier(0.25,0.46,0.45,0.94)',
                                 }}>
                                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -1716,7 +1733,7 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
                                 </div>
                                 <input
                                     type="text"
-                                    placeholder={tabsSticky ? 'Buscar...' : 'Buscar por nome ou bairro...'}
+                                    placeholder={stickyDesk ? 'Buscar...' : 'Buscar por nome ou bairro...'}
                                     className={`search-input-premium block w-full pl-9 pr-3 py-2.5 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-slate-400/30 transition-all ${
                                         modoNoturno
                                         ? 'bg-white/10 border border-white/15 text-white placeholder-white/40 focus:bg-white/15'
@@ -1773,11 +1790,11 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
                                                 ? (modoNoturno ? '#ffffff' : '#334155')
                                                 : (modoNoturno ? 'rgba(255,255,255,0.48)' : 'rgba(15,23,42,0.48)');
                                             return tab.isBtn ? (
-                                                <button key={tab.id} onClick={(e) => { haptic(); captureZoomOrigin(e); tab.action(); }} style={tabStyle}>
+                                                <button key={tab.id} className={`hw-tab${isActive ? ' hw-tab-active' : ''}`} onClick={(e) => { haptic(); captureZoomOrigin(e); tab.action(); }} style={tabStyle}>
                                                     <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: '0.07em', color: labelColor, transition: 'color 0.22s' }}>{tab.label}</span>
                                                 </button>
                                             ) : (
-                                                <a key={tab.id} href={tab.href} target="_blank" rel="noopener noreferrer" style={tabStyle}>
+                                                <a key={tab.id} href={tab.href} target="_blank" rel="noopener noreferrer" className={`hw-tab${isActive ? ' hw-tab-active' : ''}`} style={tabStyle}>
                                                     <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: '0.07em', color: labelColor, transition: 'color 0.22s' }}>{tab.label}</span>
                                                 </a>
                                             );
@@ -1785,6 +1802,8 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
                                     </div>
                                 );
                             })()}
+
+                            {!HALLOWEEN && (
 
                             <button
                                 onClick={() => { haptic('medium'); const novo = !modoNoturno; setModoNoturno(novo); localStorage.setItem('modoNoturno', novo); }}
@@ -1798,6 +1817,8 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
                             >
                                 {modoNoturno ? <Sun size={20} /> : <Moon size={20} />}
                             </button>
+
+                            )}
 
                             {/* Botão Pasta no Header */}
                             <button
@@ -1836,83 +1857,146 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
 
             </header>
 
-            {/* ── DOCK INFERIOR MOBILE (estilo iOS) — substitui as abas sticky do header no mobile ── */}
-            <div className="sm:hidden"
-                style={{
-                    position: 'fixed',
-                    left: 0, right: 0, bottom: 0,
-                    zIndex: 40,
-                    paddingBottom: 'env(safe-area-inset-bottom, 0px)',
-                    transform: tabsSticky ? 'translateY(0)' : 'translateY(110%)',
-                    opacity: tabsSticky ? 1 : 0,
-                    transition: 'transform 0.32s cubic-bezier(0.22,1,0.36,1), opacity 0.24s ease',
-                    pointerEvents: tabsSticky ? 'auto' : 'none',
-                }}>
-                <div style={{
-                    margin: '0 10px 4px',
-                    background: modoNoturno ? 'rgba(15,23,42,0.55)' : 'rgba(255,255,255,0.55)',
-                    backdropFilter: 'blur(24px) saturate(180%)',
-                    WebkitBackdropFilter: 'blur(24px) saturate(180%)',
-                    border: modoNoturno ? '1px solid rgba(255,255,255,0.08)' : '1px solid rgba(15,23,42,0.08)',
-                    borderRadius: 24,
-                    boxShadow: modoNoturno
-                        ? '0 10px 32px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.06)'
-                        : '0 10px 32px rgba(15,23,42,0.14), inset 0 1px 0 rgba(255,255,255,0.6)',
-                }}>
-                    <div className="dock-tabs-bar" ref={dockNavRef} style={{ position: 'relative', display: 'flex', gap: 8, alignItems: 'center', overflowX: 'auto', WebkitOverflowScrolling: 'touch', scrollbarWidth: 'none', msOverflowStyle: 'none', padding: '10px 12px' }}>
-                        {/* Pílula azul deslizante */}
-                        <div aria-hidden="true" style={{
-                            position: 'absolute',
-                            left: dockPillStyle.left,
-                            top: dockPillStyle.top,
-                            width: dockPillStyle.width,
-                            height: dockPillStyle.height,
-                            borderRadius: 999,
-                            background: '#2563eb',
-                            opacity: dockPillStyle.opacity,
-                            transition: 'left 0.38s cubic-bezier(0.22,1,0.36,1), top 0.38s cubic-bezier(0.22,1,0.36,1), width 0.38s cubic-bezier(0.22,1,0.36,1), height 0.38s cubic-bezier(0.22,1,0.36,1), opacity 0.2s ease',
+            {/* ── DOCK INFERIOR MOBILE (estilo Instagram, liquid glass) — recolhe ao rolar pra baixo; último botão (sanduíche) abre a sidebar direita ── */}
+            {(() => {
+                const dockMain = [
+                    { id: 'Direcional', label: 'Direcional', letter: 'D', action: () => setActiveBrand('Direcional') },
+                    { id: 'Riva',       label: 'Riva',       letter: 'R', action: () => setActiveBrand('Riva') },
+                    { id: 'Tabelas',    label: 'Tabelas',    Icon: TableProperties, action: () => setShowTabelasModal(true), transient: true },
+                    { id: 'Guia',       label: 'Guia',       Icon: HelpCircle,      action: () => setActiveBrand('Guia') },
+                ];
+                const dockMore = [
+                    { id: 'TabelaDireta', label: 'Tabela Direta', Icon: TableProperties, action: () => setShowCalculadoraTabelaDiretaModal(true) },
+                    { id: 'Utilitarios',  label: 'Utilitários',   Icon: BookMarked,      action: () => setActiveBrand('Utilitarios') },
+                    { id: 'GerarCpf',     label: 'Gerar CPF',     Icon: CreditCard,      action: handleGerarCpfNav },
+                    { id: 'Calculadora',  label: 'Calcular ITBI', Icon: Calculator,      action: () => setShowCalculadoraItbiModal(true) },
+                    { id: 'Simulador',    label: 'Simulador Caixa', Icon: Calculator,    action: () => window.open('https://simuladorhabitacao.caixa.gov.br/home', '_blank', 'noopener,noreferrer') },
+                ];
+                const ink = modoNoturno ? '#ffffff' : '#0f172a';
+                const inkSoft = modoNoturno ? 'rgba(255,255,255,0.72)' : 'rgba(15,23,42,0.68)';
+                const activeBg = modoNoturno ? 'rgba(255,255,255,0.20)' : 'rgba(15,23,42,0.10)';
+                const itemStyle = (active) => ({
+                    position: 'relative', zIndex: 1,
+                    flex: 1, height: 48, borderRadius: 999, border: 'none', cursor: 'pointer',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    background: 'transparent',
+                    color: active ? ink : inkSoft,
+                    transition: 'color 0.25s ease, transform 0.15s ease',
+                    WebkitTapHighlightColor: 'transparent',
+                });
+                const tapDock = (id, action, transient) => (e) => {
+                    haptic(); captureZoomOrigin(e);
+                    if (transient) { setDockTransient(id); setTimeout(() => setDockTransient(null), 650); }
+                    action();
+                };
+                return (
+                    <>
+                        <div className="sm:hidden" style={{
+                            position: 'fixed', left: 0, right: 0, bottom: 0, zIndex: 40,
+                            paddingBottom: 'env(safe-area-inset-bottom, 0px)',
                             pointerEvents: 'none',
-                            zIndex: 0,
-                        }} />
-                        {[
-                            { id: 'Direcional',  label: 'DIRECIONAL',  icon: <span style={{width:5,height:5,borderRadius:2,background: modoNoturno ? 'rgba(255,255,255,0.7)' : 'rgba(30,41,59,0.6)',flexShrink:0,display:'inline-block'}}/>, action: () => setActiveBrand('Direcional'), isBtn: true },
-                            { id: 'Riva',        label: 'RIVA',        icon: <span style={{width:5,height:5,borderRadius:2,background: modoNoturno ? 'rgba(255,255,255,0.7)' : 'rgba(30,41,59,0.6)',flexShrink:0,display:'inline-block'}}/>, action: () => setActiveBrand('Riva'),        isBtn: true },
-                            { id: 'GerarCpf',    label: 'GERAR CPF',   icon: <CreditCard size={13} style={{color: modoNoturno ? 'rgba(255,255,255,0.6)' : 'rgba(30,41,59,0.55)',flexShrink:0}}/>, action: handleGerarCpfNav, isBtn: true },
-                            { id: 'Calculadora', label: 'ITBI',        icon: <Calculator size={13} style={{color: modoNoturno ? 'rgba(255,255,255,0.6)' : 'rgba(30,41,59,0.55)',flexShrink:0}}/>, action: () => setShowCalculadoraItbiModal(true), isBtn: true },
-                            { id: 'TabelaDireta', label: 'T. DIRETA',  icon: <TableProperties size={13} style={{color: modoNoturno ? 'rgba(255,255,255,0.6)' : 'rgba(30,41,59,0.55)',flexShrink:0}}/>, action: () => setShowCalculadoraTabelaDiretaModal(true), isBtn: true },
-                            { id: 'Simulador',   label: 'SIMULADOR',   icon: <Calculator size={13} style={{color: modoNoturno ? 'rgba(255,255,255,0.6)' : 'rgba(30,41,59,0.55)',flexShrink:0}}/>, action: () => window.open('https://simuladorhabitacao.caixa.gov.br/home', '_blank', 'noopener,noreferrer'), isBtn: true },
-                            { id: 'Tabelas',     label: 'TABELAS',     icon: <TableProperties size={13} style={{color: modoNoturno ? 'rgba(255,255,255,0.6)' : 'rgba(30,41,59,0.55)',flexShrink:0}}/>, action: () => setShowTabelasModal(true), isBtn: true },
-                            { id: 'Utilitarios', label: 'UTILITÁRIOS', icon: <BookMarked size={13} style={{color: modoNoturno ? 'rgba(255,255,255,0.6)' : 'rgba(30,41,59,0.55)',flexShrink:0}}/>, action: () => setActiveBrand('Utilitarios'), isBtn: true },
-                            { id: 'Guia',        label: 'GUIA',        icon: <HelpCircle size={13} style={{color: modoNoturno ? 'rgba(255,255,255,0.6)' : 'rgba(30,41,59,0.55)',flexShrink:0}}/>, action: () => setActiveBrand('Guia'),        isBtn: true },
-                        ].map((tab) => {
-                            const isActive = activeBrand === tab.id;
-                            const tabStyle = {
-                                position: 'relative', zIndex: 1,
+                            transform: (dockVisible || showMoreDrawer) ? 'translateY(0)' : 'translateY(calc(100% + 24px))',
+                            transition: 'transform 0.42s cubic-bezier(0.22,1,0.36,1)',
+                        }}>
+                            <nav ref={dockNavRef} className="hw-dock hw-liquid" aria-label="Menu principal" style={{
+                                pointerEvents: 'auto', position: 'relative',
+                                margin: '0 12px 8px', padding: 6, display: 'flex', alignItems: 'center', gap: 2,
                                 borderRadius: 999,
-                                padding: '9px 16px',
-                                cursor: 'pointer', textDecoration: 'none',
-                                display: 'flex', alignItems: 'center', gap: 7, flexShrink: 0, whiteSpace: 'nowrap',
-                                transition: 'background 0.22s ease, border-color 0.22s ease',
-                                background: isActive ? 'transparent' : (modoNoturno ? 'rgba(255,255,255,0.06)' : 'rgba(15,23,42,0.05)'),
-                                border: isActive ? '1px solid transparent' : (modoNoturno ? '1px solid rgba(255,255,255,0.08)' : '1px solid rgba(15,23,42,0.08)'),
-                            };
-                            const labelColor = isActive ? '#fff' : (modoNoturno ? 'rgba(255,255,255,0.55)' : 'rgba(30,41,59,0.55)');
-                            const inner = (
-                                <>
-                                    <span style={{ fontSize: 13, fontWeight: 800, letterSpacing: '0.04em', color: labelColor, transition: 'color 0.22s' }}>{tab.label}</span>
-                                    <span style={{ opacity: isActive ? 1 : 0.55, display: 'flex', alignItems: 'center', color: isActive ? '#fff' : undefined, transition: 'opacity 0.22s' }}>{tab.icon}</span>
-                                </>
-                            );
-                            const setRef = (el) => { dockTabRefs.current[tab.id] = el; };
-                            return tab.isBtn ? (
-                                <button key={tab.id} ref={setRef} onClick={(e) => { haptic(); captureZoomOrigin(e); tab.action(); }} style={tabStyle}>{inner}</button>
-                            ) : (
-                                <a key={tab.id} ref={setRef} href={tab.href} target="_blank" rel="noopener noreferrer" style={tabStyle}>{inner}</a>
-                            );
-                        })}
-                    </div>
-                </div>
-            </div>
+                            }}>
+                                {/* pílula de vidro que desliza até o botão tocado */}
+                                <span aria-hidden="true" className="hw-dock-pill" style={{
+                                    position: 'absolute', top: 6, bottom: 6, left: 0, width: dockPillStyle.width,
+                                    transform: `translateX(${dockPillStyle.left}px)`,
+                                    opacity: dockPillStyle.opacity,
+                                    borderRadius: 999,
+                                    background: activeBg,
+                                    boxShadow: modoNoturno
+                                        ? 'inset 0 1px 0 rgba(255,255,255,0.28), inset 0 -1px 0 rgba(255,255,255,0.06), 0 4px 14px rgba(0,0,0,0.25)'
+                                        : 'inset 0 1px 0 rgba(255,255,255,0.8), 0 4px 14px rgba(15,23,42,0.12)',
+                                    backdropFilter: 'blur(6px) saturate(160%)', WebkitBackdropFilter: 'blur(6px) saturate(160%)',
+                                    transition: 'transform 0.5s cubic-bezier(0.34,1.45,0.64,1), width 0.5s cubic-bezier(0.34,1.45,0.64,1), opacity 0.2s ease',
+                                    pointerEvents: 'none', zIndex: 0,
+                                }} />
+                                {dockMain.map(({ id, label, letter, Icon, action, transient }) => {
+                                    const active = dockTarget === id;
+                                    return (
+                                        <button key={id} ref={el => { dockTabRefs.current[id] = el; }} aria-label={label} title={label}
+                                            className={`hw-dock-item${active ? ' hw-dock-item-active' : ''}`}
+                                            style={itemStyle(active)}
+                                            onClick={tapDock(id, action, transient)}>
+                                            {letter
+                                                ? <span style={{ fontSize: 25, fontWeight: 900, lineHeight: 1, letterSpacing: '-0.02em', fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, sans-serif' }}>{letter}</span>
+                                                : <Icon size={26} strokeWidth={active ? 2.4 : 2} />}
+                                        </button>
+                                    );
+                                })}
+                                <button ref={el => { dockTabRefs.current['menu'] = el; }} aria-label="Menu" title="Menu"
+                                    className={`hw-dock-item${dockTarget === 'menu' ? ' hw-dock-item-active' : ''}`}
+                                    style={itemStyle(dockTarget === 'menu')}
+                                    onClick={() => { haptic(); setShowMoreDrawer(true); }}>
+                                    <Menu size={27} strokeWidth={dockTarget === 'menu' ? 2.5 : 2.1} />
+                                </button>
+                            </nav>
+                        </div>
+
+                        {/* Sidebar direita — demais opções */}
+                        <div className="sm:hidden" aria-hidden={!showMoreDrawer} style={{
+                            position: 'fixed', inset: 0, zIndex: 75,
+                            pointerEvents: showMoreDrawer ? 'auto' : 'none',
+                        }}>
+                            <div onClick={() => setShowMoreDrawer(false)} style={{
+                                position: 'absolute', inset: 0,
+                                background: 'rgba(5,6,12,0.55)',
+                                backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)',
+                                opacity: showMoreDrawer ? 1 : 0, transition: 'opacity 0.3s ease',
+                            }} />
+                            <aside className="hw-drawer" style={{
+                                position: 'absolute', top: 0, right: 0, bottom: 0,
+                                width: 'min(82vw, 320px)',
+                                paddingTop: 'env(safe-area-inset-top, 0px)', paddingBottom: 'env(safe-area-inset-bottom, 0px)',
+                                display: 'flex', flexDirection: 'column',
+                                transform: showMoreDrawer ? 'translateX(0)' : 'translateX(105%)',
+                                transition: 'transform 0.38s cubic-bezier(0.22,1,0.36,1)',
+                                background: modoNoturno ? 'rgba(18,18,24,0.94)' : 'rgba(255,255,255,0.96)',
+                                backdropFilter: 'blur(28px) saturate(180%)', WebkitBackdropFilter: 'blur(28px) saturate(180%)',
+                                borderLeft: modoNoturno ? '1px solid rgba(255,255,255,0.12)' : '1px solid rgba(15,23,42,0.08)',
+                                borderRadius: '28px 0 0 28px',
+                                boxShadow: '-16px 0 48px rgba(0,0,0,0.35)',
+                                color: ink,
+                            }}>
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 20px 12px' }}>
+                                    <span style={{ fontSize: 18, fontWeight: 800, letterSpacing: '-0.01em' }}>Mais opções</span>
+                                    <button aria-label="Fechar" onClick={() => setShowMoreDrawer(false)}
+                                        style={{ width: 36, height: 36, borderRadius: '50%', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', background: activeBg, color: ink }}>
+                                        <X size={18} />
+                                    </button>
+                                </div>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: 6, padding: '4px 12px 16px', overflowY: 'auto' }}>
+                                    {dockMore.map(({ id, label, Icon, action }) => {
+                                        const active = activeBrand === id;
+                                        return (
+                                            <button key={id} className={`hw-drawer-item${active ? ' hw-drawer-item-active' : ''}`}
+                                                onClick={(e) => { haptic(); captureZoomOrigin(e); setShowMoreDrawer(false); action(); }}
+                                                style={{
+                                                    display: 'flex', alignItems: 'center', gap: 14, width: '100%', padding: '14px 14px',
+                                                    borderRadius: 18, border: 'none', cursor: 'pointer', textAlign: 'left',
+                                                    background: active ? activeBg : (modoNoturno ? 'rgba(255,255,255,0.05)' : 'rgba(15,23,42,0.04)'),
+                                                    color: ink, fontSize: 15, fontWeight: 700,
+                                                }}>
+                                                <span style={{ width: 38, height: 38, borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', background: activeBg, flexShrink: 0 }}>
+                                                    <Icon size={20} />
+                                                </span>
+                                                <span style={{ flex: 1 }}>{label}</span>
+                                                <ChevronRight size={18} style={{ opacity: 0.45 }} />
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            </aside>
+                        </div>
+                    </>
+                );
+            })()}
 
             {/* ── PAINEL INFORMAÇÕES COMERCIAIS — visível até domingo 22/03/2026, some na segunda ── */}
             {(() => {
@@ -2068,10 +2152,10 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
                 );
             })()}
 
-            <main className="main-content w-full" style={{ paddingTop: `${headerHeight}px`, paddingLeft: 'clamp(16px, calc((100vw - 640px) * 0.3 + 16px), 100px)', paddingRight: 'clamp(16px, calc((100vw - 640px) * 0.3 + 16px), 100px)' }}>
+            <main className="main-content w-full" style={{ paddingTop: `${headerHeight}px`, paddingLeft: 'clamp(6px, calc((100vw - 640px) * 0.3 + 16px), 100px)', paddingRight: 'clamp(6px, calc((100vw - 640px) * 0.3 + 16px), 100px)' }}>
                 {/* BANNER INSPIRAÇÃO DIÁRIA */}
                 {/* ── BANNER + ABAS ── */}
-                <div className="relative banner-reveal" style={{
+                <div className="relative banner-reveal hw-hero" style={{
                     borderRadius: 24,
                     clipPath: 'inset(0 round 24px)',
                     marginTop: 16,
@@ -2092,15 +2176,16 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
                         background: 'linear-gradient(to top, rgba(0,0,0,0.75) 0%, rgba(0,0,0,0.42) 26%, rgba(0,0,0,0.08) 48%, transparent 66%)',
                     }}/>
                     {/* Camada 3: gradiente cinematográfico vindo da esquerda, mascarado para não subir sobre os rostos */}
-                    <div className="absolute inset-0 pointer-events-none" style={{
+                    <div className="absolute inset-0 pointer-events-none hw-left-grad" style={{
                         background: 'linear-gradient(90deg, rgba(5,15,30,0.90) 0%, rgba(7,22,45,0.66) 26%, rgba(5,15,30,0.20) 55%, rgba(0,0,0,0.04) 100%)',
                         maskImage: 'linear-gradient(to top, black 0%, black 40%, rgba(0,0,0,0.45) 58%, transparent 80%)',
                         WebkitMaskImage: 'linear-gradient(to top, black 0%, black 40%, rgba(0,0,0,0.45) 58%, transparent 80%)',
                     }}/>
                     {/* Camada 4: glow azul sutil, canto inferior/esquerdo, para profundidade */}
-                    <div className="absolute inset-0 pointer-events-none" style={{
+                    <div className="absolute inset-0 pointer-events-none hw-blue-glow" style={{
                         background: 'radial-gradient(ellipse 55% 42% at 6% 100%, rgba(37,99,235,0.28) 0%, rgba(37,99,235,0.10) 45%, transparent 72%)',
                     }}/>
+                    {HALLOWEEN && <HalloweenHeroDecor />}
                     {/* Conteúdo */}
                     <div className="absolute inset-0 flex flex-col justify-end" style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif' }}>
                         <div className="px-4 sm:px-8 pt-8 sm:pt-12">
@@ -2117,7 +2202,7 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
                                     WebkitBackdropFilter: 'blur(14px)',
                                     boxShadow: '0 2px 10px rgba(0,0,0,0.20)',
                                 }}>
-                                    <Star size={12} style={{ fill: 'rgba(255,255,255,0.85)', color: 'rgba(255,255,255,0.85)' }} /> Inspiração do Dia
+                                    {HALLOWEEN ? <span style={{ fontSize: 12, lineHeight: 1 }}>🎃</span> : <Star size={12} style={{ fill: 'rgba(255,255,255,0.85)', color: 'rgba(255,255,255,0.85)' }} />} {HALLOWEEN ? 'Inspiração Assombrada' : 'Inspiração do Dia'}
                                 </span>
                             </div>
                             <div className="banner-text-2">
@@ -2302,9 +2387,9 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
                                                 },
                                             };
                                             return tab.isBtn ? (
-                                                <button key={tab.id} ref={tabRefs[tab.id]} onClick={(e) => { haptic(); captureZoomOrigin(e); tab.action(); }} style={style} {...dockHandlers}>{inner}</button>
+                                                <button key={tab.id} ref={tabRefs[tab.id]} className={`hw-tab${isActive ? ' hw-tab-active' : ''}`} onClick={(e) => { haptic(); captureZoomOrigin(e); tab.action(); }} style={style} {...dockHandlers}>{inner}</button>
                                             ) : (
-                                                <a key={tab.id} href={tab.href} target="_blank" rel="noopener noreferrer" style={style} {...dockHandlers}>{inner}</a>
+                                                <a key={tab.id} href={tab.href} target="_blank" rel="noopener noreferrer" className={`hw-tab${isActive ? ' hw-tab-active' : ''}`} style={style} {...dockHandlers}>{inner}</a>
                                             );
                                         })}
                                     </nav>
@@ -2368,7 +2453,7 @@ if (!wantsMagazine) botResponse += `\nQual desses você gostaria de ver o PDF ag
                                 ].map((r, i) => {
                                     const Icon = r.icon;
                                     return (
-                                        <div key={r.full} style={{
+                                        <div key={r.full} className="hw-rank-card" data-tier={r.full} style={{
                                             position: 'relative', overflow: 'hidden',
                                             flex: '1 1 180px', minWidth: 160,
                                             borderRadius: 20, padding: '16px 18px',

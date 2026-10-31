@@ -18,7 +18,7 @@ export function RippleButton({ onClick, className, children, style }) {
         onClick?.(e);
     };
     return (
-        <button ref={btnRef} className={className} style={{ ...style, position: 'relative', overflow: 'hidden' }} onClick={handleClick}>
+        <button ref={btnRef} className={`${className || ''} hw-btn`} style={{ ...style, position: 'relative', overflow: 'hidden' }} onClick={handleClick}>
             {children}
         </button>
     );
@@ -243,7 +243,7 @@ export function CardRevista({ revista, cardIdx, modoNoturno, haptic, setPdfLeito
     const isDir = revista.brand === 'Direcional';
     // Destaque "NOVO": ativo até a data em revista.destaqueAte (7 dias); depois o card volta ao normal
     const isNovo = !!revista.destaqueAte && Date.now() < new Date(revista.destaqueAte).getTime();
-    const accentObra = '#007AFF';
+    const accentObra = '#ff7a18';
     const isTouchDevice = () => window.matchMedia('(hover: none) and (pointer: coarse)').matches;
 
     const startHover = () => {
@@ -330,9 +330,9 @@ export function CardRevista({ revista, cardIdx, modoNoturno, haptic, setPdfLeito
                                 transition: obraHover ? 'opacity 0.15s ease, transform 0.15s ease' : 'opacity 0.2s ease 0.08s, transform 0.2s ease 0.08s'
                             }}>
                                 <div style={{ flex:1, height:4, borderRadius:99, background: modoNoturno ? 'rgba(255,255,255,0.12)' : '#e2e8f0', overflow:'hidden' }}>
-                                    <div style={{ height:'100%', width:`${Math.min(100, Math.max(0, revista.obraPercent))}%`, borderRadius:99, background: accentObra, transition:'width 0.6s cubic-bezier(0.22,1,0.36,1)' }}/>
+                                    <div className="hw-obra-fill" style={{ height:'100%', width:`${Math.min(100, Math.max(0, revista.obraPercent))}%`, borderRadius:99, background: accentObra, transition:'width 0.6s cubic-bezier(0.22,1,0.36,1)' }}/>
                                 </div>
-                                <span style={{ fontSize:11.5, fontWeight:800, color: accentObra, flexShrink:0, minWidth:28, textAlign:'right', fontVariantNumeric:'tabular-nums' }}>{Math.round(revista.obraPercent)}%</span>
+                                <span className="hw-obra-text" style={{ fontSize:11.5, fontWeight:800, color: accentObra, flexShrink:0, minWidth:28, textAlign:'right', fontVariantNumeric:'tabular-nums' }}>{Math.round(revista.obraPercent)}%</span>
                             </div>
 
                             {/* Estado hover — texto de ação no lugar da barra, sem ícone */}
@@ -343,7 +343,7 @@ export function CardRevista({ revista, cardIdx, modoNoturno, haptic, setPdfLeito
                                 transition: obraHover ? 'opacity 0.18s ease 0.05s, transform 0.18s ease 0.05s' : 'opacity 0.1s ease, transform 0.1s ease',
                                 pointerEvents:'none'
                             }}>
-                                <span style={{ fontSize:11.5, fontWeight:800, color: accentObra, letterSpacing:'0.01em' }}>Calcular Taxa de Obra</span>
+                                <span className="hw-obra-text" style={{ fontSize:11.5, fontWeight:800, color: accentObra, letterSpacing:'0.01em' }}>Calcular Taxa de Obra</span>
                             </div>
                         </div>
                     </div>
@@ -378,14 +378,14 @@ export function CardRevista({ revista, cardIdx, modoNoturno, haptic, setPdfLeito
                     )}
                     <div className="mt-auto flex flex-col gap-2">
                         <div style={{ display:'flex', gap:8, alignItems:'stretch' }}>
-                            <RippleButton onClick={handleVerRevista} className="flex-1 flex items-center justify-center gap-2 py-3 rounded-full font-semibold transition-all duration-200 text-white hover:brightness-90" style={{ background: accentObra }}><BookOpen size={18}/> Ver Revista</RippleButton>
-                            <button onClick={handleDownload} title="Baixar revista" style={{ flexShrink:0, width:46, height:46, borderRadius:'50%', border: modoNoturno ? '1px solid rgba(255,255,255,0.12)' : '1px solid rgba(15,23,42,0.10)', display:'flex', alignItems:'center', justifyContent:'center', background: modoNoturno ? 'rgba(255,255,255,0.08)' : '#f1f5f9', color: modoNoturno ? '#cbd5e1' : '#475569', cursor:'pointer', transition:'background 0.15s, transform 0.12s' }} onMouseEnter={e=>{e.currentTarget.style.background=modoNoturno?'rgba(255,255,255,0.14)':'#e2e8f0';e.currentTarget.style.transform='scale(1.08)';}} onMouseLeave={e=>{e.currentTarget.style.background=modoNoturno?'rgba(255,255,255,0.08)':'#f1f5f9';e.currentTarget.style.transform='scale(1)';}}>
+                            <RippleButton onClick={handleVerRevista} className="flex-1 flex items-center justify-center gap-2 py-3 rounded-full font-semibold transition-all duration-200 text-white hover:brightness-90 hw-btn-primary" style={{ background: accentObra }}><BookOpen size={18}/> Ver Revista</RippleButton>
+                            <button onClick={handleDownload} title="Baixar revista" className="hw-card-icon" style={{ flexShrink:0, width:46, height:46, borderRadius:'50%', border: modoNoturno ? '1px solid rgba(255,255,255,0.12)' : '1px solid rgba(15,23,42,0.10)', display:'flex', alignItems:'center', justifyContent:'center', background: modoNoturno ? 'rgba(255,255,255,0.08)' : '#f1f5f9', color: modoNoturno ? '#cbd5e1' : '#475569', cursor:'pointer', transition:'background 0.15s, transform 0.12s' }} onMouseEnter={e=>{e.currentTarget.style.background=modoNoturno?'rgba(255,255,255,0.14)':'#e2e8f0';e.currentTarget.style.transform='scale(1.08)';}} onMouseLeave={e=>{e.currentTarget.style.background=modoNoturno?'rgba(255,255,255,0.08)':'#f1f5f9';e.currentTarget.style.transform='scale(1)';}}>
                                 <Download size={18}/>
                             </button>
                         </div>
                         <div style={{ display:'flex', gap:8, alignItems:'stretch' }}>
-                            <RippleButton onClick={handleVerPois} style={{ cursor:'pointer' }} className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-full font-semibold transition-colors duration-200 border text-sm ${modoNoturno?'bg-slate-700 border-slate-600 text-slate-200 hover:bg-slate-600':'bg-slate-100 border-slate-200 text-slate-700 hover:bg-slate-200'}`}><MousePointer2 size={16} className="text-slate-400"/> Pontos de ref. Clicável</RippleButton>
-                            <RippleButton onClick={(e)=>{ captureZoomOrigin?.(e); onVerOnibus && onVerOnibus(revista); }} title="Linhas de ônibus próximas" style={{ cursor:'pointer', flexShrink:0, width:46 }} className={`flex items-center justify-center rounded-full font-semibold transition-colors duration-200 border text-sm ${modoNoturno?'bg-slate-700 border-slate-600 text-slate-200 hover:bg-slate-600':'bg-slate-100 border-slate-200 text-slate-700 hover:bg-slate-200'}`}>
+                            <RippleButton onClick={handleVerPois} style={{ cursor:'pointer' }} className={`hw-card-btn flex-1 flex items-center justify-center gap-2 py-2.5 rounded-full font-semibold transition-colors duration-200 border text-sm ${modoNoturno?'bg-slate-700 border-slate-600 text-slate-200 hover:bg-slate-600':'bg-slate-100 border-slate-200 text-slate-700 hover:bg-slate-200'}`}><MousePointer2 size={16} className="text-slate-400"/> Pontos de ref. Clicável</RippleButton>
+                            <RippleButton onClick={(e)=>{ captureZoomOrigin?.(e); onVerOnibus && onVerOnibus(revista); }} title="Linhas de ônibus próximas" style={{ cursor:'pointer', flexShrink:0, width:46 }} className={`hw-card-btn flex items-center justify-center rounded-full font-semibold transition-colors duration-200 border text-sm ${modoNoturno?'bg-slate-700 border-slate-600 text-slate-200 hover:bg-slate-600':'bg-slate-100 border-slate-200 text-slate-700 hover:bg-slate-200'}`}>
                                 <Bus size={18}/>
                             </RippleButton>
                         </div>

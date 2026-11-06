@@ -124,6 +124,11 @@ export default function App() {
         'rafaelymedeiros.direcional@gmail.com',
         'pedrojr.direcionalvendas@gmail.com',
         'Kelvim.monteiro.direcionalvendas@gmail.com',
+        'Fabianoliveira.vendasdirecional@gmail.com',
+        'cfabi.direcionalvendas@gmail.com',
+        'flaviadutra.direcionalvendas@gmail.com',
+        'Kelvim.monteiro.direcionalvendas@gmail.com',
+        'Kelvim.monteiro.direcionalvendas@gmail.com',
         'salesadm.direcionalvendas@gmail.com',
     ];
     const validateLoginEmail = (input) => {

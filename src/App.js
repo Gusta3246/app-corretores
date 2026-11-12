@@ -128,7 +128,7 @@ export default function App() {
         'cfabi.direcionalvendas@gmail.com',
         'flaviadutra.direcionalvendas@gmail.com',
         'Kelvim.monteiro.direcionalvendas@gmail.com',
-        'Kelvim.monteiro.direcionalvendas@gmail.com',
+        'gessondirecionalvendas@gmail.com',
         'salesadm.direcionalvendas@gmail.com',
     ];
     const validateLoginEmail = (input) => {

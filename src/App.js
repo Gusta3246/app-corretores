@@ -130,6 +130,9 @@ export default function App() {
         'Kelvim.monteiro.direcionalvendas@gmail.com',
         'gessondirecionalvendas@gmail.com',
         'salesadm.direcionalvendas@gmail.com',
+        'rayuri.direcionalvendas@gmail.com',
+        'cj.direcionalvendas@gmail.com',
+        'israel.r.direcionalvendas@gmail.com',
     ];
     const validateLoginEmail = (input) => {
         const norm = (input || '').toLowerCase().trim().replace(/\s+/g, '');

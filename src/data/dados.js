@@ -38,7 +38,7 @@ export const revistasDataLocal = [
   { id: 23, title: "Campo das Torres", brand: "Direcional", region: "Lago Azul - Zona Norte", size: "36m²", bedrooms: "2 quartos", flooring: "Cozinha, banheiro e lavatório", entrega: "11/2029", obraPercent: 0, rendaMinima: 2800, pinned: true, destaqueAte: "2026-11-05T23:59:59-04:00",
     cover: "https://i.postimg.cc/bwfzcvF2/Copia-de-Guarita-REV03HR.jpg",
     fotosExtras: [],
-    link: "https://drive.google.com/file/d/1IZ1tmgvjt1V3HRDFUIJcdcPSj_McMR7w/view?usp=drive_link", aliases: ["campo das torres", "campos das torres", "campo"], pois: ["Supermercado Nova Era (Torres)", "Sumaúma Park Shopping", "Parque do Mindu", "Faculdade Estácio (polo próximo)"] },
+    link: "https://drive.google.com/file/d/13E-P7kFODVyyLdewfyslczyLLAMiJ4A5/view?usp=drive_link", aliases: ["campo das torres", "campos das torres", "campo"], pois: ["Supermercado Nova Era (Torres)", "Sumaúma Park Shopping", "Parque do Mindu", "Faculdade Estácio (polo próximo)"] },
 
   { id: 22, title: "Encontro das Águas", brand: "Direcional", region: "Ponta Negra - Zona Oeste", size: "41m²", bedrooms: "2 quartos", flooring: "Todo o apê", entrega: "11/2029", obraPercent: 0, rendaMinima: 4800, pinned: true, destaqueAte: "2026-11-05T23:59:59-04:00",
     cover: "https://i.postimg.cc/ncYcGFNQ/Guarita.jpg",

@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <title>Destemidos</title>
 
-    <link rel="icon" type="image/png" href="https://i.postimg.cc/CL0NYy6h/Logotipo-Pantera-Destemida-em-Ouro.png" />
-    <link rel="apple-touch-icon" sizes="180x180" href="https://i.postimg.cc/CL0NYy6h/Logotipo-Pantera-Destemida-em-Ouro.png" />
+    <link rel="icon" type="image/png" href="https://i.postimg.cc/Nft4YhPQ/Pantera-Negra-com-Garras-Douradas.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="https://i.postimg.cc/Nft4YhPQ/Pantera-Negra-com-Garras-Douradas.png" />
     
     <link rel="manifest" href="/manifest.json" />
 
@@ -61,7 +61,7 @@
     <meta name="apple-mobile-web-app-title" content="Destemidos">
     
     <meta name="mobile-web-app-capable" content="yes" />
-    <meta name="theme-color" content="#0B1120" id="theme-color-meta" />
+    <meta name="theme-color" content="#ffffff" id="theme-color-meta" />
 
     <script src="https://cdn.tailwindcss.com"></script>
 
@@ -71,18 +71,14 @@
     <link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,700;1,400;1,700&display=swap" rel="stylesheet">
 
     <style>
-        /* Fundo sólido em html/body: o Safari/iOS pinta a barra de status e a barra inferior com essa cor
-           (antes era transparente = barras brancas). O App.js troca a cor ao alternar claro/noturno. */
         html, body {
             margin: 0;
             padding: 0;
-            background-color: #0B1120;
+            background-color: transparent;
             overscroll-behavior-y: none;
-            min-height: 100%;
         }
-        body { min-height: 100vh; min-height: 100dvh; }
         #root {
-            min-height: 100vh;
+            padding-bottom: env(safe-area-inset-bottom);
             min-height: 100dvh;
             background-color: transparent;
         }

@@ -219,7 +219,6 @@ export default function App() {
     const [dockTransient, setDockTransient] = useState(null); // aba "tocada" que abre modal/gaveta (pílula desliza até ela e volta)
     const dockNavRef = useRef(null);
     const dockTabRefs = useRef({});
-    const [headerScrolled, setHeaderScrolled] = useState(false); // vidro/gradiente do header só aparece após rolar
     const [headerHidden, setHeaderHidden] = useState(false);  // header (logo Destemidos) recolhe no mobile
     const bannerNavRef = useRef(null);
     const headerRef = useRef(null);
@@ -272,7 +271,7 @@ export default function App() {
     const [modoNoturno, setModoNoturno] = useState(() => localStorage.getItem('modoNoturno') === 'true');
     // Barra de status (app instalado): cor sólida que acompanha o modo claro/noturno, sem gradiente
     useEffect(() => {
-        const cor = modoNoturno ? '#0B1120' : '#f8fafc'; // igual ao fundo da página: sem faixa branca nas barras do Safari
+        const cor = modoNoturno ? '#0f172a' : '#ffffff';
         const meta = document.getElementById('theme-color-meta');
         if (meta) meta.setAttribute('content', cor);
         document.documentElement.style.backgroundColor = modoNoturno ? '#0B1120' : '#f8fafc';
@@ -575,7 +574,6 @@ export default function App() {
                 // dock aparece quando o usuário rola pra baixo (passou do topo) e permanece visível
                 setDockVisible(current > 80);
             } else { setHeaderHidden(false); setDockVisible(true); }
-            setHeaderScrolled(current > 12);
             // (texto do logo permanece sempre visível)
             lastScrollY.current = current;
             // Sticky tabs: gruda no header quando o nav de abas sai da tela
@@ -1830,31 +1828,31 @@ export default function App() {
 
             <header
                 ref={headerRef}
-                className="fixed left-0 right-0 z-30 transition-colors duration-500 header-slide-in hw-header"
+                className={`fixed left-0 right-0 z-30 transition-colors duration-500 header-slide-in hw-header ${headerHidden ? '' : 'hdr-shown'}`}
                 style={{
-                    top: headerHidden ? -(headerHeight + 24 + 60) : 0, // começa em 0: status bar + header são UMA peça só
+                    top: headerHidden ? -(headerHeight + 24 + 60) : 'env(safe-area-inset-top, 0px)', // status bar transparente: o vidro começa abaixo dela
                     transition: 'top 0.38s cubic-bezier(0.22,1,0.36,1), background-color 0.5s, color 0.5s, border-color 0.5s',
                     position: 'fixed',
-                    paddingTop: 'env(safe-area-inset-top, 0px)',
-                    background: 'transparent',
+                    paddingTop: 0,
+                    background: modoNoturno ? 'rgba(15,23,42,0.70)' : 'rgba(255,255,255,0.75)',
+                    backdropFilter: 'blur(24px) saturate(180%)',
+                    WebkitBackdropFilter: 'blur(24px) saturate(180%)',
+                    borderBottom: modoNoturno ? '1px solid rgba(51,65,85,0.6)' : '1px solid rgba(226,232,240,0.6)',
+                    boxShadow: modoNoturno ? '0 2px 8px rgba(0,0,0,0.25)' : '0 2px 8px rgba(15,23,42,0.06)',
                     borderTopLeftRadius: 0,
                     borderTopRightRadius: 0,
                     borderBottomLeftRadius: 24,
                     borderBottomRightRadius: 24,
                 }}>
-                {/* Camada de vidro única (cobre status bar + header). Invisível no topo; surge ao rolar */}
-                <div aria-hidden="true" className="absolute inset-0 pointer-events-none" style={{
-                    opacity: headerScrolled ? 1 : 0,
-                    transition: 'opacity 0.35s ease',
+                {/* MOBILE: vidro contínuo (status bar + header) em degradê que some para baixo. No PC nada muda. */}
+                <div aria-hidden="true" className="sm:hidden absolute left-0 right-0 pointer-events-none" style={{ top: 0, bottom: -18,
                     background: modoNoturno
-                        ? 'linear-gradient(to bottom, rgba(11,17,32,0.92) 0%, rgba(15,23,42,0.78) 55%, rgba(15,23,42,0.66) 100%)'
-                        : 'linear-gradient(to bottom, rgba(255,255,255,0.92) 0%, rgba(255,255,255,0.80) 55%, rgba(255,255,255,0.68) 100%)',
-                    backdropFilter: 'blur(24px) saturate(180%)',
-                    WebkitBackdropFilter: 'blur(24px) saturate(180%)',
-                    borderBottom: modoNoturno ? '1px solid rgba(51,65,85,0.6)' : '1px solid rgba(226,232,240,0.6)',
-                    boxShadow: modoNoturno ? '0 2px 8px rgba(0,0,0,0.25)' : '0 2px 8px rgba(15,23,42,0.06)',
-                    borderBottomLeftRadius: 24,
-                    borderBottomRightRadius: 24,
+                        ? 'linear-gradient(to bottom, rgba(11,17,32,0.92) 0%, rgba(15,23,42,0.80) 60%, rgba(15,23,42,0) 100%)'
+                        : 'linear-gradient(to bottom, rgba(255,255,255,0.92) 0%, rgba(255,255,255,0.80) 60%, rgba(255,255,255,0) 100%)',
+                    backdropFilter: 'blur(20px) saturate(170%)',
+                    WebkitBackdropFilter: 'blur(20px) saturate(170%)',
+                    WebkitMaskImage: 'linear-gradient(to bottom, #000 0%, #000 62%, transparent 100%)',
+                    maskImage: 'linear-gradient(to bottom, #000 0%, #000 62%, transparent 100%)',
                 }} />
                 <div className="w-full px-[7.2%] relative">
                     <div className="flex flex-col sm:flex-row sm:items-center sm:gap-4 sm:py-3">
@@ -2311,7 +2309,7 @@ export default function App() {
 
 
 
-            <main className="main-content w-full" style={{ '--gutter': 'clamp(14px, 3.2vw, 56px)', paddingTop: `max(0px, calc(${headerHeight}px - env(safe-area-inset-top, 0px)))`, paddingLeft: 'var(--gutter)', paddingRight: 'var(--gutter)' }}>
+            <main className="main-content w-full" style={{ '--gutter': 'clamp(14px, 3.2vw, 56px)', paddingTop: `${headerHeight}px`, paddingLeft: 'var(--gutter)', paddingRight: 'var(--gutter)' }}>
                 {/* BANNER INSPIRAÇÃO DIÁRIA */}
                 {/* ── BANNER + ABAS ── */}
                 <div className="relative banner-reveal hw-hero" style={{
@@ -3814,6 +3812,19 @@ export default function App() {
                     @media (min-width: 768px) {
                         .chat-mobile-full { top: auto !important; height: auto !important; }
                         .chat-folder-full { top: 0 !important; left: 0 !important; right: 0 !important; bottom: 0 !important; height: 100dvh !important; border-radius: 0 !important; }
+                    }
+                    /* Header mobile: começa em top:0 (cobre a status bar) e o vidro vem do degradê interno */
+                    @media (max-width: 639px) {
+                        .hw-header.hdr-shown {
+                            top: 0 !important;
+                            padding-top: env(safe-area-inset-top, 0px) !important;
+                            background: transparent !important;
+                            backdrop-filter: none !important;
+                            -webkit-backdrop-filter: none !important;
+                            border-bottom: none !important;
+                            box-shadow: none !important;
+                            border-radius: 0 !important;
+                        }
                     }
                     /* Padding do main para compensar o header fixed (inclui notch no PWA) */
                     .main-content { padding-top: calc(80px + env(safe-area-inset-top, 0px)); padding-bottom: calc(78px + env(safe-area-inset-bottom, 0px)); }

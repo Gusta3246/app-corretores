@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { MapPin, BookOpen, Maximize, Bed, LayoutGrid, Clock, ChevronLeft, ChevronRight, X, Download, MousePointer2, Bus } from 'lucide-react';
+import { MapPin, BookOpen, Maximize, Bed, LayoutGrid, Clock, ChevronLeft, ChevronRight, X, Download, Bus } from 'lucide-react';
 import { LOGOS_EMPREENDIMENTO, REVISTA_LOGO_MAP } from '../data/dados.js';
 
 // ── RippleButton ────────────────────────────────────────────────
@@ -25,7 +25,7 @@ export function RippleButton({ onClick, className, children, style }) {
 }
 
 // ── BannerExpandido ──────────────────────────────────────────────
-export function BannerExpandido({ revista, onClose, modoNoturno, onVerRevista, onVerPois, onVerOnibus }) {
+function BannerExpandido({ revista, onClose, modoNoturno, onVerRevista, onVerPois, onVerOnibus }) {
     const [phase, setPhase] = useState('entering');
     const [fotos, setFotos] = useState([revista.cover]);
     const checkedRef = useRef(false);
@@ -35,6 +35,7 @@ export function BannerExpandido({ revista, onClose, modoNoturno, onVerRevista, o
         checkedRef.current = true;
         (revista.fotosExtras || []).forEach(url => {
             const img = new Image();
+            img.referrerPolicy = 'no-referrer';
             img.onload = () => setFotos(prev => prev.includes(url) ? prev : [...prev, url]);
             img.src = url;
         });
@@ -57,8 +58,8 @@ export function BannerExpandido({ revista, onClose, modoNoturno, onVerRevista, o
     const goDot  = (i, e) => { e.stopPropagation(); if (i !== idx) goTo(i, i > idx ? 'left' : 'right'); };
 
     const isDir = revista.brand === 'Direcional';
-    const accent     = isDir ? '#f97316' : '#007AFF';
-    const accentDark = isDir ? '#c2410c' : '#084d73';
+    const accent     = isDir ? '#2563eb' : '#007aff';
+    const accentDark = isDir ? '#1e40af' : '#084d73';
     const bg      = modoNoturno ? '#0f172a' : '#ffffff';
     const bgSub   = modoNoturno ? '#1e293b' : '#f1f5f9';
     const text    = modoNoturno ? '#f1f5f9' : '#1e293b';
@@ -106,8 +107,8 @@ export function BannerExpandido({ revista, onClose, modoNoturno, onVerRevista, o
                             touchStartX.current = null;
                         }}
                     >
-                        {dir && prevIdx !== null && (<img key={`out-${prevIdx}`} src={fotos[prevIdx]} alt="" style={{ position:'absolute', inset:0, width:'100%', height:'100%', objectFit:'cover', transform:`translateX(${outX})`, transition:`transform ${DUR} ${EASE}`, zIndex:1 }}/>)}
-                        <img key={`in-${idx}`} src={fotos[idx]} alt={revista.title} style={{ position:'absolute', inset:0, width:'100%', height:'100%', objectFit:'cover', animation: dir ? `slideIn-${dir} ${DUR} ${EASE} forwards` : 'none', zIndex:2 }}/>
+                        {dir && prevIdx !== null && (<img key={`out-${prevIdx}`} src={fotos[prevIdx]} referrerPolicy="no-referrer" alt="" style={{ position:'absolute', inset:0, width:'100%', height:'100%', objectFit:'cover', transform:`translateX(${outX})`, transition:`transform ${DUR} ${EASE}`, zIndex:1 }}/>)}
+                        <img key={`in-${idx}`} src={fotos[idx]} referrerPolicy="no-referrer" alt={revista.title} style={{ position:'absolute', inset:0, width:'100%', height:'100%', objectFit:'cover', animation: dir ? `slideIn-${dir} ${DUR} ${EASE} forwards` : 'none', zIndex:2 }}/>
                         <div style={{ position:'absolute', inset:0, pointerEvents:'none', zIndex:3, background:'linear-gradient(to top, rgba(0,0,0,0.72) 0%, rgba(0,0,0,0.06) 50%, transparent 100%)' }}/>
                         {(() => {
                             const logoKey = REVISTA_LOGO_MAP[revista.id];
@@ -166,15 +167,14 @@ export function BannerExpandido({ revista, onClose, modoNoturno, onVerRevista, o
                     </div>
                 </div>
             </div>
-            <style>{`@keyframes slideIn-left{from{transform:translateX(100%)}to{transform:translateX(0)}}@keyframes slideIn-right{from{transform:translateX(-100%)}to{transform:translateX(0)}}`}</style>
         </>
     );
 }
 
 // ── ObraTaxaModal ──────────────────────────────────────────────────
-export function ObraTaxaModal({ revista, onClose, modoNoturno }) {
+function ObraTaxaModal({ revista, onClose, modoNoturno }) {
     const [parcela, setParcela] = useState('');
-    const accent = '#007AFF';
+    const accent = '#007aff';
     const bg      = modoNoturno ? '#0f172a' : '#ffffff';
     const text    = modoNoturno ? '#f1f5f9' : '#1e293b';
     const sub     = modoNoturno ? '#94a3b8' : '#64748b';
@@ -233,22 +233,58 @@ export function ObraTaxaModal({ revista, onClose, modoNoturno }) {
     );
 }
 
+// ── CapaRevista ──────────────────────────────────────────────────
+// Mostra a capa da revista. Se a imagem falhar, tenta as outras fotos do
+// empreendimento e, por último, um fundo com a logo/nome dele (nunca uma foto genérica).
+function CapaRevista({ revista }) {
+    const candidatas = [revista.cover, ...(revista.fotosExtras || [])].filter(Boolean);
+    const [tentativa, setTentativa] = useState(0);
+    useEffect(() => { setTentativa(0); }, [revista.id, revista.cover]);
+
+    const imgStyle = { transformOrigin:'center center' };
+    const imgClass = 'w-full h-full object-cover group-hover:scale-115 transition-transform duration-700 ease-out';
+
+    if (tentativa < candidatas.length) {
+        return (
+            <img
+                key={candidatas[tentativa]}
+                src={candidatas[tentativa]}
+                referrerPolicy="no-referrer"
+                onError={() => setTentativa(t => t + 1)}
+                loading="lazy"
+                decoding="async"
+                alt={`Capa ${revista.title}`}
+                className={imgClass}
+                style={imgStyle}
+            />
+        );
+    }
+
+    const logoKey = REVISTA_LOGO_MAP[revista.id];
+    const logoSrc = logoKey ? LOGOS_EMPREENDIMENTO[logoKey] : null;
+    const isDirLocal = revista.brand === 'Direcional';
+    return (
+        <div className={imgClass} style={{ ...imgStyle, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:10, padding:16, textAlign:'center', background: isDirLocal ? 'linear-gradient(135deg,#2563eb 0%,#0f2a5c 100%)' : 'linear-gradient(135deg,#007aff 0%,#0a173b 100%)' }}>
+            {logoSrc && (<img src={logoSrc} alt="" referrerPolicy="no-referrer" onError={(e) => { e.currentTarget.style.display = 'none'; }} style={{ maxHeight:56, maxWidth:'60%', objectFit:'contain', filter:'brightness(0) invert(1)' }}/>)}
+            <span style={{ color:'#fff', fontWeight:800, fontSize:16, lineHeight:1.2 }}>{revista.title}</span>
+        </div>
+    );
+}
+
 // ── CardRevista ──────────────────────────────────────────────────
 export function CardRevista({ revista, cardIdx, modoNoturno, haptic, setPdfLeitor, setSelectedPois, setPdfLeitorLogoAnim, onVerOnibus, captureZoomOrigin }) {
     const DELAY = 15000;
     const [expanded, setExpanded] = useState(false);
-    const [obraHover, setObraHover] = useState(false);
     const [showObraModal, setShowObraModal] = useState(false);
     const timerRef = useRef(null);
-    const isDir = revista.brand === 'Direcional';
     // Destaque "NOVO": ativo até a data em revista.destaqueAte (7 dias); depois o card volta ao normal
     const isNovo = !!revista.destaqueAte && Date.now() < new Date(revista.destaqueAte).getTime();
     const accentObra = '#ff7a18';
     const isTouchDevice = () => window.matchMedia('(hover: none) and (pointer: coarse)').matches;
 
     const startHover = () => {
-        if (isTouchDevice()) return;
-        timerRef.current = setTimeout(() => { haptic('medium'); setExpanded(true); }, DELAY);
+        // Modal automático após 15s de hover removido
+        return;
     };
     const stopHover = () => { clearTimeout(timerRef.current); };
     useEffect(() => () => clearTimeout(timerRef.current), []);
@@ -281,196 +317,143 @@ export function CardRevista({ revista, cardIdx, modoNoturno, haptic, setPdfLeito
         }
     };
 
+    const FOTO_H = 205;
+    const temObra = typeof revista.obraPercent === 'number'; // sem taxa de obra (ex.: Riva) o card é mais baixo
+    const ETAPAS_OBRA = ['Fundação', 'Estrutura', 'Acabam.', 'Entrega'];
+    const obraConcluida = typeof revista.obraPercent === 'number' && revista.obraPercent >= 100;
+    const etapaAtual = typeof revista.obraPercent !== 'number' ? -1 : obraConcluida ? 3 : revista.obraPercent <= 0 ? -1 : revista.obraPercent < 25 ? 0 : revista.obraPercent < 60 ? 1 : 2;
+    const quartosCurto = (revista.bedrooms || '').replace(/\s*(quartos?|dormit[óo]rios?)/i, '').trim() || revista.bedrooms;
+    const entregaHover = !revista.entrega ? null : (() => { const meses=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro']; if(revista.entrega==='Entregue') return(<div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:4}}><span style={{fontSize:24,fontWeight:900,color:'#fff',lineHeight:1.1}}>Entregue!</span><span style={{fontSize:11,fontWeight:600,color:'rgba(255,255,255,0.85)',letterSpacing:'0.15em',textTransform:'uppercase'}}>pronto pra morar</span></div>); const pp=revista.entrega.split('/'); const mes=meses[parseInt(pp[0])-1]||''; const ano=pp[1]||pp[0]; const hoje=new Date(); const diff=(parseInt(pp[1])-hoje.getFullYear())*12+(parseInt(pp[0])-(hoje.getMonth()+1)); const restante=diff>0?`faltam ${diff} ${diff===1?'mês':'meses'}`:'chegando!'; return(<div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:1}}><span style={{fontSize:10,fontWeight:700,color:'rgba(255,255,255,0.8)',letterSpacing:'0.3em',textTransform:'uppercase'}}>entrega</span><span style={{fontSize:40,fontWeight:900,color:'#fff',letterSpacing:'-0.04em',lineHeight:0.95}}>{ano}</span><span style={{fontSize:14,fontWeight:800,color:'rgba(255,255,255,0.9)',letterSpacing:'0.08em',textTransform:'uppercase'}}>{mes}</span><div style={{marginTop:10,padding:'4px 12px',borderRadius:999,background:'rgba(255,255,255,0.22)',backdropFilter:'blur(8px)',border:'1px solid rgba(255,255,255,0.3)'}}><span style={{fontSize:11,fontWeight:800,color:'#fff'}}>{restante}</span></div></div>); })();
+
     return (
         <>
             {expanded && (<BannerExpandido revista={revista} onClose={() => setExpanded(false)} modoNoturno={modoNoturno} onVerRevista={handleVerRevista} onVerPois={handleVerPois} onVerOnibus={()=>onVerOnibus && onVerOnibus(revista)}/>)}
+            <style>{`.rev-act{position:relative;transition:color .3s ease} .rev-act svg{transition:transform .4s cubic-bezier(.22,1,.36,1)} .rev-act:hover svg{transform:translateY(-2px)} .rev-act::after{content:'';position:absolute;left:24%;right:24%;bottom:5px;height:1.5px;border-radius:2px;background:rgba(255,255,255,0.32);transform:scaleX(0);transform-origin:center;transition:transform .4s cubic-bezier(.22,1,.36,1)} .rev-act:hover::after{transform:scaleX(1)} .rev-sw{position:relative;overflow:hidden;padding:0;border:none;color:#fff;background:linear-gradient(135deg,#ff7a18 0%,#ff9440 100%);-webkit-tap-highlight-color:transparent} .rev-sw .rev-t{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;font-size:15px;font-weight:600;white-space:nowrap;transition:transform .45s cubic-bezier(.34,1.3,.64,1),opacity .35s} .rev-sw .rev-t2{opacity:0;transform:translateY(10px)} .rev-sw .rev-t3{display:none} .rev-sw .rev-k{position:absolute;top:5px;left:5px;width:44px;height:44px;border-radius:50%;background:#fff;color:#ff7a18;display:flex;align-items:center;justify-content:center;pointer-events:none;transition:left .55s cubic-bezier(.34,1.3,.64,1)} .rev-sw:hover .rev-k,.rev-sw:active .rev-k{left:calc(100% - 49px)} .rev-sw .rev-k svg{position:absolute;top:50%;left:50%;margin:-10.5px 0 0 -10.5px;transition:opacity .35s ease,transform .5s cubic-bezier(.34,1.3,.64,1)} .rev-sw .rev-ko{opacity:0;transform:scale(.55) rotate(-14deg)} .rev-sw .rev-k .rev-ko,.rev-sw .rev-k .rev-ke{margin:-12px 0 0 -12px} .rev-sw:hover .rev-ke,.rev-sw:active .rev-ke{opacity:0;transform:scale(1.3)} .rev-sw:hover .rev-ko,.rev-sw:active .rev-ko{opacity:1;transform:none} .rev-sw:hover .rev-t1,.rev-sw:active .rev-t1{opacity:0;transform:translateY(-10px)} .rev-sw:hover .rev-t2,.rev-sw:active .rev-t2{opacity:1;transform:none} @media (hover:none){.rev-sw .rev-k{left:calc(100% - 49px)} .rev-sw .rev-ke{opacity:0} .rev-sw .rev-ko{opacity:1;transform:none} .rev-sw .rev-t1,.rev-sw .rev-t2{display:none} .rev-sw .rev-t3{display:flex}} .rev-hover-hide{transition:opacity .4s ease} .group:hover .rev-hover-hide{opacity:0;pointer-events:none} .rev-blur-hover{transition:filter .5s ease} .group:hover .rev-blur-hover{filter:blur(20px) brightness(0.85) !important}`}</style>
             {showObraModal && (<ObraTaxaModal revista={revista} onClose={() => setShowObraModal(false)} modoNoturno={modoNoturno}/>)}
             {isNovo && (<style>{`
-                @keyframes novoRing{0%,100%{box-shadow:inset 0 0 0 2px rgba(251,191,36,0.55),inset 0 0 14px rgba(251,191,36,0.18)}50%{box-shadow:inset 0 0 0 2px rgba(251,191,36,0.85),inset 0 0 24px rgba(251,191,36,0.32)}}
                 @keyframes novoShine{0%{transform:translateX(-150%) skewX(-20deg);opacity:0}15%{opacity:1}45%{transform:translateX(350%) skewX(-20deg);opacity:1}55%,100%{transform:translateX(350%) skewX(-20deg);opacity:0}}
             `}</style>)}
-            <div className="card-entry overflow-hidden flex flex-col group" style={{ animationDelay:`${cardIdx*90}ms`, position:'relative', borderRadius:'24px', background: modoNoturno ? 'rgba(255,255,255,0.04)' : '#f8fafc', border: modoNoturno ? '1px solid rgba(255,255,255,0.10)' : '1px solid rgba(15,23,42,0.08)', transition:'background-color 0.45s ease-in-out' }}
-                onMouseEnter={e => { if (isTouchDevice()) return; e.currentTarget.style.background = modoNoturno ? 'rgba(59,130,246,0.16)' : 'rgba(219,234,254,0.85)'; startHover(); }}
-                onMouseLeave={e => { if (isTouchDevice()) return; e.currentTarget.style.background = modoNoturno ? 'rgba(255,255,255,0.04)' : '#f8fafc'; stopHover(); }}>
-                <div className="relative h-48 overflow-hidden bg-slate-100" style={{ borderRadius: '24px 24px 20px 20px', margin: '0 0 8px 0' }}>
-                    {isNovo && (<>
-                        <div style={{ position:'absolute', inset:0, borderRadius:'24px 24px 20px 20px', pointerEvents:'none', zIndex:12, animation:'novoRing 4s ease-in-out infinite' }}/>
-                        <div style={{ position:'absolute', top:10, right:10, zIndex:13, padding:'4px 11px', borderRadius:999, overflow:'hidden', background:'linear-gradient(135deg,#f59e0b,#ef4444)', color:'#fff', fontSize:11, fontWeight:900, letterSpacing:'0.12em', boxShadow:'0 4px 14px rgba(239,68,68,0.55)' }}>
-                            NOVO
-                            <span style={{ position:'absolute', top:0, left:0, width:'40%', height:'100%', background:'rgba(255,255,255,0.4)', animation:'novoShine 5s ease-in-out infinite' }}/>
-                        </div>
-                    </>)}
-                    <img src={revista.cover} onError={(e)=>{e.target.onerror=null;e.target.src='https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&q=80&w=400';}} alt={`Capa ${revista.title}`} className="w-full h-full object-cover group-hover:scale-115 transition-transform duration-700 ease-out" style={{ transformOrigin:'center center', willChange:'transform' }}/>
-                    {/* Gradiente fade na borda inferior */}
-                    <div style={{ position:'absolute', bottom:0, left:0, right:0, height:'60px', background:'linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.3) 100%)', zIndex:5, pointerEvents:'none', borderRadius:'0 0 20px 20px' }}/>
-                    <div className="absolute inset-0 pointer-events-none z-10 overflow-hidden" style={{ borderRadius:'24px 24px 20px 20px' }}><div className="card-shimmer-sweep" style={{ position:'absolute', top:0, left:0, width:'55%', height:'100%', background:'linear-gradient(105deg, transparent 0%, rgba(255,255,255,0.38) 50%, transparent 100%)', transform:'translateX(-150%) skewX(-18deg)' }}/></div>
-                    <div style={{ position:'absolute', top:10, left:10, zIndex:10, width:110, height:70, display:'flex', alignItems:'flex-start', justifyContent:'flex-start' }}>
-                        {(() => { const logoKey = REVISTA_LOGO_MAP[revista.id]; const logoSrc = logoKey ? LOGOS_EMPREENDIMENTO[logoKey] : null; if (!logoSrc) return null; return (<img src={logoSrc} alt={revista.title} style={{ maxHeight: logoKey === 'brisas' ? 62 : 68, maxWidth: logoKey === 'brisas' ? 108 : 105, width:'auto', height:'auto', objectFit:'contain', objectPosition:'top left', filter:'drop-shadow(0 0 8px rgba(0,0,0,0.9)) drop-shadow(0 2px 12px rgba(0,0,0,0.7)) drop-shadow(0 0 3px rgba(255,255,255,0.25))' }}/>); })()}
+            <div className="card-entry overflow-hidden group" style={{ animationDelay:`${cardIdx*90}ms`, position:'relative', height: temObra ? 500 : 440, borderRadius:'24px' }}
+                onMouseEnter={() => { if (isTouchDevice()) return; startHover(); }}
+                onMouseLeave={() => { if (isTouchDevice()) return; stopHover(); }}>
+                {/* Foto de capa horizontal no topo, continuando abaixo como reflexo desfocado (igual à "foto do dia") */}
+                <div className="absolute inset-0 overflow-hidden" style={{ borderRadius:'24px', zIndex:0, isolation:'isolate' }}>
+                    <div style={{ position:'absolute', inset:0, filter:'blur(28px) brightness(0.85)', transform:'scale(1.2)' }}><CapaRevista revista={revista}/></div>
+                    {/* Foto + reflexo espelhado num bloco só, desfocado de uma vez (sem emenda entre camadas) */}
+                    <div className={entregaHover ? 'rev-blur-hover' : undefined} style={{ position:'absolute', left:0, right:0, top:0, height:FOTO_H * 2, filter:'blur(14px) brightness(0.85)', WebkitMaskImage:'linear-gradient(to bottom, #000 0, #000 62%, transparent 100%)', maskImage:'linear-gradient(to bottom, #000 0, #000 62%, transparent 100%)' }}>
+                        <div style={{ position:'absolute', left:0, right:0, top:0, height:FOTO_H, overflow:'hidden' }}><CapaRevista revista={revista}/></div>
+                        <div style={{ position:'absolute', left:0, right:0, top:FOTO_H, height:FOTO_H, overflow:'hidden', transform:'scaleY(-1)' }}><CapaRevista revista={revista}/></div>
                     </div>
-                    {revista.entrega && (
-                        <div className="absolute inset-0 z-20 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-500" style={{ background:'rgba(255,255,255,0.18)', backdropFilter:'blur(18px) saturate(180%)', WebkitBackdropFilter:'blur(18px) saturate(180%)', borderRadius:'24px 24px 20px 20px', overflow:'hidden' }}>
-                            {(()=>{ const meses=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro']; if(revista.entrega==='Entregue') return(<div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:4}}><span style={{fontSize:24,fontWeight:900,color:'#fff',textShadow:'0 2px 16px rgba(0,0,0,0.6)',lineHeight:1.1}}>Entregue!</span><span style={{fontSize:11,fontWeight:600,color:'rgba(255,255,255,0.8)',letterSpacing:'0.15em',textTransform:'uppercase'}}>pronto pra morar</span></div>); const p=revista.entrega.split('/'); const mes=meses[parseInt(p[0])-1]||''; const ano=p[1]||p[0]; const hoje=new Date(); const diff=(parseInt(p[1])-hoje.getFullYear())*12+(parseInt(p[0])-(hoje.getMonth()+1)); const restante=diff>0?`faltam ${diff} ${diff===1?'mês':'meses'}`:'chegando!'; return(<div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:1}}><span style={{fontSize:10,fontWeight:700,color:'rgba(255,255,255,0.55)',letterSpacing:'0.3em',textTransform:'uppercase'}}>entrega</span><span style={{fontSize:46,fontWeight:900,color:'#fff',letterSpacing:'-0.04em',textShadow:'0 4px 24px rgba(0,0,0,0.5)',lineHeight:0.95}}>{ano}</span><span style={{fontSize:14,fontWeight:800,color:'rgba(255,255,255,0.9)',letterSpacing:'0.08em',textTransform:'uppercase'}}>{mes}</span><div style={{marginTop:10,padding:'4px 12px',borderRadius:999,background:'rgba(255,255,255,0.22)',backdropFilter:'blur(8px)',border:'1px solid rgba(255,255,255,0.3)'}}><span style={{fontSize:11,fontWeight:800,color:'#fff'}}>{restante}</span></div></div>); })()}
+                    <div className={entregaHover ? 'rev-blur-hover' : undefined} style={{ position:'absolute', left:0, right:0, top:0, height:FOTO_H, filter:'blur(6px) brightness(0.85)', WebkitMaskImage:'linear-gradient(to bottom, transparent 12%, #000 38%, #000 58%, transparent 88%)', maskImage:'linear-gradient(to bottom, transparent 12%, #000 38%, #000 58%, transparent 88%)' }}><CapaRevista revista={revista}/></div>
+                    <div className={entregaHover ? 'rev-blur-hover' : undefined} style={{ position:'absolute', left:0, right:0, top:0, height:FOTO_H, WebkitMaskImage:'linear-gradient(to bottom, #000 0, #000 40%, transparent 85%)', maskImage:'linear-gradient(to bottom, #000 0, #000 40%, transparent 85%)' }}><CapaRevista revista={revista}/></div>
+                    {/* Escurecimento suave na parte inferior (curva suave, começa bem abaixo da emenda da foto) */}
+                    <div className="pointer-events-none" style={{ position:'absolute', inset:0, background:'linear-gradient(to bottom, rgba(14,15,36,0) 52%, rgba(14,15,36,0.047) 61.6%, rgba(14,15,36,0.158) 71.2%, rgba(14,15,36,0.29) 80.8%, rgba(14,15,36,0.40) 90.4%, rgba(14,15,36,0.45) 100%)' }}/>
+                    <div className="absolute left-0 right-0 top-0 pointer-events-none z-10 overflow-hidden" style={{ height:FOTO_H, WebkitMaskImage:'linear-gradient(to bottom, #000 0, #000 55%, transparent 100%)', maskImage:'linear-gradient(to bottom, #000 0, #000 55%, transparent 100%)' }}><div className="card-shimmer-sweep" style={{ position:'absolute', top:0, left:0, width:'55%', height:'100%', background:'linear-gradient(105deg, transparent 0%, rgba(255,255,255,0.38) 50%, transparent 100%)', transform:'translateX(-150%) skewX(-18deg)' }}/></div>
+                    {entregaHover && (
+                        <div className="absolute left-0 right-0 top-0 z-20 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none flex items-center justify-center" style={{ height:FOTO_H - 34 }}>
+                            <div style={{ position:'relative' }}>{entregaHover}</div>
                         </div>
                     )}
                 </div>
-                {typeof revista.obraPercent === 'number' && (
-                    <div style={{ position:'relative', padding:'14px 20px 0', zIndex:25 }}>
-                        <div
-                            onMouseEnter={() => { if (!isTouchDevice()) setObraHover(true); }}
-                            onMouseLeave={() => setObraHover(false)}
-                            onClick={(e) => { e.stopPropagation(); haptic(); setShowObraModal(true); }}
-                            title="Calcular Taxa de Obra"
-                            style={{ position:'relative', height:26, display:'flex', alignItems:'center', cursor:'pointer' }}
-                        >
-                            {/* Estado padrão — minimalista: apenas barra fina e percentual, sem ícone */}
-                            <div style={{
-                                position:'absolute', inset:0, display:'flex', alignItems:'center', gap:8,
-                                opacity: obraHover ? 0 : 1,
-                                transform: obraHover ? 'translateY(-5px)' : 'translateY(0)',
-                                transition: obraHover ? 'opacity 0.15s ease, transform 0.15s ease' : 'opacity 0.2s ease 0.08s, transform 0.2s ease 0.08s'
-                            }}>
-                                <div style={{ flex:1, height:4, borderRadius:99, background: modoNoturno ? 'rgba(255,255,255,0.12)' : '#e2e8f0', overflow:'hidden' }}>
-                                    <div className="hw-obra-fill" style={{ height:'100%', width:`${Math.min(100, Math.max(0, revista.obraPercent))}%`, borderRadius:99, background: accentObra, transition:'width 0.6s cubic-bezier(0.22,1,0.36,1)' }}/>
-                                </div>
-                                <span className="hw-obra-text" style={{ fontSize:11.5, fontWeight:800, color: accentObra, flexShrink:0, minWidth:28, textAlign:'right', fontVariantNumeric:'tabular-nums' }}>{Math.round(revista.obraPercent)}%</span>
-                            </div>
 
-                            {/* Estado hover — texto de ação no lugar da barra, sem ícone */}
-                            <div style={{
-                                position:'absolute', inset:0, display:'flex', alignItems:'center', justifyContent:'center',
-                                opacity: obraHover ? 1 : 0,
-                                transform: obraHover ? 'translateY(0)' : 'translateY(5px)',
-                                transition: obraHover ? 'opacity 0.18s ease 0.05s, transform 0.18s ease 0.05s' : 'opacity 0.1s ease, transform 0.1s ease',
-                                pointerEvents:'none'
-                            }}>
-                                <span className="hw-obra-text" style={{ fontSize:11.5, fontWeight:800, color: accentObra, letterSpacing:'0.01em' }}>Calcular Taxa de Obra</span>
-                            </div>
-                        </div>
+                {isNovo && (
+                    <div style={{ position:'absolute', top:12, right:12, zIndex:32, padding:'4px 11px', borderRadius:999, overflow:'hidden', background:'linear-gradient(135deg,#2563eb,#1d4ed8)', color:'#fff', fontSize:11, fontWeight:900, letterSpacing:'0.12em', }}>
+                        NOVO
+                        <span style={{ position:'absolute', top:0, left:0, width:'40%', height:'100%', background:'rgba(255,255,255,0.4)', animation:'novoShine 5s ease-in-out infinite' }}/>
                     </div>
                 )}
-                <div className="p-5 flex flex-col flex-grow">
-                    {/* Bloco 1 — identidade */}
-                    <h3 className={`text-xl font-bold leading-snug mb-1.5 ${modoNoturno?'text-white':'text-slate-800'}`}>{revista.title}</h3>
-                    <div className="flex items-center gap-1.5 text-xs"><MapPin size={13} className={modoNoturno?'text-slate-500':'text-slate-400'}/><span className={`line-clamp-1 ${modoNoturno?'text-slate-500':'text-slate-400'}`}>{revista.region}</span></div>
 
-                    {/* Bloco 2 — specs essenciais, compactas, sem separadores soltos */}
-                    <div className={`flex items-center gap-3 text-xs mt-3 ${modoNoturno?'text-slate-400':'text-slate-500'}`}>
-                        <span className="flex items-center gap-1"><Maximize size={14} className={modoNoturno?'text-slate-500':'text-slate-400'}/>{revista.size}</span>
-                        <span className="flex items-center gap-1"><Bed size={14} className={modoNoturno?'text-slate-500':'text-slate-400'}/>{revista.bedrooms}</span>
+                {/* Selo do empreendimento — canto superior esquerdo */}
+                <div className={entregaHover ? 'rev-hover-hide' : undefined} style={{ position:'absolute', top:10, left:10, zIndex:40, width:110, height:70, display:'flex', alignItems:'flex-start', justifyContent:'flex-start', pointerEvents:'none' }}>
+                    {(() => { const logoKey = REVISTA_LOGO_MAP[revista.id]; const logoSrc = logoKey ? LOGOS_EMPREENDIMENTO[logoKey] : null; if (!logoSrc) return null; return (<img src={logoSrc} alt={revista.title} style={{ maxHeight: logoKey === 'brisas' ? 62 : 68, maxWidth: logoKey === 'brisas' ? 108 : 105, width:'auto', height:'auto', objectFit:'contain', objectPosition:'top left', filter:'drop-shadow(0 0 8px rgba(0,0,0,0.9)) drop-shadow(0 2px 12px rgba(0,0,0,0.7)) drop-shadow(0 0 3px rgba(255,255,255,0.25))' }}/>); })()}
+                </div>
+
+                {/* Informações direto sobre o desfoque */}
+                <div style={{ position:'absolute', left:16, right:16, bottom:16, zIndex:30, color:'#fff' }}>
+                    <h3 style={{ margin:0, fontSize:19, fontWeight:800, lineHeight:1.25, color:'#fff' }}>{revista.title}</h3>
+                    <div className="flex items-center gap-1.5" style={{ marginTop:4, fontSize:12, color:'#C6C8E4' }}><MapPin size={13}/><span className="line-clamp-1">{revista.region}</span></div>
+
+                    <div style={{ display:'flex', borderRadius:999, overflow:'hidden', marginTop:10, background:'rgba(255,255,255,0.12)', backdropFilter:'blur(14px) saturate(140%)', WebkitBackdropFilter:'blur(14px) saturate(140%)' }}>
+                        {[
+                            { k:'dl',  label:'Baixar', title:'Baixar revista', mx:'0px', my:'2px', icon:<Download size={15}/>, fn:handleDownload },
+                            { k:'poi', label:'Pontos', title:'Pontos de referência clicáveis', mx:'2px', my:'-2px', icon:<MapPin size={15}/>, fn:handleVerPois },
+                            { k:'bus', label:'Ônibus', title:'Linhas de ônibus próximas', mx:'3px', my:'0px', icon:<Bus size={15}/>, fn:(e)=>{ captureZoomOrigin?.(e); onVerOnibus && onVerOnibus(revista); } },
+                        ].map((b, i) => (
+                            <button key={b.k} onClick={b.fn} title={b.title} aria-label={b.title} className="hw-card-icon rev-act" style={{ flex:1, background:'transparent', border:'none', borderLeft: i ? '1px solid rgba(255,255,255,0.22)' : 'none', borderRadius:0, color:'#fff', fontSize:12, fontWeight:600, padding:'11px 4px 13px', display:'flex', alignItems:'center', justifyContent:'center', gap:6, cursor:'pointer', textShadow:'none' }}>{b.icon}{b.label}</button>
+                        ))}
                     </div>
 
-                    {/* Descrição de acabamento — linha própria, não compete visualmente com as specs */}
-                    {revista.flooring && (
-                        <p className={`text-xs mt-1.5 line-clamp-1 ${modoNoturno?'text-slate-500':'text-slate-400'}`}>{revista.flooring}</p>
-                    )}
-
-                    {/* Espaçador flexível — garante que o bloco de decisão fique sempre à mesma altura, colado nos botões, independente de quanto texto houver acima */}
-                    <div className="flex-grow min-h-[12px]" />
-
-                    {/* Bloco 3 — decisão, sempre na mesma altura relativa aos botões, sem divisor e sem cor de destaque no valor */}
-                    {typeof revista.rendaMinima === 'number' && (
-                        <div className="flex items-baseline gap-1.5 pt-3 pb-4">
-                            <span className={`text-[10px] uppercase tracking-wide ${modoNoturno?'text-slate-500':'text-slate-400'}`}>Renda mínima</span>
-                            <span className={`text-sm font-bold ${modoNoturno?'text-white':'text-slate-800'}`}>
-                                R$ {revista.rendaMinima.toLocaleString('pt-BR')}
-                            </span>
+                    {typeof revista.obraPercent === 'number' && (
+                        <div onClick={(e) => { e.stopPropagation(); haptic(); setShowObraModal(true); }} role="button" aria-label="Calcular Taxa de Obra" style={{ marginTop:12, cursor:'pointer' }}>
+                            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'baseline', marginBottom:6 }}>
+                                <span style={{ fontSize:11, color:'#C6C8E4' }}>Andamento da obra</span>
+                                <span style={{ fontSize:12, fontWeight:800, color:'#fff', fontVariantNumeric:'tabular-nums' }}>{obraConcluida ? '100% · pronto' : `${Math.round(revista.obraPercent)}%`}</span>
+                            </div>
+                            <div style={{ display:'flex', alignItems:'center' }}>
+                                {ETAPAS_OBRA.map((_, i) => {
+                                    const on = obraConcluida || i < etapaAtual; const cur = !obraConcluida && i === etapaAtual;
+                                    return (<React.Fragment key={i}>
+                                        {i > 0 && <span style={{ flex:1, height:2, background: (obraConcluida || i <= etapaAtual) ? accentObra : 'rgba(255,255,255,0.22)' }}/>}
+                                        <span style={{ width: cur ? 12 : 10, height: cur ? 12 : 10, borderRadius:'50%', flexShrink:0, background: (on || cur) ? accentObra : 'rgba(255,255,255,0.22)', boxShadow: cur ? '0 0 0 3px rgba(255,122,24,0.45)' : 'none' }}/>
+                                    </React.Fragment>);
+                                })}
+                            </div>
+                            <div style={{ display:'flex', justifyContent:'space-between', marginTop:5 }}>
+                                {ETAPAS_OBRA.map((nome, i) => (<span key={nome} style={{ fontSize:10.5, color: (obraConcluida || i <= etapaAtual) ? '#fff' : '#C6C8E4' }}>{nome}</span>))}
+                            </div>
                         </div>
                     )}
-                    <div className="mt-auto flex flex-col gap-2">
-                        <div style={{ display:'flex', gap:8, alignItems:'stretch' }}>
-                            <RippleButton onClick={handleVerRevista} className="flex-1 flex items-center justify-center gap-2 py-3 rounded-full font-semibold transition-all duration-200 text-white hover:brightness-90 hw-btn-primary" style={{ background: accentObra }}><BookOpen size={18}/> Ver Revista</RippleButton>
-                            <button onClick={handleDownload} title="Baixar revista" className="hw-card-icon" style={{ flexShrink:0, width:46, height:46, borderRadius:'50%', border: modoNoturno ? '1px solid rgba(255,255,255,0.12)' : '1px solid rgba(15,23,42,0.10)', display:'flex', alignItems:'center', justifyContent:'center', background: modoNoturno ? 'rgba(255,255,255,0.08)' : '#f1f5f9', color: modoNoturno ? '#cbd5e1' : '#475569', cursor:'pointer', transition:'background 0.15s, transform 0.12s' }} onMouseEnter={e=>{e.currentTarget.style.background=modoNoturno?'rgba(255,255,255,0.14)':'#e2e8f0';e.currentTarget.style.transform='scale(1.08)';}} onMouseLeave={e=>{e.currentTarget.style.background=modoNoturno?'rgba(255,255,255,0.08)':'#f1f5f9';e.currentTarget.style.transform='scale(1)';}}>
-                                <Download size={18}/>
-                            </button>
-                        </div>
-                        <div style={{ display:'flex', gap:8, alignItems:'stretch' }}>
-                            <RippleButton onClick={handleVerPois} style={{ cursor:'pointer' }} className={`hw-card-btn flex-1 flex items-center justify-center gap-2 py-2.5 rounded-full font-semibold transition-colors duration-200 border text-sm ${modoNoturno?'bg-slate-700 border-slate-600 text-slate-200 hover:bg-slate-600':'bg-slate-100 border-slate-200 text-slate-700 hover:bg-slate-200'}`}><MousePointer2 size={16} className="text-slate-400"/> Pontos de ref. Clicável</RippleButton>
-                            <RippleButton onClick={(e)=>{ captureZoomOrigin?.(e); onVerOnibus && onVerOnibus(revista); }} title="Linhas de ônibus próximas" style={{ cursor:'pointer', flexShrink:0, width:46 }} className={`hw-card-btn flex items-center justify-center rounded-full font-semibold transition-colors duration-200 border text-sm ${modoNoturno?'bg-slate-700 border-slate-600 text-slate-200 hover:bg-slate-600':'bg-slate-100 border-slate-200 text-slate-700 hover:bg-slate-200'}`}>
-                                <Bus size={18}/>
-                            </RippleButton>
-                        </div>
+
+                    <div style={{ display:'flex', justifyContent:'space-between', gap:8, marginTop:12, paddingTop:10, borderTop:'1px solid rgba(255,255,255,0.18)' }}>
+                        <div style={{ minWidth:0 }}><div style={{ fontSize:10.5, color:'#C6C8E4' }}>área</div><div style={{ fontSize:14, fontWeight:700, lineHeight:1.2 }}>{revista.size}</div></div>
+                        <div><div style={{ fontSize:10.5, color:'#C6C8E4' }}>quartos</div><div style={{ fontSize:14, fontWeight:700, lineHeight:1.2 }}>{quartosCurto}</div></div>
+                        {typeof revista.rendaMinima === 'number' && (
+                            <div style={{ textAlign:'right' }}><div style={{ fontSize:10.5, color:'#C6C8E4' }}>renda média</div><div style={{ fontSize:14, fontWeight:700, lineHeight:1.2 }}>R$ {revista.rendaMinima.toLocaleString('pt-BR')}</div></div>
+                        )}
                     </div>
+
+                    <RippleButton onClick={handleVerRevista} className="rev-sw w-full" style={{ marginTop:12, height:54, borderRadius:999, textShadow:'none' }}><span className="rev-t rev-t1">Ver Revista</span><span className="rev-t rev-t2">Clique para abrir</span><span className="rev-t rev-t3">Toque para abrir</span><span className="rev-k" aria-hidden="true"><svg className="rev-ke" width="24" height="24" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="2.8" width="14" height="18.4" rx="2" fill="none" stroke="currentColor" strokeWidth="1.8"/><rect x="8" y="6" width="8" height="3" rx=".7" fill="currentColor"/><path d="M8 12.5h8M8 15.5h5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/></svg><svg className="rev-ko" width="24" height="24" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="2.5" width="14" height="19" rx="2" fill="currentColor"/><path d="M14.5 2.5h3v8l-1.5-1.5-1.5 1.5z" fill="#fff"/><rect x="7.5" y="5" width="5" height="2.4" rx=".6" fill="#fff"/><path d="M8 14h8M8 17h5" stroke="#fff" strokeWidth="1.5" strokeLinecap="round"/></svg></span></RippleButton>
                 </div>
             </div>
         </>
     );
 }
 
-// ── HintPills ────────────────────────────────────────────────────
-const HINT_PILLS_DATA = [
-    { label: 'Pasta', color: 'linear-gradient(135deg,#6366f1,#4f46e5)', glow: 'rgba(99,102,241,0.7)', icon: <path d="M3 7a2 2 0 012-2h3.586a1 1 0 01.707.293L10.707 6.7A1 1 0 0011.414 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V7z" fill="white"/> },
-    { label: 'Pasta Rápida IA', color: 'linear-gradient(135deg,#f97316,#ef4444)', glow: 'rgba(249,115,22,0.7)', icon: <polygon points="13,2 3,14 12,14 11,22 21,10 12,10" fill="white"/> },
-    { label: 'Taxas Docs', color: 'linear-gradient(135deg,#0ea5e9,#0369a1)', glow: 'rgba(14,165,233,0.7)', icon: <><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" fill="white"/><polyline points="14,2 14,8 20,8" fill="none" stroke="rgba(255,255,255,0.5)" strokeWidth="2"/></> },
-];
+// ── CarrosselComFade ─────────────────────────────────────────────
+// Carrossel horizontal com sombra em degradê + seta pulsando nas bordas,
+// para indicar que dá para deslizar. As sombras aparecem/somem conforme o scroll.
+export function CarrosselComFade({ children, modoNoturno }) {
+    const ref = useRef(null);
+    const [borda, setBorda] = useState({ esq: false, dir: false });
 
-export function HintPills({ onPhaseChange }) {
-    // Animação de dicas flutuantes desativada.
-    return null;
-}
-
-
-// ── CountdownLancamento ──────────────────────────────────────────
-export function CountdownLancamento({ modoNoturno }) {
-    const [tempo, setTempo] = useState({ dias: 0, horas: 0, minutos: 0, segundos: 0, passado: false });
-
+    const atualizar = () => {
+        const el = ref.current;
+        if (!el) return;
+        const esq = el.scrollLeft > 8, dir = el.scrollLeft + el.clientWidth < el.scrollWidth - 8;
+        setBorda(p => (p.esq === esq && p.dir === dir ? p : { esq, dir }));
+    };
     useEffect(() => {
-        // Data alvo do lançamento: ajuste aqui quando souber a data real
-        const alvo = new Date('2026-08-01T09:00:00');
-
-        const calcular = () => {
-            const agora = new Date();
-            const diff = alvo - agora;
-            if (diff <= 0) {
-                setTempo({ dias: 0, horas: 0, minutos: 0, segundos: 0, passado: true });
-                return;
-            }
-            const dias     = Math.floor(diff / (1000 * 60 * 60 * 24));
-            const horas    = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-            const minutos  = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-            const segundos = Math.floor((diff % (1000 * 60)) / 1000);
-            setTempo({ dias, horas, minutos, segundos, passado: false });
-        };
-
-        calcular();
-        const id = setInterval(calcular, 1000);
-        return () => clearInterval(id);
+        const el = ref.current;
+        if (!el) return;
+        atualizar();
+        el.addEventListener('scroll', atualizar, { passive: true });
+        window.addEventListener('resize', atualizar);
+        const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(atualizar) : null;
+        if (ro) { ro.observe(el); Array.from(el.children).forEach(c => ro.observe(c)); }
+        return () => { el.removeEventListener('scroll', atualizar); window.removeEventListener('resize', atualizar); if (ro) ro.disconnect(); };
     }, []);
 
-    const bg      = modoNoturno ? 'rgba(30,41,59,0.9)' : 'rgba(241,245,249,0.95)';
-    const borda   = modoNoturno ? 'rgba(99,102,241,0.35)' : 'rgba(99,102,241,0.2)';
-    const textSub = modoNoturno ? '#94a3b8' : '#64748b';
-
-    if (tempo.passado) {
-        return (
-            <div style={{ padding:'10px 14px', borderRadius:14, background: bg, border:`1px solid ${borda}`, textAlign:'center' }}>
-                <span style={{ fontSize:13, fontWeight:800, color:'#6366f1', letterSpacing:'0.05em' }}>🚀 Lançamento já aconteceu!</span>
-            </div>
-        );
-    }
-
-    const Bloco = ({ valor, label }) => (
-        <div style={{ display:'flex', flexDirection:'column', alignItems:'center', minWidth:44 }}>
-            <span style={{ fontSize:22, fontWeight:900, color:'#6366f1', lineHeight:1, fontVariantNumeric:'tabular-nums' }}>
-                {String(valor).padStart(2, '0')}
-            </span>
-            <span style={{ fontSize:9, fontWeight:700, color: textSub, letterSpacing:'0.15em', textTransform:'uppercase', marginTop:2 }}>{label}</span>
-        </div>
-    );
+    const rolar = (dir) => { const el = ref.current; if (el) el.scrollBy({ left: dir * el.clientWidth * 0.85, behavior: 'smooth' }); };
+    const sombra = modoNoturno ? 'rgba(8,9,24,0.78)' : 'rgba(15,23,42,0.45)';
+    const lado = (esq) => ({ position:'absolute', top:8, bottom:14, [esq ? 'left' : 'right']:'calc(var(--gutter, 4px) * -1)', width:84, zIndex:40, display:'flex', alignItems:'center', justifyContent: esq ? 'flex-start' : 'flex-end', padding: esq ? '0 0 0 8px' : '0 8px 0 0', pointerEvents:'none', background:`linear-gradient(to ${esq ? 'right' : 'left'}, ${sombra}, rgba(0,0,0,0))`, opacity: (esq ? borda.esq : borda.dir) ? 1 : 0, transition:'opacity 0.25s ease' });
+    const seta = (esq) => ({ pointerEvents: (esq ? borda.esq : borda.dir) ? 'auto' : 'none', width:38, height:38, borderRadius:'50%', display:'flex', alignItems:'center', justifyContent:'center', color:'#fff', cursor:'pointer', background:'rgba(255,255,255,0.16)', border:'1px solid rgba(255,255,255,0.35)', backdropFilter:'blur(8px)', WebkitBackdropFilter:'blur(8px)', animation:`${esq ? 'setaNudgeEsq' : 'setaNudgeDir'} 1.4s ease-in-out infinite` });
 
     return (
-        <div style={{ padding:'10px 14px', borderRadius:14, background: bg, border:`1px solid ${borda}` }}>
-            <div style={{ fontSize:9, fontWeight:700, color: textSub, letterSpacing:'0.2em', textTransform:'uppercase', marginBottom:8, textAlign:'center' }}>
-                ⏳ Contagem para o lançamento
-            </div>
-            <div style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:4 }}>
-                <Bloco valor={tempo.dias}     label="dias"  />
-                <span style={{ fontSize:18, fontWeight:900, color:'#6366f1', marginBottom:10, opacity:0.6 }}>:</span>
-                <Bloco valor={tempo.horas}    label="hrs"   />
-                <span style={{ fontSize:18, fontWeight:900, color:'#6366f1', marginBottom:10, opacity:0.6 }}>:</span>
-                <Bloco valor={tempo.minutos}  label="min"   />
-                <span style={{ fontSize:18, fontWeight:900, color:'#6366f1', marginBottom:10, opacity:0.6 }}>:</span>
-                <Bloco valor={tempo.segundos} label="seg"   />
-            </div>
+        <div style={{ position:'relative', isolation:'isolate', zIndex:0 }}>
+            <style>{`@keyframes setaNudgeDir{0%,100%{transform:translateX(0)}50%{transform:translateX(6px)}} @keyframes setaNudgeEsq{0%,100%{transform:translateX(0)}50%{transform:translateX(-6px)}}`}</style>
+            <div ref={ref} className="cat-scroller">{children}</div>
+            <div style={lado(true)}><button type="button" aria-label="Voltar" onClick={() => rolar(-1)} style={seta(true)}><ChevronLeft size={20}/></button></div>
+            <div style={lado(false)}><button type="button" aria-label="Ver mais revistas" onClick={() => rolar(1)} style={seta(false)}><ChevronRight size={20}/></button></div>
         </div>
     );
 }

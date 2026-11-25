@@ -65,7 +65,7 @@ export const revistasDataLocal = [
     fotosExtras: [`https://api.apto.vc/images/realties/7259/parque-ville-orquidea-condominio-2.webp`,`https://api.apto.vc/images/realties/7259/parque-ville-orquidea-condominio-3.webp`,`https://api.apto.vc/images/realties/7259/parque-ville-orquidea-condominio-4.webp`,`https://api.apto.vc/images/realties/7259/parque-ville-orquidea-condominio-5.webp`,`https://api.apto.vc/images/realties/7259/parque-ville-orquidea-condominio-6.webp`],
     link: "https://drive.google.com/file/d/1F_BeT2jceDM8u4kCbSXN8kp2rk7boQTG/view?usp=drive_link", aliases: ["orquidea", "orquídea", "parque ville", "parque ville orquidea"], pois: ["Escola Mun. Viviane Estrela (1-2 min)", "Clínica da Família C. Nicolau (1-2 min)", "Veneza Express (3-4 min)", "Nova Era Supermercado (3-4 min)", "Terminal 6 (3-4 min)", "Colégio Militar da PM VI (3-4 min)", "Shopping Via Norte (7 min)", "Hospital Delphina Aziz (10 min)", "Sumaúma Park Shopping (12 min)"] },
 
-  { id: 3, title: "Village Torres", brand: "Direcional", region: "Lago Azul - Zona Norte", size: "36m²", bedrooms: "2 quartos", flooring: "Cozinha, banheiro e lavatório", entrega: "04/2027", obraPercent: 98.1, rendaMinima: 2500,
+  { id: 3, title: "Village Torres", brand: "Direcional", region: "Lago Azul - Zona Norte", size: "36m²", bedrooms: "2 quartos", flooring: "Cozinha, banheiro e lavatório", entrega: "Entregue", obraPercent: 100, rendaMinima: 2500,
     cover: `${D}/2024/09/Perspectiva-Guarita-VillageTorres.jpg.webp`,
     fotosExtras: [`https://api.apto.vc/images/realties/7672/village-torres-condominio-2.webp`,`https://api.apto.vc/images/realties/7672/village-torres-condominio-3.webp`,`https://api.apto.vc/images/realties/7672/village-torres-condominio-4.webp`,`https://api.apto.vc/images/realties/7672/village-torres-condominio-5.webp`,`https://api.apto.vc/images/realties/7672/village-torres-condominio-6.webp`],
     link: "https://drive.google.com/file/d/1blVconA5fjODxvXB7s8KT6dSlX8KpLLv/view?usp=drive_link", aliases: ["village", "village torres", "torres"], pois: ["Supermercado Nova Era", "Shopping Via Norte", "Sumaúma Park Shopping", "Atacadão"] },
@@ -86,8 +86,8 @@ export const revistasDataLocal = [
     link: "https://drive.google.com/file/d/1_Hyb72NWl1HjEiabKLL9m5ZMutHExesY/view?usp=drive_link", aliases: ["jardim norte", "santa etelvina", "conquista norte"], pois: ["Shopping Via Norte (1 min)", "Havan (1 min)", "Fun Park (1 min)", "Nova Era Supermercado (1 min)", "UBS Sálvio Belota (2 min)", "Feira do Santa Etelvina (2 min)", "Terminal 06 (5 min)", "15º Distrito Policial (5-7 min)", "Hiper DB (5-7 min)", "Hospital Delphina Aziz", "Escola Dra. Viviane Estrela"] },
 
   { id: 7, title: "Viva Vida Rio Amazonas", brand: "Direcional", region: "Tarumã - Zona Oeste", size: "36m²", bedrooms: "2 quartos", flooring: "Cozinha, banheiro e lavatório", entrega: "Entregue", obraPercent: 100, rendaMinima: 3800,
-    cover: `${D}/2023/07/Guarita-Viva-Vida-Rio-Amazonas-Direcional.jpg.webp`,
-    fotosExtras: [`${D}/2023/07/Fachada-Viva-Vida-Rio-Amazonas-Direcional.jpg.webp`,`${D}/2023/07/Lazer-Viva-Vida-Rio-Amazonas-Direcional.jpg.webp`,`${D}/2023/07/Piscina-Viva-Vida-Rio-Amazonas-Direcional.jpg.webp`,`${D}/2023/07/Fitness-Viva-Vida-Rio-Amazonas-Direcional.jpg.webp`,`${D}/2023/07/Playground-Viva-Vida-Rio-Amazonas-Direcional.jpg.webp`],
+    cover: "https://api.apto.vc/images/realties/6566/316270/viva-vida-rio-amazonas-condominio-1.webp?w=1920",
+    fotosExtras: ["https://api.apto.vc/images/realties/6566/316257/viva-vida-rio-amazonas-condominio-2.webp?w=1920","https://api.apto.vc/images/realties/6566/316258/viva-vida-rio-amazonas-condominio-3.webp?w=1920","https://api.apto.vc/images/realties/6566/316261/viva-vida-rio-amazonas-condominio-4.webp?w=1920","https://api.apto.vc/images/realties/6566/316262/viva-vida-rio-amazonas-condominio-5.webp?w=1920","https://api.apto.vc/images/realties/6566/316268/viva-vida-rio-amazonas-condominio-6.webp?w=1920"],
     link: "https://drive.google.com/", aliases: ["amazonas", "rio amazonas", "viva vida rio amazonas"], pois: ["Aeroporto Internacional Eduardo Gomes", "Orla da Ponta Negra", "Sivam (Sistema de Vigilância da Amazônia)", "Sipam", "Supermercado Veneza"] },
 
   { id: 8, title: "Bosque das Torres", brand: "Direcional", region: "Lago Azul - Zona Norte", size: "36m²", bedrooms: "2 quartos", flooring: "Cozinha, banheiro e lavatório", entrega: "06/2028", obraPercent: 22.69, rendaMinima: 2800,
@@ -131,8 +131,8 @@ export const revistasDataLocal = [
     link: "https://drive.google.com/file/d/1pHLQwUSn6BDMfLo7fFGonyyWlgtXwNmy/view?usp=drive_link", aliases: ["negro", "rio negro", "conquista rio negro"], pois: ["Shopping Ponta Negra", "DB Ponta Negra", "Orla 92 Mall", "Supermercado Veneza", "Orla da Ponta Negra", "Praia Dourada", "Marina Tauá", "Balneário do SESC", "Aeroporto Eduardo Gomes", "Policlínica José Lins", "Colégio Século"] },
 
   { id: 17, title: "Viva Vida Rio Tapajós", brand: "Direcional", region: "Tarumã - Zona Oeste", size: "36m²", bedrooms: "2 quartos", flooring: "Cozinha, banheiro e lavatório", entrega: "08/2027", obraPercent: 66.78, rendaMinima: 3000,
-    cover: `${D}/2025/02/Perspectiva-Guarita-VivaVidaRioTapajos.jpg.webp`,
-    fotosExtras: [`${D}/2025/02/Perspectiva-Fachada-VivaVidaRioTapajos.jpg.webp`,`${D}/2025/02/Perspectiva-Lazer-VivaVidaRioTapajos.jpg.webp`,`${D}/2025/02/Perspectiva-Piscina-VivaVidaRioTapajos.jpg.webp`,`${D}/2025/02/Perspectiva-Fitness-VivaVidaRioTapajos.jpg.webp`,`${D}/2025/02/Perspectiva-Playground-VivaVidaRioTapajos.jpg.webp`],
+    cover: "https://api.apto.vc/images/realties/8352/401300/viva-vida-rio-tapajos-condominio-1.webp?w=1920",
+    fotosExtras: ["https://api.apto.vc/images/realties/8352/401299/viva-vida-rio-tapajos-condominio-2.webp?w=1920","https://api.apto.vc/images/realties/8352/401286/viva-vida-rio-tapajos-condominio-3.webp?w=1920","https://api.apto.vc/images/realties/8352/401294/viva-vida-rio-tapajos-condominio-4.webp?w=1920","https://api.apto.vc/images/realties/8352/401293/viva-vida-rio-tapajos-condominio-5.webp?w=1920","https://api.apto.vc/images/realties/8352/401291/viva-vida-rio-tapajos-condominio-6.webp?w=1920"],
     link: "https://drive.google.com/file/d/1k3TOypf5bm_zXPfc-ulb7vY9e7MKxmlk/view?usp=drive_link", aliases: ["tapajos", "tapajós", "rio tapajos", "viva vida rio tapajos"], pois: ["Aeroporto Internacional de Manaus", "Tarumã (área de balneários famosos)", "Sivam", "proximidade com a entrada da Ponta Negra"] },
 
   { id: 18, title: "Moratta Home Riva", brand: "Riva", region: "Flores - Zona Centro-Sul", size: "43,41m² a 59,35m²", bedrooms: "2 dormitórios", flooring: "Todo o apê", entrega: "03/2029", pinned: true, lat: -3.077466, lng: -60.020464, rendaMinima: 7800,
@@ -159,19 +159,19 @@ export const revistasDataLocal = [
 ];
 
 export const utilitariosData = [
-  { title: "RESERVA DE UNIDADE DE LANÇAMENTO", link: "https://docs.google.com/document/d/17QoIEhahikPda2zjSQ3esclqu-YS9j81/edit?usp=sharing&ouid=115657243229938792991&rtpof=true&sd=true" },
-  { title: "CARTA DE CANCELAMENTO", link: "https://drive.google.com/file/d/1tlibpT-9XGQIDGTrvp3Zcb9sDep1CldF/view?usp=sharing" },
-  { title: "M.O", link: "https://drive.google.com/file/d/1exQM1G9KFAHfRgOMIlZwc1rnsAFYRrZd/view?usp=sharing" },
-  { title: "MONTAR PLANO", link: "https://drive.google.com/file/d/1nLpqHMlmSwx7h9azIGW4JbWwDdNrFvsg/view?usp=sharing" },
-  { title: "ANALISE INTERNA", link: "https://drive.google.com/file/d/1shaF3OEZnX0y4M9OhSCWZMXAXb9CbAVf/view?usp=sharing" },
-  { title: "DECLARAÇÃO DE ESCLARECIMENTO", link: "https://docs.google.com/document/d/1tBS_JyaYVJtLP4uZil7hrKQIbO8t6YUo/edit?usp=sharing&ouid=115657243229938792991&rtpof=true&sd=true" },
-  { title: "NOVA DECLARAÇÃO DEPENDENTE SOLTEIRO OU DIVORCIADO", link: "https://docs.google.com/document/d/1wB6zA3kqdLLzZ_S4qoJr2V2LVyqkGE9kWHoS0JlLsag/edit?usp=sharing" },
-  { title: "NOVA DECLARAÇÃO DEPENDENTE CASADO", link: "https://docs.google.com/document/d/17Sb7xSve0KxpxHwIh1n11ZSCMaubYJ3eCYbrmi6tFCc/edit?usp=sharing" },
-  { title: "AMML - DECLA. PROPRIETÁRIO DE RESIDÊNCIA", link: "https://drive.google.com/file/d/1Qp19k2BaqiR6kuWqmju3qd_GMlUYuxrX/view?usp=sharing" },
-  { title: "AMML- DECLA. TEMPO DE RESIDÊNCIA", link: "https://drive.google.com/file/d/1sJdAyDwVBvOauW9EK0XBJIHoIHL6nhAX/view?usp=sharing" },
-  { title: "AMML - DECLA. ESTADO CIVIL", link: "https://drive.google.com/file/d/1f5aC4XStNfCKuu6NK2_EetP2DHpbF_0p/view?usp=sharing" },
-  { title: "FICHA DE INFORMAÇÕES PARA AUTÔNOMOS", link: "https://drive.google.com/file/d/1pTm2Wre8hbGkkEQRRvNI5-1hQ2V25HkD/view?usp=sharing" },
-  { title: "FICHA DE INFORMAÇÕES PARA ANÁLISE DE CRÉDITO", link: "https://drive.google.com/file/d/1W6zQqLZZjNK4LnTiOE4KMkR6hfx7yCa6/view?usp=drive_link" },
+  { title: "RESERVA DE UNIDADE DE LANÇAMENTO", cat: "Fluxo", link: "https://docs.google.com/document/d/17QoIEhahikPda2zjSQ3esclqu-YS9j81/edit?usp=sharing&ouid=115657243229938792991&rtpof=true&sd=true" },
+  { title: "CARTA DE CANCELAMENTO", cat: "Fluxo", link: "https://drive.google.com/file/d/1tlibpT-9XGQIDGTrvp3Zcb9sDep1CldF/view?usp=sharing" },
+  { title: "M.O", cat: "Fluxo", link: "https://drive.google.com/file/d/1exQM1G9KFAHfRgOMIlZwc1rnsAFYRrZd/view?usp=sharing" },
+  { title: "MONTAR PLANO", cat: "Fluxo", link: "https://drive.google.com/file/d/1nLpqHMlmSwx7h9azIGW4JbWwDdNrFvsg/view?usp=sharing" },
+  { title: "ANALISE INTERNA", cat: "Fluxo", link: "https://drive.google.com/file/d/1shaF3OEZnX0y4M9OhSCWZMXAXb9CbAVf/view?usp=sharing" },
+  { title: "DECLARAÇÃO DE ESCLARECIMENTO", cat: "Declarações", link: "https://docs.google.com/document/d/1tBS_JyaYVJtLP4uZil7hrKQIbO8t6YUo/edit?usp=sharing&ouid=115657243229938792991&rtpof=true&sd=true" },
+  { title: "NOVA DECLARAÇÃO DEPENDENTE SOLTEIRO OU DIVORCIADO", cat: "Declarações", link: "https://docs.google.com/document/d/1wB6zA3kqdLLzZ_S4qoJr2V2LVyqkGE9kWHoS0JlLsag/edit?usp=sharing" },
+  { title: "NOVA DECLARAÇÃO DEPENDENTE CASADO", cat: "Declarações", link: "https://docs.google.com/document/d/17Sb7xSve0KxpxHwIh1n11ZSCMaubYJ3eCYbrmi6tFCc/edit?usp=sharing" },
+  { title: "AMML - DECLA. PROPRIETÁRIO DE RESIDÊNCIA", cat: "AMML", link: "https://drive.google.com/file/d/1Qp19k2BaqiR6kuWqmju3qd_GMlUYuxrX/view?usp=sharing" },
+  { title: "AMML- DECLA. TEMPO DE RESIDÊNCIA", cat: "AMML", link: "https://drive.google.com/file/d/1sJdAyDwVBvOauW9EK0XBJIHoIHL6nhAX/view?usp=sharing" },
+  { title: "AMML - DECLA. ESTADO CIVIL", cat: "AMML", link: "https://drive.google.com/file/d/1f5aC4XStNfCKuu6NK2_EetP2DHpbF_0p/view?usp=sharing" },
+  { title: "FICHA DE INFORMAÇÕES PARA AUTÔNOMOS", cat: "Fichas", link: "https://drive.google.com/file/d/1pTm2Wre8hbGkkEQRRvNI5-1hQ2V25HkD/view?usp=sharing" },
+  { title: "FICHA DE INFORMAÇÕES PARA ANÁLISE DE CRÉDITO", cat: "Fichas", link: "https://drive.google.com/file/d/1W6zQqLZZjNK4LnTiOE4KMkR6hfx7yCa6/view?usp=drive_link" },
 ];
 
 export const frasesMotivacionais = [
@@ -280,24 +280,17 @@ export const imagensEquipeDiarias = [
 const today = new Date();
 export const dayIndex = Math.floor((today.getTime() - today.getTimezoneOffset() * 60000) / (1000 * 60 * 60 * 24));
 
-// Rotação de 3 fotos por dia: manhã (00h-11h59), tarde (12h-17h59) e noite (18h-23h59)
-const horaLocal = today.getHours();
-const periodoAtual = horaLocal < 12 ? 0 : (horaLocal < 18 ? 1 : 2);
+// Períodos do dia: manhã (00h-11h59), tarde (12h-17h59) e noite (18h-23h59)
+export const getPeriodo = (d = new Date()) => {
+  const h = d.getHours();
+  return h < 12 ? 'manha' : (h < 18 ? 'tarde' : 'noite');
+};
+const PERIODO_NUM = { manha: 0, tarde: 1, noite: 2 };
 
-// === FIXAÇÃO TEMPORÁRIA DE FOTOS DO DIA ===
-// As 11 fotos mais recentes (no fim de imagensEquipeDiarias) são as fotos
-// atuais, em rotação (manhã/tarde/noite) a partir de 13/10/2026.
-// Para voltar à rotação normal, defina FOTOS_FIXAS_FIM com uma data
-// (ex.: new Date(2026, 10, 13, 23, 59, 59)).
-const QTD_FOTOS_FIXAS = 11;
-const FOTOS_FIXAS_INICIO = new Date(2026, 9, 13); // 13/10/2026 (mês 9 = outubro, zero-indexed)
-const FOTOS_FIXAS_FIM = null; // sem data de término
-
-const dentroDoPeriodoFixo = today >= FOTOS_FIXAS_INICIO && (FOTOS_FIXAS_FIM === null || today <= FOTOS_FIXAS_FIM);
-
-// Índice, dentro de imagensEquipeDiarias, da primeira foto fixada
-const INDICE_INICIO_FOTOS_FIXAS = imagensEquipeDiarias.length - QTD_FOTOS_FIXAS;
-
-export const periodoIndex = dentroDoPeriodoFixo
-  ? INDICE_INICIO_FOTOS_FIXAS + ((dayIndex * 3 + periodoAtual) % QTD_FOTOS_FIXAS)
-  : dayIndex * 3 + periodoAtual;
+// Rotação por todas as fotos da lista: 3 por dia (manhã, tarde, noite), avançando sempre pela lista inteira.
+// Índice da foto do dia para um período ('manha' | 'tarde' | 'noite')
+export const getPeriodoIndex = (periodo = getPeriodo()) => {
+  const p = PERIODO_NUM[periodo] ?? 0;
+  return dayIndex * 3 + p;
+};
+export const periodoIndex = getPeriodoIndex(); // compatibilidade

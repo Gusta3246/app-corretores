@@ -1,5 +1,5 @@
 {
-  "name": "equipe-aguia",
+  "name": "equipe-destemidos",
   "version": "0.1.0",
   "private": true,
   "dependencies": {
@@ -7,9 +7,7 @@
     "react-dom": "^18.2.0",
     "react-scripts": "5.0.1",
     "lucide-react": "^0.263.1",
-    "tailwindcss": "^3.3.0",
-    "xlsx": "^0.18.5",
-    "pdfjs-dist": "^3.11.174"
+    "tailwindcss": "^3.3.0"
   },
   "scripts": {
     "start": "react-scripts start",

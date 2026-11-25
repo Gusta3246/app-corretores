@@ -91,7 +91,7 @@ export default function CalculadoraTabelaDireta({ modoNoturno, onClose }) {
     const text = modoNoturno ? '#f1f5f9' : '#1e293b';
     const sub = modoNoturno ? '#94a3b8' : '#64748b';
     const divider = modoNoturno ? '#1e293b' : '#e2e8f0';
-    const accent = '#007AFF'; // azul iOS
+    const accent = '#007aff'; // azul iOS
 
     const handleSelectAll = (e) => e.target.select();
 
@@ -171,64 +171,54 @@ export default function CalculadoraTabelaDireta({ modoNoturno, onClose }) {
                         </div>
                     </div>
 
-                    {/* Breakdown 10/30/60 */}
-                    <div style={{ padding: '14px 24px 4px' }}>
-                        <div style={{ borderRadius: 14, border: `1px solid ${divider}`, overflow: 'hidden' }}>
-                            <div style={{ padding: '13px 16px', borderBottom: `1px solid ${divider}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <div>
-                                    <div style={{ fontSize: 13, fontWeight: 700, color: text }}>10% — à vista ou 12x sem juros no cartão</div>
-                                    <div style={{ fontSize: 11.5, color: sub, marginTop: 2 }}>12x de {fmtBRL(entrada10Cartao)}</div>
-                                    <div style={{ fontSize: 10.5, color: sub, marginTop: 1, fontStyle: 'italic' }}>10% de {fmtBRL(valorImovel)} = {fmtBRL(entrada10)}</div>
-                                </div>
-                                <div style={{ fontFamily: 'ui-monospace, monospace', fontWeight: 700, fontSize: 15, color: text, whiteSpace: 'nowrap', marginLeft: 12 }}>
-                                    {fmtBRL(entrada10)}
-                                </div>
+                    {/* Linha do tempo: hoje · obra · financiamento */}
+                    <div style={{ padding: '18px 24px 4px' }}>
+                        <div style={{ position: 'relative', paddingLeft: 26 }}>
+                            <div style={{ position: 'absolute', left: 6, top: 8, bottom: 8, width: 2, background: divider }} />
+
+                            {/* Hoje — 10% */}
+                            <div style={{ position: 'relative', paddingBottom: 22 }}>
+                                <span style={{ position: 'absolute', left: -26, top: 3, width: 14, height: 14, boxSizing: 'border-box', borderRadius: '50%', background: bg, border: `2px solid ${sub}` }} />
+                                <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: sub }}>Hoje · 10%</div>
+                                <div style={{ fontFamily: 'ui-monospace, monospace', fontWeight: 700, fontSize: 20, color: text, marginTop: 3 }}>{fmtBRL(entrada10)}</div>
+                                <div style={{ fontSize: 11.5, color: sub, marginTop: 3 }}>à vista ou 12x de {fmtBRL(entrada10Cartao)} sem juros no cartão</div>
+                                <div style={{ fontSize: 10.5, color: sub, marginTop: 1, fontStyle: 'italic' }}>10% de {fmtBRL(valorImovel)}</div>
                             </div>
 
-                            <div style={{ padding: '13px 16px', borderBottom: `1px solid ${divider}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <div>
-                                    <div style={{ fontSize: 13, fontWeight: 700, color: text }}>30% — parcelado durante a obra</div>
-                                    <div style={{ fontSize: 11.5, color: sub, marginTop: 2 }}>parcelas iguais, sem correção</div>
-                                    <div style={{ fontSize: 10.5, color: sub, marginTop: 1, fontStyle: 'italic' }}>30% de {fmtBRL(valorImovel)} = {fmtBRL(obra30)}</div>
-                                </div>
-                                <div style={{ textAlign: 'right', marginLeft: 12 }}>
-                                    {nParcelasObra > 0 ? (
-                                        <div style={{ fontFamily: 'ui-monospace, monospace', fontWeight: 700, fontSize: 15, color: text, whiteSpace: 'nowrap' }}>
-                                            {nParcelasObra}x de {fmtBRL(obraParcela)}
-                                        </div>
-                                    ) : (
-                                        <div style={{ fontSize: 12, color: sub }}>Informe as parcelas</div>
-                                    )}
-                                </div>
+                            {/* Durante a obra — 30% */}
+                            <div style={{ position: 'relative', paddingBottom: 22 }}>
+                                <span style={{ position: 'absolute', left: -26, top: 3, width: 14, height: 14, boxSizing: 'border-box', borderRadius: '50%', background: bg, border: `2px solid ${sub}` }} />
+                                <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: sub }}>Durante a obra · 30%</div>
+                                {nParcelasObra > 0 ? (
+                                    <div style={{ fontFamily: 'ui-monospace, monospace', fontWeight: 700, fontSize: 20, color: text, marginTop: 3 }}>{nParcelasObra}x de {fmtBRL(obraParcela)}</div>
+                                ) : (
+                                    <div style={{ fontSize: 13, color: sub, marginTop: 4 }}>Informe as parcelas da obra</div>
+                                )}
+                                <div style={{ fontSize: 11.5, color: sub, marginTop: 3 }}>parcelas iguais, sem correção</div>
+                                <div style={{ fontSize: 10.5, color: sub, marginTop: 1, fontStyle: 'italic' }}>30% de {fmtBRL(valorImovel)} = {fmtBRL(obra30)}</div>
                             </div>
 
-                            <div style={{ padding: '13px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: bgSub }}>
-                                <div>
-                                    <div style={{ fontSize: 13, fontWeight: 700, color: text }}>60% — financiado</div>
-                                    <div style={{ fontSize: 10.5, color: sub, marginTop: 1, marginBottom: 3, fontStyle: 'italic' }}>60% de {fmtBRL(valorImovel)} = {fmtBRL(financiado60)}</div>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4 }}>
-                                        <span style={{ fontSize: 11.5, color: sub }}>Parcelas:</span>
-                                        <input
-                                            type="text"
-                                            inputMode="numeric"
-                                            value={parcelasFinanciamentoTexto}
-                                            onChange={(e) => setParcelasFinanciamentoTexto(e.target.value.replace(/\D/g, ''))}
-                                            onFocus={handleSelectAll}
-                                            onClick={handleSelectAll}
-                                            onPaste={handlePaste(setParcelasFinanciamentoTexto)}
-                                            onBlur={() => setParcelasFinanciamentoTexto(String(prazoFinanciamento))}
-                                            style={{ width: 44, padding: '3px 6px', fontSize: 12.5, fontFamily: 'ui-monospace, monospace', border: `1px solid ${divider}`, borderRadius: 6, background: bg, color: text, outline: 'none', textAlign: 'center' }}
-                                        />
-                                        <span style={{ fontSize: 11.5, color: sub }}>de até 120x</span>
-                                    </div>
-                                </div>
-                                <div style={{ textAlign: 'right', marginLeft: 12 }}>
-                                    <div style={{ fontFamily: 'ui-monospace, monospace', fontWeight: 700, fontSize: 15, color: accent, whiteSpace: 'nowrap' }}>
-                                        {prazoFinanciamento}x de {fmtBRL(maiorParcela)}
-                                    </div>
-                                    <div style={{ fontSize: 11, color: sub, marginTop: 2, whiteSpace: 'nowrap' }}>
-                                        até {fmtBRL(menorParcela === Infinity ? 0 : menorParcela)}
-                                    </div>
+                            {/* Na entrega — 60% financiado */}
+                            <div style={{ position: 'relative', paddingBottom: 4 }}>
+                                <span style={{ position: 'absolute', left: -26, top: 3, width: 14, height: 14, boxSizing: 'border-box', borderRadius: '50%', background: accent, border: `2px solid ${accent}` }} />
+                                <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: sub }}>Na entrega · 60% financiado</div>
+                                <div style={{ fontFamily: 'ui-monospace, monospace', fontWeight: 700, fontSize: 20, color: accent, marginTop: 3 }}>{prazoFinanciamento}x de {fmtBRL(maiorParcela)}</div>
+                                <div style={{ fontSize: 11.5, color: sub, marginTop: 3 }}>diminuindo até {fmtBRL(menorParcela === Infinity ? 0 : menorParcela)}</div>
+                                <div style={{ fontSize: 10.5, color: sub, marginTop: 1, fontStyle: 'italic' }}>60% de {fmtBRL(valorImovel)} = {fmtBRL(financiado60)}</div>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 8 }}>
+                                    <span style={{ fontSize: 11.5, color: sub }}>Parcelas:</span>
+                                    <input
+                                        type="text"
+                                        inputMode="numeric"
+                                        value={parcelasFinanciamentoTexto}
+                                        onChange={(e) => setParcelasFinanciamentoTexto(e.target.value.replace(/\D/g, ''))}
+                                        onFocus={handleSelectAll}
+                                        onClick={handleSelectAll}
+                                        onPaste={handlePaste(setParcelasFinanciamentoTexto)}
+                                        onBlur={() => setParcelasFinanciamentoTexto(String(prazoFinanciamento))}
+                                        style={{ width: 52, padding: '5px 6px', fontSize: 13, fontFamily: 'ui-monospace, monospace', border: `1px solid ${divider}`, borderRadius: 6, background: bgSub, color: text, outline: 'none', textAlign: 'center' }}
+                                    />
+                                    <span style={{ fontSize: 11.5, color: sub }}>de até 120x</span>
                                 </div>
                             </div>
                         </div>

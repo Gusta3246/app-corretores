@@ -1834,12 +1834,13 @@ export default function App() {
 
             {/* Header recolhido (mobile): gradiente na área da status bar para a hora/bateria continuarem legíveis */}
             <div aria-hidden="true" className="sm:hidden fixed left-0 right-0 top-0 z-[29] pointer-events-none" style={{
-                height: 'calc(env(safe-area-inset-top, 0px) + 8px)',
+                height: 'calc(env(safe-area-inset-top, 0px) + 6px)',
                 opacity: headerHidden ? 1 : 0,
                 transition: 'opacity 0.35s ease',
-                background: modoNoturno
-                    ? 'linear-gradient(to bottom, rgba(11,17,32,0.88) 0%, rgba(15,23,42,0.80) 70%, rgba(15,23,42,0) 100%)'
-                    : 'linear-gradient(to bottom, rgba(255,255,255,0.88) 0%, rgba(255,255,255,0.80) 70%, rgba(255,255,255,0) 100%)',
+                backdropFilter: 'blur(6px)',
+                WebkitBackdropFilter: 'blur(6px)',
+                WebkitMaskImage: 'linear-gradient(to bottom, #000 0%, #000 60%, transparent 100%)',
+                maskImage: 'linear-gradient(to bottom, #000 0%, #000 60%, transparent 100%)',
             }} />
 
             <header

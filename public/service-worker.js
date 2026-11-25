@@ -5,7 +5,7 @@
    - Imagens dos empreendimentos (postimg, apto): guardadas ao serem vistas, com limite de quantidade.
    - Lista de tabelas do Drive: tenta a rede; sem internet, mostra a última lista vista.
    - Vídeos, documentos do Drive e demais APIs: sempre vão à rede. */
-const VERSAO = 'destemidos-v3';
+const VERSAO = 'destemidos-v4';
 const CACHE = `destemidos-cache-${VERSAO}`;
 const CACHE_IMG = 'destemidos-imagens';
 const CACHE_DADOS = 'destemidos-dados';

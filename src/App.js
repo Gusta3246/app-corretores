@@ -219,6 +219,7 @@ export default function App() {
     const [dockTransient, setDockTransient] = useState(null); // aba "tocada" que abre modal/gaveta (pílula desliza até ela e volta)
     const dockNavRef = useRef(null);
     const dockTabRefs = useRef({});
+    const [headerScrolled, setHeaderScrolled] = useState(false); // vidro/gradiente do header só aparece após rolar
     const [headerHidden, setHeaderHidden] = useState(false);  // header (logo Destemidos) recolhe no mobile
     const bannerNavRef = useRef(null);
     const headerRef = useRef(null);
@@ -271,7 +272,7 @@ export default function App() {
     const [modoNoturno, setModoNoturno] = useState(() => localStorage.getItem('modoNoturno') === 'true');
     // Barra de status (app instalado): cor sólida que acompanha o modo claro/noturno, sem gradiente
     useEffect(() => {
-        const cor = modoNoturno ? '#0f172a' : '#ffffff';
+        const cor = modoNoturno ? '#0B1120' : '#f8fafc'; // igual ao fundo da página: sem faixa branca nas barras do Safari
         const meta = document.getElementById('theme-color-meta');
         if (meta) meta.setAttribute('content', cor);
         document.documentElement.style.backgroundColor = modoNoturno ? '#0B1120' : '#f8fafc';
@@ -574,6 +575,7 @@ export default function App() {
                 // dock aparece quando o usuário rola pra baixo (passou do topo) e permanece visível
                 setDockVisible(current > 80);
             } else { setHeaderHidden(false); setDockVisible(true); }
+            setHeaderScrolled(current > 12);
             // (texto do logo permanece sempre visível)
             lastScrollY.current = current;
             // Sticky tabs: gruda no header quando o nav de abas sai da tela
@@ -596,6 +598,19 @@ export default function App() {
 
     // Trava scroll do body quando modais/chat estão abertos
     // Quando pdfLeitor está aberto NÃO trava touchAction — o iframe precisa de scroll livre
+    // Pasta aberta: congela a página de trás (position:fixed é o único jeito confiável no iOS)
+    useEffect(() => {
+        if (!isChatOpen) return undefined;
+        const y = window.scrollY || 0;
+        const b = document.body;
+        const ant = { position: b.style.position, top: b.style.top, left: b.style.left, right: b.style.right, width: b.style.width };
+        b.style.position = 'fixed'; b.style.top = `-${y}px`; b.style.left = '0'; b.style.right = '0'; b.style.width = '100%';
+        return () => {
+            b.style.position = ant.position; b.style.top = ant.top; b.style.left = ant.left; b.style.right = ant.right; b.style.width = ant.width;
+            window.scrollTo({ top: y, left: 0, behavior: 'instant' });
+        };
+    }, [isChatOpen]);
+
     useEffect(() => {
         const shouldLock = isChatOpen || !!selectedPois || !!pdfLeitor || !!selectedOnibus;
         if (shouldLock) {
@@ -668,6 +683,13 @@ export default function App() {
     const [isCreatingFolder, setIsCreatingFolder] = useState(false);
     const [folderSource, setFolderSource] = useState('manual');
     const [isFinalizingFolder, setIsFinalizingFolder] = useState(false);
+    const nomeInputRef = useRef(null);
+    // Foca o nome só depois que o modal terminou de aparecer (focar durante a animação faz o iOS empurrar a página)
+    useEffect(() => {
+        if (!isFinalizingFolder) return undefined;
+        const t = setTimeout(() => { try { nomeInputRef.current?.focus({ preventScroll: true }); } catch { /* ignora */ } }, 320);
+        return () => clearTimeout(t);
+    }, [isFinalizingFolder]);
     const vv = useVisualViewport(isFinalizingFolder); // área visível (sem o teclado) para o modal de renomear
     const [showLightning, setShowLightning] = useState(false);
     const [pendingDocs, setPendingDocs] = useState([]);
@@ -886,17 +908,39 @@ export default function App() {
     };
 
     // === SUPORTE A TOUCH (CELULAR/TABLET) ===
+    // Segurar ~280ms no card = arrastar para reordenar. Deslizar logo de cara = rolar a lista (sem mover a página).
+    const touchHoldTimer = useRef(null);
+    const touchStartXY = useRef({ x: 0, y: 0 });
+    const dragTouchAtivo = useRef(false);   // lido pelo listener nativo (não-passivo) que bloqueia a rolagem
+    const suprimirClique = useRef(false);
+
+    const cancelTouchHold = () => { if (touchHoldTimer.current) { clearTimeout(touchHoldTimer.current); touchHoldTimer.current = null; } };
+
     const handleTouchStart = (e, index) => {
-        touchDragIndex.current = index;
-        setDraggedItemIndex(index);
-        setIsDraggingActive(true);
         const touch = e.touches[0];
-        setDragGhostPos({ x: touch.clientX, y: touch.clientY });
+        touchStartXY.current = { x: touch.clientX, y: touch.clientY };
+        touchDragIndex.current = null;
+        touchTargetIndex.current = null;
+        cancelTouchHold();
+        touchHoldTimer.current = setTimeout(() => {
+            touchHoldTimer.current = null;
+            dragTouchAtivo.current = true;
+            touchDragIndex.current = index;
+            touchTargetIndex.current = index;
+            setDraggedItemIndex(index);
+            setIsDraggingActive(true);
+            setDragGhostPos({ x: touchStartXY.current.x, y: touchStartXY.current.y });
+            haptic('medium');
+        }, 280);
     };
 
     const handleDragTouchMove = (e) => {
-        e.preventDefault();
         const touch = e.touches[0];
+        if (!dragTouchAtivo.current) {
+            // moveu antes de segurar: é rolagem, cancela o arrastar
+            if (Math.abs(touch.clientX - touchStartXY.current.x) > 8 || Math.abs(touch.clientY - touchStartXY.current.y) > 8) cancelTouchHold();
+            return;
+        }
         setDragGhostPos({ x: touch.clientX, y: touch.clientY });
         const element = document.elementFromPoint(touch.clientX, touch.clientY);
         if (element) {
@@ -909,6 +953,8 @@ export default function App() {
     };
 
     const handleDragTouchEnd = () => {
+        cancelTouchHold();
+        if (!dragTouchAtivo.current) return;
         const from = touchDragIndex.current;
         const to = touchTargetIndex.current;
         if (from !== null && to !== null && from !== to) {
@@ -918,12 +964,22 @@ export default function App() {
             newDocs.splice(to, 0, draggedItem);
             setPendingDocs(newDocs);
         }
+        dragTouchAtivo.current = false;
+        suprimirClique.current = true; // o toque que soltou o card não deve abrir/selecionar
+        setTimeout(() => { suprimirClique.current = false; }, 350);
         touchDragIndex.current = null;
         touchTargetIndex.current = null;
         setDraggedItemIndex(null);
         setIsDraggingActive(false);
         setDragGhostPos({ x: 0, y: 0 });
     };
+
+    // Enquanto um card está sendo arrastado, nada rola (listener nativo não-passivo; o do React é passivo e ignora preventDefault)
+    useEffect(() => {
+        const bloquear = (e) => { if (dragTouchAtivo.current && e.cancelable) e.preventDefault(); };
+        document.addEventListener('touchmove', bloquear, { passive: false });
+        return () => document.removeEventListener('touchmove', bloquear);
+    }, []);
 
     const waitForPdfJs = () => new Promise((resolve, reject) => {
         if (window.pdfjsLib && window.pdfjsLib.GlobalWorkerOptions.workerSrc) return resolve();
@@ -1776,21 +1832,31 @@ export default function App() {
                 ref={headerRef}
                 className="fixed left-0 right-0 z-30 transition-colors duration-500 header-slide-in hw-header"
                 style={{
-                    top: headerHidden ? -(headerHeight + 24 + 60) : 'env(safe-area-inset-top, 0px)', // status bar transparente: o vidro começa abaixo dela
+                    top: headerHidden ? -(headerHeight + 24 + 60) : 0, // começa em 0: status bar + header são UMA peça só
                     transition: 'top 0.38s cubic-bezier(0.22,1,0.36,1), background-color 0.5s, color 0.5s, border-color 0.5s',
                     position: 'fixed',
-                    paddingTop: 0,
-                    background: modoNoturno ? 'rgba(15,23,42,0.70)' : 'rgba(255,255,255,0.75)',
-                    backdropFilter: 'blur(24px) saturate(180%)',
-                    WebkitBackdropFilter: 'blur(24px) saturate(180%)',
-                    borderBottom: modoNoturno ? '1px solid rgba(51,65,85,0.6)' : '1px solid rgba(226,232,240,0.6)',
-                    boxShadow: modoNoturno ? '0 2px 8px rgba(0,0,0,0.25)' : '0 2px 8px rgba(15,23,42,0.06)',
+                    paddingTop: 'env(safe-area-inset-top, 0px)',
+                    background: 'transparent',
                     borderTopLeftRadius: 0,
                     borderTopRightRadius: 0,
                     borderBottomLeftRadius: 24,
                     borderBottomRightRadius: 24,
                 }}>
-                <div className="w-full px-[7.2%]">
+                {/* Camada de vidro única (cobre status bar + header). Invisível no topo; surge ao rolar */}
+                <div aria-hidden="true" className="absolute inset-0 pointer-events-none" style={{
+                    opacity: headerScrolled ? 1 : 0,
+                    transition: 'opacity 0.35s ease',
+                    background: modoNoturno
+                        ? 'linear-gradient(to bottom, rgba(11,17,32,0.92) 0%, rgba(15,23,42,0.78) 55%, rgba(15,23,42,0.66) 100%)'
+                        : 'linear-gradient(to bottom, rgba(255,255,255,0.92) 0%, rgba(255,255,255,0.80) 55%, rgba(255,255,255,0.68) 100%)',
+                    backdropFilter: 'blur(24px) saturate(180%)',
+                    WebkitBackdropFilter: 'blur(24px) saturate(180%)',
+                    borderBottom: modoNoturno ? '1px solid rgba(51,65,85,0.6)' : '1px solid rgba(226,232,240,0.6)',
+                    boxShadow: modoNoturno ? '0 2px 8px rgba(0,0,0,0.25)' : '0 2px 8px rgba(15,23,42,0.06)',
+                    borderBottomLeftRadius: 24,
+                    borderBottomRightRadius: 24,
+                }} />
+                <div className="w-full px-[7.2%] relative">
                     <div className="flex flex-col sm:flex-row sm:items-center sm:gap-4 sm:py-3">
 
                         {/* Linha 1 mobile — Logo + saudação animada */}
@@ -2245,7 +2311,7 @@ export default function App() {
 
 
 
-            <main className="main-content w-full" style={{ '--gutter': 'clamp(14px, 3.2vw, 56px)', paddingTop: `${headerHeight}px`, paddingLeft: 'var(--gutter)', paddingRight: 'var(--gutter)' }}>
+            <main className="main-content w-full" style={{ '--gutter': 'clamp(14px, 3.2vw, 56px)', paddingTop: `max(0px, calc(${headerHeight}px - env(safe-area-inset-top, 0px)))`, paddingLeft: 'var(--gutter)', paddingRight: 'var(--gutter)' }}>
                 {/* BANNER INSPIRAÇÃO DIÁRIA */}
                 {/* ── BANNER + ABAS ── */}
                 <div className="relative banner-reveal hw-hero" style={{
@@ -3863,7 +3929,7 @@ export default function App() {
 
                     <div className={`relative flex-1 overflow-hidden flex flex-col transition-colors ${closingFolder ? 'folder-collapsing' : 'folder-expanding'}`}>
 
-                        <div ref={cardGridRef} onClick={(e) => { if (!e.target.closest('[data-doc-index]')) setSelDocId(null); }} className="flex-1 overflow-y-auto custom-scrollbar px-3 pb-40 relative" style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 96px)' }}>
+                        <div ref={cardGridRef} onClick={(e) => { if (!e.target.closest('[data-doc-index]')) setSelDocId(null); }} className="flex-1 overflow-y-auto custom-scrollbar px-3 pb-40 relative" style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 96px)', overscrollBehavior: 'contain', WebkitOverflowScrolling: 'touch', touchAction: 'pan-y', WebkitTouchCallout: 'none' }}>
                             {folderNotice && (
                                 <div className="mb-3 rounded-2xl px-3 py-2 flex items-start gap-2 text-[11px] font-bold"
                                     style={{ background: modoNoturno ? 'rgba(234,179,8,0.12)' : '#fefce8', border: `1px solid ${modoNoturno ? 'rgba(234,179,8,0.3)' : '#fde68a'}`, color: modoNoturno ? '#fde68a' : '#854d0e' }}>
@@ -3895,7 +3961,7 @@ export default function App() {
                                     <div
                                         key={doc.id}
                                         data-doc-index={index}
-                                        draggable
+                                        draggable={desktopPtr}
                                         onDragStart={(e) => handleDragStart(e, index)}
                                         onDragEnd={handleDragEnd}
                                         onDragOver={handleDragOver}
@@ -3903,10 +3969,11 @@ export default function App() {
                                         onTouchStart={(e) => handleTouchStart(e, index)}
                                         onTouchMove={handleDragTouchMove}
                                         onTouchEnd={handleDragTouchEnd}
-                                        onClick={(e) => { if (isDraggingActive) return; haptic('light'); if (desktopPtr || selDocId !== doc.id) { setSelDocId(doc.id); return; } captureZoomOrigin(e); setFullscreenDoc(doc); }}
+                                        onTouchCancel={handleDragTouchEnd}
+                                        onClick={(e) => { if (isDraggingActive || suprimirClique.current) return; haptic('light'); if (desktopPtr || selDocId !== doc.id) { setSelDocId(doc.id); return; } captureZoomOrigin(e); setFullscreenDoc(doc); }}
                                         onDoubleClick={(e) => { if (desktopPtr && !isDraggingActive) { captureZoomOrigin(e); setFullscreenDoc(doc); } }}
                                         className={`relative group overflow-hidden flex flex-col cursor-move transition-all rounded-[14px] pg ${modoNoturno ? 'pg-dark' : ''} ${draggedItemIndex === index ? 'scale-90 opacity-30 rotate-3' : ''}`}
-                                        style={selDocId === doc.id ? { boxShadow: '0 0 0 3px #5aa9ff' } : undefined}>
+                                        style={{ WebkitUserSelect: 'none', userSelect: 'none', WebkitTouchCallout: 'none', ...(selDocId === doc.id ? { boxShadow: '0 0 0 3px #5aa9ff' } : null) }}>
                                         <div className="absolute top-1.5 left-1.5 text-[11px] font-semibold min-w-[20px] h-5 px-1 flex items-center justify-center rounded-full z-10" style={pastaChip}>{index + 1}</div>
                                         <div className={`aspect-[3/4] w-full flex items-center justify-center overflow-hidden relative ${modoNoturno ? 'bg-slate-950' : 'bg-slate-100'}`} style={{ isolation: 'isolate' }}>
                                             {doc.broken && (
@@ -4008,12 +4075,12 @@ export default function App() {
                 const livre = Math.max(0, MAX_PDF_BYTES - total);
                 const sel = pendingDocs.find(d => d.id === segSel);
                 return (
-                <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center p-0 sm:p-4 zoom-origin-in"
-                    style={{ top: vv.topo, height: vv.altura, bottom: 'auto', background: 'rgba(6,10,20,0.4)', backdropFilter: 'blur(16px) saturate(160%)', WebkitBackdropFilter: 'blur(16px) saturate(160%)', '--ox': zoomOrigin.x, '--oy': zoomOrigin.y }}
+                <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center p-0 sm:p-4"
+                    style={{ background: 'rgba(6,10,20,0.4)', backdropFilter: 'blur(16px) saturate(160%)', WebkitBackdropFilter: 'blur(16px) saturate(160%)', animation: 'gmFade 0.18s ease both', paddingBottom: vv.teclado }}
                     onClick={() => !isChatLoading && setIsFinalizingFolder(false)}>
                     <div
-                        className="animate-slide-up w-full sm:max-w-sm rounded-t-[28px] sm:rounded-[28px] overflow-y-auto max-h-full flex flex-col"
-                        style={{ ...pastaGlass(modoNoturno, modoNoturno ? 0.6 : 0.78, 40), color: (modoNoturno ? '#ffffff' : '#1c1c1e') }}
+                        className="w-full sm:max-w-sm rounded-t-[28px] sm:rounded-[28px] overflow-y-auto flex flex-col"
+                        style={{ ...pastaGlass(modoNoturno, modoNoturno ? 0.6 : 0.78, 40), color: (modoNoturno ? '#ffffff' : '#1c1c1e'), maxHeight: Math.max(240, vv.altura - 12), animation: 'gmSheet 0.24s cubic-bezier(0.22,1,0.36,1) both', overscrollBehavior: 'contain' }}
                         onClick={e => e.stopPropagation()}>
 
                         {/* Alça (mobile) */}
@@ -4068,7 +4135,7 @@ export default function App() {
                                     aria-label="Nome do arquivo"
                                     className={`w-full text-[17px] px-4 py-3.5 font-semibold bg-transparent border-none outline-none ${modoNoturno ? 'text-white placeholder-white/40' : 'text-slate-900 placeholder-slate-400'}`}
                                     placeholder="Nomear pasta"
-                                    autoFocus
+                                    ref={nomeInputRef}
                                 />
                             </div>
                             {!isChatLoading && sugestaoNome && pdfFileName !== sugestaoNome && (

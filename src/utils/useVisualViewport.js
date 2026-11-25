@@ -36,5 +36,7 @@ export function useVisualViewport(ativo = true) {
     };
   }, [ativo]);
 
-  return { altura: vv.altura, topo: vv.topo, tecladoAberto: vv.cheia - vv.altura > 120 };
+  // teclado = quanto da parte de baixo da tela (layout) está coberta; usado como padding-bottom do modal fixo
+  const teclado = Math.max(0, vv.cheia - vv.altura - vv.topo);
+  return { altura: vv.altura, topo: vv.topo, teclado: teclado > 80 ? teclado : 0, tecladoAberto: vv.cheia - vv.altura > 120 };
 }

@@ -156,6 +156,7 @@ export default function App() {
         'gessondirecionalvendas@gmail.com',
         'salesadm.direcionalvendas@gmail.com',
         'rayuri.direcionalvendas@gmail.com',
+        'jessicacosta.direcional@gmail.com',
         'cfabi.direcionalvendas@gmail.com',
         'cj.direcionalvendas@gmail.com',
         'israel.r.direcionalvendas@gmail.com',

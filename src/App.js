@@ -1834,12 +1834,12 @@ export default function App() {
 
             {/* Header recolhido (mobile): gradiente na área da status bar para a hora/bateria continuarem legíveis */}
             <div aria-hidden="true" className="sm:hidden fixed left-0 right-0 top-0 z-[29] pointer-events-none" style={{
-                height: 'calc(env(safe-area-inset-top, 0px) + 28px)',
+                height: 'calc(env(safe-area-inset-top, 0px) + 8px)',
                 opacity: headerHidden ? 1 : 0,
                 transition: 'opacity 0.35s ease',
                 background: modoNoturno
-                    ? 'linear-gradient(to bottom, rgba(11,17,32,0.90) 0%, rgba(15,23,42,0.60) 55%, rgba(15,23,42,0) 100%)'
-                    : 'linear-gradient(to bottom, rgba(255,255,255,0.90) 0%, rgba(255,255,255,0.60) 55%, rgba(255,255,255,0) 100%)',
+                    ? 'linear-gradient(to bottom, rgba(11,17,32,0.88) 0%, rgba(15,23,42,0.80) 70%, rgba(15,23,42,0) 100%)'
+                    : 'linear-gradient(to bottom, rgba(255,255,255,0.88) 0%, rgba(255,255,255,0.80) 70%, rgba(255,255,255,0) 100%)',
             }} />
 
             <header
@@ -2101,6 +2101,15 @@ export default function App() {
                     haptic(); captureZoomOrigin(e);
                     if (transient) { setDockTransient(id); setTimeout(() => setDockTransient(null), 650); }
                     action();
+                    // Direcional / Riva: leva ao topo do setor escolhido (mesmo se já estiver nele)
+                    if (id === 'Direcional' || id === 'Riva') {
+                        setTimeout(() => {
+                            const el = document.getElementById('secao-marcas');
+                            if (!el) return;
+                            const top = el.getBoundingClientRect().top + window.scrollY - (headerRef.current?.offsetHeight || headerHeight) - 8;
+                            window.scrollTo({ top: Math.max(0, top), left: 0, behavior: 'smooth' });
+                        }, 80);
+                    }
                 };
                 return (
                     <>
@@ -2315,7 +2324,7 @@ export default function App() {
 
 
 
-            <main className="main-content w-full" style={{ '--gutter': 'clamp(14px, 3.2vw, 56px)', paddingTop: `max(0px, calc(${headerHeight}px - env(safe-area-inset-top, 0px)))`, paddingLeft: 'var(--gutter)', paddingRight: 'var(--gutter)' }}>
+            <main className="main-content w-full" style={{ '--gutter': 'clamp(14px, 3.2vw, 56px)', paddingTop: `${headerHeight}px`, paddingLeft: 'var(--gutter)', paddingRight: 'var(--gutter)' }}>
                 {/* BANNER INSPIRAÇÃO DIÁRIA */}
                 {/* ── BANNER + ABAS ── */}
                 <div className="relative banner-reveal hw-hero" style={{
@@ -2626,6 +2635,7 @@ export default function App() {
                 </div>
                 )}{/* /rank-strip-wrap */}
 
+                <div id="secao-marcas" aria-hidden="true" style={{ height: 0, scrollMarginTop: `${headerHeight + 8}px` }} />
                 {(activeBrand === 'Direcional' || activeBrand === 'Riva') && (
                     <>
                         <style>{`

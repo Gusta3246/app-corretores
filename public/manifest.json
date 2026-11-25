@@ -4,15 +4,15 @@
   "description": "A sorte favorece os ousados",
   "icons": [
     {
-      "src": "https://i.postimg.cc/Nft4YhPQ/Pantera-Negra-com-Garras-Douradas.png",
+      "src": "https://i.postimg.cc/yd4KnX7J/Sem-Titulo-1.jpg",
       "sizes": "192x192",
-      "type": "image/png",
+      "type": "image/jpeg",
       "purpose": "any"
     },
     {
-      "src": "https://i.postimg.cc/Nft4YhPQ/Pantera-Negra-com-Garras-Douradas.png",
+      "src": "https://i.postimg.cc/yd4KnX7J/Sem-Titulo-1.jpg",
       "sizes": "512x512",
-      "type": "image/png",
+      "type": "image/jpeg",
       "purpose": "any"
     }
   ],

@@ -219,6 +219,12 @@ export default function App() {
     const [dockTransient, setDockTransient] = useState(null); // aba "tocada" que abre modal/gaveta (pílula desliza até ela e volta)
     const dockNavRef = useRef(null);
     const dockTabRefs = useRef({});
+    const [telaPequena, setTelaPequena] = useState(() => typeof window !== 'undefined' && window.innerWidth < 640);
+    useEffect(() => {
+        const f = () => setTelaPequena(window.innerWidth < 640);
+        window.addEventListener('resize', f);
+        return () => window.removeEventListener('resize', f);
+    }, []);
     const [headerHidden, setHeaderHidden] = useState(false);  // header (logo Destemidos) recolhe no mobile
     const bannerNavRef = useRef(null);
     const headerRef = useRef(null);
@@ -1826,14 +1832,24 @@ export default function App() {
                 padding-top = env(safe-area-inset-top) para o conteúdo começar
                 abaixo do notch. Assim backdrop-filter é UMA camada só. ───── */}
 
+            {/* Header recolhido (mobile): gradiente na área da status bar para a hora/bateria continuarem legíveis */}
+            <div aria-hidden="true" className="sm:hidden fixed left-0 right-0 top-0 z-[29] pointer-events-none" style={{
+                height: 'calc(env(safe-area-inset-top, 0px) + 28px)',
+                opacity: headerHidden ? 1 : 0,
+                transition: 'opacity 0.35s ease',
+                background: modoNoturno
+                    ? 'linear-gradient(to bottom, rgba(11,17,32,0.90) 0%, rgba(15,23,42,0.60) 55%, rgba(15,23,42,0) 100%)'
+                    : 'linear-gradient(to bottom, rgba(255,255,255,0.90) 0%, rgba(255,255,255,0.60) 55%, rgba(255,255,255,0) 100%)',
+            }} />
+
             <header
                 ref={headerRef}
-                className={`fixed left-0 right-0 z-30 transition-colors duration-500 header-slide-in hw-header ${headerHidden ? '' : 'hdr-shown'}`}
+                className="fixed left-0 right-0 z-30 transition-colors duration-500 header-slide-in hw-header"
                 style={{
-                    top: headerHidden ? -(headerHeight + 24 + 60) : 'env(safe-area-inset-top, 0px)', // status bar transparente: o vidro começa abaixo dela
+                    top: headerHidden ? -(headerHeight + 24 + 60) : 0, // começa no topo da tela: status bar + header = uma peça só
                     transition: 'top 0.38s cubic-bezier(0.22,1,0.36,1), background-color 0.5s, color 0.5s, border-color 0.5s',
                     position: 'fixed',
-                    paddingTop: 0,
+                    paddingTop: 'env(safe-area-inset-top, 0px)',
                     background: modoNoturno ? 'rgba(15,23,42,0.70)' : 'rgba(255,255,255,0.75)',
                     backdropFilter: 'blur(24px) saturate(180%)',
                     WebkitBackdropFilter: 'blur(24px) saturate(180%)',
@@ -1844,17 +1860,7 @@ export default function App() {
                     borderBottomLeftRadius: 24,
                     borderBottomRightRadius: 24,
                 }}>
-                {/* MOBILE: vidro contínuo (status bar + header) em degradê que some para baixo. No PC nada muda. */}
-                <div aria-hidden="true" className="sm:hidden absolute left-0 right-0 pointer-events-none" style={{ top: 0, bottom: -18,
-                    background: modoNoturno
-                        ? 'linear-gradient(to bottom, rgba(11,17,32,0.92) 0%, rgba(15,23,42,0.80) 60%, rgba(15,23,42,0) 100%)'
-                        : 'linear-gradient(to bottom, rgba(255,255,255,0.92) 0%, rgba(255,255,255,0.80) 60%, rgba(255,255,255,0) 100%)',
-                    backdropFilter: 'blur(20px) saturate(170%)',
-                    WebkitBackdropFilter: 'blur(20px) saturate(170%)',
-                    WebkitMaskImage: 'linear-gradient(to bottom, #000 0%, #000 62%, transparent 100%)',
-                    maskImage: 'linear-gradient(to bottom, #000 0%, #000 62%, transparent 100%)',
-                }} />
-                <div className="w-full px-[7.2%] relative">
+                <div className="w-full px-[7.2%]">
                     <div className="flex flex-col sm:flex-row sm:items-center sm:gap-4 sm:py-3">
 
                         {/* Linha 1 mobile — Logo + saudação animada */}
@@ -1936,7 +1942,7 @@ export default function App() {
                                 </div>
                                 <input
                                     type="text"
-                                    placeholder={stickyDesk ? 'Buscar...' : 'Buscar por nome ou bairro...'}
+                                    placeholder={(stickyDesk || telaPequena) ? 'Buscar' : 'Buscar por nome ou bairro...'}
                                     className={`search-input-premium block w-full pl-9 pr-3 py-2.5 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-slate-400/30 transition-all ${
                                         modoNoturno
                                         ? 'bg-white/10 border border-white/15 text-white placeholder-white/40 focus:bg-white/15'
@@ -2014,7 +2020,7 @@ export default function App() {
                                 style={{ boxShadow: modoNoturno ? '0 1px 2px rgba(0,0,0,0.15)' : '0 1px 2px rgba(15,23,42,0.05)' }}>
                                 <button
                                     onClick={(e) => { haptic('medium'); captureZoomOrigin(e); setFolderSource('manual'); setIsCreatingFolder(true); setIsChatOpen(true); setTimeout(() => fileInputRef.current?.click(), 100); }}
-                                    className="inline-flex items-center gap-[7px] pl-3.5 pr-3 text-[14px] font-bold active:opacity-80"
+                                    className="inline-flex items-center justify-center gap-[7px] px-4 text-[14px] font-bold active:opacity-80"
                                     style={{ background: 'transparent', border: 'none', WebkitTapHighlightColor: 'transparent' }}
                                     title="Nova pasta" aria-label="Nova pasta"
                                 >
@@ -2309,7 +2315,7 @@ export default function App() {
 
 
 
-            <main className="main-content w-full" style={{ '--gutter': 'clamp(14px, 3.2vw, 56px)', paddingTop: `${headerHeight}px`, paddingLeft: 'var(--gutter)', paddingRight: 'var(--gutter)' }}>
+            <main className="main-content w-full" style={{ '--gutter': 'clamp(14px, 3.2vw, 56px)', paddingTop: `max(0px, calc(${headerHeight}px - env(safe-area-inset-top, 0px)))`, paddingLeft: 'var(--gutter)', paddingRight: 'var(--gutter)' }}>
                 {/* BANNER INSPIRAÇÃO DIÁRIA */}
                 {/* ── BANNER + ABAS ── */}
                 <div className="relative banner-reveal hw-hero" style={{
@@ -3812,19 +3818,6 @@ export default function App() {
                     @media (min-width: 768px) {
                         .chat-mobile-full { top: auto !important; height: auto !important; }
                         .chat-folder-full { top: 0 !important; left: 0 !important; right: 0 !important; bottom: 0 !important; height: 100dvh !important; border-radius: 0 !important; }
-                    }
-                    /* Header mobile: começa em top:0 (cobre a status bar) e o vidro vem do degradê interno */
-                    @media (max-width: 639px) {
-                        .hw-header.hdr-shown {
-                            top: 0 !important;
-                            padding-top: env(safe-area-inset-top, 0px) !important;
-                            background: transparent !important;
-                            backdrop-filter: none !important;
-                            -webkit-backdrop-filter: none !important;
-                            border-bottom: none !important;
-                            box-shadow: none !important;
-                            border-radius: 0 !important;
-                        }
                     }
                     /* Padding do main para compensar o header fixed (inclui notch no PWA) */
                     .main-content { padding-top: calc(80px + env(safe-area-inset-top, 0px)); padding-bottom: calc(78px + env(safe-area-inset-bottom, 0px)); }

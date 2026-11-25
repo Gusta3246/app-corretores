@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { X, Camera, Wand2, RotateCcw, RotateCw, Crop, Palette } from 'lucide-react';
+import { X, Wand2, RotateCcw, RotateCw, Crop, Palette } from 'lucide-react';
 import { corrigirPerspectiva } from '../utils/perspectiva';
 
 // ─────────────────────────────────────────────────────────────
@@ -582,21 +582,56 @@ export function WebcamModal({ onCapture, onClose, dark }) {
     }, 'image/jpeg', 0.92);
   };
 
+  const [flash, setFlash] = useState(false);
+  const aoCapturar = () => {
+    capturar();
+    setFlash(true);
+    setTimeout(() => setFlash(false), 110);
+    try { if (navigator.vibrate) navigator.vibrate(12); } catch (e) { /* sem vibração */ }
+  };
+  const canto = { position: 'absolute', width: 24, height: 24, borderColor: '#5b9bff', borderStyle: 'solid', borderWidth: 0 };
+
   return (
     <div className="fixed inset-0 z-[320] flex items-center justify-center p-0 sm:p-4" style={{ background: 'rgba(5,6,12,0.9)', backdropFilter: 'blur(8px)' }}>
-      <div className="w-full h-full sm:h-auto sm:max-w-2xl sm:rounded-3xl overflow-hidden flex flex-col shadow-2xl" style={{ background: dark ? '#0f172a' : '#ffffff', color: dark ? '#e2e8f0' : '#1e293b' }}>
-        <div className="flex items-center justify-between px-4 py-3" style={{ paddingTop: 'max(12px, env(safe-area-inset-top, 0px))' }}>
-          <span className="font-black text-base uppercase tracking-widest flex items-center gap-2"><Camera size={20} /> Câmera {fotos > 0 && <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500 text-white">{fotos} {fotos === 1 ? 'foto' : 'fotos'}</span>}</span>
-          <button onClick={onClose} className="p-3 rounded-xl" style={{ background: dark ? '#1e293b' : '#f1f5f9' }}><X size={22} /></button>
+      <div className="relative w-full h-full sm:h-[min(88vh,760px)] sm:max-w-md sm:rounded-3xl overflow-hidden bg-black shadow-2xl">
+        {erro
+          ? <p className="absolute inset-0 flex items-center justify-center p-8 text-center text-sm font-bold text-red-400">{erro}</p>
+          : <video ref={videoRef} playsInline muted className="absolute inset-0 w-full h-full object-cover" />}
+
+        {/* moldura-guia (só visual) */}
+        {!erro && (
+          <div className="absolute pointer-events-none" style={{ left: 28, right: 28, top: 'calc(env(safe-area-inset-top, 0px) + 64px)', bottom: 'calc(env(safe-area-inset-bottom, 0px) + 124px)' }}>
+            <span style={{ ...canto, left: 0, top: 0, borderTopWidth: 3, borderLeftWidth: 3, borderTopLeftRadius: 10 }} />
+            <span style={{ ...canto, right: 0, top: 0, borderTopWidth: 3, borderRightWidth: 3, borderTopRightRadius: 10 }} />
+            <span style={{ ...canto, left: 0, bottom: 0, borderBottomWidth: 3, borderLeftWidth: 3, borderBottomLeftRadius: 10 }} />
+            <span style={{ ...canto, right: 0, bottom: 0, borderBottomWidth: 3, borderRightWidth: 3, borderBottomRightRadius: 10 }} />
+          </div>
+        )}
+
+        {/* sem barras: só botões flutuando sobre a câmera */}
+        <button onClick={onClose} aria-label="Fechar câmera"
+          className="absolute left-3 w-10 h-10 rounded-full flex items-center justify-center text-white active:scale-90 transition-transform"
+          style={{ top: 'calc(env(safe-area-inset-top, 0px) + 12px)', background: 'rgba(20,20,24,0.38)', backdropFilter: 'blur(14px) saturate(160%)', WebkitBackdropFilter: 'blur(14px) saturate(160%)' }}>
+          <X size={22} />
+        </button>
+
+        <div className="absolute inset-x-0 grid items-center px-4" style={{ bottom: 'calc(env(safe-area-inset-bottom, 0px) + 22px)', height: 78, gridTemplateColumns: '1fr auto 1fr' }}>
+          <span />
+          <button onClick={aoCapturar} disabled={!pronto} aria-label="Capturar foto"
+            className="rounded-full flex items-center justify-center active:scale-90 transition-transform disabled:opacity-40"
+            style={{ width: 78, height: 78, border: '3px solid #ffffff', padding: 4, background: 'rgba(0,0,0,0.25)', backgroundClip: 'padding-box' }}>
+            <span className="block w-full h-full rounded-full bg-white" />
+          </button>
+          <div className="justify-self-end">
+            <button onClick={onClose} className="h-11 px-[18px] rounded-full text-[14px] font-medium text-white whitespace-nowrap active:scale-95 transition-transform"
+              style={{ background: '#4a85dc', boxShadow: '0 4px 16px rgba(0,0,0,0.35)' }}>
+              {fotos > 0 ? `Concluir · ${fotos}` : 'Concluir'}
+            </button>
+          </div>
         </div>
-        <div className="flex-1 min-h-0 flex items-center justify-center bg-black">
-          {erro ? <p className="p-6 text-center text-sm font-bold text-red-400">{erro}</p>
-            : <video ref={videoRef} playsInline muted className="max-w-full max-h-[65vh]" />}
-        </div>
-        <div className="flex gap-3 justify-end px-4 py-3" style={{ paddingBottom: 'max(14px, calc(env(safe-area-inset-bottom, 0px) + 6px))' }}>
-          <button onClick={capturar} disabled={!pronto} className="flex-1 sm:flex-none px-7 py-4 rounded-2xl text-sm font-black uppercase tracking-widest text-white disabled:opacity-40" style={{ background: '#4a85dc' }}>Capturar</button>
-          <button onClick={onClose} className="flex-1 sm:flex-none px-7 py-4 rounded-2xl text-sm font-black uppercase tracking-widest border" style={{ borderColor: dark ? '#334155' : '#e2e8f0' }}>Concluir</button>
-        </div>
+
+        {/* flash de captura */}
+        <div className="absolute inset-0 pointer-events-none bg-white" style={{ opacity: flash ? 0.55 : 0, transition: 'opacity 0.25s ease' }} />
       </div>
     </div>
   );

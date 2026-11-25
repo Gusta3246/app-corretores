@@ -1834,7 +1834,7 @@ export default function App() {
 
             {/* Header recolhido (mobile): gradiente na área da status bar para a hora/bateria continuarem legíveis */}
             <div aria-hidden="true" className="sm:hidden fixed left-0 right-0 top-0 z-[29] pointer-events-none" style={{
-                height: 'calc(env(safe-area-inset-top, 0px) + 6px)',
+                height: 'env(safe-area-inset-top, 0px)',
                 opacity: headerHidden ? 1 : 0,
                 transition: 'opacity 0.35s ease',
                 backdropFilter: 'blur(6px)',
@@ -1850,7 +1850,7 @@ export default function App() {
                     top: headerHidden ? -(headerHeight + 24 + 60) : 0, // começa no topo da tela: status bar + header = uma peça só
                     transition: 'top 0.38s cubic-bezier(0.22,1,0.36,1), background-color 0.5s, color 0.5s, border-color 0.5s',
                     position: 'fixed',
-                    paddingTop: 'env(safe-area-inset-top, 0px)',
+                    paddingTop: `calc(env(safe-area-inset-top, 0px) + ${telaPequena ? 12 : 0}px)`, // mobile: logo desce um pouco, longe do desfoque da status bar
                     background: modoNoturno ? 'rgba(15,23,42,0.70)' : 'rgba(255,255,255,0.75)',
                     backdropFilter: 'blur(24px) saturate(180%)',
                     WebkitBackdropFilter: 'blur(24px) saturate(180%)',
